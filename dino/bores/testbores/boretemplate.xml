@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE set SYSTEM "location.dtd">
+<set version="1.3">
+<pointSurvey version="1.3" embargo="OPENBAAR" >
+	<identification id="B60A0063">
+		<organisation>TNO-NITG</organisation>
+	</identification>
+	<surveyLocation>
+		<coordinates originalMeasurement="JA" UoM="METER" coordSystem="RD">
+			<coordinateX>185120</coordinateX>
+			<coordinateY>337560</coordinateY>
+		</coordinates>
+	</surveyLocation>
+	<surfaceElevation>
+		<elevation originalMeasurement="JA" levelReference="NAP" levelValue="3600" UoM="CENTIMETER"></elevation>
+	</surfaceElevation>
+	<borehole  version="1.3" baseDepthUoM="CENTIMETER" baseDepth="3000" >
+		<operatorOrg>Hennings</operatorOrg>
+		<date startYear="1931" startMonth="1" startDay="1"/>
+		<lithoDescr version="1.3" layerDepthUoM="CENTIMETER" layerDepthReference="MV" lithoDescrStandard="ONB" lithoDescrWetDry="NDO" lithoDescrVersion="1" lithoDescrQuality="C" >
+		<lithoInterval topDepth="0" baseDepth="30">
+			<lithology code="Z" >zand</lithology>
+			<colorMain code="ON" >onbekend</colorMain>
+		</lithoInterval>
+		<lithoInterval topDepth="30" baseDepth="160">
+			<lithology code="Z" >zand</lithology>
+			<siltAdmix code="SX" >siltig</siltAdmix>
+			<sandAdmix code="Z3" >sterk zandig</sandAdmix>
+			<clayAdmix code="K1" >zwak kleiig</clayAdmix>
+			<gravelAdmix code="GX" >grindig</gravelAdmix>
+			<colorMain code="GE" >geel</colorMain>
+			<colorSecondary code="TBR" >bruin-</colorSecondary>
+			<sandMedianClass code="ZFC" >fijne categorie (O)</sandMedianClass>
+		</lithoInterval>
+		</lithoDescr>
+		<drillMethod>
+			<drillMethodInterval code="PUL">Pulsboring</drillMethodInterval>
+		</drillMethod>
+	</borehole>
+</pointSurvey>
+</set>
