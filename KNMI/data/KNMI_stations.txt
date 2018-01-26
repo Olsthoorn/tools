@@ -1,0 +1,177 @@
+located stations in 50.0N:54.0N, 3.0E:8.0E
+==============================================
+Valkenburg                               (Netherlands)
+coordinates:    52.18N,    4.42E,     -0.2m, <a href="http://projects.knmi.nl/klimatologie/metadata/valkenburg.html" target="_new">metadata</a>
+station code: 210 Valkenburg
+Found  66 years with data in 1951-2016
+==============================================
+Voorschoten                              (Netherlands)
+coordinates:    52.13N,    4.43E,     -1.1m, <a href="http://projects.knmi.nl/klimatologie/metadata/voorschoten.html" target="_new">metadata</a>
+station code: 215 Voorschoten
+Found   4 years with data in 2014-2017
+==============================================
+De Kooy                                  (Netherlands)
+coordinates:    52.93N,    4.78E,      0.6m, <a href="http://projects.knmi.nl/klimatologie/metadata/dekooy.html" target="_new">metadata</a>
+station code: 235 De_Kooy
+Found 112 years with data in 1906-2017
+==============================================
+Schiphol                                 (Netherlands)
+coordinates:    52.32N,    4.78E,     -4.2m, <a href="http://projects.knmi.nl/klimatologie/metadata/schiphol.html" target="_new">metadata</a>
+station code: 240 Schiphol
+Found  67 years with data in 1951-2017
+==============================================
+Vlieland                                 (Netherlands)
+coordinates:    53.23N,    4.92E,      1.7m, <a href="http://projects.knmi.nl/klimatologie/metadata/vlieland.html" target="_new">metadata</a>
+station code: 242 Vlieland
+Found  22 years with data in 1996-2017
+==============================================
+Twenthe                                  (Netherlands)
+coordinates:    52.27N,    6.88E,     33.0m, <a href="http://projects.knmi.nl/klimatologie/metadata/twenthe.html" target="_new">metadata</a>
+station code: 290 Twenthe
+Found  67 years with data in 1951-2017
+==============================================
+Berkhout                                 (Netherlands)
+coordinates:    52.65N,    4.98E,     -2.4m, <a href="http://projects.knmi.nl/klimatologie/metadata/berkhout.html" target="_new">metadata</a>
+station code: 249 Berkhout
+Found  19 years with data in 1999-2017
+==============================================
+Hoorn Terschelling                       (Netherlands)
+coordinates:    53.38N,    5.35E,      0.7m, <a href="http://projects.knmi.nl/klimatologie/metadata/hoornterschelling.html" target="_new">metadata</a>
+station code: 251 Hoorn_Terschelling
+Found  24 years with data in 1994-2017
+==============================================
+De Bilt                                  (Netherlands)
+coordinates:    52.10N,    5.18E,      1.9m, <a href="http://projects.knmi.nl/klimatologie/metadata/debilt.html" target="_new">metadata</a>
+station code: 260 De_Bilt
+Found 114 years with data in 1904-2017
+==============================================
+Soesterberg                              (Netherlands)
+coordinates:    52.13N,    5.28E,     14.0m, <a href="http://projects.knmi.nl/klimatologie/metadata/soesterberg.html" target="_new">metadata</a>
+station code: 265 Soesterberg
+Found  58 years with data in 1951-2008
+==============================================
+Stavoren                                 (Netherlands)
+coordinates:    52.90N,    5.38E,     -1.3m, <a href="http://projects.knmi.nl/klimatologie/metadata/stavoren.html" target="_new">metadata</a>
+station code: 267 Stavoren
+Found  28 years with data in 1990-2017
+==============================================
+Lelystad                                 (Netherlands)
+coordinates:    52.45N,    5.52E,     -4.4m, <a href="http://projects.knmi.nl/klimatologie/metadata/lelystad.html" target="_new">metadata</a>
+station code: 269 Lelystad
+Found  28 years with data in 1990-2017
+==============================================
+Leeuwarden                               (Netherlands)
+coordinates:    53.22N,    5.75E,      0.3m, <a href="http://projects.knmi.nl/klimatologie/metadata/leeuwarden.html" target="_new">metadata</a>
+station code: 270 Leeuwarden
+Found  67 years with data in 1951-2017
+==============================================
+Marknesse                                (Netherlands)
+coordinates:    52.70N,    5.88E,     -3.3m, <a href="http://projects.knmi.nl/klimatologie/metadata/marknesse.html" target="_new">metadata</a>
+station code: 273 Marknesse
+Found  29 years with data in 1989-2017
+==============================================
+Deelen                                   (Netherlands)
+coordinates:    52.05N,    5.87E,     45.2m, <a href="http://projects.knmi.nl/klimatologie/metadata/deelen.html" target="_new">metadata</a>
+station code: 275 Deelen
+Found  66 years with data in 1952-2017
+==============================================
+Lauwersoog                               (Netherlands)
+coordinates:    53.42N,    6.20E,      2.9m, <a href="http://projects.knmi.nl/klimatologie/metadata/lauwersoog.html" target="_new">metadata</a>
+station code: 277 Lauwersoog
+Found  27 years with data in 1991-2017
+==============================================
+Heino                                    (Netherlands)
+coordinates:    52.43N,    6.27E,      3.6m, <a href="http://projects.knmi.nl/klimatologie/metadata/heino.html" target="_new">metadata</a>
+station code: 278 Heino
+Found  29 years with data in 1989-2017
+==============================================
+Hoogeveen                                (Netherlands)
+coordinates:    52.75N,    6.57E,     15.8m, <a href="http://projects.knmi.nl/klimatologie/metadata/hoogeveen.html" target="_new">metadata</a>
+station code: 279 Hoogeveen
+Found  29 years with data in 1989-2017
+==============================================
+Eelde                                    (Netherlands)
+coordinates:    53.12N,    6.58E,      3.2m, <a href="http://projects.knmi.nl/klimatologie/metadata/eelde.html" target="_new">metadata</a>
+station code: 280 Eelde
+Found 112 years with data in 1906-2017
+==============================================
+Hupsel                                   (Netherlands)
+coordinates:    52.07N,    6.65E,     29.7m, <a href="http://projects.knmi.nl/klimatologie/metadata/hupsel.html" target="_new">metadata</a>
+station code: 283 Hupsel
+Found  29 years with data in 1989-2017
+==============================================
+Nieuw Beerta                             (Netherlands)
+coordinates:    53.20N,    7.15E,     -0.2m, <a href="http://projects.knmi.nl/klimatologie/metadata/nieuwbeerta.html" target="_new">metadata</a>
+station code: 286 Nieuw_Beerta
+Found  28 years with data in 1990-2017
+==============================================
+Vlissingen                               (Netherlands)
+coordinates:    51.45N,    3.60E,      8.0m, <a href="http://projects.knmi.nl/klimatologie/metadata/vlissingen.html" target="_new">metadata</a>
+station code: 310 Vlissingen
+Found 107 years with data in 1908-2017
+==============================================
+Westdorpe                                (Netherlands)
+coordinates:    51.22N,    3.87E,      1.7m, <a href="http://projects.knmi.nl/klimatologie/metadata/westdorpe.html" target="_new">metadata</a>
+station code: 319 Westdorpe
+Found  27 years with data in 1991-2017
+==============================================
+Wilhelminadorp                           (Netherlands)
+coordinates:    51.53N,    3.88E,      1.6m, <a href="http://projects.knmi.nl/klimatologie/metadata/wilhelminadorp.html" target="_new">metadata</a>
+station code: 323 Wilhelminadorp
+Found  26 years with data in 1989-2014
+==============================================
+Hoek van Holland                         (Netherlands)
+coordinates:    51.98N,    4.12E,     11.9m, <a href="http://projects.knmi.nl/klimatologie/metadata/hoekvanholland.html" target="_new">metadata</a>
+station code: 330 Hoek_van_Holland
+Found  47 years with data in 1971-2017
+==============================================
+Woensdrecht                              (Netherlands)
+coordinates:    51.45N,    4.35E,     15.0m, <a href="http://projects.knmi.nl/klimatologie/metadata/woensdrecht.html" target="_new">metadata</a>
+station code: 340 Woensdrecht
+Found  22 years with data in 1996-2017
+==============================================
+Rotterdam                                (Netherlands)
+coordinates:    51.97N,    4.45E,     -5.1m, <a href="http://projects.knmi.nl/klimatologie/metadata/rotterdam.html" target="_new">metadata</a>
+station code: 344 Rotterdam
+Found  62 years with data in 1956-2017
+==============================================
+Cabauw                                   (Netherlands)
+coordinates:    51.97N,    4.92E,     -0.7m, <a href="http://projects.knmi.nl/klimatologie/metadata/cabauw.html" target="_new">metadata</a>
+station code: 348 Cabauw
+Found  32 years with data in 1986-2017
+==============================================
+Gilze-Rijen                              (Netherlands)
+coordinates:    51.57N,    4.93E,     11.9m, <a href="http://projects.knmi.nl/klimatologie/metadata/gilzerijen.html" target="_new">metadata</a>
+station code: 350 Gilze-Rijen
+Found  67 years with data in 1951-2017
+==============================================
+Herwijnen                                (Netherlands)
+coordinates:    51.85N,    5.15E,      0.7m, <a href="http://projects.knmi.nl/klimatologie/metadata/herwijnen.html" target="_new">metadata</a>
+station code: 356 Herwijnen
+Found  29 years with data in 1989-2017
+==============================================
+Eindhoven                                (Netherlands)
+coordinates:    51.45N,    5.38E,     20.7m, <a href="http://projects.knmi.nl/klimatologie/metadata/eindhoven.html" target="_new">metadata</a>
+station code: 370 Eindhoven
+Found  67 years with data in 1951-2017
+==============================================
+Volkel                                   (Netherlands)
+coordinates:    51.65N,    5.70E,     19.9m, <a href="http://projects.knmi.nl/klimatologie/metadata/volkel.html" target="_new">metadata</a>
+station code: 375 Volkel
+Found  67 years with data in 1951-2017
+==============================================
+Ell                                      (Netherlands)
+coordinates:    51.20N,    5.77E,     30.0m, <a href="http://projects.knmi.nl/klimatologie/metadata/ell.html" target="_new">metadata</a>
+station code: 377 Ell
+Found  19 years with data in 1999-2017
+==============================================
+Maastricht                               (Netherlands)
+coordinates:    50.90N,    5.77E,    112.7m, <a href="http://projects.knmi.nl/klimatologie/metadata/maastricht.html" target="_new">metadata</a>
+station code: 380 Maastricht
+Found 112 years with data in 1906-2017
+==============================================
+Arcen                                    (Netherlands)
+coordinates:    51.50N,    6.20E,     19.5m, <a href="http://projects.knmi.nl/klimatologie/metadata/arcen.html" target="_new">metadata</a>
+station code: 391 Arcen
+Found  28 years with data in 1990-2017
+==============================================
