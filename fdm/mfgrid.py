@@ -1628,7 +1628,7 @@ class Grid:
         TO 161007
         """
         if isinstance(u, (float, int)):
-            return u * np.ones(self._shape)
+            return u * np.ones(self._shape, dtype=dtype)
         elif isinstance(u, np.ndarray):
             if len(u.ravel()) == self._shape[0]:
                 u = u.reshape((self._nz, 1, 1))
@@ -1639,7 +1639,7 @@ class Grid:
             if len(u) == self._shape[0]:
                 u = np.array(u).reshape((self._nz, 1, 1))
                 return u * np.ones(self.shape, dtype=dtype)
-            raise ValueError("len of input list must equal gr.nz")
+            raise ValueError("Len of input list must equal gr.nz")
         else:
             raise ValueError("Argument must be scalar or array of length gr.nz")
 
