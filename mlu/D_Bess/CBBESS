@@ -1,0 +1,2 @@
+      double precision fac2, fac3
+      common /CBBESS/ fac2(14), fac3(20)
