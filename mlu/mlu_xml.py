@@ -29,6 +29,7 @@ from   matplotlib.patches import Rectangle
 import xml.etree.ElementTree as ET
 import googlemaps.get_google_map_image as gm
 from coords import rd2wgs
+import shapefile as sf
 
 from colors import colors
 
@@ -60,8 +61,11 @@ def line2keys(s):
     return [k.strip() for k in s.split()]
 
 def line2toks(s):
-    s = s.replace('(','').replace(')','')
-    return [t.strip().replace('.','').replace(' ','_') for t in s.lower().split(':')]
+    s = s.lower().replace('(','').replace(')','')
+    toks = s.split(':')
+    toks[0] = toks[0].strip().replace('.','').replace(' ','_')
+    toks[1:] =[t.strip().replace('_','')  for t in toks[1:]]
+    return toks
 
 
 # mlu file to xml file converter function
@@ -562,6 +566,39 @@ class Mluobj:
         for w in self.wells:
             ax.plot(w.x, w.y, marker, mfc='none', mec='red', ms=msize[-1])
             ax.text(w.x, w.y, w.name, ha=ha, va=va, color=color)
+
+
+    def toshape(self, shapefileName, **kwargs):
+        '''Generate shapefile for layout
+
+        parameters
+        ----------
+            shapefileName: str
+                name of the shapefile
+        '''
+
+        fields = [('name',   'C', 20, 0),
+                  ('casing', 'F', 12, 3),
+                  ('screen', 'F', 12, 3),
+                  ('skin',   'F', 12, 3),
+                  ('x',      'F', 12, 2),
+                  ('y',      'F', 12, 2),
+                  ('layer',  'N',  4, 0)]
+
+        wr = sf.Writer(shapeType=sf.POINT)
+
+        for f in fields:
+            wr.field(*f)
+
+        for ow in self.obsWells:
+            wr.point(ow.x, ow.y)
+            dct = ow.__dict__.copy()
+            dct.pop('data')
+            wr.record(**dct)
+
+        wr.save(shapefileName)
+
+        return
 
 
     def plot_map(self, **kwargs):

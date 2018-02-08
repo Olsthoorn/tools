@@ -1,13 +1,11 @@
-$STORAGE:2
+'''Computation of K0 in double precision
 
-c.....Computation of K0 in double precision
-
-      double precision function dk0bes (xx)
-c
-      implicit double precision (a-h, o-z)
-      include 'CBBESS'
-      integer ii
-c
+'''
+def dk0bes (xx):
+'''
+implicit double precision (a-h, o-z)
+include 'CBBESS'
+integer ii
 *     if (x .lt. 1.0d-40)then
 *        dk0bes = 1.0d40
 *     else if (xx .lt. 1.d-37) then
@@ -15,8 +13,9 @@ c
 *     else if (xx .gt. 200.d0) then
 *        dk0bes = 0.0d0
 *     else if (xx .lt. 1.5d0) then
-      if (xx .lt. 1.5d0) then
-c...........NUMAL 35173; x < 1,5
+'''
+      if xx < 1.5:
+      # NUMAL 35173; x < 1,5
          xx = dmax1(xx, 1.d-40)
          sum0 = dlog(2.d0 / xx) - .57721566490153286d0
          dd = sum0

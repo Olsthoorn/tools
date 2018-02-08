@@ -16,3 +16,11 @@ colors = []
 n = 20
 for i in range(n):
     colors =colors + col[i::n]
+
+colors.insert(0, 'orange')
+colors.insert(0, 'cyan')
+colors.insert(0, 'black')
+colors.insert(0, 'purple')
+colors.insert(0, 'green')
+colors.insert(0, 'blue')
+colors.insert(0, 'red')
