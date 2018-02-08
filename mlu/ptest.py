@@ -6,22 +6,17 @@ and extracting the results at desired (piezometer) distances, layers
 and times.
 
 '''
-tools = '/Users/Theo/GRWMODELS/python/tools/'
 
 import os
-import sys
-
-if not tools in sys.path:
-    sys.path.insert(1, tools)
-
 import numpy as np
+import matplotlib.pyplot as plt
+from scipy.interpolate import interp1d
+
 from fdm.mfgrid import Grid
 from fdm.fdm3t  import fdm3t
-from scipy.interpolate import interp1d
-import matplotlib.pyplot as plt
 from mlu.mlu_xml import Mluobj, mlu2xml
+from mlu.hantushn import hantushn
 from colors import colors
-from hantushn import hantushn
 
 class Pumptest:
 
@@ -147,9 +142,6 @@ class Pumptest:
                          kxyz=(self.Kh, self.Kh, self.Kv),
                          Ss=self.Ss, FQ=self.FQ, HI=self.HI,
                          IBOUND=self.IBOUND, epsilon=1.0)
-
-        print(' ')
-
 
         # Also compute Hantush. Hantush computes at observation distances.
         # For this we need the observation points
@@ -425,6 +417,8 @@ class MLU_ptest:
         return ax
 
 
+
+
 if __name__=='__main__':
 
     datapath = '/Users/Theo/GRWMODELS/python/tools/mlu/testdata/'
@@ -435,18 +429,25 @@ if __name__=='__main__':
     mlu_file = os.path.join(datapath, ptestName + '.mlu')
     xml_file = os.path.join(datapath, ptestName + '.xml')
 
+
+    #%% convert mlu file to xml file
+
     mlu2xml(mlu_file, fout=xml_file)
+
+
+    #%% simulating the pumping test
 
     mptest = MLU_ptest(xml_file, Rw=0.13, tshift=0.)
 
-    # =============gat_boomse_klei using ptest ================================
+
+    #%% from ground up: =gat_boomse_klei using ptest ==========================
 
     # Firstly define the grid
     Rw   = 0.13    # m, well borehole radius
     Rmax = 10000. # m, extent of model (should be large enough)
 
     r  = np.hstack((0, np.logspace(np.log10(Rw), np.log10(Rmax),
-                                   np.ceil(10 * np.log10(Rmax/Rw) + 1))))
+                                   int(np.ceil(10 * np.log10(Rmax/Rw) + 1)))))
 
     dz = np.array([9., 16., 0.01, 3.79, 3.7, 1., 3.7, 1., 3.8, 1., 1.3, 5., 3.4, 6.3])
     z  = np.hstack((0, -np.cumsum(dz)))
@@ -494,13 +495,17 @@ if __name__=='__main__':
     # show the drawdown curves for the observation points
     pt.show(xscale='log', grid=True)
 
-    # ============ setting up a the pumping test (not using mlu file) =========
+
+    #%% from ground up === setting up an arbitrary pumping test
+
+    #TODO use the optimzer or pest for calibration
 
     # Firstly define the grid
     Rw   = 0.25    # m, well borehole radius
     Rmax = 10000. # m, extent of model (should be large enough)
 
-    r  = np.logspace(np.log10(Rw), np.log10(Rmax), np.ceil(10 * np.log10(Rmax/Rw) + 1))
+    r  = np.logspace(np.log10(Rw), np.log10(Rmax),
+                     np.int(np.ceil(10 * np.log10(Rmax/Rw) + 1)))
     z  = [0, -4, -20, -22, -40]
     gr = Grid(r, [-0.5, 0.5], z, axial=True)
 

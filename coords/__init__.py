@@ -7,8 +7,8 @@ Created on Fri Dec  8 14:01:51 2017
 """
 
 from .inpoly import inpoly
-from .rd2vswgs84 import rd2wgs, wgs2rd
+from transformations import rd2wgs, wgs2rd, rd2utm, utm2rd
 
-print('inpoly, rd2wgs, wgs2rd were loaded form module coords')
+print('inpoly, rd2wgs, wgs2rd, rd2utm and utm2rd were loaded form module coords')
 
-#_all__ = ['inpoly', 'intersect', 'rd2vswgs84', ‘kml’]
+#_all__ = ['inpoly', 'intersect', 'transformations', ‘kml’]
