@@ -197,6 +197,67 @@ def wgs2rd(E, N):
         Y += spq * dphi ** ps * dlam ** qs
     return X, Y
 
+def toMdl(xyW, georef):
+    '''Return model coordinates.
+
+    parameters
+    ----------
+        xyW: ndarray [n, 2]
+            array of world coordinates
+        georef : (xm0, ym0, xw0, yw0, alfa)
+            xm0, ym0 is rotation point in model coordinates
+            yw0, yw1 is rotation point in world coordinates
+            alfa is the rotation of the model counter-clockwise in degrees.
+    '''
+
+    xm0, ym0, xw0, yw0, alfa = georef
+
+    xyM0  = np.array([[xm0], [ym0]])
+    xyW0  = np.array([[xw0], [yw0]])
+    alpha = alfa * np.pi/180.
+
+    if np.ndim(xyW) == 1:
+        xyW = xyW[:, np.newaxis]
+    else:
+        xyW = xyW.T
+
+    dxyW = xyW - xyW0
+
+    rot = [(np.cos(alpha), np.sin(alpha)), (-np.sin(alpha), np.cos(alpha))]
+
+    return (np.dot(rot, dxyW) + xyM0).T
+
+
+def toWld(xyM, georef):
+    '''Return world coordinates.
+
+     parameters
+     ----------
+        xyM: ndarray [n, 2]
+            array of model coordinates
+        georef : (xm0, ym0, xw0, yw0, alfa)
+            xm0, ym0 is rotation point in model coordinates
+            yw0, yw1 is rotation point in world coordinates
+            alfa is the rotation of the model counter-clockwise in degrees.
+    '''
+
+    xm0, ym0, xw0, yw0, alfa = georef
+
+    xyM0  = np.array([[xm0], [ym0]])
+    xyW0  = np.array([[xw0], [yw0]])
+    alpha = alfa * np.pi/180.
+
+    if np.ndim(xyM) == 1:
+        xyM = xyM[:, np.newaxis]
+    else:
+        xyM = xyM.T
+
+    dxyM = xyM - xyM0
+
+    rot = [(np.cos(alpha), -np.sin(alpha)), (np.sin(alpha), np.cos(alpha))]
+
+    return (np.dot(rot, dxyM) + xyW0).T
+
 
 if __name__ == '__main__':
 
@@ -261,3 +322,30 @@ if __name__ == '__main__':
 
     mtrd2 = wgs2rd(*mtwgs1)
     print('RD " ', mtrd2, 'Van wgs terug naar wgs (verificatie in m.')
+
+
+    #%% world to model and model to world coordinates
+
+    import coords
+
+    JkFb = (183642., 338243.)
+    JkGl = (183350., 337477.)
+    JkKb = (182872., 336280.)
+    JkHh = (182458., 335511.)
+
+    fxpnts = np.array([JkFb, JkGl, JkKb, JkHh])
+
+    xy0 = np.array(JkHh[:])
+
+    alfa = -24.4 # degrees counter clockwise
+
+    xyM = coords.toMdl(fxpnts, xy0, alfa)
+    xyW = coords.toWld(xyM, xy0, alfa)
+    print("fxpnts")
+    print(fxpnts)
+    print("xyM")
+    print(xyM)
+    print("xyW")
+    print(xyW)
+
+

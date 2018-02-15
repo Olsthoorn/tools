@@ -9,7 +9,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 AND = np.logical_and
-OR  = np.logical_OR
+OR  = np.logical_or
 NOT = np.logical_not
 
 def perp(xp, yp, x0, y0, alpha):
@@ -147,7 +147,8 @@ def ln2alpha(line):
 
 
 def dist2line(Xp, Yp, x0, y0, alpha, verbose=False):
-    '''return and possibly plot distance from Xp, Yp to  line
+    '''Return and possibly plot distance from Xp, Yp to  line.
+
     parameters
     ----------
     Xp, Yp : np.ndarrays
@@ -158,6 +159,7 @@ def dist2line(Xp, Yp, x0, y0, alpha, verbose=False):
         if true then plot points, line and perpendicular lines
     returns
     -------
+
     mu : np.ndarray
         distance of bores to line
 

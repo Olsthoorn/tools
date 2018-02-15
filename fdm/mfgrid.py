@@ -1402,7 +1402,7 @@ class Grid:
         return NOT(OR(np.isnan(up), np.isnan(vp), np.isnan(wp)))
 
 
-    def plot_grid(self, ax=None, row=None, col=None, world=True, **kwargs):
+    def plot_grid(self, ax=None, row=None, col=None, world=False, **kwargs):
         '''Plot the grid in model or world coordinates
         kwargs:
             'world' : False to plot in model coordinates, else worldcoordinates (default)
@@ -1479,6 +1479,9 @@ class Grid:
 
     def plot_grid_world(self, **kwargs):
         self.plot_grid(world=True, **kwargs)
+
+    def plot_grid_model(self, **kwargs):
+        self.plot_grid(world=False, **kwargs)
 
 
     def plot_ugrid(self,color='grb', axes=None, **kwargs):
