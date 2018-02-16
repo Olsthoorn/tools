@@ -305,9 +305,10 @@ class Grid:
         else:
             georef = np.array(georef)
             assert len(georef)==5,"georef must be a sequence or array having\
-                    values [x0, y0, xw0, yw0, angle]"
-        self.georef = {'x0': georef[0], 'y0': georef[1],
+                    values [xm0, ym0, xw0, yw0, angle]"
+        self.georef_ = {'xm0': georef[0], 'ym0': georef[1],
                        'xw0': georef[2], 'yw0': georef[3],
+                       'alfa': georef[4],
                        'cos': np.cos(georef[4] * np.pi/180.),
                        'sin': np.sin(georef[4] * np.pi/180.)}
 
@@ -327,6 +328,13 @@ class Grid:
                       Use min_dz=value explicitly when calling mfgrid.Grid")
             raise ValueError("See printed message for details.")
 
+
+    @property
+    def georef(self):
+        '''The grid's georef = (xm0, ym0, xw0, yw0, alfa)'''
+        return (self.georef_['xm0'], self.georef_['ym0'],
+                self.georef_['xw0'], self.georef_['yw0'],
+                self.georef_['alfa'])
 
     @property
     def full(self):
@@ -431,11 +439,25 @@ class Grid:
         return np.arange(self.nod).reshape((self._nlay, self._ny, self._nx))
 
     def LRC(self, I):
-        '''Return ndarray [L R C] indices generated from global indices I.
+        '''Return ndarray [L R C] indices generated from global indices or boolean array I.
+
         parameters
         ----------
-        I : ndarray of global grid indices
+            I : ndarray of int or bool
+                if dtype is int, then I is global index
+
+                if dtype is bool, then I is a zone array of shape
+                [ny, nx] or [nz, ny, nx]
         '''
+
+        if I.dtype == bool:
+            if I.ndim == 1:
+                I = self.NOD.ravel()[I]
+            elif I.ndim == 2:
+                I = self.NOD[0][I]
+            else:
+                I = self.NOD[I]
+
         I = np.array(I, dtype=int)
         ncol = self._nx
         nlay = self._ny * ncol
@@ -443,6 +465,18 @@ class Grid:
         R = np.array((I - L * nlay) / ncol, dtype=int)
         C = I - L * nlay - R * ncol
         return np.vstack((L, R, C)).T
+
+    def LRC_zone(self, zone):
+        '''Return ndarray [L R C] indices generated from zone array zone.
+        parameters
+        ----------
+        zone : ndarray of dtype bool
+            zonearray, can be o shape (ny, nx) or (nz, ny, nx)
+        '''
+        if zone.ndim == 2:
+            return self.LRC(self.NOD[0][zone])
+        else:
+            return self.LRC(self.NOD[zone])
 
 
     def lrc(self, x, y, z=None, Ilay=None):
@@ -884,41 +918,41 @@ class Grid:
     @property
     def Xw(self):
         '''Returns Xw of nodes in world coordinates'''
-        return self.georef['xw0']\
-                + (self.X - self.georef['x0']) * self.georef['cos']\
-                - (self.Y - self.georef['y0']) * self.georef['sin']
+        return self.georef_['xw0']\
+                + (self.X - self.georef_['xm0']) * self.georef_['cos']\
+                - (self.Y - self.georef_['ym0']) * self.georef_['sin']
     @property
     def Yw(self):
         '''Returns Yw of nodes in world coordinates'''
-        return self.georef['yw0']\
-                + (self.X - self.georef['x0']) * self.georef['sin']\
-                + (self.Y - self.georef['y0']) * self.georef['cos']
+        return self.georef_['yw0']\
+                + (self.X - self.georef_['xm0']) * self.georef_['sin']\
+                + (self.Y - self.georef_['ym0']) * self.georef_['cos']
 
     @property
     def Xmw(self):
         '''Returns XM of cell centers in world coordinates'''
-        return self.georef['xw0']\
-                + (self.Xm - self.georef['x0']) * self.georef['cos']\
-                - (self.Ym - self.georef['y0']) * self.georef['sin']
+        return self.georef_['xw0']\
+                + (self.Xm - self.georef_['xm0']) * self.georef_['cos']\
+                - (self.Ym - self.georef_['ym0']) * self.georef_['sin']
     @property
     def Ymw(self):
         '''Returns Ym of cell centers in world coordinates'''
-        return self.georef['yw0']\
-                + (self.Xm - self.georef['x0']) * self.georef['sin']\
-                + (self.Ym - self.georef['y0']) * self.georef['cos']
+        return self.georef_['yw0']\
+                + (self.Xm - self.georef_['xm0']) * self.georef_['sin']\
+                + (self.Ym - self.georef_['ym0']) * self.georef_['cos']
 
     @property
     def XMw(self):
         '''Returns XM of cell centers in world coordinates'''
-        return self.georef['xw0']\
-                + (self.XM - self.georef['x0']) * self.georef['cos']\
-                - (self.YM - self.georef['y0']) * self.georef['sin']
+        return self.georef_['xw0']\
+                + (self.XM - self.georef_['xm0']) * self.georef_['cos']\
+                - (self.YM - self.georef_['ym0']) * self.georef_['sin']
     @property
     def YMw(self):
         '''Returns YM of cell centers in world coordinates'''
-        return self.georef['yw0']\
-                + (self.XM - self.georef['x0']) * self.georef['sin']\
-                + (self.YM - self.georef['y0']) * self.georef['cos']
+        return self.georef_['yw0']\
+                + (self.XM - self.georef_['xm0']) * self.georef_['sin']\
+                + (self.YM - self.georef_['ym0']) * self.georef_['cos']
 
     @property
     def Icbd(self):
@@ -974,12 +1008,12 @@ class Grid:
         y : numpy.ndarray
             model coordinates
         '''
-        x = self.georef['x0']\
-            + (xw - self.georef['xw0']) * self.georef['cos']\
-            + (yw - self.georef['yw0']) * self.georef['sin']
-        y = self.georef['y0']\
-            - (xw - self.georef['xw0']) * self.georef['sin']\
-            + (yw - self.georef['yw0']) * self.georef['cos']
+        x = self.georef_['xm0']\
+            + (xw - self.georef_['xw0']) * self.georef_['cos']\
+            + (yw - self.georef_['yw0']) * self.georef_['sin']
+        y = self.georef_['ym0']\
+            - (xw - self.georef_['xw0']) * self.georef_['sin']\
+            + (yw - self.georef_['yw0']) * self.georef_['cos']
         return x, y
 
 
@@ -999,12 +1033,12 @@ class Grid:
             world coordinates
         '''
 
-        xw = self.georef['xw0']\
-            + (x - self.georef['x0']) * self.georef['cos']\
-            - (y - self.georef['y0']) * self.georef['sin']
-        yw = self.georef['yw0']\
-            + (x - self.georef['x0']) * self.georef['sin']\
-            + (y - self.georef['y0']) * self.georef['cos']
+        xw = self.georef_['xw0']\
+            + (x - self.georef_['xm0']) * self.georef_['cos']\
+            - (y - self.georef_['ym0']) * self.georef_['sin']
+        yw = self.georef_['yw0']\
+            + (x - self.georef_['xm0']) * self.georef_['sin']\
+            + (y - self.georef_['ym0']) * self.georef_['cos']
         return xw, yw
 
 
