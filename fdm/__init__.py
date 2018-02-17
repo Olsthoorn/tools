@@ -17,6 +17,9 @@ Created on Thu Sep 22 00:35:12 2016
 """
 # Get these in mflab's namespace
 
+from .checker import Checker
+from .mfgrid import Grid
+
 #import .mfgrid
 #import .fdm3t
 #import .fdm3

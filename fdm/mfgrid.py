@@ -540,6 +540,7 @@ class Grid:
     def I(self, LRC):
         '''Return global index given LRC (zero based)
         '''
+        LRC = np.array(LRC)
         return LRC[:,0] * self.ny * self.nx + LRC[:, 1] * self.nx + LRC[:, 2]
 
 
