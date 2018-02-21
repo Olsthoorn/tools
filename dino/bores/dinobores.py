@@ -177,6 +177,23 @@ class Bore:
         except:
             pass
 
+
+        try:
+            waterlevels = borehole.find('.//waterlevels')
+            initialWaterlevel = waterlevels.findall('.//initialWaterlevel')
+            if len(initialWaterlevel) > 0:
+                self.initialWaterlevel = dict()
+                for level in initialWaterlevel:
+                    f = 'filter' + level.attrib['filter']
+                    self.initialWaterlevel[f]=\
+                     {'UoM': waterlevels.attrib['UoM'], **level.attrib,
+                        'elev' : self.ztop - 0.5 *
+                        (float(level.attrib['topDepth']) +\
+                         float(level.attrib['baseDepth']))}
+                    self.initialWaterlevel[f].pop('filter')
+        except:
+            pass
+
         try:
             drillMethod = borehole.find('.//drillMethod')
             drillMethodInterval = drillMethod.find('.//drillMethodInterval')
@@ -208,7 +225,7 @@ class Bore:
 
 
     def plot(self, fs=6, fw=80, lith=True, admix=True, strat=True,
-                                                 filters=True, **kwargs):
+                                                 filters=True, waterlevel=True, **kwargs):
         '''Plot single borehole.
 
         Args:
@@ -285,7 +302,7 @@ class Bore:
                     format(self.id, self.x, self.y),
                     va='bottom', ha='left')
         else:
-            fw = np.diff(ax.get_xlim()) / fw
+            fw = float(np.diff(ax.get_xlim()) / fw)
 
         if lith == True or admix==True:
             for i in self.lith.keys():
@@ -366,6 +383,10 @@ class Bore:
             if len(self.filters) > 0:
                 self.plotFilters(ax, x, dcol, fw, fc='blue')
 
+        if waterlevel:
+            if 'initialWaterlevel' in dir(self):
+                self.plotWaterlevel(ax, x, fw, **kwargs)
+
         if name == True: # Plot the name above the boring
             #ax.plot(x, self.ztop + 0.25, 'r.')
             ax.text(x, self.ztop + 0.25, '  ' + self.name,
@@ -427,6 +448,33 @@ class Bore:
                 p = patches.Rectangle((x - fw * dcol, self.ztop - d2), fw * dcol, d2 - d1,
                                   faceColor=fc, edgeColor='k', lineWidth=0.5)
             ax.add_patch(p)
+
+
+    def plotWaterlevel(self, ax, x, fw, **kwargs):
+        '''plots the initialWaterlevel in the well.
+
+        Args:
+            ax (Axes):
+                axes o plot on
+            x (float):
+                location of well on plot
+            fw (float):
+                scale factor x-axis for well drawing
+        kwargs:
+            w (float):
+                with to plot water level (w=0.25 is default.
+            lw (float):
+                linewidth (default=3.)
+            color (str):
+                color used to plot water level, color='blue' is default.
+        '''
+        color = kwargs.pop('color', 'blue')
+        w     = kwargs.pop('w', 0.25)
+
+        for key in self.initialWaterlevel.keys():
+            if self.initialWaterlevel[key]['item'] != 'Droog':
+                p = self.initialWaterlevel[key]['elev']
+                ax.plot([x - fw * w, x + fw * w], [p, p], color=color, lw = 2)
 
 
 from collections import UserDict
