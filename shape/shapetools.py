@@ -70,34 +70,33 @@ def plotshapes(rdr, **kwargs):
         or float between 0 and 1 for uniform alpha
     zorder: string of float
         fieldname in shape records holding zorder for shape
+    grid: bool
+        set grid lines
     '''
     if isinstance(rdr, str):
         rdr = Reader(rdr)
 
+    grid = kwargs.pop('grid', None)
+
     fieldnames = [f[0] for f in rdr.fields[1:]]
 
-    kwargs['xlim'] = kwargs.pop('xlim', (rdr.bbox[0], rdr.bbox[2]))
-    kwargs['ylim'] = kwargs.pop('ylim', (rdr.bbox[1], rdr.bbox[3]))
-    kwargs['dx']   = kwargs.pop('dx', 100.)
-    kwargs['dy']   = kwargs.pop('dy', 100.)
+    ax = kwargs.pop('ax', None)
+    if ax is None:
+        fig, ax = plt.subplots()
 
     kw1 = dict()
     for k in ['title', 'xlabel', 'ylabel', 'xlim', 'ylim', 'xticks', 'yticks']:
-        if k in kwargs:
+        if k in kwargs.keys():
             kw1[k] = kwargs[k]
             if k=='xticks':   # Use xticks=dx in call
                 kw1[k] = ticks(*kwargs['xlim'], kwargs[k])
             if k=='yticks':   # Use yticks=dy in call
                 kw1[k] = ticks(*kwargs['ylim'], kwargs[k])
 
-    ax = kwargs.pop('ax', None)
-    if ax is None:
-        fig, ax = plt.subplots()
-
     ax.set(**kw1)
 
     kw2 = dict()
-    for k in ['facecolor', 'edgecolor', 'alpha', 'zorder']:
+    for k in ['facecolor', 'edgecolor', 'ec', 'fc', 'alpha', 'zorder', 'color']:
         if k in kwargs:
             try:
                 kw2[k] = fieldnames.index(k)
@@ -105,19 +104,22 @@ def plotshapes(rdr, **kwargs):
                 # no error checking here. Error may arise a plotting of shape !
                 kw2[k] = kwargs[k]
 
-    for i, (shp, rc) in enumerate(zip(rdr.shapes(), rdr.records())):
+    for i, (shp, rec) in enumerate(zip(rdr.shapes(), rdr.records())):
         pth = mpl.path.Path(shp.points)
 
         for k in kw2:
             try:
-                kw2[k] = rc[kw2[k]]
+                kw2[k] = rec[kw2[k]]
             except:
                 pass
 
         P = mpl.patches.PathPatch(pth, **kw2)
         ax.add_patch(P)
 
-    #ax.legend(loc='best')
+    if grid is not None:
+        ax.grid(grid)
+
+    ax.legend(loc='best')
     return ax
 
 
