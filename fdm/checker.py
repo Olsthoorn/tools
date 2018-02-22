@@ -10,9 +10,12 @@ Checker class for checking arrays and lists associated with structured fdm grids
 
 #%% imports
 
+import os
 import numpy as np
 import matplotlib.pyplot as plt
 from pprint import pprint
+#import flopy.utils.binaryfile as bf
+
 
 #%% Showing NaNs in any of the data
 '''
@@ -23,6 +26,8 @@ determined by IBOUND==0.
 '''
 
 class Checker:
+    ''' input checker'''
+
     def __init__(self, gr, IBOUND):
         self.gr = gr
         self.ibound = IBOUND
@@ -141,4 +146,15 @@ class Checker:
                 ax[iL].set_xlabel('x [m]')
                 ax[iL].set_ylabel('y [m]')
                 plt.spy(A[iL], ax=ax[iL])
+
+
+if __name__ == '__main__':
+
+    wrkspace = '/Users/Theo/GRWMODELS/python/juka/mflow_files/'
+    mdlname = 'juka0'
+    cbcfile = os.path.join(wrkspace, mdlname + '.cbc')
+
+
+
+
 

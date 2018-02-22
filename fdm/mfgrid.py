@@ -1128,6 +1128,22 @@ class Grid:
         return Grid(up, vp, wp)
 
 
+    def outer(self, xy0, xy1):
+        """return outer product of nodes with respect of  line from xy0 to xy1.
+
+        layer wise.
+
+        Negative values lie to the left of the line and positive to the right.
+
+        parameters
+        ----------
+            xy0, xy1: 2-tuples or 2-arrays of line from x0y to xy1
+        """
+        x0, y0 = xy0
+        x1, y1 = xy1
+        return (x1 - x0) * (self.Ym - y0) - (y1 - y0) * (self.Xm - x0)
+
+
     def ixyz2global_index(self, ix, iy, iz):
         """Returns global cell index given ix, iy and iz.
         parameters
