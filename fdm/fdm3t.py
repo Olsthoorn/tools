@@ -330,15 +330,19 @@ class Fdm3t:
         ax = kwargs.pop('ax', None)
         if ax is None:
             fig, ax = plt.subplots()
-            ax.set_title('Bemalingsberekeningen buiten/binnenhoofd, axiaal.')
+            ax.set_title('Berekend stijghoogteverloop (axiaal model)')
             ax.set_xlabel('t [d]')
             ax.set_ylabel('drawdown [m]')
             ax.grid(True)
 
+        size_inches = kwargs.pop('size_inches', None)
+        title  = kwargs.pop('title', None)
         xscale = kwargs.pop('xscale', None)
         yscale = kwargs.pop('yscale', None)
         grid   = kwargs.pop('grid'  , None)
 
+        if size_inches: fig.set_size_inches(size_inches)
+        if title: ax.set_title(title)
         if xscale: ax.set_xscale(xscale)
         if yscale: ax.set_yscale(yscale)
         if grid:   ax.grid(grid)
@@ -346,7 +350,9 @@ class Fdm3t:
         # Numeric, fdm
         for fi, label, r, z, color in zip(
                 phi_t.T, self.obsNames, self.r_ow, self.z_ow, colors):
-            ax.plot(self.t[1:], fi[1:], color=color, label='{:6}, r={:5.1f}m, z={:5.0f}m'.format(label,r,z), **kwargs)
+            ax.plot(self.t[1:], fi[1:], color=color,
+                    label='{:6}, r={:>5.0f} m, z={:>3.0f} m'.format(label,r,z),
+                     **kwargs)
 
         ax.legend(loc='best')
 
@@ -411,6 +417,10 @@ class Fdm3t:
 
 
         fig, ax = plt.subplots()
+        size_inches = kwargs.pop('size_inches', None)
+        if not size_inches is None:
+            fig.set_size_inches(size_inches)
+
         ax.set_title(title)
         ax.set_xlabel('r [m]')
         ax.set_ylabel('z [m]')
@@ -427,12 +437,15 @@ class Fdm3t:
         if not yscale is None: ax.set_yscale(yscale)
 
         if dphi is not None:
-            plt.contour(self.gr.xm,     self.gr.zc, phi, philevels, **kwargs)
+            ax.contour(self.gr.xm,     self.gr.zc, phi, philevels, **kwargs)
         if dpsi is not None:
-            plt.contour(self.gr.x[1:-1], self.gr.z,  self.psi, psilevels)
+            ax.contour(self.gr.x[1:-1], self.gr.z, self.psi, psilevels,
+                       linestyles='-', colors='b')
 
         if patches is not None:
             for p in patches:
                 ax.add_patch(p)
+
+        return ax
 
 
