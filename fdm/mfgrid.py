@@ -18,6 +18,10 @@ import matplotlib.pyplot as plt
 from matplotlib.path import Path as Polygon
 from mpl_toolkits.mplot3d import Axes3D
 from matplotlib.axes import Axes
+from datetime import datetime, timedelta
+import pandas as pd
+from collections import OrderedDict
+
 
 def AND(*args):
     L = args[0]
@@ -34,6 +38,174 @@ def OR(*args):
 NOT = np.logical_not
 
 intNaN = -999999
+
+
+class StressPeriod:
+    
+    def __init__(self, stress_df):
+        '''Return stress period object.
+        
+        parameters
+        ----------
+            stress_df : pd.DataFram
+                must have the following columns:
+                    ['SP', 'year', 'month', 'day', 'hour,
+                                     'nstp', 'tsmult', 'remark']
+        '''
+        
+        # time-unit_conversion
+        self.ufac =  {'s': 1., 'm': 1/60., 'h': 1/3600. , 'd': 1/86400.,
+                    'w': 1/(7 * 86400.)}
+
+        columns = set(stress_df.columns)
+        required_columns = set(['SP', 'year', 'month', 'day', 'hour',
+                                     'nstp', 'tsmult', 'remark'])
+        if not required_columns.issubset(columns):
+            missed = [m for m in required_columns.difference(columns)]
+            raise Exception('Missing required columns:' +
+                            ', '.join(missed)[1:])
+    
+        # Extract stress period information
+        self.SP_numbers = np.asarray(np.unique(stress_df['SP']), dtype=int)
+        
+        if any(np.diff(self.SP_numbers)>1):
+            print(self.SP_numbers[1:][np.diff(self.SP_numbers)>1])
+            raise Exception('Stress periods not consecutive')
+
+        self.nper = np.max(self.SP_numbers)
+        
+        self.SP = dict()
+        for i in stress_df.index:
+            se = stress_df.loc[i] # next stress event
+            sp = se['SP']  # hs arbitrary number of duplicates
+                                  # so last line with this SP is kept
+            start = np.datetime64(datetime(year  =int(se['year']),
+                                 month =int(se['month']),
+                                 day   =int(se['day']),
+                                 hour  =int(se['hour']),
+                                 minute=0,
+                                 second=0), 's')
+            self.SP[sp] = {'start' : start,
+                            'nstp'  : se['nstp'],
+                            'steady': True if se['nstp']==0 else False,
+                            'tsmult': se['tsmult'],
+                            'remark': se['remark']}
+
+        # Convert back to pd.DataFrame (now with one entry per stress period)
+        self.SP = pd.DataFrame(self.SP).T
+        
+        # prepare column with end-time of stress period
+        _end = self.SP['start']; _end.index = [_end.index[-1], *_end.index[:-1]]
+        self.SP['end'] = _end
+        
+        # Yields timedelta objects
+        self.SP['perlen'] = self.SP['end'] - self.SP['start']
+        
+        # Throw out the last line, we only needed its end time
+        self.SP = self.SP.iloc[:-1]
+        
+        # stready or transient
+        self.SP['steady'] = self.SP['nstp'] == 0
+        
+        # set nstp for steady stress periods equal to 1, we now have column steady
+        self.SP['nstp'][self.SP['steady']] = 1
+        
+    def get_perlen(self, asfloat=True, tunit='D'):
+        plen = np.asarray(self.SP['perlen'], dtype='timedelta64[s]')
+        if asfloat:
+            return np.asarray(plen, dtype=np.float32) * self.ufac[tunit.lower()]
+        else:
+            return plen
+
+    @property
+    def steady(self):
+        return np.asarray(self.SP['steady'], dtype=bool)
+    
+    @property
+    def tsmult(self):
+        return np.asarray(self.SP['tsmult'], dtype=float)
+    
+    @property
+    def nstp(self):
+        return np.asarray(self.SP['nstp'], dtype=int)
+    
+    def get_datetimes(self, sp_only=False, aslists=True):
+        '''Return times all steps, starting at t=0
+        
+        returns an OrderedDict with keys (sp, stpnr)
+        '''
+        startSP = self.SP['start'][0]  # a timestamp
+        _datetimes = OrderedDict()
+        for sp in self.SP.index: # self.SP is a DataFrame
+            stpNrs  = np.arange(self.SP['nstp'][sp], dtype=int)
+            factors = self.SP['tsmult'][sp] ** stpNrs
+            dt = self.SP['perlen'][sp] * factors / np.sum(factors)
+            for it, stpnr in enumerate(stpNrs):
+                _datetimes[(sp, stpnr)] = startSP + dt[it]
+            startSP += dt[-1]
+            
+        keys = list(_datetimes.keys())
+        if sp_only:
+            # the keys for the end of each stress period
+            kk   = [k for k, j in zip(keys[:-1], keys[1:]) if j[0] > k[0]] + [keys[-1]]
+            od = OrderedDict()
+            for key in kk:
+                od[key] = _datetimes[key]
+            _datetimes=od
+        if aslists:
+           return [list(_datetimes.keys()), list(_datetimes.values())]
+        else:            
+            return _datetimes
+            
+            
+    def get_times(self, asfloats=True, tunit='D', sp_only=False, aslists=True):
+        '''Return datetime all steps, starting at start time of SP[0].
+        
+        returns OrderedDict with keys (sp, stepnr)
+        '''
+        dt   = self.get_datetimes(sp_only=False, aslists=False)
+        keys = list(dt.keys())
+        _times = OrderedDict()
+        start = self.SP['start'][0]
+        for k in keys:
+            _times[k]=np.timedelta64(dt[k] - start,  's')
+        
+        if asfloats:
+            for k in keys:                
+                _times[k]=np.float32(_times[k]) * self.ufac[tunit.lower()] # to days
+        
+        if sp_only:
+            # the keys for the end of each stress period
+            kk = [k for k, j in zip(keys[:-1], keys[1:]) if j[0] > k[0]] + [keys[-1]]
+            od = OrderedDict()
+            for k in kk:
+                od[k] = _times[k]
+            _times = od
+
+        if aslists:
+           return [list(_times.keys()), list(_times.values())]
+        else:
+            return _times
+        
+    def get_steplen(self, asfloats=True, tunit='D',  aslists=True):
+        '''Return steplen all steps.
+        
+        returns OrderedDict with keys (sp, stepnr)
+        '''
+        _dt      = self.get_datetimes(aslists=False, sp_only=False)
+        _steplen = OrderedDict()
+        keys = list(_dt.keys())
+        _steplen[keys[0]] = _dt[keys[0]] - self.SP['start'][0]
+        for k0, k1 in zip(keys[:-1], keys[1:]):
+            _steplen[k1] = np.timedelta64(_dt[k1] - _dt[k0], 's')
+        if asfloats:
+            for k in keys:
+                _steplen[k] = np.float32(_steplen[k]) * self.ufac[tunit.lower()]
+        if aslists:
+            return [list(_steplen.keys()),list( _steplen.values())]
+        else:
+            return _steplen        
+            
 
 
 def cleanU(U, iu):
@@ -438,25 +610,30 @@ class Grid:
         '''Cell numbers in the grid'''
         return np.arange(self.nod).reshape((self._nlay, self._ny, self._nx))
 
-    def LRC(self, I):
+    def LRC(self, Imask, astuple=None, aslist=None):
         '''Return ndarray [L R C] indices generated from global indices or boolean array I.
 
         parameters
         ----------
-            I : ndarray of int or bool
+            Imask : ndarray of int or bool
                 if dtype is int, then I is global index
 
                 if dtype is bool, then I is a zone array of shape
                 [ny, nx] or [nz, ny, nx]
+                
+            astuple: bool or None
+                return as ((l, r, c), (l, r, c), ...)
+            aslist: bool or None:
+                return as [[l, r, c], [l, r, c], ...]
         '''
 
-        if I.dtype == bool:
-            if I.ndim == 1:
-                I = self.NOD.ravel()[I]
-            elif I.ndim == 2:
-                I = self.NOD[0][I]
+        if Imask.dtype == bool:
+            if Imask.ndim == 1:
+                I = self.NOD.ravel()[Imask]
+            elif Imask.ndim == 2:
+                I = self.NOD[0][Imask]
             else:
-                I = self.NOD[I]
+                I = self.NOD[Imask]
 
         I = np.array(I, dtype=int)
         ncol = self._nx
@@ -464,7 +641,12 @@ class Grid:
         L = np.array(I / nlay, dtype=int)
         R = np.array((I - L * nlay) / ncol, dtype=int)
         C = I - L * nlay - R * ncol
-        return np.vstack((L, R, C)).T
+        if astuple:
+            return tuple((l, r, c) for l, r, c in zip(L, R, C))
+        elif aslist:
+            return [[l, r, c] for l, r, c, in zip(L, R, C)]
+        else:
+            return np.vstack((L, R, C)).T
 
     def LRC_zone(self, zone):
         '''Return ndarray [L R C] indices generated from zone array zone.
