@@ -18,7 +18,7 @@ import matplotlib.pyplot as plt
 from matplotlib.path import Path as Polygon
 from mpl_toolkits.mplot3d import Axes3D
 from matplotlib.axes import Axes
-from datetime import datetime, timedelta
+from datetime import datetime
 import pandas as pd
 from collections import OrderedDict
 
@@ -65,6 +65,8 @@ class StressPeriod:
             raise Exception('Missing required columns:' +
                             ', '.join(missed)[1:])
     
+        stress_df.fillna(method='ffill', inplace=True)
+    
         # Extract stress period information
         self.SP_numbers = np.asarray(np.unique(stress_df['SP']), dtype=int)
         
@@ -77,7 +79,7 @@ class StressPeriod:
         self.SP = dict()
         for i in stress_df.index:
             se = stress_df.loc[i] # next stress event
-            sp = se['SP']  # hs arbitrary number of duplicates
+            sp = int(se['SP'])  # hs arbitrary number of duplicates
                                   # so last line with this SP is kept
             start = np.datetime64(datetime(year  =int(se['year']),
                                  month =int(se['month']),
@@ -108,7 +110,7 @@ class StressPeriod:
         self.SP['steady'] = self.SP['nstp'] == 0
         
         # set nstp for steady stress periods equal to 1, we now have column steady
-        self.SP['nstp'][self.SP['steady']] = 1
+        self.SP.loc[self.SP.loc[:,'steady'], 'nstp']=1
         
     def get_perlen(self, asfloat=True, tunit='D'):
         plen = np.asarray(self.SP['perlen'], dtype='timedelta64[s]')
@@ -141,7 +143,7 @@ class StressPeriod:
             factors = self.SP['tsmult'][sp] ** stpNrs
             dt = self.SP['perlen'][sp] * factors / np.sum(factors)
             for it, stpnr in enumerate(stpNrs):
-                _datetimes[(sp, stpnr)] = startSP + dt[it]
+                _datetimes[(stpnr, sp)] = startSP + dt[it]
             startSP += dt[-1]
             
         keys = list(_datetimes.keys())
@@ -156,7 +158,50 @@ class StressPeriod:
            return [list(_datetimes.keys()), list(_datetimes.values())]
         else:            
             return _datetimes
+
+    def get_keys(self, sp_only=False):
+        return self.get_datetimes(sp_only=sp_only, aslists=True)[0]
+
             
+    def get_oc(self, what=['save_head', 'print_budget', 'save_budget'], sp_only=False):
+        '''Return input for OC (output control)
+        
+        parameters
+        ----------
+            what: list. Optional items in list:
+                'save head',
+                'save drawdown',
+                'save budget',
+                'print head',
+                'print drawdown',
+                'print budget'
+            sp_only: bool
+                return oc only for stress periods (not for time steps)
+        '''
+        
+        labels=[]
+        for w in [w.lower() for w in what]:
+            
+            if   w.startswith('save'):  s1 = 'save'
+            elif w.startswith('print'): s1 = 'print'
+            else:
+                raise ValueError("key must start with 'save' or 'print'")
+
+            if   w.endswith('head'):     s2 = 'head'
+            elif w.endswith('drawdown'): s2 = 'drawdown'
+            elif w.endswith('budget'):   s2 = 'budget' 
+            else:
+                raise ValueError("key must end with 'head', 'drawdown' or 'budget'" )
+            
+            labels.append(' '.join([s1, s2]))
+
+        keys = self.get_keys(sp_only=sp_only)
+        
+        sp_stp = [(k[1], k[0]) for k  in keys]
+        
+        return dict().fromkeys(sp_stp, labels)
+        
+
             
     def get_times(self, asfloats=True, tunit='D', sp_only=False, aslists=True):
         '''Return datetime all steps, starting at start time of SP[0].
