@@ -212,6 +212,7 @@ def toMdl(xyW, georef):
 
     xm0, ym0, xw0, yw0, alfa = georef
 
+    xyW   = np.array(xyW)
     xyM0  = np.array([[xm0], [ym0]])
     xyW0  = np.array([[xw0], [yw0]])
     alpha = alfa * np.pi/180.

@@ -6,85 +6,10 @@ Created on Sat Mar  3 10:39:53 2018
 @author: Theo
 """
 
-
 import os
 import numpy as np
 import matplotlib.pyplot as plt
 import flopy.utils.binaryfile as bf
-import coords
-import pandas as pd
-
-
-class Piezometers:
-    
-    def __init__(self, gr, workbook, sheetname, wrld_shapes):
-        '''Return Piezometers collecton object.
-        
-        parameters
-        ----------
-            gr : fdm.mfgrid.Grid object
-                holds structured grid
-            stressPeriod: fdm.StressPeriod object
-                holds stress period and timestep data
-            workbook : Excel workbook
-                containing the piezometer locations
-            sheetname:
-                sheetname in workbook
-            wrld: circumference coordinates of objects
-                the only one needed is wrld['mdloutline']
-        '''
-        
-        self.gr = gr
-        
-        self.wnp = pd.read_excel(workbook, sheetname='wnp', header=5, index_col='Hole ID')
-
-        # Their coordinates
-        self.xwnp = np.asarray(self.wnp['Easting'])
-        self.ywnp = np.asarray(self.wnp['Northing'])
-
-        # Only those that are within the are covered by the model
-        mask   = coords.inpoly(self.xwnp, self.ywnp, wrld_shapes['mdloutline'])
-        self.putten = self.wnp.index[mask]
-
-        # Get their model coordinates
-        self.xmp, self.ymp = gr.world2model(self.xwnp[mask], self.ywnp[mask])
-        
-        # Get the cell in whhich each observation well is
-        self.Iwnp = gr.I(gr.lrc(self.xmp, self.ymp))
-
-    def show(self, stressPeriod, hds):
-        '''Plot the time series of the piezometers.
-        
-        parameters
-        ----------
-            hds : hds from flopy HDS file
-        '''
-        
-        # flatten and transpose heads to Nod x Nt
-        htograb = hds[:, 0, :, :].reshape((len(hds), self.gr.ny * self.gr.nx)).T
-        
-        # Use the cell in which each observation well is, no interpolation.
-        fig, ax = plt.subplots()
-        ax.set_title('Times series observation wells')
-        ax.set_xlabel('time [date]')
-        ax.set_ylabel('NAP [m]')
-        ax.grid()
-        for i, put in zip(self.Iwnp, self.putten):
-            ax.plot(stressPeriod.get_datetimes()[1], htograb[i], label=put)
-
-    def plot_locations(self, ax=None, linespec='r.'):
-        '''Plot piezometer locations'''
-        if ax is None:
-            fig, ax = plt.subplots()
-            ax.set_title('Piezometer locatons')
-            ax.set_xlabel('x [m]')
-            ax.set_ylabel('y [m]')
-            ax.grid()
-        ax.plot(self.xmp, self.ymp, linespec)
-
-#F = scipy.interpolate.interp2d(gr.x, gr.y, z)
-
-
 
 #%% Water balance
 
@@ -99,9 +24,6 @@ class modflow_budget:
                 'DRN': {'text': b'          DRAINS', 'color':'m', 'name':'Drainage'},
                 'CHD': {'text': b'   CONSTANT HEAD', 'color':'b', 'name':'Maas'}
                 }
-
-    #            'FLF': {'text': b'FLOW LOWER FACE ', 'color':'k', 'name':'Breda'},
-
 
     txt2lbl = dict([(v['text'], k)
                   for k, v in zip(cbc_label.keys(), cbc_label.values())])
