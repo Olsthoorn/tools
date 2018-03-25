@@ -42,22 +42,24 @@ intNaN = -999999
 
 class StressPeriod:
     
-    def __init__(self, stress_df):
+    def __init__(self, events_df):
         '''Return stress period object.
         
         parameters
         ----------
-            stress_df : pd.DataFram
+            events_df : pd.DataFram
                 must have the following columns:
                     ['SP', 'year', 'month', 'day', 'hour,
                                      'nstp', 'tsmult', 'remark']
         '''
         
-        # time-unit_conversion
+        # time-unit_conversion from seconds
+        self.events = events_df
+        
         self.ufac =  {'s': 1., 'm': 1/60., 'h': 1/3600. , 'd': 1/86400.,
                     'w': 1/(7 * 86400.)}
 
-        columns = set(stress_df.columns)
+        columns = set(self.events.columns)
         required_columns = set(['SP', 'year', 'month', 'day', 'hour',
                                      'nstp', 'tsmult', 'remark'])
         if not required_columns.issubset(columns):
@@ -65,10 +67,11 @@ class StressPeriod:
             raise Exception('Missing required columns:' +
                             ', '.join(missed)[1:])
     
-        stress_df.fillna(method='ffill', inplace=True)
+        self.events.fillna(method='ffill', inplace=True)
     
         # Extract stress period information
-        self.SP_numbers = np.asarray(np.unique(stress_df['SP']), dtype=int)
+        self.SP_numbers = np.asarray(np.unique(self.events['SP']),
+                                     dtype=int)
         
         if any(np.diff(self.SP_numbers)>1):
             print(self.SP_numbers[1:][np.diff(self.SP_numbers)>1])
@@ -77,8 +80,8 @@ class StressPeriod:
         self.nper = np.max(self.SP_numbers)
         
         self.SP = dict()
-        for i in stress_df.index:
-            se = stress_df.loc[i] # next stress event
+        for i in self.events.index:
+            se = self.events.loc[i] # next stress event
             sp = int(se['SP'])  # hs arbitrary number of duplicates
                                   # so last line with this SP is kept
             start = np.datetime64(datetime(year  =int(se['year']),
@@ -97,7 +100,9 @@ class StressPeriod:
         self.SP = pd.DataFrame(self.SP).T
         
         # prepare column with end-time of stress period
-        _end = self.SP['start']; _end.index = [_end.index[-1], *_end.index[:-1]]
+        _end = self.SP['start']
+        _end.index = [_end.index[-1], *_end.index[:-1]]
+        
         self.SP['end'] = _end
         
         # Yields timedelta objects
@@ -136,16 +141,15 @@ class StressPeriod:
         
         returns an OrderedDict with keys (sp, stpnr)
         '''
-        startSP = self.SP['start'][0]  # a timestamp
         _datetimes = OrderedDict()
         for sp in self.SP.index: # self.SP is a DataFrame
             stpNrs  = np.arange(self.SP['nstp'][sp], dtype=int)
             factors = self.SP['tsmult'][sp] ** stpNrs
-            dt = self.SP['perlen'][sp] * factors / np.sum(factors)
+            dt     = np.cumsum(self.SP['perlen'][sp] * factors
+                               / np.sum(factors))
             for it, stpnr in enumerate(stpNrs):
-                _datetimes[(stpnr, sp)] = startSP + dt[it]
-            startSP += dt[-1]
-            
+                _datetimes[(stpnr, sp)] = self.SP['start'][sp] + dt[it]
+        
         keys = list(_datetimes.keys())
         if sp_only:
             # the keys for the end of each stress period
@@ -200,6 +204,29 @@ class StressPeriod:
         sp_stp = [(k[1], k[0]) for k  in keys]
         
         return dict().fromkeys(sp_stp, labels)
+    
+    def show(self, ax=None, co_dict=None,**kwargs):
+        '''Show the lekvakken.
+        
+        parameters
+        ----------
+            ax: plt.Axis
+                axis or None to generate a fig with axis
+            mdl: dict with contours to be plotted
+                coordinates are mdl[key][:,0], mdl[key][:,1]
+        '''
+        if ax is None:
+            fig, ax = plt.subplots()
+            ax.set_title('Lekvakken')
+            ax.set_xlabel('x mdl [m]')
+            ax.set_ylabel('y mdl [m]')
+        for i in self.events.index: 
+            se = self.events.loc[i]
+            ax.plot([se.x1, se.x2, se.x2, se.x1, se.x1],
+                    [se.y2, se.y2, se.y1, se.y1, se.y2], **kwargs)
+        if co_dict is not None:
+            for k in co_dict:
+                ax.plot(co_dict[k][:,0], co_dict[k][:,1], label=k)
         
 
             
@@ -240,12 +267,16 @@ class StressPeriod:
         _dt      = self.get_datetimes(aslists=False, sp_only=False)
         _steplen = OrderedDict()
         keys = list(_dt.keys())
-        _steplen[keys[0]] = _dt[keys[0]] - self.SP['start'][0]
+        
+        _steplen[keys[0]] = np.timedelta64(_dt[keys[0]] - self.SP['start'][0], 's')
+        
         for k0, k1 in zip(keys[:-1], keys[1:]):
             _steplen[k1] = np.timedelta64(_dt[k1] - _dt[k0], 's')
+        
         if asfloats:
             for k in keys:
                 _steplen[k] = np.float32(_steplen[k]) * self.ufac[tunit.lower()]
+        
         if aslists:
             return [list(_steplen.keys()),list( _steplen.values())]
         else:
@@ -2139,7 +2170,7 @@ class Grid:
                     np.hstack((zT, self.z, zB)))
 
 
-    def inpoly(self, pgcoords, row=None):
+    def inpoly(self, pgcoords, row=None, world=False):
         """Returns bool array [ny, nx] or [nz, nx] depending on row with
         true if cell centers are inside horizontal or vertical polygon
         parameters:
@@ -2150,10 +2181,16 @@ class Grid:
              and pgcoords are interpreted as x,z
 
         """
-        if row is None:
-            return inpoly(self.Xm, self.Ym, pgcoords)
+        if world:
+            if row is None:
+                return inpoly(self.Xmw, self.Ymw, pgcoords)
+            else:
+                return inpoly(self.XMw[:, row, :], self.ZM[:, row, :], pgcoords)
         else:
-            return inpoly(self.XM[:, row, :], self.ZM[:, row, :], pgcoords)
+            if row is None:
+                return inpoly(self.Xm, self.Ym, pgcoords)
+            else:
+                return inpoly(self.XM[:, row, :], self.ZM[:, row, :], pgcoords)
 
 
 def extend_array(A, nx, ny, nz):
