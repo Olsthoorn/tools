@@ -24,6 +24,12 @@ if not tools in sys.path:
 import dino.bores.dinoborecodes as dcodes
 from coords import inpoly
 import shapefile
+
+import logging
+
+logging.basicConfig(level=logging.DEBUG, format=' %(asctime)s - %(levelname)s - %(message)s')
+logging.debug('Start of '.format(__name__))
+
 AND = np.logical_and
 NOT = np.logical_not
 OR  = np.logical_or
@@ -155,42 +161,39 @@ class Bore:
         try:
             filtersNd = borehole.find('.//filters')
             UoM = filtersNd.attrib['filterDepthUoM']
-            for F in ['filter1', 'filter2', 'filter3']:
-                try:
-                    filts = filtersNd.findall('.//' + F)
-                    if len(filts) > 0:
-                        for flt in filts:
-                            if flt.text =='bkb':
-                                bkb = float(flt.attrib['topDepth'])
-                                diameter = float(flt.attrib['outerDiam'])
-                            if flt.text.lower().startswith('filter'):
-                                topDepth  = float(flt.attrib['topDepth'])
-                                baseDepth = float(flt.attrib['baseDepth'])
-                                if UoM == 'CENTIMETER':
-                                    bkb /= 100.
-                                    topDepth  /= 100.
-                                    baseDepth /= 100.
-                        self.filters.append(
-                                (self.ztop - bkb, topDepth, baseDepth, diameter))
-                except:
-                    pass
+            for flt in filtersNd.getchildren():
+                diameter = float(flt.attrib['outerDiam'])
+                topDepth  = float(flt.attrib['topDepth'])
+                baseDepth = float(flt.attrib['baseDepth'])
+                if UoM == 'CENTIMETER':
+                    topDepth  /= 100.
+                    baseDepth /= 100.
+                self.filters.append(
+                        (self.ztop, topDepth, baseDepth, diameter))
         except:
             pass
 
 
         try:
             waterlevels = borehole.find('.//waterlevels')
-            initialWaterlevel = waterlevels.findall('.//initialWaterlevel')
-            if len(initialWaterlevel) > 0:
+            levels = waterlevels.getchildren()
+            if levels:
                 self.initialWaterlevel = dict()
-                for level in initialWaterlevel:
+                for level in levels:
                     f = 'filter' + level.attrib['filter']
-                    self.initialWaterlevel[f]=\
-                     {'UoM': waterlevels.attrib['UoM'], **level.attrib,
-                        'elev' : self.ztop - 0.5 *
-                        (float(level.attrib['topDepth']) +\
-                         float(level.attrib['baseDepth']))}
-                    self.initialWaterlevel[f].pop('filter')
+                    self.initialWaterlevel[f]= {
+                        'UoM': waterlevels.attrib['UoM'],
+                        **level.attrib,
+                        'elev' : self.ztop - float(level.attrib['waterDepth'])}
+        except:
+            pass
+
+        try:
+            layer_elevations = borehole.find('.//layer_elevations')
+            if layer_elevations:
+                self.layer_elevation = dict()
+                for lay in layer_elevations.getchildren():
+                    self.layer_elevation.update(lay.attrib)
         except:
             pass
 
@@ -225,22 +228,27 @@ class Bore:
 
 
     def plot(self, fs=6, fw=80, lith=True, admix=True, strat=True,
-                                                 filters=True, waterlevel=True, **kwargs):
+             filters=True, waterlevel=True, layer_elevations=[], **kwargs):
         '''Plot single borehole.
 
-        Args:
-            fs (int):
+        parameters
+        ----------
+            fs :int
                 fontsize for text at drillings
-            fw (float):
+            fw :float
                 Faction of xlim to used as width of drawn borehole.
-            lith ([True] | False):
+            lith : bool
                 Plot lithology.
-            admix ([True] | False):
-                Plat admixtures.
-            strat ([True] | False):
-                Plot stratigraphy is available
-            filters ([True] | False):
+            admix: bool
+                Plot admixtures.
+            strat : bool
+                Plot stratigraphy if available
+            filters : bool
                 Plot filter screens if available.
+            waterlevel : bool
+                Plot initial water leel if available
+            layer_elevations : list of str
+                Plot elevations of named layers
         '''
         name = kwargs.pop('name', False)
         rotation = kwargs.pop('rotation', 90)
@@ -269,18 +277,21 @@ class Bore:
 
         dcol = 0.1
 
+        # could be extended to all TNO lithocodes
         dxAdmixDict= {'humusAdmix': -dcol * 7,
                   'clayAdmix':      -dcol * 6,
                   'siltAdmix':      -dcol * 5,
                   'sandAdmix':      -dcol * 4,
                   'gravelAdmix':    -dcol * 3}
-
+        
+        # could be extended to all TNO lithocodes
         admixCode= {'humusAdmix': 'H',
                   'clayAdmix':    'K',
                   'siltAdmix':    'S',
                   'sandAdmix':    'Z',
                   'gravelAdmix':  'G'}
 
+        # coould be extened to all TNO lithocodes
         clrAdmixDict= {'humusAdmix':     dcodes.humusAdmixColor,
                   'clayAdmix':      dcodes.clayAdmixColor,
                   'siltAdmix':      dcodes.siltAdmixColor,
@@ -309,7 +320,12 @@ class Bore:
                 zt = self.ztop - self.lith[i]['topDepth']
                 zb = self.ztop - self.lith[i]['baseDepth']
                 zm = 0.5 * (zt + zb)
-                L  = self.lith[i]['lithology']
+                try:
+                    L  = self.lith[i]['lithology']
+                except:
+                    print("Exception")
+                    print(self)
+                    raise ReferenceError("{}: Layer has no 'lithology'".format(self.name))
 
                 try:
                     C = clr[L]
@@ -380,17 +396,29 @@ class Bore:
                 pass
 
         if filters:
-            if len(self.filters) > 0:
+            try:
                 self.plotFilters(ax, x, dcol, fw, fc='blue')
+            except:
+                logging.debug('{} "self.filters" may not exist'.format(self.name))    
+                pass
 
         if waterlevel:
-            if 'initialWaterlevel' in dir(self):
+            try:
                 self.plotWaterlevel(ax, x, fw, **kwargs)
+            except:
+                logging.debug('{} "self.initialWaterlevel" may not exist'.format(self.name))
+
+        if layer_elevations:
+            try:
+                self.plotLayerElevations(ax, x, fw, color='brown', names=layer_elevations)
+            except:
+                logging.debug('{} "layer_elevation" may not exist'.format(self.name))
 
         if name == True: # Plot the name above the boring
             #ax.plot(x, self.ztop + 0.25, 'r.')
             ax.text(x, self.ztop + 0.25, '  ' + self.name,
                     ha=ha, va=va, rotation=rotation, fontsize=fs)
+            
 
 
     def plotAdmix(self, ax, adm, code, x, zt, zb, dx, dcol, fw, fc):
@@ -472,9 +500,47 @@ class Bore:
         w     = kwargs.pop('w', 0.25)
 
         for key in self.initialWaterlevel.keys():
-            if self.initialWaterlevel[key]['item'] != 'Droog':
+            try:
                 p = self.initialWaterlevel[key]['elev']
                 ax.plot([x - fw * w, x + fw * w], [p, p], color=color, lw = 2)
+            except:
+                pass
+            
+    def plotLayerElevations(self, ax, x, fw, **kwargs):
+        '''plots the initialWaterlevel in the well.
+
+        Args:
+            ax (Axes):
+                axes o plot on
+            x (float):
+                location of well on plot
+            fw (float):
+                scale factor x-axis for well drawing
+        kwargs:
+            w (float):
+                with to plot water level (w=0.25 is default.
+            lw (float):
+                linewidth (default=3.)
+            color (str):
+                color used to plot water level, color='blue' is default.
+        '''
+        color = kwargs.pop('color', 'brown')
+        w     = kwargs.pop('w', 0.25)
+        keys  = kwargs.pop('names',[])
+        
+        if not keys:
+            keys = self.layer_elevation.keys()
+
+        for key in keys:
+            try:
+                p = float(self.layer_elevation[key])
+                ax.plot([x - fw * w, x + fw * w], [p, p], color=color, lw = 2)
+            except:
+                logging.debug('{} misselled layer name "key" see [{}]'.
+                              format(self.name, key, ' '.join(list(keys))))
+                pass
+            
+            
 
 
 from collections import UserDict
@@ -639,12 +705,7 @@ class Bores(UserDict):
                 Set fontsize.
 
             futher kwargs are passed on to Bore.plot, see its docstring.
-
-
         '''
-
-
-
         order    = kwargs.pop('order', None)
         verbose  = kwargs.pop('verbose', False)
         figsize  = kwargs.pop('figsize', (16.,7.))
@@ -652,9 +713,6 @@ class Bores(UserDict):
         line     = kwargs.pop('line', None)
         polyline = kwargs.pop('polyline', None)
         alpha    = kwargs.pop('alpha', None)
-        lith     = kwargs.pop('lith', True)
-        admix    = kwargs.pop('admix', True)
-        strat    = kwargs.pop('strat', True)
         maxdist  = kwargs.pop('maxdist', None)
         fs       = kwargs.pop('fs', 5)
 
@@ -666,8 +724,8 @@ class Bores(UserDict):
         keys = order if order is not None else self.keys()
 
 
-        Xp    = np.array([self[k].x for k in keys])
-        Yp    = np.array([self[k].y for k in keys])
+        Xp   = np.array([self[k].x for k in keys])
+        Yp   = np.array([self[k].y for k in keys])
         top  = np.max(np.array([self[k].ztop for k in keys]))
         base = np.min(np.array([self[k].zbase for k in keys]))
         s    = np.hstack((0., np.cumsum(np.sqrt(np.diff(Xp)**2 + np.diff(Yp)**2))))
@@ -700,21 +758,23 @@ class Bores(UserDict):
 
         assert not np.isnan(mns), 'how come mns is nan?'
         assert not np.isnan(mxs), 'how come mxs is nan?'
+        
+        xlim = kwargs.pop('xlim',
+                        (mns - fext * (mxs - mns), mxs + fext * (mxs-mns)))
 
         fig = plt.figure(figsize=figsize)
         ax = fig.add_axes(rect)
         ax.set_title(kwargs.pop('title', 'Test drawing a set of boreholes'))
         ax.set_xlabel(kwargs.pop('xlabel', 'x [m]'))
         ax.set_ylabel(kwargs.pop('ylabel', 'm +NAP'))
-        ax.set_xlim((mns - fext * (mxs - mns), mxs + fext * (mxs-mns)))
+        ax.set_xlim(xlim)
         ax.set_ylim(kwargs.pop('ylim', (base - dz, top + dz)))
         ax.grid(axis='y', linewidth=0.5)
 
         for i, k in enumerate(keys):
             if not np.isnan(s[i]):
                 print('bore {}, name={}, s={:.0} m'.format(i,self[k].name, s[i]))
-                self[k].plot(x=s[i], ax=ax, fw=fw, fs=fs,
-                          lith=lith, admix=admix, strat=strat,
+                self[k].plot(x=s[i], ax=ax, fw=fw, fs=fs,                          
                           verbose=verbose, **kwargs)
 
         if line is None and polyline is None:

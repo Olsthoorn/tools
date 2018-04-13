@@ -4,8 +4,47 @@ grey3 = (0.6, 0.6, 0.6)
 grey4 = (0.8, 0.8, 0.8)
 grey5 = (0.9, 0.9, 0.9)
 
+lithTags = [
+    'lithology',
+    'colorIntensity',
+    'colorMain',
+    'colorSecondary',
+    'sandSorting',
+    'gravelFrac',
+    'gravelAdmix',
+    'organicAdmix',
+    'humusAdmix',
+    'clayAdmix',
+    'siltAdmix',
+    'leemAdmix',
+    'veenAdmix',
+    'sandAdmix',
+    'clasticAdmix',
+    'coarseMatAdmix',
+    'glaucFrac',
+    'shellFrac',
+    'authigenMin',
+    'lithoLayerBoundary',
+    'carbonateFracNEN5104',
+    'plantType',
+    'plantFrac',
+    'lithoLayerTrend',
+    'subLayerLithology',
+    'subLayerThickness',
+    'sedimentStructure',
+    'lithostrat',
+    ]
+
+lithSandTags = [
+    'sandMedianClass',
+    ]
+lithGravelTags = [
+    'gravelMedianClass',
+    ]
+
 lithostrat = \
-{'AAOM': 'Antropogeen, omgewerkte grond',
+{'AA'  : 'Antropogeen',
+ 'AAOM': 'Antropogeen, omgewerkte grond',
  'AAOP': 'Antropogeen, opgebrachte grond',
  'BE': 'Formatie van Beegden',
  'BECA': 'Laagpakket van Caberg',
@@ -36,7 +75,8 @@ lithostrat = \
  'VI': 'Ville Formatie'}
 
 lithostratColor = \
-{'AAOM': 'gray',
+{'AA'  : 'gray',
+ 'AAOM': 'gray',
  'AAOP': 'lightgray',
  'BE':   'pink',
  'BECA': 'deeppink',
@@ -68,7 +108,8 @@ lithostratColor = \
 
 
 lithology = \
-{'BRK': 'bruinkool',
+{'AA' : 'antropogeen',
+ 'BRK': 'bruinkool',
  'DET': 'detritus',
  'GCZ': 'glauconietzand',
  'GIP': 'gips',
@@ -96,9 +137,6 @@ lithology = \
  'VUS': 'vuursteen',
  'ZNS': 'zandsteen'}
 
-colorIntensity = \
-{'DO': 'donker-', 'LI': 'licht-'}
-
 shellFrac = \
 {'SCH0': 'geen schelpen',
  'SCH1': 'spoor schelpen',
@@ -107,7 +145,8 @@ shellFrac = \
  'SCHX': 'schelpen'}
 
 organicAdmix = \
-{'BRB2': 'weinig bruinkoolbrokjes',
+{'BRB2': 'weinig bruinkoolbrokken',
+ 'BRBX': 'met bruinkoolbrokken',
  'DTF2': 'weinig fijne detritus',
  'DTF3': 'veel fijne detritus',
  'DTR1': 'spoor detritus',
@@ -119,11 +158,13 @@ organicAdmix = \
  'LIG1': 'spoor ligniet',
  'LIG3': 'veel ligniet',
  'LIGX': 'ligniet',
+ 'LEB2': 'weinig leembrokken',
+ 'LEBX': 'leembrokken',
  'ORM3': 'veel organisch materiaal',
  'SGSX': 'steenkoolgruis',
  'STB1': 'spoor steenkoolbrokjes',
  'STB3': 'veel steenkoolbrokjes',
- 'STBX': 'steenkoolbrokjes',
+ 'STBX': 'met steenkoolbrokjes',
  'VEB1': 'spoor veenbrokjes',
  'VEB2': 'weinig veenbrokjes',
  'VEB3': 'veel veenbrokjes',
@@ -154,12 +195,27 @@ clayAdmixColor = \
  'KM': grey3,
  'KX': grey2}
 
+leemAdmix = \
+{'L1': 'zwak lemig',
+ 'L2': 'matig lemig',
+ 'L3': 'sterk lemig',
+ 'L4': 'uiterst lemig',
+ 'LX': 'lemig'}
+
 siltAdmix = \
 {'S1': 'zwak siltig',
  'S2': 'matig siltig',
  'S3': 'sterk siltig',
  'S4': 'uiterst siltig',
  'SX': 'siltig'}
+
+veenAdmix = \
+{'V1': 'zwak venig',
+ 'V2': 'matig venig',
+ 'V3': 'sterk venig',
+ 'V4': 'uiterst venig',
+ 'VX': 'venig'}
+
 
 siltAdmixColor = \
 {'S1': grey1,
@@ -212,39 +268,44 @@ clasticAdmix = \
 
 coarseMatAdmix = \
 {'BKX': 'blokken',
+ 'PUX': 'met puin',
  'KE1': 'spoor keien',
  'KE2': 'weinig keien',
- 'KEX': 'keien',
+ 'KEX': 'met keien',
  'ST1': 'spoor stenen',
  'ST2': 'weinig stenen',
  'ST3': 'veel stenen',
  'ST4': 'zeer veel stenen',
- 'STX': 'stenen'}
+ 'STX': 'met stenen'}
+
+colorIntensity = \
+{'DO': 'donker', 'LI': 'licht'}
 
 colorMain = \
-{'BL': 'blue',
- 'BR': 'brown',
- 'GE': 'yellow',
- 'GN': 'green',
- 'GR': 'gray',
- 'OL': 'olive',
- 'ON': 'none',
- 'OR': 'orange',
- 'RO': 'red',
- 'WI': 'white',
- 'ZW': 'black'}
+{'BL': 'blauw',
+ 'BE': 'beige',
+ 'BR': 'bruin',
+ 'GE': 'geel',
+ 'GN': 'groen',
+ 'GR': 'grijs',
+ 'OL': 'olijf',
+ 'OR': 'oranje',
+ 'RO': 'rood',
+ 'WI': 'wit',
+ 'ZW': 'zwart'}
 
 colorSecondary = \
-{'TBL': 'blue',
- 'TBR': 'brown',
- 'TGE': 'yellow',
- 'TGN': 'green',
- 'TGR': 'gray',
- 'TOL': 'olive',
- 'TOR': 'orange',
- 'TRO': 'red',
- 'TWI': 'white',
- 'TZW': 'black',}
+{'TBL': 'blauw',
+ 'TBE': 'beige',
+ 'TBR': 'bruin',
+ 'TGE': 'geel',
+ 'TGN': 'groen',
+ 'TGR': 'grijs',
+ 'TOL': 'olijf',
+ 'TOR': 'oranje',
+ 'TRO': 'rood',
+ 'TWI': 'wit',
+ 'TZW': 'zwart',}
 
 glaucFrac = \
 {'GC1': 'spoor glauconiet',
@@ -266,8 +327,8 @@ plantType = \
  'HOU1': 'spoor hout',
  'HOU2': 'weinig hout',
  'HOU3': 'veel hout',
- 'HOUX': 'hout',
- 'RIEX': 'riet',
+ 'HOUX': 'met hout',
+ 'RIEX': 'met riet',
  'RIR2': 'weinig rietresten',
  'VEP1': 'spoor verspoelde plantenresten',
  'PLA1': 'weinig plantenhoundend',
@@ -279,7 +340,7 @@ plantType = \
  'WOS1': 'spoor wortels',
  'WOS2': 'weinig wortels',
  'WOS3': 'veel wortels',
- 'WOSX': 'wortels'}
+ 'WOSX': 'met wortels'}
 
 sandSorting = \
 {'SMA': 'matige spreiding',
@@ -290,23 +351,24 @@ sandSorting = \
  'SZK': 'zeer kleine spreiding'}
 
 sandMedianClass = \
-{'ZUF': 'uiterst fijn',
- 'ZUFO': 'uiterst fijn (O)',
- 'ZZF':  'zeer fijn',
+{'ZUFO': 'uiterst fijn (O)',
  'ZZFO': 'zeer fijn (O)',
- 'ZMF':  'matig fijn',
  'ZMFO': 'matig fijn (O)',
- 'ZMO':  'zandmediaan onduidelijk',
- 'ZFN':  'fijn',
  'ZFC':  'fijne categorie (O)',
  'ZMC':  'midden categorie (O)',
- 'ZMG':  'matig grof',
- 'ZMGO': 'matig grof (O)',
  'ZGC':  'grove  categorie (O)',
- 'ZZG':  'zeer grof',
+ 'ZMGO': 'matig grof (O)',
  'ZZGO': 'zeer grof (O)',
- 'ZUG':  'uiterst grof',
  'ZUGO': 'uiterst grof (O)',
+ 'ZUF':  'uiterst fijn',
+ 'ZZF':  'zeer fijn',
+ 'ZMF':  'matig fijn',
+ 'ZMO':  'zandmediaan onduidelijk',
+ 'ZMG':  'matig grof',
+ 'ZZG':  'zeer grof',
+ 'ZUG':  'uiterst grof',
+ 'ZGX':  'grof',
+ 'ZFN':  'fijn',
  }
 
 sandMedianClassWidth = \
@@ -348,6 +410,46 @@ sandMedianClassColor = \
  'ZUGO': 'yellow',
  }
 
+gravelMedianClass = \
+{'GMF': 'matig fijn',
+ 'GMG': 'matig grof',
+ 'GZG': 'zeer grof',
+ 'GUG': 'uiterst grof',
+ 'GFN': 'fijn',
+ 'GGR': 'grof',
+}
+
+gravelMedianClassWidth = \
+{'GFN': 0,
+ 'GMG': 1,
+ 'GGR': 2,
+ 'GZG': 3}
+
+gravelMedianClassColor = \
+{'GFN': 'navajowhite',
+ 'GMG': 'sandybrown',
+ 'GGR': 'orange',
+ 'GZG': 'darkorange'}
+
+gravelFrac = \
+{'FN1': 'spoor fijn grind',
+ 'FN2': 'weinig fijn grind',
+ 'FN3': 'veel fijn grind',
+ 'FN4': 'zeer veel fijn grind',
+ 'FN5': 'uiterst veel fijn grind',
+ 'FNX': 'met fijn grind',
+ 'MG1': 'spoor matig grof grind',
+ 'MG2': 'weinig matig grof grind',
+ 'MG3': 'veel matig grof grind',
+ 'MG4': 'zeer veel matig grof grind',
+ 'MG5': 'uiterst veel matig grof grind',
+ 'MGX': 'met matig grof grind',
+ 'ZG1': 'spoor zeer grof grind',
+ 'ZG2': 'weinig zeer grof grind',
+ 'ZG3': 'veel zeer grof grind',
+ 'ZG4': 'zeer veel zeer grof grind',
+ 'ZG5': 'uiterst veel zeer grof grind',
+ 'ZGX': 'met zeer grof grind'}
 
 authigenMin = \
 {'CCR1': 'spoor concreties',
@@ -386,25 +488,6 @@ authigenMin = \
  'ZAV2': 'weinig zandverkitting',
  'ZAV3': 'veel zandverkitting'}
 
-gravelFrac = \
-{'FN1': 'spoor fijn grind',
- 'FN2': 'weinig fijn grind',
- 'FN3': 'veel fijn grind',
- 'FN4': 'zeer veel fijn grind',
- 'FN5': 'uiterst veel fijn grind',
- 'FNX': 'fijn grind',
- 'MG1': 'spoor matig grof grind',
- 'MG2': 'weinig matig grof grind',
- 'MG3': 'veel matig grof grind',
- 'MG4': 'zeer veel matig grof grind',
- 'MG5': 'uiterst veel matig grof grind',
- 'MGX': 'matig grof grind',
- 'ZG1': 'spoor zeer grof grind',
- 'ZG2': 'weinig zeer grof grind',
- 'ZG3': 'veel zeer grof grind',
- 'ZG4': 'zeer veel zeer grof grind',
- 'ZG5': 'uiterst veel zeer grof grind',
- 'ZGX': 'zeer grof grind'}
 
 lithoLayerTrend = \
 {'BAG': 'aan de basis grof',
@@ -427,6 +510,7 @@ subLayerLithology = \
  'SLK1': 'met spoor kleilagen',
  'SLK2': 'met weinig kleilagen',
  'SLK3': 'met veel kleilagen',
+ 'SLKX': 'met kleilagen',
  'SLL1': 'met spoor leemlagen',
  'SLL2': 'met weinig leemlagen',
  'SLL3': 'met veel leemlagen',
@@ -451,24 +535,6 @@ plantFrac = \
  'PL3': 'veel plantenresten',
  'PLX': 'plantenresten'}
 
-gravelMedianClass = \
-{'GFN': 'fijn grind',
- 'GMG': 'matig grof grind',
- 'GGR': 'grof grind',
- 'GZG': 'zeer grof grind'}
-
-gravelMedianClassWidth = \
-{'GFN': 0,
- 'GMG': 1,
- 'GGR': 2,
- 'GZG': 3}
-
-gravelMedianClassColor = \
-{'GFN': 'navajowhite',
- 'GMG': 'sandybrown',
- 'GGR': 'orange',
- 'GZG': 'darkorange'}
-
 sedimentStructure = \
 {'BIO': 'bioturbatie',
  'DWO': 'doorworteling',
@@ -482,6 +548,7 @@ sedimentStructure = \
  'GSP': 'spekkoek gelaagdheid',
  'LEG2': 'weinig grindlenzen',
  'LEK3': 'veel kleilenzen',
+ 'LEKX': 'kleilenzen',
  'LEL1': 'spoor leemlenzen',
  'LEL2': 'weinig leemlenzen',
  'LEL3': 'veel leemlenzen',
