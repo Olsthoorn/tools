@@ -4,6 +4,8 @@
 Module to read and deal with groundwater head times series downloaded
 from www.dinoloket.nl
 
+The main class is Piezometer and its container Piezometers
+
 Created on Tue Jan 24 22:18:31 2017
 
 @author: Theo
@@ -19,6 +21,7 @@ from datetime import datetime
 import shapefile as sh
 
 def ax_setup(**kwargs):
+  '''return ax and kwargs containing setup of a plot'''
         ax     = kwargs.pop('ax', None)
         title  = kwargs.pop('title', None)
         xlabel = kwargs.pop('xlabel', 'x [m]')
@@ -51,13 +54,14 @@ class Piezometer:
        parameters:
        -----------
        name : the name of the piezometer, = filename
-       meta : pandas dataFrame with the meta information in the top of the
+       meta : pandas DataFrame with the meta information in the top of the
               original data file (dinoloket.nl)
-       data:  pandas dataFrame with the actual data.
+       data:  pandas DataFrame with the actual data.
        returns:
        --------
        Piezometer instance
     """
+
     def __init__(self, name, meta, data):
         """returns an Piez object
         parameters:
@@ -228,12 +232,12 @@ class Piezometers(UserDict):
 
         1) The headers in the read Piezometers will be unified and made unique
         2) NaN values will be dropped
-        parameters:
-        -----------
-        verbose: print info when True
-        returns:
-        --------
-        None
+        parameters
+        ----------
+          verbose: print info when True
+        returns
+        -------
+          None
 
         TO 20170410
         """
@@ -391,6 +395,9 @@ class Piezometers(UserDict):
 
         clean up by making sure the header texts are unique and the
         same names are used in all data
+
+        Perhaps this could be better done with regular expressions. But it works well
+        as it is implemented now
         """
         not_ok = []
         for k in self.data:
@@ -420,7 +427,7 @@ class Piezometers(UserDict):
                 if verbose: print('header of meta cleaned.')
                 # clean up data.columns
                 self.data[k].data.columns =  [h.lower()
-                  .replace('(cm t.o.v.',     '')
+                  .replace('(cm t.o.v.',          '')
                   .replace(')',                   '')
                   .replace('(',                   '')
                   .replace('stand',               '')
@@ -433,7 +440,7 @@ class Piezometers(UserDict):
                 if verbose: print('header of data cleaned.')
                 # convert time strings in meta to datetimes
                 self.data[k].meta['start'] = pd.to_datetime(self.data[k].meta['startdatum'], dayfirst=True)
-                self.data[k].meta['end']  = pd.to_datetime(self.data[k].meta['einddatum'] , dayfirst=True)
+                self.data[k].meta['end']   = pd.to_datetime(self.data[k].meta['einddatum'] , dayfirst=True)
                 self.data[k].meta['duration'] = self.data[k].meta['end'] - self.data[k].meta['start']
                 if verbose: print('time strings in meta converted.')
             except:
@@ -796,19 +803,18 @@ def get_hdr_line_nrs(csvfname,lookfor='locatie', number_of_times=2):
 if __name__ == "__main__":
     """Read data files from www.dinoloket.nl in Piezometer instances
 
-    this examle and test shows how
-    to generate a Piezometers instance (from dinoloket files)
-    plot locations
-    select only those piezometers whose measurements overlap period t1, t2
-    plot locations
-    plot time series
-    given a directory with boreholes from dinoloekt
-        get the locations for which there is a matching borehole
-    generate a Piezometers object with only those piezometers for which
+    this examle and test shows how to
+      generate a Piezometers instance (from dinoloket files)
+      plot locations
+      select only those piezometers whose measurements overlap period t1, t2
+      plot time series
+    given a directory with boreholes from dinoloket
+      get the locations for which there is a matching borehole
+      generate a Piezometers object with only those piezometers for which
         we have a borehole lithology descripton
-    plot locations of these piezometers
-    plot graphs of these piezoemeters
-    generate shapefile for these piezometers
+      plot locations of these piezometers
+      plot graphs of these piezoemeters
+      generate shapefile for these piezometers
 
     TO 171219
     """
