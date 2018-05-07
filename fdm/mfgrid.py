@@ -1352,7 +1352,7 @@ class Grid:
         parameters
         ----------
         x : numpy.ndarray
-            model coordinates
+            model coordinatesa
         y : numpy.ndarray
             model coordinates
         returns
@@ -1372,7 +1372,7 @@ class Grid:
         return xw, yw
 
 
-    def ixyz(self, xw, yw, zp, order=None, left=intNaN, right=intNaN):
+    def ixyz(self, xw, yw, zp, order=None, world=True, left=intNaN, right=intNaN):
         '''Returns indices ix, iy,, iz of cell where points (xp, yp, zp) are in.
 
         Notice: all three inputs are required because z varies per (ix,iy)
@@ -1393,6 +1393,9 @@ class Grid:
                 'CRL' = (Col, Row Layer), same order as input (xp, yp, zp)
                 'RCL' = (Row, Col, Layer)
                 'LRC' = (Layer, Row, Col) (as wanted by Modflow packaeges)
+            world : [True]|False
+                if True (default) then world coordinates else model coordinates
+                
         Returns:
         --------
         typle of cell indices, see descirption under 'order'
@@ -1411,8 +1414,10 @@ class Grid:
         yw = np.array(yw, ndmin=1, dtype=float)
         zp = np.array(zp, ndmin=1, dtype=float)
 
-        xp, yp = self.world2model(xw, yw)
-
+        if world:
+            xp, yp = self.world2model(xw, yw)
+        else:
+            xp, yp = xw, yw
 
         if not (np.all(xp.shape == yp.shape) and np.all(xp.shape == zp.shape)):
             print("Shapes of xp={}, yp={} and zp={} must match".\
@@ -2025,6 +2030,97 @@ class Grid:
             raise ValueError("Len of input list must equal gr.nz")
         else:
             raise ValueError("Argument must be scalar or array of length gr.nz")
+
+
+    def ckD2k(self, c, kD):
+        '''Return kh and kv given c and kD
+        parameters
+        ----------
+        c : sequence or array of aquitard resistance values
+        kD: sequence or array of aquifer  avlues
+        '''
+        if len(c) + len(kD) != self.nz:
+            assert len(c) + len(kD) == self.nz and \
+                   (len(c) == len(kD) or len(kD) == len(c) + 1), \
+                "len(c) + len(kD) must equal nz and " +\
+                "len(c) must equal len(kD) or " +\
+                "len(kD) must equal len len(c) + 1"
+
+        kh = self.const(0)
+        kv = self.const(0)
+        D  = self.DZ
+
+        if len(c) == len(kD): # then c on top
+            for i in range(0, len(c)):
+                j = 2 * i
+                kv[j] = D[j] / c[i]
+                kh[j] = D[j] / c[i]
+            for i in range(0, len(kD)):
+                j = 2 * i + 1
+                kv[j] = kD[i] / D[j]
+                kh[j] = kD[i] / D[j]
+        else:  # kD on top
+            for i in range(0, len(kD)):
+                j = 2 * i
+                kv[j] = kD[i] / D[j]
+                kh[j] = kD[i] / D[j]
+            for i in range(0, len(c)):
+                j = 2 * i + 1
+                kv[j] = D[j] / c[i]
+                kh[j] = D[j] / c[i]
+            
+        return kh, kv
+    
+    def s2ss(self, S):
+        '''Return ss array given S
+        parameters
+        ----------
+        S : np.ndarray of floats
+            sequence of storage coefficients of all layers [-]
+        '''
+        assert len(S) == self.nz, "len(S) must equal numbe of layers"
+        
+        return self.const(S) / self.DZ
+ 
+    
+    
+    def well(self, x, y, z, Q, kh=None, order='LRC', world=True):
+        '''Return well in grid as lRCQ
+        parameters
+        ----------
+            x, y: floats
+                well x and y location
+            z : tuple
+                well screen top and bottom
+            Q : float
+                extraction of well
+            kh: 3D array with horizontal conductivities
+            order : str: LRC | RLC | CRL order of index columns
+            world : [True] | False
+                whether the coordinates are in world coordinate or model coordinates
+                
+        returns
+        -------
+            tuple LRC, Q
+                LRC : Iz, Iy, Ix [nx3] cell indeces that screen penetrates
+                Q is the injection per cell propertional to its transmissivity
+        '''
+        
+        # make sure len x an len y are the same as len z
+        assert np.isscalar(x), 'x must be a float'
+        assert np.isscalar(y), 'y must be a float'
+        assert len(z) == 2, 'len(z) must be2'
+
+        x *= np.ones_like(z)
+        y *= np.ones_like(z)
+        
+        LRC = self.ixyz(x, y, z, order, world)
+        I = self.I(LRC)
+        n = self.ny * self.nx
+        I  = np.arange(I[0], I[-1] + 1, n, dtype=int)
+        kD = kh.ravel()[I] * self.DZ.ravel()[I] # cell transmissivty
+        Q  = kD / np.sum(kD) * Q # cell flows
+        return I, Q
 
 
     def quivdata(self, Out, iz=0):

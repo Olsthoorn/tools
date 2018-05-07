@@ -8,6 +8,7 @@ Created on Wed Feb  1 23:33:55 2017
 tools = '/Users/Theo/GRWMODELS/python/tools/'
 
 import sys
+import os
 
 if not tools in sys.path:
     sys.path.insert(1, tools)
@@ -21,11 +22,12 @@ from datetime import datetime
 from coords import wgs2rd
 from coords.kml import nederland
 
+
 class KNMI_stations(UserDict):
     '''Class contains meta data of all KNMI weather stations
 
     The class is a subclass of collections.UserDict. The dict is
-    held in the attribute data.
+    held in the attribute 'data'.
 
     '''
 
@@ -33,42 +35,43 @@ class KNMI_stations(UserDict):
         # scan the file
 
         self.data ={}
-
-        try:
-            with open(stationsFileName) as f:
-                s = f.readline()
-                while not s.startswith('==='):
-                    s = f.readline()
-                while True:
-                    try:
-                        name = f.readline().split('  ')[0]
-                        ln = f.readline().split('coordinates:')[-1]
-                        ln =[s[:-1].replace(' ','') for s in ln.split(',')][:3]
-                        N, E, elev = [float(s) for s in ln]
-
-                        x, y = wgs2rd(E, N)
-
-                        #print(N, E, elev)
-                        ln = f.readline().split(' ')[2:4]
-                        code = int(ln[0])
-                        #print(code)
-                        ln = f.readline().split(' ')
-                        #print(ln)
-                        nyears = int(ln[-6])
-                        years = [int(y) for y in ln[-1].split('-')]
-                        yr_start, yr_end = years
-                        self.data[name] = {'nr': code,
-                                     'N': N, 'E': E, 'elev' : elev,
-                                     'x': np.round(x), 'y': np.round(y),
-                                     'nyears': nyears,
-                                     'start' : yr_start,
-                                     'endyr' : yr_end}
-                        next(f)
-                    except:
-                        print('Number of stations: ', len(self.data))
-                        break
-        except:
+        
+        if not os.path.isfile(stationsFileName):
             raise FileNotFoundError(stationsFileName)
+
+        with open(stationsFileName) as f:
+            s = f.readline()
+            while not s.startswith('==='):
+                s = f.readline()
+            while True:
+                try:
+                    name = f.readline().split('  ')[0]
+                    ln = f.readline().split('coordinates:')[-1]
+                    ln =[s[:-1].replace(' ','') for s in ln.split(',')][:3]
+                    N, E, elev = [float(s) for s in ln]
+
+                    x, y = wgs2rd(E, N)
+
+                    #print(N, E, elev)
+                    ln = f.readline().split(' ')[2:4]
+                    code = int(ln[0])
+                    #print(code)
+                    ln = f.readline().split(' ')
+                    #print(ln)
+                    nyears = int(ln[-6])
+                    years = [int(y) for y in ln[-1].split('-')]
+                    yr_start, yr_end = years
+                    self.data[name] = {'nr': code,
+                                 'N': N, 'E': E, 'elev' : elev,
+                                 'x': np.round(x), 'y': np.round(y),
+                                 'nyears': nyears,
+                                 'start' : yr_start,
+                                 'endyr' : yr_end}
+                    next(f)
+                except:
+                    print('Number of stations: ', len(self.data))
+                    break
+                
     def keys(self):
         return self.data.keys()
 
@@ -142,24 +145,20 @@ class KNMI_stations(UserDict):
         return ax
 
 
-
 class KNMI_hourstation:
     '''Class returning a KNMI weather station with hourly data.
-    The data are stored in a pd.DataFrame held in the data attribute.
-    the info property given background information on these data.
+    The data are stored in a pandas DataFrame held in its `data` attribute.
+    The `info` property gives information on these data.
 
-    The instances have attributes nr (=station number) and info
-    The actual data are held in a pandas.DataFrame stored in the
-    object's attribure data
+    The instances have attributes `nr` (=station number), `info` and `data`.
 
+    TO 810507
     '''
 
     def __init__(self, knmiDataFileName):
-        try:
-            f = open(knmiDataFileName, 'r')
-        except:
+        
+        if not os.path.isfile(knmiDataFileName):
             raise FileNotFoundError(knmiDataFileName)
-        f.close()
 
         with open(knmiDataFileName, "r") as f:
             # explore the file
@@ -168,8 +167,8 @@ class KNMI_hourstation:
                 if s == '\n': blanks += 1
                 if s.startswith('# STN'):
                     break
-            # rewind to start reading
-            f.seek(0)
+            f.seek(0) # rewind to start reading knowing iHdr
+            
 
             # get the meta info aa list of strings
             self._info = [next(f) for i in range(iHdr-1)]
@@ -183,13 +182,16 @@ class KNMI_hourstation:
                                 dtype={'HH':int})
             self.nr = self.data['# STN'][0]
 
+            # convert read data to mbar and mm
             self.data['p_air'] = self.data['P'] / 10.
-            self.data['prec'] = self.data['RH'] / 10.
+            self.data['prec']  = self.data['RH'] / 10.
             self.data.loc[self.data['RH'] < 0, 'prec'] = 0.05
 
+            # convert index to datetimes by adding hour to date
             self.data.index = [d + dt.timedelta(hours=float(h))
-                                for d, h in zip(self.data.index, self.data['HH'])]
+                    for d, h in zip(self.data.index, self.data['HH'])]
 
+            # don't need these columns anymore
             self.data.drop(['# STN', 'HH'], axis=1)
 
     @property
@@ -222,25 +224,20 @@ class KNMI_hourstation:
         return self.data.__repr__()
 
 
-
-
 class KNMI_daystation:
     '''Class returning a KNMI weather station with daily data.
-    The data are stored in a pd.DataFrame held in the data attribute.
-    the info property given background information on these data.
+    The data are stored in a `pandas` `DataFrame` held in the `data` attribute.
+    The `info` property gives background information on these data.
 
-    the instances have attributes nr (=station number) and info
+    The instances have attributes `nr` (=station number), `info` and `data`/
 
-    The instances have attributes nr (=station number) and info
-    The actual data are held in a pandas.DataFrame stored in the
+    TO 180507
     '''
 
     def __init__(self, knmiDataFileName):
-        try:
-            f = open(knmiDataFileName, 'r')
-        except:
+        
+        if not os.path.isfile(knmiDataFileName):
             raise FileNotFoundError(knmiDataFileName)
-        f.close()
 
         with open(knmiDataFileName, "r") as f:
             # explore the file
@@ -339,8 +336,6 @@ def plot_station(nr, data, what,  **kwargs):
 
     ax.legend(loc='best')
     return ax
-
-
 
 
 if __name__ == '__main__':
