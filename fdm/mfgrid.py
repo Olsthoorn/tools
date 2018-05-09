@@ -451,6 +451,8 @@ class Grid:
             y = np.array([-0.5, 0.5])
 
         x = np.round(np.array(x, dtype=float), self._digits)
+        if y is None:
+            y = [-0.5, 0.5]
         y = np.round(np.array(y, dtype=float), self._digits)
 
         self._x = np.unique(x)
@@ -2002,7 +2004,7 @@ class Grid:
         return ax
 
 
-    def const(self, u, dtype=float):
+    def const(self, u, dtype=float, axial=False):
         """generate an ndarray of gr.shape with value u.
         -----
         u can be a scaler or a vector of shape (nz,) or (1,1,nz) in which
@@ -2016,20 +2018,25 @@ class Grid:
         TO 161007
         """
         if isinstance(u, (float, int)):
-            return u * np.ones(self._shape, dtype=dtype)
+            out = u * np.ones(self._shape, dtype=dtype)
         elif isinstance(u, np.ndarray):
             if len(u.ravel()) == self._shape[0]:
                 u = u.reshape((self._nz, 1, 1))
-                return u * np.ones(self.shape, dtype=dtype)
+                out = u * np.ones(self.shape, dtype=dtype)
             else:
                 raise ValueError("Len of input array not equal to gr.nz")
         elif isinstance(u, list):
             if len(u) == self._shape[0]:
                 u = np.array(u).reshape((self._nz, 1, 1))
-                return u * np.ones(self.shape, dtype=dtype)
+                out = u * np.ones(self.shape, dtype=dtype)
             raise ValueError("Len of input list must equal gr.nz")
         else:
             raise ValueError("Argument must be scalar or array of length gr.nz")
+            
+        if axial: # only if explicitly demanded
+            return 2 * np.pi * self.XM * out
+        else:
+            return out
 
 
     def ckD2k(self, c, kD):
