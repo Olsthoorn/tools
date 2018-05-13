@@ -56,6 +56,7 @@ class StressPeriod:
         # time-unit_conversion from seconds
         self.events = events_df
         
+        # conversion of tiem dimension
         self.ufac =  {'s': 1., 'm': 1/60., 'h': 1/3600. , 'd': 1/86400.,
                     'w': 1/(7 * 86400.)}
 
@@ -712,6 +713,8 @@ class Grid:
                 I = self.NOD[0][Imask]
             else:
                 I = self.NOD[Imask]
+        else:
+            I = Imask
 
         I = np.array(I, dtype=int)
         ncol = self._nx
@@ -1198,31 +1201,31 @@ class Grid:
     @property
     def Ztop(self,row=0):
         '''Elevation of the top of the cells as a 3D grid [ny, nx, nz]'''
-        return self._Z[:-1, :, :]
+        return self.Z[:-1]
 
     @property
     def Ztop_lay(self,row=0):
         '''Elevation of the top of the model cells as a 3D grid [nlay, ny, nx]'''
-        return self._Z[:-1, :, :][self._Ilay]
+        return self._Z[:-1][self._Ilay]
 
     def Ztop_cbd(self,row=0):
         '''Elevation of the top of the confining bedsas a 3D grid [nlay, ny, nx]'''
-        return self._Z[:-1, :, :][self._Icbd]
+        return self._Z[:-1][self._Icbd]
 
     @property
     def Zbot(self,row=0):
         '''Ztop elevation of the bottom of the cells as a 3D grid [nz, ny, nx]'''
-        return self._Z[1:, :, :]
+        return self.Z[1:]
 
     @property
     def Zbot_lay(self,row=0):
         '''Elevation of the bottom of the cells as a 3D grid [nz, ny, nx]'''
-        return self._Z[1:, :, :][self._Ilay]
+        return self.Z[1:][self._Ilay]
 
     @property
     def Zbot_cbd(self,row=0):
         '''Elevation of the bottom of confining bedsas a 3D grid [nz, ny, nx]'''
-        return self._Z[1:, :, :][self._Icbd]
+        return self.Z[1:][self._Icbd]
 
     @property
     def Zgr(self):
