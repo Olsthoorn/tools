@@ -137,8 +137,18 @@ class StressPeriod:
     def nstp(self):
         return np.asarray(self.SP['nstp'], dtype=int)
     
-    def get_datetimes(self, sp_only=False, aslists=True):
+    def get_datetimes(self, sp_only=False, aslists=True, fmt=None):
         '''Return times all steps, starting at t=0
+        
+        parameters
+        ----------
+        sp_only : bool
+            return only values for the end of each stress period
+        aslists : bool
+            if True: return as two lists first keys second values
+            if False: return as tuples (key, value)
+        fmt: None or format
+            fmt like in datetime.strfime, results are strings
         
         returns an OrderedDict with keys (sp, stpnr)
         '''
@@ -149,7 +159,12 @@ class StressPeriod:
             dt     = np.cumsum(self.SP['perlen'][sp] * factors
                                / np.sum(factors))
             for it, stpnr in enumerate(stpNrs):
-                _datetimes[(stpnr, sp)] = self.SP['start'][sp] + dt[it]
+                deltat = self.SP['start'][sp] + dt[it]
+                if fmt is None:
+                    _datetimes[(stpnr, sp)] = pd.to_datetime(deltat)
+                else:
+                    _datetimes[(stpnr, sp)] = pd.to_datetime(deltat).strftime(fmt)
+                
         
         keys = list(_datetimes.keys())
         if sp_only:
