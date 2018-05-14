@@ -38,28 +38,30 @@ class Checker:
                 name = 'array'
             mask = np.logical_and( self.ibound!=0, np.isnan(A) )
             if np.any(mask):
-                print('{} nans in {} where ibound!=0:'.format(np.sum(mask), name))
-                self.gr.LRC(mask)
+                return '{} nans in {} where ibound!=0:'.format(np.sum(mask), name)
             else:
-                print("There are no NaNs in {}.".format(name))
+                return "There are no NaNs in {}.".format(name)
         elif isinstance(A, list):
             if name is None:
                 name == 'list'
             B = [a for a in A if np.any(np.isnan(a))]
             if len(B) == 0:
-                print("There are no NaNs in {}.".format(name))
-                return
-            I = self.gr.I([(b[0], b[1], b[2]) for b in B])
-            B = [b for b, i in zip(B, I) if self.ibound.ravel()[i] != 0]
-            if len(B) > 0:
-                print('{} records contain at least one NaN where IBOUND !=0 in {}:'.format(len(B), name))
+                return "There are no NaNs in {}.".format(name)
+            else:
+                I = self.gr.I([(b[0], b[1], b[2]) for b in B])
+                B = [b for b, i in zip(B, I) if self.ibound.ravel()[i] != 0]
+                s = '{} records contain at least one NaN where IBOUND !=0 in {}:'.format(len(B), name)
                 pprint(B)
+                return s
         elif isinstance(A, dict):
+            if name is None:
+                name = str(type(A))
+            s =''
             for k in A.keys():
-                self.check(A[k], name=name)
+                s = s + '\n' + self.check(A[k], name=name +'[' + str(k) + ']')
+            return s
         else:
-            print('Can only check arrays, lists and dicts of lists or arrays.')
-        return
+            return 'Can only check arrays, lists and dicts of lists or arrays.'
 
     def show(self, A, name=None, grid=True, outline=None):
         '''Plot non-nan and nan values in array A as dots'''
