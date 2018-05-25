@@ -50,6 +50,72 @@ def ticks(xmin, xmax, dx):
     return np.linspace(xmin, xmax, n + 1)
 
 
+def fldnames(path):
+    ''''Return fieldnames in shapefile.
+    
+    parameters
+    ----------
+    path : str
+        full path to shapefile
+
+    TO 180521
+    '''
+    
+    try:
+        rdr = Reader(path)
+    except FileNotFoundError:
+        raise "Can't find <{}>".format(path)
+    return [f[0] for f in rdr.fields[1:]]
+
+
+def shapes2dict(path, key=None):
+    '''Return contents of shapefile as dict.
+    
+    parameters
+    ---------
+    path : str
+        full path to shapefile
+    key : str or None
+        fld name that will be used as key for dict.
+        Note that key must be hasheble to function as dict key.
+    returns
+    -------
+    dict with one of the keys = 'points' which contains the shape
+        coordinates of the record.
+        
+    TO 180521
+    '''
+
+    try:
+        rdr = Reader(path)
+    except FileNotFoundError:
+        raise "Can't find <{}>".format(path)
+        
+    fld = [f[0] for f in rdr.fields[1:]]
+    
+    if key is None:
+        idx = 0
+    else:
+        try:
+            idx = fld.index(key)
+        except:
+            raise "key <{}>  not in fields of shape".format(key)
+            
+        
+    shpdict={} # generate a dict with the borehole properties
+    for shp, rec in zip(rdr.shapes(), rdr.records()):
+        key = rec[idx]
+        try:
+            shpdict[key] = {k:v for k, v in zip(fld, rec) if v != key}
+        except:
+            raise "key <{}> must be hasheble".format(key)
+        shpdict[key].update({'points': np.array(shp.points)})
+
+    return shpdict
+
+
+
+
 def plotshapes(rdr, **kwargs):
     '''plots polygons in rdr as colored lines and filled patches
     kwargs
@@ -203,14 +269,17 @@ def inpoly(x, y, pgcoords):
     xy = np.vstack((x.ravel(), y.ravel())).T
     return pgon.contains_points(xy).reshape(shape)
 
-def __main__():
-    shpdir = '/Users/Theo/' + \
-        'Instituten-Groepen-Overleggen/HYGEA/Consult/2017/' + \
-        'DEME-julianakanaal/REGIS/Limburg - REGIS II v2.2/shapes'
+if __name__ == '__main__':
+    
+    home       = '/Users/Theo/GRWMODELS/python/Juka_model/GIS/' # change
+    shpdir     = os.path.join(home, 'shapes/')
     shpnm = 'steilrandstukken.shp'
     shpnm = 'Steilrand.shp'
     shpnm = 'SteilrandGebieden.dbf'
 
+    demebores = shapes2dict(os.path.join(shpdir, 'demebores.shp'), key='Hole_ID')
+
+'''
     shapefileName =os.path.join(shpdir, shpnm)
 
     rdr   = Reader(shapefileName)
@@ -229,7 +298,4 @@ def __main__():
               'alpha': 0.5}
 
     plotshapes(rdr, **kwargs)
-
-if __name__ == '__main__':
-    __main__()
-
+'''
