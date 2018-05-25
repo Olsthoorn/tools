@@ -156,8 +156,8 @@ class StressPeriod:
         for sp in self.SP.index: # self.SP is a DataFrame
             stpNrs  = np.arange(self.SP['nstp'][sp], dtype=int)
             factors = self.SP['tsmult'][sp] ** stpNrs
-            dt     = np.cumsum(self.SP['perlen'][sp] * factors
-                               / np.sum(factors))
+            dt     = np.cumsum(self.SP['perlen'][sp] * \
+                               (factors / np.sum(factors)))
             for it, stpnr in enumerate(stpNrs):
                 deltat = self.SP['start'][sp] + dt[it]
                 if fmt is None:
@@ -2290,14 +2290,14 @@ class Grid:
                     np.hstack((yF, self.y, yB)),
                     np.hstack((zT, self.z, zB)))
 
-
     def inpoly(self, pgcoords, row=None, world=False):
         """Returns bool array [ny, nx] or [nz, nx] depending on row with
         true if cell centers are inside horizontal or vertical polygon
         parameters:
         -----------
-        pgcoords: like [(0, 1),(2, 3), ...] polygon coordinates
-        row: if None, polygon is assume xy coordinates and grid is in the xy plane
+        pgcoords: like [(0, 1),(2, 3), ...] or an (n, 2) np.ndarray
+            polygon coordinates
+        row: if None, polygon is assumed xy coordinates and grid is in the xy plane
              if row is int, then grid is cross section at given row
              and pgcoords are interpreted as x,z
 
@@ -2313,7 +2313,12 @@ class Grid:
             else:
                 return inpoly(self.XM[:, row, :], self.ZM[:, row, :], pgcoords)
 
-
+def array2tuples(A):
+    try:
+        return [tuple(a) for a in A]
+    except:
+        raise "Can't convert array to list of tuples"
+        
 def extend_array(A, nx, ny, nz):
     '''returns extended array specified by  nx, ny nz
     parameters
@@ -2387,7 +2392,9 @@ def inpoly(x, y, pgcoords):
     """Returns bool array [ny, nx] telling which grid points are inside polygon
 
     """
-    pgcoords = np.array(pgcoords)
+    if not isinstance(pgcoords, np.ndarray):
+        pgcoords = np.array(pgcoords)
+        
     assert pgcoords.shape[1]==2 and pgcoords.ndim==2,\
         "coordinates must be an arra of [n, 2]"
     pgon = Polygon(pgcoords)
