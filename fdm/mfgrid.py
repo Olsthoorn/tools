@@ -40,10 +40,25 @@ NOT = np.logical_not
 intNaN = -999999
 
 
+
+# interpolate along the first dimension (time or z) for points x, y.
+# This can be used of your data is (nt, ny, nx) or if it is (nz, ny, nx)
+
+
 class StressPeriod:
     
-    def __init__(self, events_df):
+    def __init__(self, events_df, tsmult=1.25, dt0=1/24.):
         '''Return stress period object.
+        
+        Note that only the start time of the last stress period will be used
+        as the end time of the simulation. So at least two stress periods
+        have to be defined. Doing so, only the first is used and its lengt
+        is defined by the start time of the last stress period.
+        
+        The number of time steps in each stress period is determined by
+        tsmult and dt0. The time-step lengths will be adjusted such that
+        tsmult is applied exactly and the first time_step is less or equal to
+        dt0.
         
         parameters
         ----------
@@ -51,6 +66,10 @@ class StressPeriod:
                 must have the following columns:
                     ['SP', 'year', 'month', 'day', 'hour,
                                      'nstp', 'tsmult', 'remark']
+            tsmult : float
+                time step multiplier within stress periods
+            dt0 : float
+                approximate length of first time step of each stress period.
         '''
         
         # time-unit_conversion from seconds
@@ -62,7 +81,7 @@ class StressPeriod:
 
         columns = set(self.events.columns)
         required_columns = set(['SP', 'year', 'month', 'day', 'hour',
-                                     'nstp', 'tsmult', 'remark'])
+                                     'steady', 'remark'])
         if not required_columns.issubset(columns):
             missed = [m for m in required_columns.difference(columns)]
             raise Exception('Missing required columns:' +
@@ -70,21 +89,29 @@ class StressPeriod:
     
         self.events.fillna(method='ffill', inplace=True)
     
-        # Extract stress period information
+        # Extract stress period information. Note that the last SP is a dummy
+        # that does not count, so select [:-1]
         self.SP_numbers = np.asarray(np.unique(self.events['SP']),
-                                     dtype=int)
+                                     dtype=int)[:-1]
         
         if any(np.diff(self.SP_numbers)>1):
             print(self.SP_numbers[1:][np.diff(self.SP_numbers)>1])
             raise Exception('Stress periods not consecutive')
 
-        self.nper = np.max(self.SP_numbers)
+        self.nper = len(self.SP_numbers)
+        
+        if self.nper < 1:
+            raise ValueError('Need at least 2 stress periods.\n' +
+                    'The last one only determines the end time of the simulation.')
         
         self.SP = dict()
         for i in self.events.index:
             se = self.events.loc[i] # next stress event
-            sp = int(se['SP'])  # hs arbitrary number of duplicates
-                                  # so last line with this SP is kept
+            sp = int(se['SP'])
+            
+            ''' an arbitrary number of duplicates may be used. This implies
+            that only the last line with this SP is kept.'''
+            
             start = np.datetime64(datetime(year  =int(se['year']),
                                  month =int(se['month']),
                                  day   =int(se['day']),
@@ -92,31 +119,48 @@ class StressPeriod:
                                  minute=0,
                                  second=0), 's')
             self.SP[sp] = {'start' : start,
-                            'nstp'  : se['nstp'],
-                            'steady': True if se['nstp']==0 else False,
-                            'tsmult': se['tsmult'],
+                            'steady': se['steady'],
                             'remark': se['remark']}
 
         # Convert back to pd.DataFrame (now with one entry per stress period)
         self.SP = pd.DataFrame(self.SP).T
         
         # prepare column with end-time of stress period
-        _end = self.SP['start']
-        _end.index = [_end.index[-1], *_end.index[:-1]]
+        end_times = self.SP['start']  # converst start column to pd.Series
+        end_times.index  = [end_times.index[-1], *end_times.index[:-1]]
+        self.SP['end'] = end_times
+
+        ''' The three lines above moves the start times of the subsequent SP up.
+        The original first start_time will end last because it gets the last
+        index. However, this index is lost as the last stress period is
+        ignored; only its start time is used as the end time of the simulation.
+        '''
         
-        self.SP['end'] = _end
+        # Yields perlen in days
+        self.SP['perlen'] = np.abs(self.SP['end'] - self.SP['start'])
+        perlen_days = np.asarray(self.SP['perlen'], dtype=float) / (1.e9 * 86400)
         
-        # Yields timedelta objects
-        self.SP['perlen'] = self.SP['end'] - self.SP['start']
-        
+        '''
+        Step length multiplier:
+            `dt0 = perlen ((tsmult-1) / (tsmult**nstp - 1))`
+        Hence:
+            nstp =  ln(perlen / dt0 * (tsmult -1) + 1) / ln(tsmult)
+        '''
+        self.SP['nstp']   = np.array(
+                np.ceil(
+                    np.log( (np.asarray(perlen_days) / dt0) * (tsmult - 1) + 1)\
+                        / np.log(tsmult)
+                        ), dtype=int)
+
         # Throw out the last line, we only needed its end time
         self.SP = self.SP.iloc[:-1]
         
+        self.SP['steady'] = np.asarray(self.SP['steady'], dtype=int)
+
         # stready or transient
-        self.SP['steady'] = self.SP['nstp'] == 0
+        self.SP['nstp'].loc[self.SP['steady'] == 1] = 1
         
-        # set nstp for steady stress periods equal to 1, we now have column steady
-        self.SP.loc[self.SP.loc[:,'steady'], 'nstp']=1
+        self.SP['tsmult'] = tsmult
         
     def get_perlen(self, asfloat=True, tunit='D'):
         plen = np.asarray(self.SP['perlen'], dtype='timedelta64[s]')
@@ -360,7 +404,6 @@ def lrc(xyz, xyzGr):
     for x, xGr in zip(xyz, xyzGr):
         LRC.insert(0, index(x, xGr))
     return LRC
-
 
 
 class Grid:
@@ -890,7 +933,176 @@ class Grid:
                           np.hstack((self.NOD[0][east], self.NOD[0][south]))]).T
 
         return pairs
+    
+    
+    def lines2HFB(self, lines, open=True, layers=0, cs=np.nan ):
+        '''Return HFB input records for many barrier lines at once
+        
+        parameters
+        ----------
+            lines : list of line. A line is a list of barrier coordinates
+                barrier coordinates are [(xMdl, yMdl), (  ,), ( , )]
+            layers: int or list of ints
+                layer number for each barrier, if scalar, all layers are the same.
+            cs : float or list of floats
+                hydraulic resistance of each barrier [T].
+                If scalar all barriers get the same resistance.
+                
+        TO 180707
+        '''
+        
+        if not isinstance(lines[0], np.ndarray):
+            if not isinstance(lines[0][0], float):
+                raise ValueError("Lines must be a list of lines")
+            
+        if isinstance(layers, int):
+            layer = layers
+            layers = [layer for i in range(len(lines))]
+        if isinstance(cs, (int, float)):
+            c  = cs
+            cs = [float(c) for i in range(len(lines))]
+        if not (len(lines) == len(layers) and len(lines) == len(cs)):
+            raise ValueError(
+              'Nr of layers ({}) or of c values ({}) does not equal number of lines ({}).'
+                               .format(len(layers), len(cs), len(lines)))
+            
+        HFB = []
+        for line, layer, c in zip(lines, layers, cs):
+            Hfb = self.line2HFB(line, open=open, layer=layer, c=c)
+            for hfb in Hfb:
+                HFB.append(hfb)
 
+        return HFB
+            
+        
+        
+        
+    def line2HFB(self, polyline, open=True, layer=0, c=np.nan):
+        '''Return HFB input given a polyline (mdl coordinates.
+        
+        parameters
+        ----------
+            polyline : list of coordinate tuples
+                polyline that defines the horizontal flow barrier path (mdl coordinates)
+            open : bool
+                if False, polyline is a polygon (it will then be closed)
+            layer : int
+                layer number in which the polyline lies.
+            c : float
+                HFB resistance [T], it is d/k. HFB uses 1/c.
+        returns
+        -------
+            list of tuples of the form that HFB needs
+            [(L, R1, C1, R2, C2, c), (....)]
+        
+        TO 180607
+        '''
+
+        pairs = self.cell_pairs(polyline, open=open)
+        
+        return self.cell_pairs2HFB(pairs, c=c)
+        
+    
+    def cell_pairs2HFB(self, cell_pairs, c=np.nan):
+        '''Return HFB input as  a list of tuples.
+        
+        parameters
+        ----------
+            cell_pairs : np.array([nlines, 2]) of model node numbers
+                cell_pairs obtained from Grid.cell_pairs()
+            c : float
+                resistance [T] to use for this HFB
+        returns
+        -------
+            list of tuples of the form that HFB needs
+            [(L, R1, C1, R2, C2, c), (....)]
+        
+        '''        
+        LRC1 = self.I2LRC(cell_pairs[:, 0])
+        LRC2 = self.I2LRC(cell_pairs[:, 1])
+        R = np.ones_like(LRC1[:,0], dtype=float) / c
+        return [(*lrc1rc2, r) for lrc1rc2, r in zip(np.hstack((LRC1, LRC2[:, 1:])), R)]
+
+
+    def I2LRC(self, I):
+        '''Return (IL, IR, IC) from array of nodes I
+        
+        parramters
+        ----------
+             I : list of global node numbers
+                 The node numbers to be converted to LRC
+        returns
+            list
+        
+        '''
+        I = np.asarray(I, dtype=int)
+        
+        Nlay = self.ny * self.nx
+
+        IL = I // Nlay
+        IR = (I - IL * Nlay) // self.nx
+        IC = I - IL * Nlay - IR * self.nx
+        
+        return np.vstack((IL, IR, IC)).T
+
+
+    def interpxy(self, Z, points, iz=0, **kwargs):
+        '''
+        Return values by interpolation at points.
+    
+        Performs linear interpolation over the first dimension of a 3D array
+        the last two dimenstions as y, x wiht points = np.array([nPoints, 2]),
+        according to new values from a 2D array new_x.
+    
+        Parameters
+        ----------
+        Z : 3-D ndarray (double type)
+            Array containing the y values to interpolate.
+        points : 2-D ndarray (double type)
+            Array containg the points to interpolate at where
+            xp = points[:,0] and yp = points[:, 1]
+        iz : int
+            layer number in case Z is 4D. This layer number is first
+            squeezed out like Z = Z[:, ilay, :, :]
+        kwargs : additional keyword arguments
+            additional kwargs are passed on to interpolator.
+            See for these arguments `scipy.interpolate.RectBivariateSPline`
+        Results
+        -------
+            array of shape(len(Z), len(points)) with the interpolated values for
+            each z.
+            Notice that Z may also be time. It's just the first dimension of
+            the 3D array that is interpolated on x, y.
+            
+            If your array is 4D, i.e. (time, z, y, x), then squeeze out the
+            z is squeezed out first. (Interpreted as layer.)
+        '''
+        from scipy.interpolate import interp2d as interp_
+        
+        fill_value = -999.
+        
+        if Z.ndim == 2:
+            Z = Z[np.newaxis, : ,:] # makes it work also if Z.shape=(ny, nx)
+        elif Z.ndim == 4:
+            Z = Z[:, iz, :, :] # squeeze out the layer
+        
+        assert Z.shape[-2:] == self.shape[-2:],\
+            'Z must be 3D of shape (nz,{},{})'.format(self.ny, self.nx)
+        assert Z.ndim == 3, 'Z.ndim must be 3.'
+    
+        points = np.array(points)
+        assert points.shape[-1] == 2, 'Points must be of shape (npoints, 2)' 
+        
+        x, y = self.world2model(points[:,0], points[:,1])
+        
+        result = np.zeros((len(Z), len(points)))
+        for iz_, A in enumerate(Z):
+            m = np.min(A)
+            A[np.isnan(A)] = fill_value # prevent nan
+            f = interp_(self.xm, self.ym[::-1], A[::-1], fill_value=fill_value)            
+            result[iz_, :] = f(x, y)
+        result[result < m] = np.nan
+        return result
 
 
     @property
@@ -1806,11 +2018,62 @@ class Grid:
         up, vp, wp = self.xyz2uvw(xp, yp, zp)
         return NOT(OR(np.isnan(up), np.isnan(vp), np.isnan(wp)))
 
+    def asdict(self):
+        '''Return a dict containing the grid lines that can be plotted or saved as a shapfile.
+        
+        Returns
+        -------
+        dict {'name': 'mfGrid', 'x': x, 'y':y, 'xw': xw, 'yw': yw}
+        
+        to save it as a shapefile use dict2shp in module shapefile.shapetools
+        
+        from shapefile import dict2shp
+        
+        dict2shp(gr.asdict, shapefilename, xy=('xw', 'yw'), shapetype=sf.LINE)
+        dict2shp(gr.asdict, shapefilename, xy=('x', 'y'), shapetype=sf.LINE)
+
+        TO 180607
+        '''
+        x, y = [], []
+        for i, x_ in enumerate(self.x):
+            if i%2 == 0:
+                y.append(self.y[ 0])
+                y.append(self.y[-1])
+            else:
+                y.append(self.y[-1])
+                y.append(self.y[ 0])
+            x.append(x_)
+            x.append(x_)
+
+        #x.append(np.nan)
+        #y.append(np.nan)
+
+        for i, y_ in enumerate(self.y):
+            if i%2 == 0:
+                x.append(self.x[ 0])
+                x.append(self.x[-1])
+            else:
+                x.append(self.x[-1])
+                x.append(self.x[ 0])
+            y.append(y_)
+            y.append(y_)
+                
+        x = np.array(x)
+        y = np.array(y)
+        xw, yw = self.m2world(x, y)
+            
+        return {'name': 'mfGrid',
+                'x' : x,  'y' : y,
+                'xw': xw, 'yw': yw}
+
 
     def plot_grid(self, ax=None, row=None, col=None, world=False, **kwargs):
         '''Plot the grid in model or world coordinates
-        kwargs:
-            'world' : False to plot in model coordinates, else worldcoordinates (default)
+
+        parameters
+        ----------
+        ax : plt.Axes
+            axes to plot on.
         row: int
             plot vertical (zx) along specified row
         col: int
