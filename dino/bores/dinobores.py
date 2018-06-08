@@ -23,7 +23,14 @@ if not tools in sys.path:
 
 import dino.bores.dinoborecodes as dcodes
 from coords import inpoly
+
 # import shapefile  replace import to specific module
+
+import logging
+
+logging.basicConfig(level=logging.DEBUG, format=' %(asctime)s - %(levelname)s - %(message)s')
+logging.debug('Start of '.format(__name__))
+
 AND = np.logical_and
 NOT = np.logical_not
 OR  = np.logical_or
