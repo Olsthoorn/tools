@@ -148,7 +148,7 @@ class Bore:
             self.strat = dict()
             for i, lisi in enumerate(lithostratInterval):
                 self.strat[i] = {'baseDepth': float(lisi.attrib['baseDepth'])}
-                if UoM == 'CENTIMETER' : self.strat[i] /= 100.
+                if UoM == 'CENTIMETER' : self.strat[i]['baseDepth'] /= 100.
                 for child in lisi.getchildren():
                     try:
                         self.strat[i][child.tag] = child.attrib['code']
