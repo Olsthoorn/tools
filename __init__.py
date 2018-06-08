@@ -16,3 +16,8 @@ Created on Thu Sep 22 00:35:12 2016
 @author: Theo
 """
 # Get these in mflab's namespace
+from . import dino
+from . import fdm
+from . import coords
+from . import shape
+from . import diver

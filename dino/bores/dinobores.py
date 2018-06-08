@@ -16,14 +16,14 @@ import xml.etree.ElementTree as ET
 import matplotlib.patches as patches
 import warnings
 
+# todo: change for the actual user!
 tools = '/Users/Theo/GRWMODELS/python/tools'
-
 if not tools in sys.path:
     sys.path.insert(1, tools)
 
 import dino.bores.dinoborecodes as dcodes
 from coords import inpoly
-import shapefile
+# import shapefile  replace import to specific module
 AND = np.logical_and
 NOT = np.logical_not
 OR  = np.logical_or
@@ -146,6 +146,7 @@ class Bore:
                 for child in lisi.getchildren():
                     try:
                         self.strat[i][child.tag] = child.attrib['code']
+                        self.strat[i]['text'] = child.text
                     except:
                         pass
         except:
@@ -515,12 +516,12 @@ class Bores(UserDict):
         assert os.path.isdir(boredir), "Not a directory:\n{}".format(boredir)
 
         if version is None:
-            LD =[f for f in os.listdir(boredir) if f[-7:-4] == '1.4.xml']
+            LD =[f for f in os.listdir(boredir) if f[-7:-4] == '1.4']
             # Default xml version of TNO, use of available
             if len(LD) == 0:
                 LD =[f for f in os.listdir(boredir) if f[-4:] == '.xml']
         else:
-            ext = version + '.xlm'
+            ext = version
             LD =[f for f in os.listdir(boredir) if f[-7:-4] == ext]
 
         if len(LD) == 0:
@@ -745,6 +746,7 @@ class Bores(UserDict):
         '''Generates shapefile of bore locations with record [name, ztop, zbot].
         '''
 
+        import shapefile
         wr = shapefile.Writer(shapeType=shapefile.POINT)
         wr.field('name', fieldType='C', size='20')
         wr.field('ztop', fieldType='N', size='20', decimal=3)
