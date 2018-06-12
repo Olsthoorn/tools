@@ -124,16 +124,21 @@ def dict2shp(mydict, fileName, shapetype=None, xy=('x', 'y'),
     
     parameters
     ----------
-        mydict : a dict
-            Dictonary containing fields and coordinates
+        mydict : a dict of dicts
+            mydict.keys() are the names of the individual shapes.
+            d = mydict[k] is a dict defining a shape record with fieldnames and values
+            These itmes also contain x and y coordinates.
+            
+            Note: the name of the shape k will be added as one of the fields in the shapefile.
+            
         fileName: str
             Name of shapefile without extension
-        shapetype: 'POINT' or 'POINTZ'
+        shapetype: any legal type name e.g. 'POINT', 'POINTZ', 'POLYLINE', ...
             Type of shapefile.
-            If None, then 'POINT' is used when len xy==2 and 'POINTZ' if
-            len xy == 3
-        xy: tuple of 2 or 3 str
-            dict keys denoting x, y (and z) coordinates
+            If None, then 'POINT' is used when len(xy)==2 and 'POINTZ' if
+            len(xy)==3.
+        xy: tuple of 2 or 3 str e.g. xy=('x', 'y' [, 'z'])
+            dict keys denoting x, y (and z) coordinates.
         usecols: list of str
             list of str naming the keys to be used in the shapefile
     returns
@@ -159,12 +164,18 @@ def dict2shp(mydict, fileName, shapetype=None, xy=('x', 'y'),
         
     wr = shapefile.Writer(eval('shapefile.' + shapetype))
     
-    keys = []
-    for k in mydict:
+    names = [name for name in mydict.keys()]
+    
+    # generate shapefile fields
+    wr.field('name', 'C', 20)   # firrst field will be the name of the shape record
+
+    # add the other fields
+    keys, rec0 = [], mydict[names[0]]
+    for k in rec0: # fields of sub dict
         if not k in xy:
             if not usecols or k in usecols:
                 try:
-                    wr.field(str(k), *dbasefield[str(type(mydict[k]))])
+                    wr.field(str(k), *dbasefield[str(type(rec0[k]))])
                     keys.append(k)
                 except:
                     logger.debug("Can't handle field <{}>".format(str(k)))
@@ -177,13 +188,23 @@ def dict2shp(mydict, fileName, shapetype=None, xy=('x', 'y'),
         print('Valid keys are:\n' + ', '.join([str(k) for k in dbasefield]))
         raise TypeError('No valid keys found in dictonary.')
     
-    wr.record(*[mydict[k] for k in keys])
+    # generate records and points (or parts of polyline)
+    for name in names:
+        rec = mydict[name]
+        wr.record(name, *[rec[k] for k in keys]) # includes name
     
-    if shapetype.startswith('POLY'):
-        wr.line(parts=[[(x_, y_) 
-            for x_, y_ in zip(mydict[xy[0]], mydict[xy[1]])]])
-    else:
-        wr.point(*[mydict[k] for k in xy])
+        if shapetype.startswith('POLY'):
+            if shapetype.startswith('POLYG'): # close polyline if necessary
+                if np.any(rec[xy][0] != rec[xy][-1]):
+                    rec[xy] = np.vstack((rec[xy], rec[xy][:1]))
+                wr.poly(parts=[[(x_, y_) 
+                    for x_, y_ in zip(rec[xy][:,0], rec[xy][:,1])]])
+            else:
+                wr.line(parts=[[(x_, y_) 
+                    for x_, y_ in zip(rec[xy][:,0], rec[xy][:,1])]])
+                
+        else:
+            wr.point(*[rec[k] for k in xy])
     
     wr.save(fileName)
     if verbose:

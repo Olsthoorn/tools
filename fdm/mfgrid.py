@@ -44,6 +44,34 @@ intNaN = -999999
 # interpolate along the first dimension (time or z) for points x, y.
 # This can be used of your data is (nt, ny, nx) or if it is (nz, ny, nx)
 
+def show_lines(self, ax=None, co_dict=None,**kwargs):
+    '''Show muliple lines contained in co_dict.
+    
+    parameters
+    ----------
+        ax: plt.Axes
+            axis or None to generate a fig with axis
+        co_dict: dict with model coordinates to be plotted
+            coordinates are co_dict[key][:,0], co_dict[key][:,1]
+            
+        kwargs ['title', 'xlabel', 'ylabel', 'xlim', 'ylim'] --> ax
+
+        all other kwargs --> ax.plot
+        
+    TO 180608
+    '''
+    if ax is None:
+        fig, ax = plt.subplots()
+        ax.set_title(kwargs.pop('title', 'Title'))
+        ax.set_xlabel(kwargs.pop('xlabel', 'x [m]'))
+        ax.set_ylabel(kwargs.pop('ylabel', 'y [m]'))
+        ax.grid()
+    if 'xlim' in kwargs: ax.set('xlim', kwargs.pop('xlim'))
+    if 'ylim' in kwargs: ax.set('ylim', kwargs.pop('ylim'))
+    
+    for k in co_dict:
+        ax.plot(co_dict[k][:,0], co_dict[k][:,1], label=k)
+
 
 class StressPeriod:
     
@@ -265,30 +293,7 @@ class StressPeriod:
         
         return dict().fromkeys(sp_stp, labels)
     
-    def show(self, ax=None, co_dict=None,**kwargs):
-        '''Show the lekvakken.
-        
-        parameters
-        ----------
-            ax: plt.Axis
-                axis or None to generate a fig with axis
-            mdl: dict with contours to be plotted
-                coordinates are mdl[key][:,0], mdl[key][:,1]
-        '''
-        if ax is None:
-            fig, ax = plt.subplots()
-            ax.set_title('Lekvakken')
-            ax.set_xlabel('x mdl [m]')
-            ax.set_ylabel('y mdl [m]')
-        for i in self.events.index: 
-            se = self.events.loc[i]
-            ax.plot([se.x1, se.x2, se.x2, se.x1, se.x1],
-                    [se.y2, se.y2, se.y1, se.y1, se.y2], **kwargs)
-        if co_dict is not None:
-            for k in co_dict:
-                ax.plot(co_dict[k][:,0], co_dict[k][:,1], label=k)
-        
-
+    
             
     def get_times(self, asfloats=True, tunit='D', sp_only=False, aslists=True):
         '''Return datetime all steps, starting at start time of SP[0].
@@ -341,7 +346,35 @@ class StressPeriod:
             return [list(_steplen.keys()),list( _steplen.values())]
         else:
             return _steplen        
+
             
+    def show(self, ax=None, co_dict=None, **kwargs):
+        '''Show the lekvakken.
+        
+        parameters
+        ----------
+            ax: plt.Axis
+                axis or None to generate a fig with axis
+            co_dict: dict with model coordinates to be plotted
+                coordinates are co_dict[key][:,0], co_dict[key][:,1]
+        '''
+        
+        if ax is None:
+            fig, ax = plt.subplots()
+            ax.set_title(kwargs.pop('title', 'Title'))
+            ax.set_xlabel(kwargs.pop('xlabel', 'x [m]'))
+            ax.set_ylabel(kwargs.pop('ylabel', 'y [m]'))
+        if 'xlim' in kwargs: ax.set_xlim('xlim')
+        if 'ylim' in kwargs: ax.set_ylim('ylim')
+        
+        for i in self.events.index: 
+            se = self.events.loc[i]
+            ax.plot([se.x1, se.x2, se.x2, se.x1, se.x1],
+                    [se.y2, se.y2, se.y1, se.y1, se.y2], **kwargs)
+        if co_dict is not None:
+            for k in co_dict:
+                ax.plot(co_dict[k][:,0], co_dict[k][:,1], label=k)
+
 
 
 def cleanU(U, iu):
@@ -623,20 +656,21 @@ class Grid:
 
         # axial symmetry or not
         if not isinstance(self.axial, bool):
-            print("\n\
+            raise ValueError(
+                '''
                 axial={0} must be boolean True or False.\n\
                 Remedy:\n\
                 use axial=True or axial=False explicitly\n\
-                when calling mfgrid.Grid class")
-            raise ValueError("See printe message for details.")
+                when calling mfgrid.Grid class
+                ''')
 
         if not isinstance(self._min_dz, float) or self._min_dz <= 0.:
-            print("\n\
-                  min_dz must be a postive float.\n\
-                  Remedy:\n\
-                      Use min_dz=value explicitly when calling mfgrid.Grid")
-            raise ValueError("See printed message for details.")
-
+            raise ValueError(
+                '''
+                min_dz must be a postive float.
+                Remedy:
+                Use min_dz=value explicitly when calling mfgrid.Grid
+                ''')
 
     @property
     def georef(self):
@@ -1694,20 +1728,33 @@ class Grid:
         return Grid(up, vp, wp)
 
 
-    def outer(self, xy0, xy1):
+    def outer(self, xy0, xy1, world=True):
         """return outer product of nodes with respect of  line from xy0 to xy1.
 
-        layer wise.
+        To find which points lie on one side of a line.
 
         Negative values lie to the left of the line and positive to the right.
 
+        example
+        -------
+        left  = gr.outer(xy0, xy1) < 0
+        right = gr.outer(xy0, xy1) > 0
+
         parameters
         ----------
-            xy0, xy1: 2-tuples or 2-arrays of line from x0y to xy1
+            xy0: array_like 2 floats
+                first point of line from xy0 to xy1.
+            xy1: array_like of 2 floats
+                second point of line from xy0 to xy1.
+            world : boolean [True]
+                use world or model coordinates.
         """
         x0, y0 = xy0
         x1, y1 = xy1
-        return (x1 - x0) * (self.Ym - y0) - (y1 - y0) * (self.Xm - x0)
+        if world:
+            return (x1 - x0) * (self.YMw - y0) - (y1 - y0) * (self.XMw - x0)
+        else:                
+            return (x1 - x0) * (self.YM  - y0) - (y1 - y0) * (self.XM  - x0)
 
 
     def ixyz2global_index(self, ix, iy, iz):
@@ -2067,6 +2114,42 @@ class Grid:
                 'xw': xw, 'yw': yw}
 
 
+    def interp_map(self, surf):
+        '''Return array of (self.ny, self.nx) with interpolated surf values.
+
+        Returns the map (called surf) cell values. `surf['z'] is an array (my, mx)
+        in which grid world coordinates surf['x'], surf['y'] lie. So surf['x']
+        and surf['y'] are aligned with world axes.
+        This interpolater pickes the surf['z'] value in which the grid coordinate
+        lies. No smoothing is done.
+        
+        This function is useful to for instance get elevations, when they
+        are given as a high-resolution array aligned with world coordinates.
+        
+        parameters
+        ----------
+            surf : dict {'x', 'y', 'z'}
+               x : x_coordinates (world coordinates)
+               y : y_coordinates (world coordinates)
+               
+               z : value array of shape (len(y), len(x))
+            
+                make sure x and y cover total model to prevent NaNs.
+            
+        TO 180609
+            
+        '''
+        x, y = surf['x'], surf['y']
+        
+        sign = 1 if y[-1] > y[0] else -1
+
+        ix = np.interp(       self.Xmw.ravel(),        x, np.arange(len(x)))
+        iy = np.interp(sign * self.Ymw.ravel(), sign * y, np.arange(len(y)))
+        ix = np.asarray(ix, dtype=int)
+        iy = np.asarray(iy, dtype=int)
+        return surf['z'][[iy], [ix]].reshape((self.ny, self.nx))
+        
+
     def plot_grid(self, ax=None, row=None, col=None, world=False, **kwargs):
         '''Plot the grid in model or world coordinates
 
@@ -2283,6 +2366,107 @@ class Grid:
                      Y[iz, :, :].ravel(),
                      Z[iz, :, :].ravel(), color[2], **kwargs)
         return ax
+
+
+    def show(self, A, filled=False, **kwargs):
+        '''Contour array A and show it.
+
+        Same as method gr.contour( )
+        
+        parameters
+        ----------
+        A : np.ndarray or 3D np.array(nz, ny, nx) or list of 2D np.arrays(ny, nx)
+            Array(s) to be plotted. Their shape is (self.ny, self.nx)
+        labels: list of labels for the arrays (for the legend).
+        filled : bool
+            if True, ax.contourf is used if False, ax.contour is used
+        
+        additional kwargs        
+        -----------------
+            kwargs ['title', 'xlabel', 'ylabel', 'xlim', 'ylim',
+            'xscale', 'yscale'] --> ax 
+
+            kwargs ['fmt', 'fz',, 'inline', 'inline_spacing'] --> clabel
+            will be passed on to plt.contourf
+            
+            all other kwargs --> ax.contour, ax.contourf resp.
+            
+            See doc of ax.contour for details
+        '''
+        return self.contour(A, filled=filled, **kwargs)
+        
+        
+    def contour(self, A, filled=False,  **kwargs):
+        '''Contour array A and show it.
+        
+        parameters
+        ----------
+        A : np.ndarray or 3D np.array(nz, ny, nx) or list of 2D np.arrays(ny, nx)
+            Array(s) to be plotted. Their shape is (self.ny, self.nx)
+        labels: list of labels for the arrays (for the legend).
+        filled : bool
+            if True, ax.contourf is used if False, ax.contour is used
+        
+        additional kwargs        
+        -----------------
+            kwargs ['title', 'xlabel', 'ylabel', 'xlim', 'ylim',
+            'xscale', 'yscale'] --> ax 
+
+            kwargs ['fmt', 'fz',, 'inline', 'inline_spacing'] --> clabel
+            will be passed on to plt.contourf
+            
+            all other kwargs --> ax.contour, ax.contourf resp.
+            
+            See doc of ax.contour for details
+        '''
+        
+        if A.ndim < 3:
+            M = [A]
+        else:
+            M = A
+
+        lblkw = {'fmt':'%.1f', 'fz': 8, 'inline': 1, 'inline_spacing': 1.0}
+        for k in lblkw:
+            lblkw[k] = kwargs.pop(k, lblkw[k])
+        lblkw['fontsize'] = lblkw['fz']
+        
+        ax = kwargs.pop('ax', None)
+        if ax is None:
+            fig, ax = plt.subplots()
+        
+        ax.set_title(kwargs.pop('title', 'Showing contour of given 2D array'))
+        ax.set_xlabel(kwargs.pop('xlabel', 'x [m]'))
+        ax.set_ylabel(kwargs.pop('ylabel', 'y [m]'))
+        xlim   = kwargs.pop('xlim',   None)
+        ylim   = kwargs.pop('ylim',   None)
+        xscale = kwargs.pop('xscale', None)
+        yscale = kwargs.pop('yscale', None)
+        
+        labels   = kwargs.pop('labels', np.arange(len(M), dtype=int))
+        fontsize = kwargs.pop('fontsize', None)
+        if fontsize is None:
+            fontsize = kwargs.pop('fz', 8)
+        
+        if xlim: ax.set_xlim(xlim)
+        if ylim: ax.set_ylim(ylim)
+        if xscale: ax.set_xscale(xscale)
+        if yscale: ax.set_yscale(yscale)
+        ax.grid()
+        
+        if filled:
+            cfun = ax.contourf
+        else:
+            cfun = ax.contour
+        
+        for B, label in zip(M, labels):
+            cs  = cfun(self.xm, self.ym, B, **kwargs)
+            plt.clabel(cs, **lblkw)
+            if filled:
+                plt.colorbar(cs, ax=ax)
+
+        plt.show()
+        return
+    
 
 
     def const(self, u, dtype=float, axial=False):
