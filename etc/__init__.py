@@ -1,9 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-tools by Theo Olsthoo
 
 @author: Theo
 """
 
+from pra import *
 
-from etc import *
