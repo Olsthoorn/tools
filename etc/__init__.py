@@ -4,5 +4,6 @@
 @author: Theo
 """
 
-from pra import *
+from .pra import *
+from .etc import *
 
