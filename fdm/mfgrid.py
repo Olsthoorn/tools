@@ -2833,7 +2833,6 @@ def sinspace(x1, x2, N=25, a1=0, a2=np.pi/2):
     x[1:] = x1 + np.cumsum(dx)   # fill x[1:]
     return x
 
-print('def inpoly(...)')
 
 def inpoly(x, y, pgcoords):
     """Returns bool array [ny, nx] telling which grid points are inside polygon
