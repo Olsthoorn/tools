@@ -312,6 +312,22 @@ class Base_Piezom:
                 raise ValueError('self.dds not found. Remedy: Initialize spycifying t0dd explictly')
 
         return att
+    
+    
+    def apply(self, fun):
+        '''Return df with function fun applied on all its columns.
+        
+        works like pd.DataFrame.apply()
+        
+        @ TO 2018-06-22 16:02
+        '''
+        funName = str(fun).split(' ')[1]
+        
+        df = self.hds.apply(fun).to_frame
+        df.columns = [funName]
+        
+        return df.T
+
 
 
     def plot(self, cols=None, tstart=None, tend=None, dd=False,
@@ -537,6 +553,60 @@ class Base_Piezoms(collections.UserDict):
         ax.legend(loc='best')
 
 
+    def apply(self, funs, tstart='1900-01-01', tend='2250-01-01'):
+        '''Return df with function fun applied on all its columns.
+        
+        works like pd.DataFrame.apply()
+        
+        parameters
+        ----------
+        funs :  list of ufunc to apply (single string ok)
+            the function to apply in turn ['np.var', 'np.std', ...]
+        tstart: pd.Timestamp or str representing one
+            start time to limit application range
+        tend: pd.Timestamp or str represending one
+            end time to truncate application range
+        
+        @ TO 2018-06-22 16:02
+        '''
+        
+        # Verify that no ufuncs are used.
+        for f in funs:
+            if 'ufunc' in str(f):
+                raise ValueError(
+                '''Don't' use {}. You can only use functions that
+                   reduce, like np.sum, np.var, np.mean,
+                   not ufuncs like np.sin, np.log etc.'''.format(str(f)))
+
+                
+        funsplit = lambda fun : str(fun).replace("'"," ").replace('  ',' ').split(" ")[1]
+                
+        #import pdb; pdb.set_trace()
+        
+        if not isinstance(funs, (tuple, list)):
+            funs     = [funs]
+        
+        names    = list(self.keys()) # list of piezometer names
+        funNames = [funsplit(fun) for fun in funs]
+        columns  = self[names[0]].hds.columns # column used in each piez[name].hds
+    
+        Dout = pd.DataFrame(columns=pd.MultiIndex.from_product([funNames, columns]))
+    
+        tstart = pd.Timestamp(tstart)
+        tend   = pd.Timestamp(tend)
+    
+        for fun, funName in zip(funs, funNames):
+            for name in names:
+                
+                # Get the hds of this piezom and truncate time
+                D      = self[name].hds
+                values = D[AND(D.index >= tstart, D.index <= tend)].apply(fun).values
+
+                Dout.loc[name, funName] = values
+
+        return Dout.swaplevel(0, 1, axis=1).sort_index(level=0, axis=1)
+                
+
         
     def to_shape(self, t, shapefile=None, dd=False):
         '''Generate a point shapefile with the head or drawdown data.
@@ -641,7 +711,7 @@ class Calib(Base_Piezom):
 
         M    = self.meta
         
-        LRC = gr.ixyz(M['x'], M['y'], 0.5 * (M['z0'] + M['z1']), order='LRC', world=True)
+        LRC = gr.ixyz(M['x'], M['y'], 0.5 * (M['z1'] + M['z2']), order='LRC', world=True)
 
         L, R, C = LRC[0]
         
@@ -706,8 +776,19 @@ class Calibs(Base_Piezoms):
         '''
         self.data = dict()
         
+        #import pdb; pdb.set_trace()
+        
+        missed = []
+        
         for name in piezoms:
-            self.data[name] = Calib(piez=piezoms[name], gr=gr, HDS=HDS, t0sim=t0sim)
+            try:
+                self.data[name] = Calib(piez=piezoms[name], gr=gr, HDS=HDS, t0sim=t0sim)
+            except Exception as err:
+                logger.debug("piezom[{}]: {}".format(name, err.args[0]))
+                missed.append(name)
+
+        if missed:
+            logger.info('Missed piezometers: [{}]'.format(', '.join(missed)))
     
   
 #%%
@@ -751,7 +832,8 @@ class Piezom(Base_Piezom):
     '''
     
     def __init__(self, path2csv, key, meta=None, tstart=None, tend=None,
-                 verbose=None, csvparams=None, **kwargs):
+                 verbose=None, csvparams=None,
+                 outlier_cols=None, outlier_fences=(1.5, 3.0), **kwargs):
         '''Return Piezometers read from csv file.
         
         parameters
@@ -771,6 +853,12 @@ class Piezom(Base_Piezom):
             truncate time after.
         verbose: bool
             if true show graph.
+        outlier_cols : str or series of column names
+            columns to check for ourliers
+            Outlier reporting is only done of outlier_cols is not None
+        outlier_fences : tuple of 2 floats default (1.5, 3.0)
+            inner and outer fences to use for finding ourliers.
+
         kwargs: additional kwargs
         '''
         
@@ -782,13 +870,80 @@ class Piezom(Base_Piezom):
         data = pd.read_csv(self.path, **csvparams)
 
         #self.data = self.cleanup(verbose=verbose, threshold=threshold)
-        data = data.dropna()
+        # this removes all lines
+        data = data.dropna(how='all')
+
         
-        tstart = data.index[ 0] if tstart is None else np.datetime64(tstart)
-        tend   = data.index[-1] if tend   is None else np.datetime64(tend  )
+        tstart = data.index[ 0] if tstart is None else pd.Timestamp(tstart)
+        tend   = data.index[-1] if tend   is None else pd.Timestamp(tend  )
+        
         
         self.hds = data.loc[AND(data.index >= tstart, data.index <= tend), :].copy()
+        
+        if outlier_cols:
+            self.report_outliers(outlier_cols, outlier_fences)
+  
     
+    def report_outliers(self, cols=None, fences=(1.5, 3.0)):
+        '''Report outliers in a pd.DataFrame column Col.
+        
+        parameters
+        ----------
+        df : pd.DagaFrame
+            pandas DataFrame to be inspected.
+        name : str
+            identifier used in reporting. (Default is 'name??')
+        cols : str or series of str
+            column names in df to check for outliers.
+            names must be columns of df.
+        fences : a 2 float sequence, default (1.5, 3.0)
+          inner and outer fence limit such that
+            inner outlier fence factor: potential outlier:
+              OR ( < median - inner * (Q3 - Q1), > median + inner * (Q3 - Q1))
+            outer outlier fence factor: outlier : outer * Q75-Q25quarter range
+              OR ( < median - outer * (Q3 - Q1), > median + outer * (Q3 - Q1))
+        
+        >>> df = pd.DataFrame(index=np.arange(10), data=np.random.randn(10, 3), columns=['a', 'b', 'c'])
+        >>> df.loc[[2, 5], 'b'] = [2.4, -10]
+        >>> col = 'b'
+        >>> get_outliers(df[col])  # ds[col] is a pd.Series not a pd.DataFrame !
+        
+        
+        @ TO 2018-06-22 12:30
+        '''
+        
+        inner, outer = fences
+        
+        D = self.hds
+        
+        if isinstance(cols, str):
+            cols = [cols]
+        for col in cols:
+            if col not in D.columns:
+                raise KeyError('Column <{}> not in data frame with columns\n[{}]'
+                               .format(col, ', '.join(D.columns)))
+        
+        Q3 = D.quantile(0.75)[cols]
+        Q1 = D.quantile(0.25)[cols]
+        dQ = Q3 - Q1
+        med = D.median()[cols]
+        
+        innerFence = med - inner * dQ, med + inner * dQ
+        outerFence = med - outer * dQ, med + outer * dQ
+        
+        potOutliers  = np.logical_or(D[cols] < innerFence[0], D[cols] > innerFence[1])
+        truOutliers  = np.logical_or(D[cols] < outerFence[0], D[cols] > outerFence[1])
+        
+        if np.any(potOutliers):            
+            print('{} is outside ({} * inner_quartile_range):'.format(self.name, inner))
+            print(D.iloc[np.where(potOutliers)[0]].loc[:, cols])
+            print()
+        if np.any(truOutliers):
+            print('{} is outside ({} * inner_quartile_range):'.format(self.name, outer))
+            print(D.iloc[np.where(truOutliers)[0]].loc[:, cols])
+            print()
+                
+
     
 class Piezoms(Base_Piezoms):
     '''Piezoms is a collection of Piezom objects, representing piezometers with
@@ -801,7 +956,8 @@ class Piezoms(Base_Piezoms):
     '''
     
     def __init__(self, path2csv, pattern='*.csv', namefun=None, collars=None,
-                 csvparams=None, tstart=None, tend=None, verbose=True, **kwargs):
+                 csvparams=None, tstart=None, tend=None, verbose=True,
+                 outlier_cols=None, outlier_fences=(1.5, 3.0), **kwargs):
         '''Return Piezometers collection (based on UserDict)
         
         parameters
@@ -847,9 +1003,19 @@ class Piezoms(Base_Piezoms):
                 Truncate at front of time series. E.g. '2018-05-14 15:20'
             tend:    np.datetime64[ns] obj or str indicating date time
                 Truncate at end of tiem series. E.g. '2018-06-18 20:00'
+            outlier_cols : str or series of column names
+                columns to check for ourliers.
+                Outlier reporting is only done of outlier_cols is not None.
+            outlier_fences : tuple of 2 floats default (1.5, 3.0)
+                inner and outer fences to use for finding ourliers.
+                
         '''
-        
         self.data = dict()
+
+        missing = []
+                
+        #import pdb
+        #pdb.set_trace()
         
         # Generate Piezom objects from reading CSV files
         for csvName in glob.glob(os.path.join(path2csv, pattern)):
@@ -857,15 +1023,19 @@ class Piezoms(Base_Piezoms):
             name = os.path.splitext(os.path.basename(csvName))[0]
             
             try:
-                meta = dict(collars.T[name])
+                meta = dict(collars[name])
                 meta['iz'] = np.nan # will be set in Calib not in Piezom becaus needs model grid
-            except:
-                raise LookupError(
-                    'name {} not in collars with our without namefun applied.'
-                            .format(name))
             
-            self.data[name] = Piezom(path2csv, name, meta=meta, threshold=0.025,
-                 tstart=tstart, tend=tend, csvparams=csvparams, verbose=verbose, **kwargs)
+                self.data[name] = Piezom(path2csv, name, meta=meta, threshold=0.025,
+                    tstart=tstart, tend=tend, csvparams=csvparams, verbose=verbose,
+                    outlier_cols=outlier_cols, outlier_fences=outlier_fences,
+                    **kwargs)
+            except:
+                missing.append(name)
+        if missing:
+            logger.debug('''The following CSV files could not be read because
+                         their corresponding collar is missing''')
+            logger.debug('[{}]'.format(', '.join(missing)))
         return
 
 
@@ -945,6 +1115,11 @@ if __name__ == '__main__':
     PBGRA3.plot(cols='measured')
     
     piezoms.plot(cols='measured')
+    
+    piezoms.apply(funs=[np.var, np.min, np.max, np.sin, np.log],
+                  tstart='2018-05-14 20:00', tend='2018-05-18 14:00')
+    
+    
     
     calibs = Calibs(piezoms, gr=gr, HDS=HDS, t0sim=t0sim)
     
