@@ -20,6 +20,7 @@ import pandas as pd
 import shape
 import logging
 import etc
+import datetime
 
 size_inches=(11.5, 7.0)
 
@@ -47,7 +48,7 @@ AND = np.logical_and
 
 
 #%%
-def theis_analysis(obj, well=None, col='measured'):
+def theis_analysis(obj, t0dd=None, well=None, col='measured'):
     '''Return steepest gradient per logcycle and t where s=0.
     
     This is based on the simplified Theis solution that yield
@@ -89,17 +90,28 @@ def theis_analysis(obj, well=None, col='measured'):
         line. Where the gradiet of the measured curved line is maximum
         is taken as the tangent point of the straigh line.
     '''
-    
+
+    #import pdb; pdb.set_trace()
+
+    if isinstance(col, (list, tuple)):
+        raise ValueError('''Col must be a str corresponding to one of the
+                         header in self.dhs, preferably 'measured''')
+
+    if not col in obj.hds.columns:
+        raise ValueError('''Col must be one of the column headers
+                in obj.hds DataFrame: [{}]'''.format(', '.join(obj.hds.columns)))
+
+
     D = obj.dds  # the drawdown pd.DataFrame
     
-    logt = np.log10(D.index / np.timedelta64(1, 'D')) # in days
+    logt = np.log10((D.index - t0dd) / pd.Timedelta('1 days')) # in days
     
     # step size at log time scale
-    step       = np.log10(2.)
+    lg_step       = np.log10(1.25)
 
     # discrete time points at equal distance on log time scale    
-    logt_pnts  = np.arange(logt[0], logt[-1], step)
-    dd_pnts    = np.interp(logt_pnts, logt, D[col])
+    logt_pnts  = np.arange(logt[0], logt[-1], lg_step)
+    dd_pnts    = np.interp(logt_pnts, logt, D[col] - D[col][0])
 
     # gradients between the discrte points        
     gradients  = np.diff(dd_pnts) / np.diff(logt_pnts)
@@ -122,12 +134,13 @@ def theis_analysis(obj, well=None, col='measured'):
 
     # store this in dict.
     theis = {
+        't0dd'       : t0dd, # absolute reference, pd.Timestamp
         'dd_logcycle': dd_logcycle,
-        't_dd0' : 10**(lt_dd0),
-        't_maxGrad': 10**(lt_maxGrad),
-        'dd_maxGrad': dd_maxGrad,
-        'maxGrad': maxGrad,
-        'dd_max' : np.max(D[col])}
+        't_dd0'      : 10**(lt_dd0),  # in days (floats)
+        't_maxGrad'  : 10**(lt_maxGrad), # in days (floats)
+        'dd_maxGrad' : dd_maxGrad,
+        'maxGrad'    : maxGrad,
+        'dd_max'     : np.max(D[col])}
     
     if well is not None:
         try:
@@ -146,7 +159,7 @@ def theis_analysis(obj, well=None, col='measured'):
         
         theis.update({'r': R, 'kD': kD, 'S': S, 'well': well})
         
-        logger.info('kD and S added to self.dd_theis set for piezometer {}'.format(obj.name))
+        logger.info("{}: kD = {:10.5g} and S = {:10.4g}".format(obj.name, kD, S))
     
     return theis
 
@@ -198,7 +211,7 @@ class Base_Piezom:
     
 
 
-    def drwdn(self, t0dd=None, well=None, theis=False, out=True):
+    def drwdn(self, t0dd=None, well=None, theis=False, out=True, col='measured'):
         '''Return drawdown with respect to timestamp t0dd.
     
         In all cases, the resutting drawdown DataFrame is stored as self.dds
@@ -210,6 +223,10 @@ class Base_Piezom:
         self.meta['theis']
         
         If well is not None, then kD and S are computed and stored along with theis.
+        
+        The drawdown is computed for all columns in self.hds and stored in self.dds.
+        
+        The argument col is only used in thei_analysis.
     
         
         Parameters
@@ -226,90 +243,102 @@ class Base_Piezom:
         out : bool
             if True return dd DataFrame and theis of theis==True
             if False return None
+        col : str
+            name of column in the created self.dds that will be used in
+            theis_analysis when it is invoked. Default = 'measured'
         '''
         
+        #import pdb; pdb.set_trace()
+
         if t0dd is None:
             raise ValueError('t0dd must be specified when calling self.drwdn()')
-        else:
-            t0dd = pd.Timestamp(t0dd)
             
-        att = self.attime(t=t0dd, dd=False, cols=None)
+        if not isinstance(t0dd, (str, pd.Timestamp, np.datetime64, datetime.datetime)):
+            raise ValueError('t0dd must be a pd.Timestamp or a str representing one, not {}'
+                             .format(str(t0dd)))
+
+        t0dd = pd.Timestamp(t0dd)
+            
+        self.meta['t0dd'] = t0dd
         
-        # Also truncates the ddn
+        # To genrerate drawdown strat by copying the heads
+        # and truncate anything before t0dd
         self.dds = self.hds.loc[self.hds.index > t0dd].copy()
         
-        for col in self.dds.columns:
-            self.dds[col] = self.dds[col] - att[col]
-            
-        self.dds.index = self.dds.index - t0dd
+        # Get the values in self.hds for all columns at t0dd
+        att = self.attime(t=t0dd, dd=True, cols=None)
+        
+        # Subtract the values at t0dd, not that att is a dictionary
+        for _col_ in self.dds.columns:
+            self.dds[_col_] -= att[_col_]
     
-        self.meta['t0dd'] = t0dd
+        # store the t0dd for this drawdown object
+        if theis: # in case a Theis approximation analysis is requested:
+            # Do theis analysis and store retulting dict in self.meta
+            # Theis uses the default col name "measured"
+            self.meta['theis'] = theis_analysis(self, t0dd=t0dd, well=well)
             
-        if theis:
-            self.meta['theis'] = theis_analysis(self, well=well, col=col)
-            
-            logger.info('self.dd_theis set for piezometer {}'.format(self.name))
+            # Inform user that it's done.
+            logger.info("theis --> self[{}].meta['dd_theis']".format(self.name))
 
+            # In case user wants to catch it directly return this Theis object
             if out:
                 return self.dds, self.meta['theis']
         elif out:
+            # In case theis was not requested and user want output return the drawdown DataFrame
             return self.dds,
     
 
     def attime(self, t=None, dd=False, cols=None):
-        '''Return head (interpolated) at t.
+        '''Return adict with the values interpolated at time t.
+        
+        Ar time resturns the values of the passed data frame at time t by
+        linear interpolation. Therefore, the index of the DataFrame or
+        series passed into this function must always be in p.Timestamp. You can
+        always compute a timedelta index by subtrating a Timestamp from the
+        axis.
         
         parameters
         ----------        
             t  : np.datetime64 object or a str representing one (a single datetime)
                 time that head is resired.
             dd: bool
-                if True compute drawdown else compute head
+                if True interpolate using the index of self.dds else of self.hds
             cols: str or list of str
                 name of column(s) in hds or dds DataFrame to use, e.g.:
                     cols = ['meausured', 'computed', 'diff'] or
-                    cols = 'computed'                
+                    cols = 'computed'
+        returns
+        -------
+        att: dict
+            Dictionary with self.meta plus the column names as extra keys
+            with the interpolated collumn values at time t. The dict
+            also contains the time passed in.
+            The key 'dd' is stored to indicate that intepolation was done
+            on self.dds instead of self.hds. But dd has the effect of using
+            either self.hds if dd == False or self.dds othewise.
+            The index of both the self.hds and self.dds pd.DataFrames is
+            in pd.Timestamps.
         '''
         if isinstance(cols, str): cols = [cols]
+        
+        if isinstance(t, (str, np.datetime64, datetime.datetime)):
+            t = pd.Timestamp(t)
+        else:
+            raise ValueError("Can't handle t: {}".format(str(t)))
         
         att = {'name': self.name, 't': t, 'dd': dd}
         att.update({k: self.meta[k] for k in self.meta})
         
         if dd == False:
-            t        = pd.Timestamp(t)
-            td_f     = (t - self.hds.index[0]) / np.timedelta64(1, 's')
-            td_ind_f = (self.hds.index - t)    / np.timedelta64(1, 's')
-            for col in self.hds.columns:
-                att[col] = np.interp(td_f, td_ind_f, self.hds[col])
+            DF = self.hds
         else:
-            '''
-            The drawdown index is always in timedelta relative to t0dd
-            so the t must be given as float or timedelta in case
-            dd==True.
-            '''            
-            if isinstance(t, float):
-                td = t * np.timedelta64( np.timedelta64( 1, 'D'), 's') # seconds for accuracy
-            elif isinstance(t, np.timedelta64): # ok
-                td = np.timedelta64(t, 's')
-                pass
-            else:
-                raise ValueError(
-                        '''
-                        t must be instance of (float, or np.timedelta64) or
-                            to denote relative time after t0dd
-                        t must be instance of (str, np.timdelta64 or pd.Timestamp)
-                            to denote absolute time of drawdown.
-                        ''')
-
-            td_f     = td / np.timedelta64(1, 's')  # float because t = timedela64
-
-            try:            
-                td_idx_f = np.asarray(self.dds.index, dtype='timedelta[s]') / np.timedelta64(1, 's')
-
-                for col in cols:
-                        att[col] = np.interp(td_f, td_idx_f, self.dds[col])
-            except:
-                raise ValueError('self.dds not found. Remedy: Initialize spycifying t0dd explictly')
+            DF = self.dds
+        
+        td_f     = (DF.index[0] - t) / pd.Timedelta(1, 'D')
+        td_ind_f = (DF.index    - t) / pd.Timedelta(1, 'D')
+        for col in DF.columns:
+            att[col] = np.interp(td_f, td_ind_f, DF[col])
 
         return att
     
@@ -348,13 +377,31 @@ class Base_Piezom:
         
         # Make sure self.dds exists.
         if dd == True:
-            self.drwdn(t0dd=t0dd, well=well, theis=theis, out=False)
+            if t0dd is None:
+                raise ValueError('''Because drawdowns are computed on the fly,
+                    you must specify t0dd.
+                    Specify t0dd as a pd.Timestamp or a str representing one.''')
         
+            try:                        
+                t0dd = pd.Timestamp(t0dd)
+            except:
+                raise ValueError('''Can't handle t0dd given as {}.
+                        t0dd must be convertable to pd.Timestamp.'''.format(t0dd))
+
+            # Generate drawdowns on the fly to ensure t0dd is up to data
+            self.dds = self.drwdn(t0dd=t0dd, well=well, theis=theis, out=True, col=cols)[0]
+
+            DF = self.dds
+            plot_index = (DF.index - t0dd) / pd.Timedelta(1, 'D')
+        else:
+            DF = self.hds
+            plot_index = DF.index
         
         if cols is None:
-            cols = list(self.hds.columns if dd==False else self.dds.columns)
+            cols = list(DF.columns)
         
-        if not isinstance(cols, (tuple, list)): cols=[cols]
+        if not isinstance(cols, (tuple, list)):
+            cols=[cols]
     
         if ax is None:
             legend = True
@@ -380,33 +427,30 @@ class Base_Piezom:
             legend=False
             
             
-        for i, col in enumerate(cols):
+        for col, ls in zip(cols, etc.line_cycler()):
             
-            # overwrite ls if more than one column
-            if i > 0: kwargs['ls'] = etc.linestyles_[i % len(etc.linestyles_)]
+            kwargs.update(ls)
             
-            if dd==False:
-                ax.plot(self.hds.index, self.hds[col], label='{} {}'.format(self.name, col), **kwargs)
-            else:
-                if 'dds' not in self.__dict__:
-                    raise ValueError(
-                            ''''self.dds not found. Remedy:
-                                Initialize specifying t0dd and possible well and theis explicitly''')
-                ax.plot(self.dds.index / np.timedelta64(1, 'D'), self.dds[col], label='{} {}'.format(self.name, col), **kwargs)
+            ax.plot(plot_index, DF[col], label='{} {}'.format(self.name, col), **kwargs)
     
-            if theis and col=='measured':
-                Th = self.meta['theis']
-                lgt = np.linspace(np.log10(Th['t_dd0']),
-                                  np.log10(Th['t_dd0']) + 1., 21)            
-                dd = np.linspace(0, Th['dd_logcycle'], 21)
-                
-                kwargs.update(
-                    {'ls': etc.linestyles_[(i + 1) % len(etc.linestyles_)], 'lw': 2})
-                         
-                
-                if len(lgt) > 0:
-                    ax.plot(10 ** lgt, dd, label=self.name + ' Th/Jac approx.', **kwargs)
+        if theis:
             
+            Th = self.meta['theis']
+            lgt = np.linspace(np.log10(Th['t_dd0']),
+                              np.log10(Th['t_dd0']) + 1., 21)            
+            dd = np.linspace(0, Th['dd_logcycle'], 21)
+            
+            if len(lgt) > 0:
+                kwargs.update({'ls': '-', 'lw':0.25})
+
+                ax.plot(10 ** lgt, dd, label=self.name + ' Th/Jac approx.', **kwargs)
+                
+                kwargs.update({'ls': '', 'marker': 'o'})
+                
+                ax.plot([Th[ 't_maxGrad'], Th['t_dd0' ]],
+                        [Th['dd_maxGrad'], 0],
+                        label=self.name + ' tan./t0dd', **kwargs)
+        
         if legend:
             ax.legend(loc='best')
         return
@@ -570,6 +614,8 @@ class Base_Piezoms(collections.UserDict):
         @ TO 2018-06-22 16:02
         '''
         
+        #import pdb; pdb.set_trace()
+        
         # Verify that no ufuncs are used.
         for f in funs:
             if 'ufunc' in str(f):
@@ -592,17 +638,24 @@ class Base_Piezoms(collections.UserDict):
     
         Dout = pd.DataFrame(columns=pd.MultiIndex.from_product([funNames, columns]))
     
-        tstart = pd.Timestamp(tstart)
-        tend   = pd.Timestamp(tend)
-    
+        missed = []
         for fun, funName in zip(funs, funNames):
             for name in names:
-                
-                # Get the hds of this piezom and truncate time
-                D      = self[name].hds
-                values = D[AND(D.index >= tstart, D.index <= tend)].apply(fun).values
+                try:
+                    # Get the hds of this piezom and truncate time
+                    D      = self[name].hds
+                    ts = D.index[ 0] if tstart is None else pd.Timestamp(tstart)
+                    te = D.index[-1] if tend   is None else pd.Timestamp(tend)
+                    values = D[AND(D.index >= ts, D.index <= te)].apply(fun).values
+    
+                    Dout.loc[name, funName] = values
+                except Exception as err:
+                    logger.info("Can't handle {} because {}".format(name, str(err)))
+                    missed.append(name)
 
-                Dout.loc[name, funName] = values
+        if missed:
+            print('Piezometers for which not all functions could be computed (perhaps empty dataFrame)')
+            print(missed)
 
         return Dout.swaplevel(0, 1, axis=1).sort_index(level=0, axis=1)
                 
@@ -666,6 +719,8 @@ class Calib(Base_Piezom):
         @TO 180618
         '''
         
+        #import pdb; pdb.set_trace()
+        
         self.name = piez.name
         self.meta = piez.meta.copy()
         self.gr = gr
@@ -704,37 +759,38 @@ class Calib(Base_Piezom):
             this fixes HDS.times to absolute datetime.
         '''
 
-        
-        hmflow  = HDS.get_alldata()
-        mask = hmflow < -900.
-        hmflow[mask] = np.nan
+        aday = pd.Timedelta(1, 'D')
 
-        M    = self.meta
+        piezom_times = (piez.hds.index - t0sim) / aday # in days
+        mflow_times  = HDS.times
         
-        LRC = gr.ixyz(M['x'], M['y'], 0.5 * (M['z1'] + M['z2']), order='LRC', world=True)
+        h_mflow  = HDS.get_alldata();
+        
+        mask = h_mflow < -900.; 
+        
+        h_mflow[mask] = np.nan
+
+        M = self.meta
+        
+        LRC = gr.ixyz(M['x'], M['y'], 0.5 * (M['z1'] + M['z2']),
+                                                  order='LRC', world=True)
 
         L, R, C = LRC[0]
         
         self.meta['iz'] = L # store this, it's the model layer
 
         # Get interpolated heads for all times at piezometer location:
-        htmf_at_piezom = [htmf[L, R, C] for htmf in hmflow]
+        ht_mflow_at_piezom = [ht_mflow[L, R, C] for ht_mflow in h_mflow]
         
-        aday = np.timedelta64(np.timedelta64(1, 'D'), 's')
-
-        timedeltas = np.array([t * aday for t in HDS.times])
-        timestamps = np.array([t0sim + td for td in timedeltas])
+        timestamps = [t0sim + t_mflow * aday for t_mflow in mflow_times]
         
         # Get measured and computed heads in a DataFrame
-        htdframe =  pd.DataFrame({'computed' :htmf_at_piezom}, index=timestamps)
-        
-        mflo_idx_as_floats = np.array(timedeltas, dtype=float)
-        piez_idx_as_floats = np.array(np.asarray(piez.hds.index -t0sim,
-                                        dtype=timedeltas.dtype), dtype=float)
+        ht_dframe =  pd.DataFrame({'computed' :ht_mflow_at_piezom}, index=timestamps)
 
         for col in piez.hds.columns:
-            htdframe[col] = np.interp(mflo_idx_as_floats, piez_idx_as_floats, piez.hds[col])
-        return htdframe
+            ht_dframe[col] = np.interp(mflow_times, piezom_times, piez.hds[col])
+
+        return ht_dframe
 
 
 #%%

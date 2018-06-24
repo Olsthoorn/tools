@@ -9,7 +9,7 @@ Created on Mon Jun 18 00:23:37 2018
 import numpy as np
 import pandas as pd
 
-__all__ = ['ddir', 'linestyles_', 'colors_', 'linestyle_cycler']
+__all__ = ['ddir', 'linestyles_', 'colors_', 'linestyle_cycler', 'line_cycler']
 
 import itertools
 
@@ -25,6 +25,9 @@ def linestyle_cycler():
         for c in colors_:
             yield {'ls': l, 'color': c}
 
+def line_cycler():
+    for ls in itertools.cycle(linestyles_):
+        yield {'ls': ls}
 
 
 
