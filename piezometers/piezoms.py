@@ -589,12 +589,19 @@ class Base_Piezoms(collections.UserDict):
         
         ax.grid()
     
+        missed = []
         for name, ls in zip(self, etc.linestyle_cycler()):
-            self[name].plot(cols=cols, dd=dd,
-                    t0dd=t0dd, tstart=tstart, tend=tend,
-                    well=well, theis=theis, **ls, ax=ax, **kwargs)
-            
+            try:
+                self[name].plot(cols=cols, dd=dd,
+                        t0dd=t0dd, tstart=tstart, tend=tend,
+                        well=well, theis=theis, **ls, ax=ax, **kwargs)
+            except Exception as err:
+                logger.debug("Couldn't plot []: {}".format(name, err))
+                missed.append(name)
+        
         ax.legend(loc='best')
+        if missed:
+            print('Not plotted: [{}]'.format(', '.join(missed)))
 
 
     def apply(self, funs, tstart='1900-01-01', tend='2250-01-01'):
