@@ -2842,7 +2842,7 @@ def inpoly(x, y, pgcoords):
         pgcoords = np.array(pgcoords)
         
     assert pgcoords.shape[1]==2 and pgcoords.ndim==2,\
-        "coordinates must be an arra of [n, 2]"
+        "coordinates must be an array of [n, 2]"
     pgon = Polygon(pgcoords)
 
     try:
