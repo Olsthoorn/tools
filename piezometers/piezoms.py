@@ -46,6 +46,66 @@ elli2CEST = lambda index: index - np.timedelta64(2, 'h') # used
 
 AND = np.logical_and
 
+#%%
+
+def outliers(df, cols=None, fence=3.0):
+    '''Report outliers in a pd.DataFrame column Col.
+    
+    parameters
+    ----------
+    df : pd.DagaFrame
+        pandas DataFrame to be inspected.
+    name : str
+        identifier used in reporting. (Default is 'name??')
+    cols : str or series of str
+        column names in df to check for outliers.
+        names must be columns of df.
+    fencee : a float
+        fence limit such that
+          < median - fence  * (Q3 - Q1), > median + fence * (Q3 - Q1))
+    
+    >>> df = pd.DataFrame(index=np.arange(10), data=np.random.randn(10, 3), columns=['a', 'b', 'c'])
+    >>> df.loc[[2, 5], 'b'] = [2.4, -10]
+    >>> col = 'b'
+    >>> get_outliers(df[col])  # ds[col] is a pd.Series not a pd.DataFrame !
+    
+    
+    @ TO 2018-06-22 12:30
+    '''
+    
+    D = df
+    
+    if isinstance(cols, str):
+        cols = [cols]
+    for col in cols:
+        if col not in D.columns:
+            raise KeyError('Column <{}> not in data frame with columns\n[{}]'
+                           .format(col, ', '.join(D.columns)))
+    
+    
+    D['med'] = D.rolling(9).median()
+    D.plot()
+    
+    if False:
+        Q3 = D.quantile(0.75)[cols]
+        Q1 = D.quantile(0.25)[cols]
+        dQ = Q3 - Q1
+        med = D.median()[cols]
+        
+        fence = med - fence * dQ, med + fence * dQ
+        
+        outliers  = np.logical_or(D[cols] < fence[0], D[cols] > fence[1])
+    
+        if np.any(outliers):
+            print('{} is outside ({} * inner_quartile_range):'.format(self.name, fence))
+            I = np.where(outliers)[0]
+            for i in I:
+                i0, i1 = max(0,i-5), min(len(D),i+6)
+                print('{} {}:{}'.format(self.name, i0,i1))
+                K = np.arange(i0, i1, dtype=int)
+                print(D.iloc[K, :])
+                print()                
+
 
 #%%
 def theis_analysis(obj, t0dd=None, well=None, col='measured'):
@@ -102,7 +162,7 @@ def theis_analysis(obj, t0dd=None, well=None, col='measured'):
                 in obj.hds DataFrame: [{}]'''.format(', '.join(obj.hds.columns)))
 
 
-    D = obj.dds  # the drawdown pd.DataFrame
+    D = obj.dds.copy().dropna(axis=0, how='any')  # the drawdown pd.DataFrame
     
     logt = np.log10((D.index - t0dd) / pd.Timedelta('1 days')) # in days
     
@@ -161,7 +221,7 @@ def theis_analysis(obj, t0dd=None, well=None, col='measured'):
         
         logger.info("{}: kD = {:10.5g} and S = {:10.4g}".format(obj.name, kD, S))
     
-    return theis
+    return theis # a dict
 
 
 #%%
@@ -211,7 +271,7 @@ class Base_Piezom:
     
 
 
-    def drwdn(self, t0dd=None, well=None, theis=False, out=True, col='measured'):
+    def drwdn(self, t0dd=None, well=None, theis=False, out=True, cols=None):
         '''Return drawdown with respect to timestamp t0dd.
     
         In all cases, the resutting drawdown DataFrame is stored as self.dds
@@ -243,18 +303,21 @@ class Base_Piezom:
         out : bool
             if True return dd DataFrame and theis of theis==True
             if False return None
-        col : str
-            name of column in the created self.dds that will be used in
+        cols : list of str or str
+            names of columns in the created self.dds that will be used in
             theis_analysis when it is invoked. Default = 'measured'
         '''
         
         #import pdb; pdb.set_trace()
 
         if t0dd is None:
-            raise ValueError('t0dd must be specified when calling self.drwdn()')
+            raise ValueError(
+                    't0dd must be specified when calling self.drwdn()')
             
-        if not isinstance(t0dd, (str, pd.Timestamp, np.datetime64, datetime.datetime)):
-            raise ValueError('t0dd must be a pd.Timestamp or a str representing one, not {}'
+        if not isinstance(t0dd, (str, 
+                            pd.Timestamp, np.datetime64, datetime.datetime)):
+            raise ValueError(
+                't0dd must be a pd.Timestamp or a str representing one, not {}'
                              .format(str(t0dd)))
 
         t0dd = pd.Timestamp(t0dd)
@@ -276,14 +339,24 @@ class Base_Piezom:
         if theis: # in case a Theis approximation analysis is requested:
             # Do theis analysis and store retulting dict in self.meta
             # Theis uses the default col name "measured"
-            self.meta['theis'] = theis_analysis(self, t0dd=t0dd, well=well)
+
+            if cols is None:
+                cols = self.dds.columns
+            elif isinstance(cols, str):
+                cols = [cols]
             
-            # Inform user that it's done.
-            logger.info("theis --> self[{}].meta['dd_theis']".format(self.name))
+            self.meta['theis'] = dict()
+            for col in cols:
+                self.meta['theis'][col] = theis_analysis(
+                            self, t0dd=t0dd, well=well, col=col)
+            
+                # Inform user that it's done.
+                logger.info(
+                    "theis --> self[{}].meta['dd_theis']".format(self.name))
 
             # In case user wants to catch it directly return this Theis object
-            if out:
-                return self.dds, self.meta['theis']
+        if out:
+            return self.dds, self.meta['theis']
         elif out:
             # In case theis was not requested and user want output return the drawdown DataFrame
             return self.dds,
@@ -389,7 +462,7 @@ class Base_Piezom:
                         t0dd must be convertable to pd.Timestamp.'''.format(t0dd))
 
             # Generate drawdowns on the fly to ensure t0dd is up to data
-            self.dds = self.drwdn(t0dd=t0dd, well=well, theis=theis, out=True, col=cols)[0]
+            self.dds = self.drwdn(t0dd=t0dd, well=well, theis=theis, out=True, cols=cols)[0]
 
             DF = self.dds
             plot_index = (DF.index - t0dd) / pd.Timedelta(1, 'D')
@@ -399,8 +472,7 @@ class Base_Piezom:
         
         if cols is None:
             cols = list(DF.columns)
-        
-        if not isinstance(cols, (tuple, list)):
+        elif not isinstance(cols, (tuple, list)):
             cols=[cols]
     
         if ax is None:
@@ -435,21 +507,22 @@ class Base_Piezom:
     
         if theis:
             
-            Th = self.meta['theis']
-            lgt = np.linspace(np.log10(Th['t_dd0']),
-                              np.log10(Th['t_dd0']) + 1., 21)            
-            dd = np.linspace(0, Th['dd_logcycle'], 21)
-            
-            if len(lgt) > 0:
-                kwargs.update({'ls': '-', 'lw':0.25})
-
-                ax.plot(10 ** lgt, dd, label=self.name + ' Th/Jac approx.', **kwargs)
+            for col in cols:
+                Th = self.meta['theis'][col]
+                lgt = np.linspace(np.log10(Th['t_dd0']),
+                                  np.log10(Th['t_dd0']) + 1., 21)            
+                dd = np.linspace(0, Th['dd_logcycle'], 21)
                 
-                kwargs.update({'ls': '', 'marker': 'o'})
-                
-                ax.plot([Th[ 't_maxGrad'], Th['t_dd0' ]],
-                        [Th['dd_maxGrad'], 0],
-                        label=self.name + ' tan./t0dd', **kwargs)
+                if len(lgt) > 0:
+                    kwargs.update({'ls': '-', 'lw': 0.5, 'marker': None})
+    
+                    ax.plot(10 ** lgt, dd, label=self.name + ' Th/Jac approx.', **kwargs)
+                    
+                    kwargs.update({'ls': '', 'marker': 'o'})
+                    
+                    ax.plot([Th[ 't_maxGrad'], Th['t_dd0' ]],
+                            [Th['dd_maxGrad'], 0],
+                            label=self.name + ' tan./t0dd', **kwargs)
         
         if legend:
             ax.legend(loc='best')
@@ -468,7 +541,7 @@ class Base_Piezoms(collections.UserDict):
 
 
 
-    def drwdn(self, t0dd=None, well=None, theis=False):
+    def drwdn(self, t0dd=None, well=None, theis=False, cols=None):
         '''Sets the drawdown for all piezometers as self[name].dds
         
         time of start drawdown is saved in self[name].mta['t0dd']
@@ -493,10 +566,12 @@ class Base_Piezoms(collections.UserDict):
                 kD and S will be computed of well is specified.
                 Computation is based on simplified logarithmic Theis drawdown:
                     s = Q/(4 pi kD) ln ((2.25 kD t) / (r**2 S))
+            cols: list of str or str
+                names of columns on which to apply theis analysis.
         '''
         for name in self:
             self[name].dds, theis_ = \
-                        self[name].drwdn(t0dd=t0dd, well=well, theis=theis, out=False)
+                        self[name].drwdn(t0dd=t0dd, well=well, theis=theis, out=False, cols=cols)
             
         logger.info("Drawdown computed are saved in self[name].dds for {} piezometers."
                     .format(len(self)))
@@ -571,10 +646,12 @@ class Base_Piezoms(collections.UserDict):
         fig, ax = plt.subplots()
         fig.set_size_inches(kwargs.pop('size_inches', size_inches))
         
+        typeStr = str(type(self)).replace("'>","").split('.')[-1]
+        
         if cols is None:
-            ax.set_title('Calibs, {}'.format('column names unspecified'))
+            ax.set_title('{}, {}'.format(typeStr, 'column names unspecified'))
         else:
-            ax.set_title('Calibs, {}'.format(', '.join(cols)))
+            ax.set_title('{}, {}'.format(typeStr, ', '.join(cols)))
         if dd == False:
             ax.set_xlabel('date and time')
             ax.set_ylabel('m NAP')
@@ -588,7 +665,7 @@ class Base_Piezoms(collections.UserDict):
         if 'fontsize' in kwargs: ax.set_fontsize(kwargs.pop('fontsize'))
         
         ax.grid()
-    
+        #import pdb; pdb.set_trace()
         missed = []
         for name, ls in zip(self, etc.linestyle_cycler()):
             try:
@@ -795,9 +872,12 @@ class Calib(Base_Piezom):
         ht_dframe =  pd.DataFrame({'computed' :ht_mflow_at_piezom}, index=timestamps)
 
         for col in piez.hds.columns:
-            ht_dframe[col] = np.interp(mflow_times, piezom_times, piez.hds[col])
-
+            ht_dframe[col] = np.interp(mflow_times, piezom_times, piez.hds[col],
+                     left=np.nan, right=np.nan)
+            
+        #return ht_dframe.dropna(axis=0, how='any')
         return ht_dframe
+
 
 
 #%%
@@ -838,6 +918,9 @@ class Calibs(Base_Piezoms):
             self[name] - Calib(piezoms[name], gr. HDS, t0sim, t0dd)
         '''
         self.data = dict()
+        
+        if piezoms is None:
+            return # allows generating an empty Calibs
         
         #import pdb; pdb.set_trace()
         
@@ -894,19 +977,21 @@ class Piezom(Base_Piezom):
     @TO 2018-06-18
     '''
     
-    def __init__(self, path2csv, key, meta=None, tstart=None, tend=None,
-                 verbose=None, csvparams=None,
-                 outlier_cols=None, outlier_fences=(1.5, 3.0), **kwargs):
+    def __init__(self, path2csv, filtNm=None, csvNm=None, meta=None,
+                 tstart=None, tend=None, verbose=None, csvparams=None,
+                 outlier_col=None, outlier_fence=3.0, outlier_window=11, **kwargs):
         '''Return Piezometers read from csv file.
         
         parameters
         ----------
         path2scsv : str
             name of piezometer
-        key: str
-            name of piezometer
+        filtNm: str
+            name of piezometer (hole name + filter, e.g. PBU060 + A = PBU060A)
+        csvNm : str
+            name of csv file without path, e.g. PBU060.csv
         meta : dict holding meta data containing keys
-                        'x', 'y', 'z0','z1'
+                        'x', 'y', 'z1','z2'
         threshold: float
             used in self.cleanup() to remove outliers in the data
             that show up as spikes. The value 0.025 proofs practical.
@@ -925,10 +1010,10 @@ class Piezom(Base_Piezom):
         kwargs: additional kwargs
         '''
         
-        self.name  = key
+        self.name  = filtNm
         self.meta = meta
         
-        self.path = os.path.join(path2csv, key + '.csv')
+        self.path = os.path.join(path2csv, csvNm)
         
         data = pd.read_csv(self.path, **csvparams)
 
@@ -943,11 +1028,38 @@ class Piezom(Base_Piezom):
         
         self.hds = data.loc[AND(data.index >= tstart, data.index <= tend), :].copy()
         
-        if outlier_cols:
-            self.report_outliers(outlier_cols, outlier_fences)
+        if outlier_col is not None:
+            self.remove_outliers(col=outlier_col,
+                                 fence=outlier_fence,
+                                 window=outlier_window)
   
     
-    def report_outliers(self, cols=None, fences=(1.5, 3.0)):
+    def remove_outliers(self, col=None, fence=3.0, window=11):
+        '''Return self.hds with outliers removed.
+        
+        parameters
+        ----------
+        col: str
+            column to check for outliers
+        fence: postivie float
+            threshold -->
+            D < med - (Q3 - Q2) * fence OR D > med + (Q3 - Q2) * fence
+        window: postive int
+            width in centered rolling window to compute median
+        '''
+        D  = self.hds[col]
+        Q3 = D.quantile(0.75)
+        Q1 = D.quantile(0.25)
+        dQ = Q3 - Q1
+
+        E = np.abs((D - D.rolling(window, center=True).median()) / dQ) < fence
+        E = D[E]
+        E.dropna()
+        self.hds = self.hds.loc[E.index]
+        
+        
+        
+    def report_outliers(self, col='measured', fence=3.0, window=11):
         '''Report outliers in a pd.DataFrame column Col.
         
         parameters
@@ -956,16 +1068,15 @@ class Piezom(Base_Piezom):
             pandas DataFrame to be inspected.
         name : str
             identifier used in reporting. (Default is 'name??')
-        cols : str or series of str
-            column names in df to check for outliers.
-            names must be columns of df.
-        fences : a 2 float sequence, default (1.5, 3.0)
-          inner and outer fence limit such that
-            inner outlier fence factor: potential outlier:
-              OR ( < median - inner * (Q3 - Q1), > median + inner * (Q3 - Q1))
-            outer outlier fence factor: outlier : outer * Q75-Q25quarter range
-              OR ( < median - outer * (Q3 - Q1), > median + outer * (Q3 - Q1))
-        
+        col : str
+            column name in df to check for outliers.
+        fencee : a float
+            fence limit such that
+              < median - fence  * (Q3 - Q1), > median + fence * (Q3 - Q1))
+                window: postive int
+        window: positive int
+            width in centered rolling window to compute median
+
         >>> df = pd.DataFrame(index=np.arange(10), data=np.random.randn(10, 3), columns=['a', 'b', 'c'])
         >>> df.loc[[2, 5], 'b'] = [2.4, -10]
         >>> col = 'b'
@@ -975,37 +1086,23 @@ class Piezom(Base_Piezom):
         @ TO 2018-06-22 12:30
         '''
         
-        inner, outer = fences
-        
-        D = self.hds
-        
-        if isinstance(cols, str):
-            cols = [cols]
-        for col in cols:
-            if col not in D.columns:
-                raise KeyError('Column <{}> not in data frame with columns\n[{}]'
-                               .format(col, ', '.join(D.columns)))
-        
-        Q3 = D.quantile(0.75)[cols]
-        Q1 = D.quantile(0.25)[cols]
+        if col is None:
+            D = self.hds
+        else:
+            E = self.hds[col]
+
+        Q3 = D.quantile(0.75)[col]
+        Q1 = D.quantile(0.25)[col]
         dQ = Q3 - Q1
-        med = D.median()[cols]
-        
-        innerFence = med - inner * dQ, med + inner * dQ
-        outerFence = med - outer * dQ, med + outer * dQ
-        
-        potOutliers  = np.logical_or(D[cols] < innerFence[0], D[cols] > innerFence[1])
-        truOutliers  = np.logical_or(D[cols] < outerFence[0], D[cols] > outerFence[1])
-        
-        if np.any(potOutliers):            
-            print('{} is outside ({} * inner_quartile_range):'.format(self.name, inner))
-            print(D.iloc[np.where(potOutliers)[0]].loc[:, cols])
-            print()
-        if np.any(truOutliers):
-            print('{} is outside ({} * inner_quartile_range):'.format(self.name, outer))
-            print(D.iloc[np.where(truOutliers)[0]].loc[:, cols])
-            print()
-                
+
+        E = np.abs((D - D.rolling(13, center=True).median()) / dQ) > fence
+        E = D[E]
+        E.dropna()
+
+        if np.any(E):
+            fig, ax = plt.subplots()
+            ax.plot(D.index, D, label='measured', color='b', ls='-')
+            ax.plot(E.index, E.loc[E.index], label='extremes', color='r', ls='', marker='.')
 
     
 class Piezoms(Base_Piezoms):
@@ -1018,36 +1115,23 @@ class Piezoms(Base_Piezoms):
     @TO 2018-06-20
     '''
     
-    def __init__(self, path2csv, pattern='*.csv', namefun=None, collars=None,
+    def __init__(self, path2csv, csv2filt=None, ext='.csv', collars=None,
                  csvparams=None, tstart=None, tend=None, verbose=True,
-                 outlier_cols=None, outlier_fences=(1.5, 3.0), **kwargs):
+                 outlier_col=None, outlier_fence=None, outlier_window=None, **kwargs):
         '''Return Piezometers collection (based on UserDict)
         
         parameters
         ----------
             path2csv : str
                 path to folder with the piezometer data
-            pattern : str
-                file pattern used by glob.glob to select files in folder.
-                defalt = '*.csv'
-            namefun: fun
-                function to convetbasename of file to name piezometer key.
-            collars : pd.DataFrame with columns see below.
-                Collars may be obtained in advance by reading the data fiom
-                an Excel workbook, such that the resulting 
-                pandas.DataFrame has at least columns ['x' 'y', 'z0', 'z1']
-                with z0 and z1 the top and bottom elevation of the piezomeer screen,
-                and the index of the DataFrame is the name of the piezometer.
-
-                To read a proper sheet from an Excel workbook, you may use
-                parameters like below (see documentation).
-                
-                pd.read_excel(path, **excelparams)
-                where (see pandad) excel_params may look like:
-                    excelparams =  {'sheet_name': 'collars',
-                               'header': 0,
-                               'usecols': ['A:C, K:M'],
-                               'index' : 0}
+            csv2filt: dict
+                dictionary with csvBaseName, screenName
+                e.g.: {'KBP21': 'KBP21A', 'PBU099': 'PBU099A', etc}
+                see get_csv2filt() in jukaTools.py
+            ext : str
+                csv file extension, default = '.csv'
+            collars : dict with fields see below.
+                Collars cn be obtained by 'get_collars() in jukaTools.py.
             csvparams : dict
                 the parameters required by pandas to read the csv file with the
                 head time series. E.g.
@@ -1066,14 +1150,18 @@ class Piezoms(Base_Piezoms):
                 Truncate at front of time series. E.g. '2018-05-14 15:20'
             tend:    np.datetime64[ns] obj or str indicating date time
                 Truncate at end of tiem series. E.g. '2018-06-18 20:00'
-            outlier_cols : str or series of column names
-                columns to check for ourliers.
-                Outlier reporting is only done of outlier_cols is not None.
-            outlier_fences : tuple of 2 floats default (1.5, 3.0)
-                inner and outer fences to use for finding ourliers.
+            outlier_col : str
+                column to check for outliers (default 'measured')
+            outlier_fence : float
+                fence to use for eliminating outliers (default 3.0)
+            outlier_window: int
+                width of rolling window to check for outliers (default 11)
                 
         '''
         self.data = dict()
+
+        if not path2csv:
+            return  # allows intializing an empty Piezoms
 
         missing = []
                 
@@ -1081,26 +1169,30 @@ class Piezoms(Base_Piezoms):
         #pdb.set_trace()
         
         # Generate Piezom objects from reading CSV files
-        for csvName in glob.glob(os.path.join(path2csv, pattern)):
+        for csvNm in csv2filt: #csv2Filt see get_csv2filt()
             
-            name = os.path.splitext(os.path.basename(csvName))[0]
+            filtNm = csv2filt[csvNm] # filter/screen name --> Hole + filterID
             
             try:
-                meta = dict(collars[name])
+                if isinstance(collars, dict):
+                    meta= collars[filtNm]
+                else: # assuming collars is a pd.DataFrame
+                    meta = dict(collars.loc[filtNm])
                 meta['iz'] = np.nan # will be set in Calib not in Piezom becaus needs model grid
             
-                self.data[name] = Piezom(path2csv, name, meta=meta, threshold=0.025,
-                    tstart=tstart, tend=tend, csvparams=csvparams, verbose=verbose,
-                    outlier_cols=outlier_cols, outlier_fences=outlier_fences,
-                    **kwargs)
+                self.data[filtNm] = Piezom(path2csv, csvNm=csvNm + ext,
+                         filtNm=filtNm, meta=meta, threshold=0.025,
+                         tstart=tstart, tend=tend, csvparams=csvparams,
+                         verbose=verbose,
+                         outlier_col='measured',
+                         **kwargs)
             except:
-                missing.append(name)
+                missing.append(filtNm)
         if missing:
             logger.debug('''The following CSV files could not be read because
                          their corresponding collar is missing''')
             logger.debug('[{}]'.format(', '.join(missing)))
         return
-
 
    
 #%%
@@ -1127,34 +1219,36 @@ if __name__ == '__main__':
 
     well = {'x': 187008, 'y': 346037, 'Q': 28600}
     theis = True
+  
     
-    
-
     with shelve.open(shelvefile) as s:
         gr = s['gr']
 
     
     excel_collars = {'sheet_name': 'Collars',
                    'header' :0,
-                   'usecols': 'A:E',
-                   'index_col': 0}
+                   'usecols': 'B:F',
+                   'index_col': 'Hole'}
     
-    excel_screens = {'sheet_name': 'screen',
+    excel_screens = {'sheet_name': 'filters',
                    'header':0,
-                   'usecols': 'A:C',
-                   'index_col': 'Hole ID'}
+                   'usecols': 'B:E',
+                   'index_col': 'name'}
     
     collars = pd.read_excel(os.path.join(testpath, collarfile), **excel_collars)
     screens = pd.read_excel(os.path.join(testpath, collarfile), **excel_screens)
     
     collars.columns = ['x', 'y', 'elev', 'end_depth']
-    collars['z0']   = collars['elev'] - screens['From']
-    collars['z1']   = collars['elev'] - screens['To']
+    
+    collars = pd.merge(collars, screens, how='right', on='Hole')
+    collars.index = screens.index
+    
+    collars['z1']   = collars['elev'] - screens['From']
+    collars['z2']   = collars['elev'] - screens['To']
     collars['zEnd'] = collars['elev'] - collars['end_depth']
-    collars.drop(columns=['end_depth'])
-
-    # convert the colloar names to those of the csv files, so that both match
-    collars.index = [k.replace('-','') for k in collars.index]
+    
+    collars.drop(columns=['From', 'To', 'end_depth'])
+    
 
     usecols = [0, 1]
     
@@ -1168,20 +1262,24 @@ if __name__ == '__main__':
                  'dtype': {k : np.float64 for k in usecols},
                  'na_values': {k: ['NaN'] for k in usecols}}
         
+    csv2filt = {'PBGRA1': 'PBGRA1A',
+                'PBGRA2': 'PBGRA2A',
+                'PBGRA3': 'PBGRA3A',
+                'PBGRA4': 'PBGRA4A'}
     
-    piezoms = Piezoms(path2csvs,
+    piezoms = Piezoms(path2csvs, csv2filt=csv2filt,
                       collars=collars, csvparams=csvparams,
-                      tstart=tstart, tend=tend, verbose=True)
+                      tstart=tstart, tend=tend, verbose=True,
+                      outlier_col='measured')
     
-    PBGRA3 = piezoms['PBGRA3']
+    PBGRA3A = piezoms['PBGRA3A']
         
-    PBGRA3.plot(cols='measured')
+    PBGRA3A.plot(cols='measured')
     
     piezoms.plot(cols='measured')
     
-    piezoms.apply(funs=[np.var, np.min, np.max, np.sin, np.log],
+    piezoms.apply(funs=[np.var, np.min, np.max],
                   tstart='2018-05-14 20:00', tend='2018-05-18 14:00')
-    
     
     
     calibs = Calibs(piezoms, gr=gr, HDS=HDS, t0sim=t0sim)
@@ -1190,6 +1288,28 @@ if __name__ == '__main__':
     
     calibs.plot(dd=True, t0dd=t0dd)
     
-    calibs.plot(dd=True, t0dd=t0dd, cols=['computed', 'measured'], theis=theis, well=well, xscale='log')
+    # 
+    
+    calibs.plot(dd=True, t0dd=t0dd, cols=['computed', 'measured'],
+                theis=theis, well=well, xscale='log')
+    
+
+    # Check whether piezom A is the deepest.
+    pzs= []
+    names = [k for k in piezoms if k[-1] == 'A']
+    for name in names:
+        pz = [piezoms[name]]
+        for L  in ['B', 'C']:
+            try:
+                pz.append(piezoms[name[:-1] + L])
+            except:
+                pass
+        pzs.append(pz)
+    for pz in pzs:
+        if len(pz) > 1:
+            for p in pz:
+                print('{} {:.2f} {:.2f}'
+                      .format(p.name, p.meta['z1'], p.meta['z2']), end=', ')
+            print()
 
 
