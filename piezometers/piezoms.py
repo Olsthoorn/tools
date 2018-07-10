@@ -355,65 +355,89 @@ class Base_Piezom:
                     "theis --> self[{}].meta['dd_theis']".format(self.name))
 
             # In case user wants to catch it directly return this Theis object
-        if out:
             return self.dds, self.meta['theis']
-        elif out:
-            # In case theis was not requested and user want output return the drawdown DataFrame
-            return self.dds,
+        
+        if out: # In case theis was not requested and user want output return the drawdown DataFrame
+            return self.dds
+        else:
+            return # nothing, self.dds is generated inplace
     
 
-    def attime(self, t=None, dd=False, cols=None):
+    def attime(self, t=None, dd=False, cols=None, label=None):
         '''Return adict with the values interpolated at time t.
         
-        Ar time resturns the values of the passed data frame at time t by
-        linear interpolation. Therefore, the index of the DataFrame or
-        series passed into this function must always be in p.Timestamp. You can
+        Atttime resturns the heads or drawdown of the object at the given
+        time as geneated by linear interpolation of time.
+        Therefore, the time must always be a pd.Timestamp. You can
         always compute a timedelta index by subtrating a Timestamp from the
         axis.
         
+        the resulting data will be added to the self.att dictionary if it
+        exists, else it's generated. This dictionary allows collecting
+        multipel attime results, borth for hds as for dd.
+        
+        The key in the self.att dictionary is label. If not specified a
+        int is used, 0 if the self.att dict is generated or len(self.att)
+        otherwise. It is usefull to pass your own label to allow easy access
+        to the stored data at a later time.
+        
+        If cols is not specified, all columns are used.
+        
+        if dd is true than the drawdowns are computed at the given time.
+        Else the hds are computed. Drawdowns can only be computed of the
+        objects already contains a dds DataFrame, which can be generated
+        by calloing self.drwdn or along with the generation of the container.
+        
         parameters
         ----------        
-            t  : np.datetime64 object or a str representing one (a single datetime)
-                time that head is resired.
+            t  : pd.Timestamp object or str str representing one.
+                time that head or drawdown is resired.
             dd: bool
-                if True interpolate using the index of self.dds else of self.hds
+                if True the drawdown is computed else the head at t.
             cols: str or list of str
-                name of column(s) in hds or dds DataFrame to use, e.g.:
+                name of column(s) to use, e.g.:
                     cols = ['meausured', 'computed', 'diff'] or
                     cols = 'computed'
+                If specified, these columns must exist.
+                If none, hd or dd of all columns will be computed.
         returns
         -------
-        att: dict
-            Dictionary with self.meta plus the column names as extra keys
-            with the interpolated collumn values at time t. The dict
-            also contains the time passed in.
-            The key 'dd' is stored to indicate that intepolation was done
-            on self.dds instead of self.hds. But dd has the effect of using
-            either self.hds if dd == False or self.dds othewise.
-            The index of both the self.hds and self.dds pd.DataFrames is
-            in pd.Timestamps.
+        a dict: {'t' : t, 'dd': True|False, col1: value, col1: value, ... }
+            where col1, col2 etc are the names of the columns used.
+        at the same time the self.att will be update with this dict like so
+            self.att[label] = {'t': t, 'dd': dd, col1: value, col2, value ...}
+ 
+        TO 20180709 update for calibration           
         '''
-        if isinstance(cols, str): cols = [cols]
-        
-        if isinstance(t, (str, np.datetime64, datetime.datetime)):
-            t = pd.Timestamp(t)
-        else:
-            raise ValueError("Can't handle t: {}".format(str(t)))
-        
-        att = {'name': self.name, 't': t, 'dd': dd}
-        att.update({k: self.meta[k] for k in self.meta})
+        t = pd.Timestamp(t)
+
+        # make sure self.att exists as dict and label is not None
+        if not 'att' in self.__dict__:
+            self.att = dict()
+            
+        if label is None:
+            label = len(self.att)
+            
+        self.att[label] = {'t': t, 'dd': dd}
         
         if dd == False:
             DF = self.hds
         else:
             DF = self.dds
-        
-        td_f     = (DF.index[0] - t) / pd.Timedelta(1, 'D')
-        td_ind_f = (DF.index    - t) / pd.Timedelta(1, 'D')
-        for col in DF.columns:
-            att[col] = np.interp(td_f, td_ind_f, DF[col])
 
-        return att
+        if cols is None:
+            cols = DF.columns
+        elif isinstance(cols, str):
+            cols = [cols]
+        
+        td_f     = (t        - DF.index[0]) / pd.Timedelta(1, 'D')
+        td_ind_f = (DF.index - DF.index[0]) / pd.Timedelta(1, 'D')
+        for col in cols:
+            self.att[label][col] = np.interp(td_f,
+                        td_ind_f[~np.isnan(DF[col].values)],
+                        DF[col].values[~np.isnan(DF[col].values)])
+
+        return self.att[label]
     
     
     def apply(self, fun):
@@ -570,7 +594,7 @@ class Base_Piezoms(collections.UserDict):
                 names of columns on which to apply theis analysis.
         '''
         for name in self:
-            self[name].dds, theis_ = \
+            self[name].dds = \
                         self[name].drwdn(t0dd=t0dd, well=well, theis=theis, out=False, cols=cols)
             
         logger.info("Drawdown computed are saved in self[name].dds for {} piezometers."
@@ -582,19 +606,27 @@ class Base_Piezoms(collections.UserDict):
         return
 
 
-    def attime(self, t, dd=False, cols=None, shapefile=None):
+    def attime(self, t, dd=False, cols=None, shapefile=None, label=None):
         '''Return head (interpolated) at t.
         
         parameters
         ----------        
-            t  : np.datetime64 object or a str representing one (a single datetime)
-                time that head is resired.
+            t  : pd.Timestamp object or a str representing one
+                time that head or drawdown is resired.
+                self.dds must exist to compute the drawdown at the
+                spefied time. It can be generated using the
+                drwdn method of self or along with the generation of its
+                container by specifying t0dd.
             dd: bool
                 if True compute drawdown else compute head
             cols: str or list of str
                 name of column(s) in hds or dds DataFrame to use, e.g.:
                     cols = ['meausured', 'computed', 'diff'] or
                     cols = 'computed'
+            label: str
+                label allows retrieving the att from every piezom or calib
+                using self[name].att[label]. Of not specified then increasing
+                integers will be used automatically
             shapefile : str or None
                 if not None, shapefile is the path to the shapefile to be generated.
                 if None, then don't generate a shapefile.
@@ -607,7 +639,7 @@ class Base_Piezoms(collections.UserDict):
         
         att = dict()
         for name in self:
-            att[name] = self[name].attime(self[name], t, dd=dd, cols=cols)
+            att[name]= self[name].attime(t, dd=dd, cols=cols, label=label)
             
         if shapefile:
             if not os.path.isfile(shapefile):
@@ -822,7 +854,7 @@ class Calib(Base_Piezom):
         
         if t0dd is not None:
             # only if t0dd is explicityl specified wil the ddrawdown be computed here.
-            self.dds = self.drwdn(t0dd=t0dd, well=well, theis=theis, out=False)
+            self.drwdn(t0dd=t0dd, well=well, theis=theis, out=False)
 
         return
     
@@ -896,23 +928,49 @@ class Calibs(Base_Piezoms):
     @TO 2018-06-20
     '''
 
-    def __init__(self, piezoms=None, gr=None, HDS=None, t0sim=None):
+    def __init__(self, piezoms=None, gr=None, HDS=None, t0sim=None,
+                 t0dd=None, well=None, theis=None):
 
         '''Return a Calibs collection.
         
-        Calibs is a collocation like piezoms. For each piezom it holds a
-        meta dictionary, a hds DataFrame and a dds DataFrame both with
+        Calibs is like piezoms. For each piezom it holds a
+        meta dictionary, a hds DataFrame and possibly a dds DataFrame both with
         columns ['computed', 'measured', 'diff']
         
-        The times in hds are np.datetime64 timestamps that correspond exactly
+        The times in hds are pd.Timestamps that correspond exactly
         with the times of the MODFLOW computation.
         
-        The times in dds are np.timedelta[D] objects that also correspond
-        exactly with the times of the modflow computation, however, they
-        are with respect of t0dd, the starting time of the drawdown as
-        given by the user. This is 
-        for hds, the index is the same as for the piezoms
+        The times in dds are are also pd.Timestamps corresponding
+        exactly with the times of the modflow computation. Therefore
+        t0dd is a requirement to comute the drawdown, as drawdonw always
+        has to be relative to some point in time.
         
+        Either the drawdown or the heads DataFrame can contain NaN, namely
+        when the length of the hds time series differs from that of the dds
+        time series.
+        
+        The drawdow, that is self[name].dds will only be computed
+        next to self[name].hds when t0dd is given.
+        Theis will only be computed if theis==True and well is specified.
+        
+        parameters
+        ----------
+            piezoms:
+                the piezometers
+            gr: fdm.mfgrid.Grid object
+                gr object holding the Modflow mesh
+            HDS: flopy.utils.binaryfile.Headfile
+                computed heads
+            t0sim: pd.Timestamp or a str representing one
+                start time of simulation
+            t0dd: pd.Timestamp or a str representing one
+                time relative to which the drawdown is computed
+            well: dict {x: x, y: y, Q: Q}
+                well info required when computing Theis/Jacob analysis
+            theis : bool
+                true of Theis is analysis is to be done
+                
+            
         for name in piezomes:
             
             self[name] - Calib(piezoms[name], gr. HDS, t0sim, t0dd)
@@ -928,7 +986,9 @@ class Calibs(Base_Piezoms):
         
         for name in piezoms:
             try:
-                self.data[name] = Calib(piez=piezoms[name], gr=gr, HDS=HDS, t0sim=t0sim)
+                self.data[name] = Calib(piez=piezoms[name],
+                         gr=gr, HDS=HDS, t0sim=t0sim,
+                         t0dd=t0dd, well=well, theis=theis)
             except Exception as err:
                 logger.debug("piezom[{}]: {}".format(name, err.args[0]))
                 missed.append(name)
