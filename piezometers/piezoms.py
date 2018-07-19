@@ -328,7 +328,7 @@ class Base_Piezom:
         self.dds = self.hds.loc[self.hds.index > t0dd].copy()
 
         # Get the values in self.hds for all columns at t0dd
-        att = self.attime(t=t0dd, dd=True, cols=None)
+        att = self.attime(t=t0dd, dd=True)
 
         # Subtract the values at t0dd, not that att is a dictionary
         for _col_ in self.dds.columns:
@@ -359,7 +359,7 @@ class Base_Piezom:
             return # nothing, self.dds is generated inplace
 
 
-    def attime(self, t=None, dd=False, cols=None, label=None):
+    def attime(self, t=None, dd=False, label=None):
         '''Return adict with the values interpolated at time t.
 
         Atttime resturns the heads or drawdown of the object at the given
@@ -377,9 +377,9 @@ class Base_Piezom:
         otherwise. It is usefull to pass your own label to allow easy access
         to the stored data at a later time.
 
-        If cols is not specified, all columns are used.
+        attime is compute for all columns are used.
 
-        if dd is true than the drawdowns are computed at the given time.
+        if dd is True than the drawdowns are computed at the given time.
         Else the hds are computed. Drawdowns can only be computed of the
         objects already contains a dds DataFrame, which can be generated
         by calloing self.drwdn or along with the generation of the container.
@@ -390,12 +390,6 @@ class Base_Piezom:
                 time that head or drawdown is resired.
             dd: bool
                 if True the drawdown is computed else the head at t.
-            cols: str or list of str
-                name of column(s) to use, e.g.:
-                    cols = ['meausured', 'computed', 'diff'] or
-                    cols = 'computed'
-                If specified, these columns must exist.
-                If none, hd or dd of all columns will be computed.
         returns
         -------
         a dict: {'t' : t, 'dd': True|False, col1: value, col1: value, ... }
@@ -421,10 +415,7 @@ class Base_Piezom:
         else:
             DF = self.dds
 
-        if cols is None:
-            cols = DF.columns
-        elif isinstance(cols, str):
-            cols = [cols]
+        cols = DF.columns
 
         td_f     = (t        - DF.index[0]) / pd.Timedelta(1, 'D')
         td_ind_f = (DF.index - DF.index[0]) / pd.Timedelta(1, 'D')
@@ -603,7 +594,7 @@ class Base_Piezoms(collections.UserDict):
         return
 
 
-    def attime(self, t, dd=False, cols=None, shapefile=None, label=None):
+    def attime(self, t, dd=False, shapefile=None, label=None):
         '''Return head (interpolated) at t.
 
         parameters
@@ -636,7 +627,7 @@ class Base_Piezoms(collections.UserDict):
 
         att = dict()
         for name in self:
-            att[name]= self[name].attime(t, dd=dd, cols=cols, label=label)
+            att[name]= self[name].attime(t, dd=dd, label=label)
 
         if shapefile:
             if not os.path.isfile(shapefile):
@@ -790,7 +781,7 @@ class Base_Piezoms(collections.UserDict):
                 if True drawdown will be saved else heads will be saved
         '''
 
-        self.attime(t, dd=dd, cols=None, shapefile=shapefile)
+        self.attime(t, dd=dd, shapefile=shapefile)
 
 
 #%%
