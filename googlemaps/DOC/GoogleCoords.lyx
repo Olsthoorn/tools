@@ -1,0 +1,618 @@
+#LyX 2.2 created this file. For more info see http://www.lyx.org/
+\lyxformat 508
+\begin_document
+\begin_header
+\save_transient_properties true
+\origin unavailable
+\textclass memoir
+\begin_preamble
+% Any characters can be typed directly from the keyboard, eg éçñ
+% provide lots of new symbols
+% Add graphics capabilities
+%\usepackage{epstopdf} % to include .eps graphics files with pdfLaTeX
+\usepackage{flafter}% Don't place floats before their definition
+%\usepackage{topcapt}   % Define \topcation for placing captions above tables (not in gwTeX)
+%\usepackage{natbib} % use author/date bibliographic citations
+\@ifundefined{definecolor}
+ {\usepackage{color}}{}
+% necessary to use colos
+% Better maths support & more symbols
+\usepackage{bm}% Define \bm{} to use bold math fonts
+\usepackage[pdftex,bookmarks,colorlinks,breaklinks]{hyperref}% PDF hyperlinks, with coloured links
+\definecolor{dullmagenta}{rgb}{0.4,0,0.4}% #660066
+\definecolor{darkblue}{rgb}{0,0,0.4}\hypersetup{linkcolor=red,citecolor=blue,filecolor=dullmagenta,urlcolor=darkblue}% coloured links
+%\hypersetup{linkcolor=black,citecolor=black,filecolor=black,urlcolor=black} % black links, for printed output
+\usepackage{memhfixc}% remove conflict between the memoir class & hyperref
+% \usepackage[activate]{pdfcprot}  % Turn on margin kerning (not in gwTeX)
+\usepackage{pdfsync}% enable tex source and pdf output syncronicity
+\usepackage{hyperref}
+
+\usepackage{alltt}
+\usepackage{color}
+\definecolor{string}{rgb}{0.7,0.0,0.0}
+\definecolor{comment}{rgb}{0.13,0.54,0.13}
+\definecolor{keyword}{rgb}{0.0,0.0,1.0}
+
+\usepackage{listings}
+\definecolor{mygreen}{RGB}{28,172,0} % color values Red, Green, Blue
+\definecolor{mylilas}{RGB}{170,55,241}
+
+
+\newtheorem{issue}{Issue}
+
+\lstset{language=Matlab,%
+    %basicstyle=\color{red},
+    breaklines=true,%
+    morekeywords={matlab2tikz},
+    keywordstyle=\color{blue},%
+    morekeywords=[2]{1}, keywordstyle=[2]{\color{black}},
+    identifierstyle=\color{black},%
+    stringstyle=\color{mylilas},
+    commentstyle=\color{mygreen},%
+    showstringspaces=false,%without this there will be a symbol in the places where there is a space
+    numbers=left,%
+    numberstyle={\tiny \color{black}},% size of the numbers
+    numbersep=9pt, % this defines how far the numbers are from the text
+    emph=[1]{for,end,break},emphstyle=[1]\color{red}, %some words to emphasise
+    %emph=[2]{word1,word2}, emphstyle=[2]{style},    
+}
+\end_preamble
+\use_default_options true
+\maintain_unincluded_children false
+\language american
+\language_package default
+\inputencoding auto
+\fontencoding global
+\font_roman "default" "default"
+\font_sans "default" "default"
+\font_typewriter "default" "default"
+\font_math "auto" "auto"
+\font_default_family default
+\use_non_tex_fonts false
+\font_sc false
+\font_osf false
+\font_sf_scale 100 100
+\font_tt_scale 100 100
+\graphics default
+\default_output_format default
+\output_sync 0
+\bibtex_command default
+\index_command default
+\paperfontsize default
+\spacing single
+\use_hyperref false
+\papersize a4paper
+\use_geometry false
+\use_package amsmath 1
+\use_package amssymb 1
+\use_package cancel 1
+\use_package esint 1
+\use_package mathdots 1
+\use_package mathtools 1
+\use_package mhchem 1
+\use_package stackrel 1
+\use_package stmaryrd 1
+\use_package undertilde 1
+\cite_engine basic
+\cite_engine_type default
+\biblio_style plain
+\use_bibtopic false
+\use_indices false
+\paperorientation portrait
+\suppress_date false
+\justification true
+\use_refstyle 0
+\index Index
+\shortcut idx
+\color #008000
+\end_index
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation indent
+\paragraph_indentation default
+\quotes_language english
+\papercolumns 1
+\papersides 1
+\paperpagestyle default
+\tracking_changes false
+\output_changes false
+\html_math_output 0
+\html_css_as_file 0
+\html_be_strict false
+\end_header
+
+\begin_body
+
+\begin_layout Title
+Converting from WGS to Google Maps and RD
+\end_layout
+
+\begin_layout Author
+T.N.Olsthoorn
+\end_layout
+
+\begin_layout Date
+2018-07-19
+\end_layout
+
+\begin_layout Section*
+The problem
+\end_layout
+
+\begin_layout Standard
+It is easy to request an get an image map from Google Maps using the appropriate
+ URL as described in their tutorials.
+ It's convenient to use such a map as a background to show data, for example
+ in Google or in PowerPoint.
+ The problem is how to match the use coordinates with those of the pixels
+ in the map.
+\end_layout
+
+\begin_layout Standard
+Google maps works met zoom levels and tiles.
+ Each higher zoom level divides each tile of the current zoom level into
+ 4 smaller ones by halving the horizontal and vertical size.
+ Also, each tile has 
+\begin_inset Formula $256\times256$
+\end_inset
+
+ pixels, which is its resolution.
+ Note that one can request maps up to 
+\begin_inset Formula $640\times640$
+\end_inset
+
+ pixels centered to an arbitrary center and for a given zoom level.
+ Google's zoom levels range form 0 = the globe to 21.
+ So, at zoom level 0, the globe is divided into one tile of 
+\begin_inset Formula $256\times256$
+\end_inset
+
+ pixels.
+ At zoom level 21, the number of tiles is 
+\begin_inset Formula $2^{21}\times2^{21}=2097152\times2097156$
+\end_inset
+
+ and the number of pixels in total is 
+\begin_inset Formula $256\times2^{21}$
+\end_inset
+
+ by 
+\begin_inset Formula $256\times2^{21}$
+\end_inset
+
+=
+\begin_inset Formula $536870912\times536870912$
+\end_inset
+
+.
+ The size of the smallest tiles at the equator are then, with 
+\begin_inset Formula $r_{earth}=6378137$
+\end_inset
+
+ m is then 
+\begin_inset Formula $19.1\times19.1$
+\end_inset
+
+ m and its pixel 
+\begin_inset Formula $0.075\times0.075$
+\end_inset
+
+ m.
+ Of course, the pixel size varies with latitude, in accordance with the
+ projection.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Note Note
+status open
+
+\begin_layout Plain Layout
+The projection:
+\end_layout
+
+\begin_layout Plain Layout
+Spherical Mercator EPGS:900913 (EPSG:3857) and WGS84 Datum
+\end_layout
+
+\begin_layout Plain Layout
+It can also be referenced as EPSG:4326 when directly projected by Platte
+ Carre.
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Google maps uses the Mercator projection, that is, the globe is projected
+ on a cylinder around the earth, which it touches at the equator.
+ It uses the so-called Spherical Normal (equatorial) variant of the Mercator
+ projection.
+ Due to exaggeration of high latitudes, due to which Greenland shows about
+ the size of Africa, about 15 larger than it is, Google maps cannot show
+ above +85 and below -85 latitudes.
+ The current projection preserves angles (street angles) but stretches lines
+ in EW direction compared to those in NS direction, and more so, the more
+ north and south one is on the globe.
+\end_layout
+
+\begin_layout Section*
+Formulas
+\end_layout
+
+\begin_layout Standard
+With 
+\begin_inset Formula $\Omega$
+\end_inset
+
+ the circumference of the globe we can express the x=coordinate relative
+ to the datum line (-180 or 
+\begin_inset Formula $-\pi$
+\end_inset
+
+) degrees as
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+x=\frac{\Omega}{2\pi}\left(\lambda+\pi\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+In Google pixels at any zoom level this becomes
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+px=\frac{256}{2\pi}2^{zoomlevel}\left(\lambda+\pi\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Similarly for the latitude, we get due to the particular projection
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+py=\frac{256}{2\pi}2^{zoomlevel}\left(\pi-\ln\left[\tan\left(\frac{\pi}{4}+\frac{\phi}{2}\right)\right]\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+These formulas can be used to convert Google maps pixel coordinates to WGS
+ and vice versa.
+\end_layout
+
+\begin_layout Section*
+Application
+\end_layout
+
+\begin_layout Standard
+Assume we request a Google map using the Google API and specify its center
+ in WGS coordinates (lon, lat /
+\begin_inset Formula $\lambda,\phi$
+\end_inset
+
+, i.e.
+ easting and northing), it's zoom level and its size, that is, the number
+ of pixels in EW and NS direction, noting that sizes up to 640x640 are allowed
+ without payment.
+ Also, let's assume that we want to cover our area by only one such image.
+ Let the area be defined by 
+\begin_inset Formula $\lambda_{1},\lambda_{2},\phi_{1},\phi_{2}$
+\end_inset
+
+ Then we could computed the pixels at the highest zoomlevels that match
+ with these coordinates.
+ Then see what zoom level would cover these coordinates given the maximum
+ allowed size of the image.
+ We could adjust the size so that the requested image fits as well as possible
+ to our coordinates and, having done this, adapt the coordinates to exactly
+ match the extents of the obtained image.
+\end_layout
+
+\begin_layout Standard
+It should immediately be noted that the horizontal length of the picture
+ is the same in terms of 
+\begin_inset Formula $\lambda$
+\end_inset
+
+, it is not so in terms of meters.
+ When we convert to meters, it may be best to accept the coordinates of
+ the image width and height for the lines that pass through its center.
+\end_layout
+
+\begin_layout Standard
+So
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+px\left(\lambda_{2}\right)-px\left(\lambda_{1}\right) & \le640\\
+py\left(\phi_{2}\right)-py\left(\phi_{1}\right) & \le640
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+For the logitue (easting) we obtain
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+2^{z}\frac{256}{2\pi}\left(\lambda_{2}-\lambda_{1}\right)\le640
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+yielding
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+2^{z}\le\frac{640}{\frac{256}{2\pi}\left(\lambda_{2}-\lambda_{1}\right)}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+So that the zoom level becomes
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+z\le\ln\left[\frac{640}{\frac{256}{2\pi}\left(\lambda_{2}-\lambda_{1}\right)}\right]/\ln\left(2\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+And then obtain the required number of pixels using the rounded down value
+ of 
+\begin_inset Formula $z$
+\end_inset
+
+ as it must be an integer between 0 and 21.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+npx=\frac{256}{2\pi}2^{z}\left(\lambda_{2}-\lambda_{1}\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+For the 
+\begin_inset Formula $y$
+\end_inset
+
+ direction:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+2^{z}\frac{256}{2\pi}\left(\ln\left[\tan\left(\frac{\pi}{4}+\frac{\phi_{1}}{2}\right)\right]-\ln\left[\tan\left(\frac{\pi}{4}+\frac{\phi_{2}}{2}\right)\right]\right)\le640
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+2^{z}\frac{256}{2\pi}\left(\frac{\ln\left[\tan\left(\frac{\pi}{4}+\frac{\phi_{1}}{2}\right)\right]}{\ln\left[\tan\left(\frac{\pi}{4}+\frac{\phi_{2}}{2}\right)\right]}\right)\le640
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+2^{z}\le\frac{2\pi}{256}\frac{\ln\left[\tan\left(\frac{\pi}{4}+\frac{\phi_{2}}{2}\right)\right]}{\ln\left[\tan\left(\frac{\pi}{4}+\frac{\phi_{1}}{2}\right)\right]}640
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+z\le\ln\left[\frac{2\pi}{256}\frac{\ln\left[\tan\left(\frac{\pi}{4}+\frac{\phi_{2}}{2}\right)\right]}{\ln\left[\tan\left(\frac{\pi}{4}+\frac{\phi_{1}}{2}\right)\right]}640\right]/\ln\left(2\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Again, we get the zoom level by rounding the value of z down to a whole
+ number.
+\end_layout
+
+\begin_layout Standard
+To match the number of pixels as adequately as possible to our desired size
+ we have
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+npy=2^{z}\frac{256}{2\pi}\left(\frac{\ln\left[\tan\left(\frac{\pi}{4}+\frac{\phi_{1}}{2}\right)\right]}{\ln\left[\tan\left(\frac{\pi}{4}+\frac{\phi_{2}}{2}\right)\right]}\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section*
+Getting the WGS from pixel coordinates
+\end_layout
+
+\begin_layout Standard
+This is useful because we want to compute for instance the exact WGS coordinates
+ of the extents of an image of which we know its center, zoom level and
+ size in pixels.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+px=\frac{256}{2\pi}2^{zoomlevel}\left(\lambda+\pi\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+So that with 
+\begin_inset Formula $\lambda_{0},\,px_{0}$
+\end_inset
+
+ known value (i.e.
+ here the center of the image).
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+2^{z}\frac{256}{2\pi}\left(\lambda-\lambda_{c}\right)=px-px_{0}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\lambda=\lambda_{c}+\frac{2\pi}{256}\left(px-px_{0}\right)2^{-z}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Similarly for the latitude direction, assuming we know 
+\begin_inset Formula $\phi_{0}$
+\end_inset
+
+and 
+\begin_inset Formula $py_{0}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+2^{z}\frac{256}{2\pi}\left(\frac{\ln\left[\tan\left(\frac{\pi}{4}+\frac{\phi}{2}\right)\right]}{\ln\left[\tan\left(\frac{\pi}{4}+\frac{\phi_{0}}{2}\right)\right]}\right)=py-py_{0}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\ln\left[\tan\left(\frac{\pi}{4}+\frac{\phi}{2}\right)\right]=\frac{2\pi}{256}\left(py-py_{0}\right)\ln\left[\tan\left(\frac{\pi}{4}+\frac{\phi_{0}}{2}\right)\right]2^{-z}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\tan\left(\frac{\pi}{4}+\frac{\phi}{2}\right)=\left[\tan\left(\frac{\pi}{4}+\frac{\phi_{0}}{2}\right)\right]\exp\left[\frac{2\pi}{256}\left(py-py_{0}\right)2^{-z}\right]
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\phi=\arctan\left(\left[\tan\left(\frac{\pi}{4}+\frac{\phi_{0}}{2}\right)\right]\exp\left[\frac{2\pi}{256}\left(py-py_{0}\right)2^{-z}\right]\right)-\frac{\pi}{2}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+These formulas are straightforward an allow immediate conversion of the
+ 
+\begin_inset Formula $\lambda,\,\phi$
+\end_inset
+
+coordinates to 
+\begin_inset Formula $px,py$
+\end_inset
+
+ coordinates and the other way around.
+\end_layout
+
+\end_body
+\end_document
