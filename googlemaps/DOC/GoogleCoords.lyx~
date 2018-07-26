@@ -543,7 +543,7 @@ or, using degrees:
 \begin_layout Standard
 \begin_inset Formula 
 \begin{align*}
-\frac{dy}{dlat\frac{\pi}{180}} & =\frac{\Omega}{2\pi}\frac{1}{\sin\left(\frac{\pi}{2}+lat\frac{\pi}{180}\right)}
+\frac{dy}{dlat\frac{\pi}{180}} & =\frac{\Omega}{2\pi}\frac{1}{\sin\left(\frac{\pi}{180}\left(90+lat\right)\right)}
 \end{align*}
 
 \end_inset
@@ -552,14 +552,26 @@ or, using degrees:
 \end_layout
 
 \begin_layout Standard
+Or, likewise,
+\end_layout
+
+\begin_layout Standard
 \begin_inset Formula 
 \[
-\frac{dy}{dlat}=\frac{\Omega}{360}\frac{1}{\sin\left(\frac{\pi}{180}\left(90+lat\right)\right)}
+\frac{dy}{d\phi}=\frac{\Omega}{2\pi}\frac{1}{\sin\left(\frac{\pi}{2}+\phi\right)}
 \]
 
 \end_inset
 
+c
+\end_layout
 
+\begin_layout Standard
+with 
+\begin_inset Formula $\phi$
+\end_inset
+
+ latitude in radians as opposed to latitude in degrees.
 \end_layout
 
 \begin_layout Standard
@@ -582,8 +594,9 @@ Google maps
 \end_layout
 
 \begin_layout Standard
-Google maps uses this Mercator projection, but it divides the globe in tiles,
- where the number of tiles depends on the zoom level as explained above.
+Google maps uses this Mercator projection.
+ But it divides the glob in tiles, where the number of tiles depends on
+ the zoom level as explained above.
  Each tile at every zoom level has 256x256 pixels.
  Hence, the circumference of the globe in Google maps in pixels depending
  on the zoom level is
@@ -597,15 +610,19 @@ Google maps uses this Mercator projection, but it divides the globe in tiles,
 
 \end_inset
 
-with zoom level 
-\begin_inset Formula $z$
-\end_inset
 
- an integer value between 0 and 21.
 \end_layout
 
 \begin_layout Standard
-In Google maps, the pixel coordinate thus becomes
+with 
+\begin_inset Formula $z$
+\end_inset
+
+ an integer value between 0 and 21
+\end_layout
+
+\begin_layout Standard
+In Google the pixel coordinate thus becomes
 \end_layout
 
 \begin_layout Standard
@@ -616,28 +633,19 @@ px=256\times2^{z}\left(\frac{\lambda+\pi}{2\pi}\right)
 
 \end_inset
 
-where 
-\begin_inset Formula $\lambda=0$
-\end_inset
 
- coincides with the Greenwich meridian.
- It is clear that 
-\begin_inset Formula $px=0$
-\end_inset
-
- corresponds with 
-\begin_inset Formula $\lambda=-\pi$
-\end_inset
-
- or 
-\begin_inset Formula $lat=-180^{o}$
-\end_inset
-
-.
 \end_layout
 
 \begin_layout Standard
-Similarly, for the latitude, for the vertical pixel coordinate we get, due
+The 
+\begin_inset Formula $\lambda=0$
+\end_inset
+
+ at the Greenwich meridian.
+\end_layout
+
+\begin_layout Standard
+Similarly, for the latitude, for the vertical pixel coordinate we get due
  to the Mercator projection 
 \end_layout
 
@@ -654,11 +662,11 @@ py=256\times2^{z}\left(\ln\left[\tan\left(\frac{\pi}{4}+\frac{\phi}{2}\right)\ri
 
 \begin_layout Standard
 These formulas can be used to convert Google maps pixel coordinates to WGS
- and vice versa which is shown next.
+ and vice versa.
 \end_layout
 
 \begin_layout Standard
-The number of pixels between points denoted by two longitudes 
+The number of pixels between points denoted by 
 \begin_inset Formula $\lambda_{0}$
 \end_inset
 
@@ -681,38 +689,18 @@ px_{1}-px_{0}=256\times2^{z}\left(\frac{\lambda_{1}-\lambda_{0}}{2\pi}\right)
 \end_layout
 
 \begin_layout Standard
-Likewise, for two points given by two latitudes 
-\begin_inset Formula $\phi_{0}$
-\end_inset
-
- and 
-\begin_inset Formula $\phi_{1}$
-\end_inset
-
- becomes
+and, likewise,
 \end_layout
 
 \begin_layout Standard
 \begin_inset Formula 
 \[
-npy=py_{1}-py_{0}=\frac{256\times2^{z}}{2\pi}\ln\left(\frac{\tan\left(\frac{\pi}{4}+\frac{\phi_{1}}{2}\right)}{\tan\left(\frac{\pi}{4}+\frac{\phi_{0}}{2}\right)}\right)
+py_{1}-py_{0}=\frac{256\times2^{z}}{2\pi}\ln\left(\frac{\tan\left(\frac{\pi}{4}+\frac{\phi_{1}}{2}\right)}{\tan\left(\frac{\pi}{4}+\frac{\phi_{0}}{2}\right)}\right)
 \]
 
 \end_inset
 
 
-\end_layout
-
-\begin_layout Standard
-This expression also allows deriving the latitude if the 
-\begin_inset Formula $npy$
-\end_inset
-
- is given relative to a latitude 
-\begin_inset Formula $\phi_{0}$
-\end_inset
-
-, such as the center of a map.
 \end_layout
 
 \begin_layout Standard
@@ -768,18 +756,6 @@ This expression also allows deriving the latitude if the
 \end_inset
 
 
-\end_layout
-
-\begin_layout Standard
-Using 
-\begin_inset Formula $lat$
-\end_inset
-
- instead of 
-\begin_inset Formula $\phi$
-\end_inset
-
- yields the alternative equation
 \end_layout
 
 \begin_layout Standard
@@ -857,7 +833,51 @@ When
 \begin_layout Standard
 \begin_inset Formula 
 \[
-lon_{1}=lon_{0}+360\times\frac{px_{1}}{256}2^{-z}
+lon_{1}=lon_{center}+360\times\frac{px_{1}}{256}2^{-z}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\tan\left(\frac{\pi}{4}+\frac{\phi_{1}}{2}\right)=\tan\left(\frac{\pi}{4}+\frac{\phi_{0}}{2}\right)\exp\left[\frac{2^{-z}}{256}\left(py_{1}-py_{0}\right)\right]
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\frac{\phi_{1}}{2}=\tan^{-1}\left(\tan\left(\frac{\pi}{4}+\frac{\phi_{0}}{2}\right)\exp\left[\frac{2^{-z}}{256}\left(py_{1}-py_{0}\right)\right]\right)-\frac{\pi}{4}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+lat\frac{\pi}{360}=\frac{\phi_{1}}{2}=\tan^{-1}\left(\tan\left(\frac{\pi}{4}+lat_{0}\frac{\pi}{360}\right)\exp\left[\frac{py}{256}2^{-z}\right]\right)-\frac{\pi}{4}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+lat=\frac{360}{\pi}\tan^{-1}\left(\tan\left(\frac{\pi}{4}+lat_{0}\frac{\pi}{360}\right)\exp\left[\frac{py}{256}2^{-z}\right]\right)-90
 \]
 
 \end_inset
@@ -877,53 +897,35 @@ Assume we request a Google map using the Google API and specify its center
 
 , i.e.
  easting and northing), it's zoom level and its size, that is, the number
- of pixels in EW and NS direction, noting that sizes up to 640x640 can be
- downloaded without payment.
-\end_layout
-
-\begin_layout Standard
-Let's assume that we want to cover our area by only one such image.
+ of pixels in EW and NS direction, noting that sizes up to 640x640 are allowed
+ without payment.
+ Also, let's assume that we want to cover our area by only one such image.
  Let the area be defined by 
 \begin_inset Formula $\lambda_{1},\lambda_{2},\phi_{1},\phi_{2}$
 \end_inset
 
- Then we could compute the pixels at the lowest zoom levels that match with
- these coordinates, the zoom level that covers these coordinates given the
- maximum allowed size of the image.
- Because we always request an integer number of pixels, so that the returned
- image does not exactly coincide with our desired 
-\begin_inset Formula $xlim$
-\end_inset
-
- and 
-\begin_inset Formula $ylim$
-\end_inset
-
- values.
- We may adapt the coordinates to exactly match the extents of the obtained
- image.
- The error however is almost negligible as the lowest resolution of a fitting
- image is 320x320 pixels, that is 0.3 % maximum error.
+ Then we could computed the pixels at the highest zoomlevels that match
+ with these coordinates.
+ Then see what zoom level would cover these coordinates given the maximum
+ allowed size of the image.
+ We could adjust the size so that the requested image fits as well as possible
+ to our coordinates and, having done this, adapt the coordinates to exactly
+ match the extents of the obtained image.
 \end_layout
 
 \begin_layout Standard
-So, given horizontal extent of our desired image defined by 
-\begin_inset Formula $\lambda_{1}$
+It should immediately be noted that the horizontal length of the picture
+ is the same in terms of 
+\begin_inset Formula $\lambda$
 \end_inset
 
- and 
-\begin_inset Formula $\lambda_{2}$
-\end_inset
+, it is not so in terms of meters.
+ When we convert to meters, it may be best to accept the coordinates of
+ the image width and height for the lines that pass through its center.
+\end_layout
 
- and 
-\begin_inset Formula $\phi_{1}$
-\end_inset
-
- and 
-\begin_inset Formula $\phi_{2}$
-\end_inset
-
- respectively we must choose a zoom level such that 
+\begin_layout Standard
+So
 \end_layout
 
 \begin_layout Standard
@@ -936,21 +938,6 @@ py\left(\phi_{1}\right)-py\left(\phi_{0}\right) & \le npy_{max}=640
 \end_inset
 
 
-\end_layout
-
-\begin_layout Standard
-If the 
-\begin_inset Formula $xlim$
-\end_inset
-
- and 
-\begin_inset Formula $ylim$
-\end_inset
-
- in glob-distances, i.e.
- reality from a square, then the zoom level should the same as follows from
- the derivation of the Mercator projection.
- We will check this later on.
 \end_layout
 
 \begin_layout Subsection*
@@ -969,6 +956,10 @@ For the longitude (easting) we obtain
 
 \end_inset
 
+
+\end_layout
+
+\begin_layout Standard
 yielding
 \end_layout
 
@@ -1036,7 +1027,7 @@ For the
 \begin_layout Standard
 \begin_inset Formula 
 \[
-\frac{2^{z}\times256}{2\pi}\times\ln\left(\frac{\tan\left(\frac{\pi}{4}+\frac{\phi_{1}}{2}\right)}{\tan\left(\frac{\pi}{4}+\frac{\phi_{0}}{2}\right)}\right)\le npy
+2^{z}\times256\times\ln\left(\frac{\tan\left(\frac{\pi}{4}+\frac{\phi_{1}}{2}\right)}{\tan\left(\frac{\pi}{4}+\frac{\phi_{0}}{2}\right)}\right)\le npy_{max}
 \]
 
 \end_inset
@@ -1047,7 +1038,7 @@ For the
 \begin_layout Standard
 \begin_inset Formula 
 \[
-2^{z}\times\ln\left(\frac{\tan\left(\frac{\pi}{4}+\frac{\phi_{1}}{2}\right)}{\tan\left(\frac{\pi}{4}+\frac{\phi_{0}}{2}\right)}\right)\le2\pi\frac{npy}{256}
+2^{z}\le\frac{npy_{max}/256}{\ln\left(\frac{\tan\left(\frac{\pi}{4}+\frac{\phi_{1}}{2}\right)}{\tan\left(\frac{\pi}{4}+\frac{\phi_{0}}{2}\right)}\right)}
 \]
 
 \end_inset
@@ -1058,18 +1049,7 @@ For the
 \begin_layout Standard
 \begin_inset Formula 
 \[
-z\ln2+\ln\left[\ln\left(\frac{\tan\left(\frac{\pi}{4}+\frac{\phi_{1}}{2}\right)}{\tan\left(\frac{\pi}{4}+\frac{\phi_{0}}{2}\right)}\right)\right]\le\ln\left(2\pi\frac{npy}{256}\right)
-\]
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\[
-z\le\frac{\ln\left(2\pi\frac{npy}{256}\right)-\ln\left[\ln\left(\frac{\tan\left(\frac{\pi}{4}+\frac{\phi_{1}}{2}\right)}{\tan\left(\frac{\pi}{4}+\frac{\phi_{0}}{2}\right)}\right)\right]}{\ln2}
+z\le\frac{\ln\left[\frac{npy_{max}/256}{\ln\left(\frac{\tan\left(\frac{\pi}{4}+\frac{\phi_{1}}{2}\right)}{\tan\left(\frac{\pi}{4}+\frac{\phi_{0}}{2}\right)}\right)}\right]}{\ln2}
 \]
 
 \end_inset
@@ -1097,7 +1077,7 @@ To match the number of pixels as adequately as possible to our desired size
 \begin_layout Standard
 \begin_inset Formula 
 \[
-npy=\frac{256\times2^{\zeta}}{2\pi}\ln\left(\frac{\tan\left(\frac{\pi}{4}+\frac{\phi_{1}}{2}\right)}{\tan\left(\frac{\pi}{4}+\frac{\phi_{0}}{2}\right)}\right)
+npy=256\times2^{\zeta}\ln\left(\frac{\tan\left(\frac{\pi}{4}+\frac{\phi_{1}}{2}\right)}{\tan\left(\frac{\pi}{4}+\frac{\phi_{0}}{2}\right)}\right)
 \]
 
 \end_inset
@@ -1118,7 +1098,7 @@ This is useful because we want to compute for instance the exact WGS coordinates
 \begin_layout Standard
 \begin_inset Formula 
 \[
-px=\frac{256}{2\pi}2^{\zeta}\left(\lambda+\pi\right)
+px=\frac{256}{2\pi}2^{zoomlevel}\left(\lambda+\pi\right)
 \]
 
 \end_inset
@@ -1138,7 +1118,7 @@ So that with
 \begin_layout Standard
 \begin_inset Formula 
 \[
-2^{\zeta}\frac{256}{2\pi}\left(\lambda-\lambda_{c}\right)=px-px_{0}
+2^{z}\frac{256}{2\pi}\left(\lambda-\lambda_{c}\right)=px-px_{0}
 \]
 
 \end_inset
@@ -1149,33 +1129,7 @@ So that with
 \begin_layout Standard
 \begin_inset Formula 
 \[
-\lambda=\lambda_{c}+\frac{2\pi}{256}\left(px-px_{0}\right)2^{-\zeta}
-\]
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-In degrees:
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\[
-lon\frac{\pi}{180}=lon_{c}\frac{\pi}{180}+\frac{2\pi}{256}\left(px-px_{0}\right)2^{-\zeta}
-\]
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\[
-lon=lon_{c}+360\left(\frac{px-px_{0}}{256}\right)2^{-\zeta}
+\lambda=\lambda_{c}+\frac{2\pi}{256}\left(px-px_{0}\right)2^{-z}
 \]
 
 \end_inset
@@ -1188,7 +1142,7 @@ Similarly for the latitude direction, assuming we know
 \begin_inset Formula $\phi_{0}$
 \end_inset
 
- and 
+and 
 \begin_inset Formula $py_{0}$
 \end_inset
 
@@ -1232,32 +1186,6 @@ Similarly for the latitude direction, assuming we know
 \begin_inset Formula 
 \[
 \phi=\arctan\left(\left[\tan\left(\frac{\pi}{4}+\frac{\phi_{0}}{2}\right)\right]\exp\left[\frac{2\pi}{256}\left(py-py_{0}\right)2^{-z}\right]\right)-\frac{\pi}{2}
-\]
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-In degrees:
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\[
-lat\frac{\pi}{180}=\arctan\left(\left[\tan\left(\frac{\pi}{360}\left(90+lat_{0}\right)\right)\right]\exp\left[\frac{2\pi}{256}\left(py-py_{0}\right)2^{-z}\right]\right)-\frac{\pi}{2}
-\]
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\[
-lat=\arctan\left(\left[\tan\left(\frac{\pi}{360}\left(90+lat_{0}\right)\right)\right]\exp\left[\frac{2\pi}{256}\left(py-py_{0}\right)2^{-z}\right]\right)-90
 \]
 
 \end_inset

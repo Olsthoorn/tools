@@ -115,8 +115,8 @@ def utm2rd(E, N):
     return X, Y
 
 #%% from RD to WGS ====================================
-phi0 = 52.15517440 # northing
-lam0 = 5.38720621  # easting
+N0 = 52.15517440 # northing
+E0 = 5.38720621  # easting
 
 # ............ PK, QK,  Kpq,     PL, QL,  Lpq
 F = np.array([(0, 1, 3235.65389, 1, 0, 5260.52916),
@@ -133,6 +133,15 @@ F = np.array([(0, 1, 3235.65389, 1, 0, 5260.52916),
              (0, 0,    0.0,     5, 0,    0.00026)])
 
 def rd2wgs(X, Y):
+    '''Return E, N given X, Y of the Dutch RD system.
+
+    parameters
+    ----------
+    E:
+        Easting
+    N:
+        Northing
+    '''
 
     x0 = X0[0]
     y0 = Y0[0]
@@ -148,14 +157,19 @@ def rd2wgs(X, Y):
     dx = (X - x0) * 1e-5
     dy = (Y - y0) * 1e-5
 
-    phi = 0. * Y  # so that X and phi are of the same type
-    lam = 0. * X  # so that Y and lam are of the same type
+    N = 0. * Y  # so that X and N are of the same type
+    E = 0. * X  # so that Y and E are of the same type
 
     for pk, qk, kpq, pl, ql, lpq in zip(PK, QK, Kpq, PL, QL, Lpq):
-        phi += kpq * dx ** pk * dy ** qk
-        lam += lpq * dx ** pl * dy ** ql
+        N += kpq * dx ** pk * dy ** qk
+        E += lpq * dx ** pl * dy ** ql
 
-    return lam0 + lam/3600., phi0 + phi/3600.
+    return E0 + E/3600., N0 + N/3600.
+
+
+def rd2lamphi(X, Y):
+    E, N = rd2wgs(X, Y)
+    return np.pi / 180 * E, np.pi / 180 * N
 
 #%% From WGS to RD ===================================
 
@@ -170,17 +184,27 @@ G = np.array([(0, 1, 190094.945, 1, 0, 309056.544),
              (2, 3,      0.148, 0, 4,      0.092),
              (0, 0,      0.0,   1, 4,     -0.054)])
 
+
 def wgs2rd(E, N):
+    '''Return Dutch RD coordinates from WGS84 coordinates.
 
-    phi0 = 52.15517440
-    lam0 = 5.38720621
+    parameters
+    ----------
+    E: float or np.ndarray
+            Easting
+    N: float or np.ndarray
+            Northing
+    '''
 
-    dphi = 0.36 * (N - phi0)
-    dlam = 0.36 * (E - lam0)
+    N0 = 52.15517440
+    E0 = 5.38720621
 
-    if isinstance(dphi, np.ndarray):
-        dphi = np.array(dphi)
-        dlam = np.array(dlam)
+    dN = 0.36 * (N - N0)
+    dE = 0.36 * (E - E0)
+
+    if isinstance(dN, np.ndarray):
+        dN = np.array(dN)
+        dE = np.array(dE)
 
     PR  = np.array(G[:,0], dtype=int)
     QR  = np.array(G[:,1], dtype=int)
@@ -193,8 +217,8 @@ def wgs2rd(E, N):
     Y = Y0[0]
 
     for pr, qr, rpq, ps, qs, spq in zip(PR, QR, Rpq, PS, QS, Spq):
-        X += rpq * dphi ** pr * dlam ** qr
-        Y += spq * dphi ** ps * dlam ** qs
+        X += rpq * dN ** pr * dE ** qr
+        Y += spq * dN ** ps * dE ** qs
     return X, Y
 
 def toMdl(xyW, georef):
