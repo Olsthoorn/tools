@@ -46,6 +46,7 @@ D4 = np.array([0.000,        0.000])
 #%% From UTM 2 RD ===============================
 
 def rd2utm(X, Y):
+    ''' return Xutm Yutm from rd'''
 
     if isinstance(X, np.ndarray):
         Iz = np.zeros_like(X, dtype=int)
@@ -81,6 +82,7 @@ def rd2utm(X, Y):
 
 # from WGS to UTM ====================================
 def utm2rd(E, N):
+    '''Return E, N from Xutm, Yutm'''
 
     if isinstance(E, np.ndarray):
         Iz = np.zeros_like(E, dtype=0) # zone 31 or zone 32
@@ -133,7 +135,7 @@ F = np.array([(0, 1, 3235.65389, 1, 0, 5260.52916),
              (0, 0,    0.0,     5, 0,    0.00026)])
 
 def rd2wgs(X, Y):
-    '''Return E, N given X, Y of the Dutch RD system.
+    '''Return E, N from  Xrd, Yrd of the Dutch RD system.
 
     parameters
     ----------
@@ -168,6 +170,8 @@ def rd2wgs(X, Y):
 
 
 def rd2lamphi(X, Y):
+    '''Returns lam, phi from Xrd, Yrd'''
+
     E, N = rd2wgs(X, Y)
     return np.pi / 180 * E, np.pi / 180 * N
 
@@ -186,14 +190,17 @@ G = np.array([(0, 1, 190094.945, 1, 0, 309056.544),
 
 
 def wgs2rd(E, N):
-    '''Return Dutch RD coordinates from WGS84 coordinates.
+    '''Return Xrd, Yrd from Ewgs, Nwgs.
 
     parameters
     ----------
-    E: float or np.ndarray
-            Easting
-    N: float or np.ndarray
-            Northing
+        E: float or np.ndarray
+                Easting in degrees (WGS)
+        N: float or np.ndarray
+                Northing in degrees (WGS)
+    returns
+    -------
+        Xrd, Yrd in m
     '''
 
     N0 = 52.15517440
@@ -222,7 +229,7 @@ def wgs2rd(E, N):
     return X, Y
 
 def toMdl(xyW, georef):
-    '''Return model coordinates.
+    '''Return xyMdl array from xyW  rd coordinates.
 
     parameters
     ----------
@@ -254,7 +261,7 @@ def toMdl(xyW, georef):
 
 
 def toWld(xyM, georef):
-    '''Return world coordinates.
+    '''Returns xyW RD coordinates from xyMdl coordinates.
 
      parameters
      ----------

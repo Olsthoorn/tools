@@ -57,7 +57,11 @@ def outliers(df, cols=None, fence=3.0):
         names must be columns of df.
     fencee : a float
         fence limit such that
-          < median - fence  * (Q3 - Q1), > median + fence * (Q3 - Q1))
+          < median - fence  * (Q3 - Q1), > median + fence * (Q3 - Q1)
+
+    returns
+    -------
+        None
 
     >>> df = pd.DataFrame(index=np.arange(10), data=np.random.randn(10, 3), columns=['a', 'b', 'c'])
     >>> df.loc[[2, 5], 'b'] = [2.4, -10]
@@ -305,6 +309,10 @@ class Base_Piezom:
         cols : list of str or str
             names of columns in the created self.dds that will be used in
             theis_analysis when it is invoked. Default = 'measured'
+
+        Returns
+        -------
+            None
         '''
 
         #import pdb; pdb.set_trace()
@@ -432,11 +440,16 @@ class Base_Piezom:
 
         works like pd.DataFrame.apply()
 
+        Returns
+        -------
+            pd.Series with the function fun applie on self.hds
+            TODO: check
+
         @ TO 2018-06-22 16:02
         '''
         funName = str(fun).split(' ')[1]
 
-        df = self.hds.apply(fun).to_frame
+        df = self.hds.apply(fun).to_frame # TODO check, looks strange
         df.columns = [funName]
 
         return df.T
@@ -456,6 +469,10 @@ class Base_Piezom:
             kwargs: dict
                 parameters to be passed to ax.set and plot.
                 If kwargs['ax'] is plt.Axes then use it else create it
+
+        returns
+        -------
+            None
         '''
         ax = kwargs.pop('ax', None)
 
@@ -580,17 +597,23 @@ class Base_Piezoms(collections.UserDict):
             cols: list of str or str
                 names of columns on which to apply theis analysis.
         '''
-
+        missed=[]
         for name in self:
-            self[name].dds = \
-                        self[name].drwdn(t0dd=t0dd, well=well, theis=theis, out=False, cols=cols)
+            try:
+                self[name].dds = \
+                    self[name].drwdn(t0dd=t0dd, well=well, theis=theis,
+                        out=False, cols=cols)
+            except:
+                missed.append(name)
 
-        pz_logger.info("Drawdown computed are saved in self[name].dds for {} piezometers."
-                    .format(len(self)))
+        pz_logger.info("Drawdowns are saved in self[name].dds for {} piezometers."
+                    .format(len(self) - len(missed)))
+        if missed:
+            pz_logger.debug('Could not compute drawdown for [{}]'.format(', '.join(missed)))
         pz_logger.info("t0dd <{}> saved in self[name].meta['t0dd']"
                     .format(self[name].meta['t0dd']))
         if theis:
-            pz_logger.info("Theis analysis resutls are saved in self[name].meta['theis']")
+            pz_logger.info("Theis analysis results are saved in self[name].meta['theis']")
         return
 
 
@@ -620,20 +643,27 @@ class Base_Piezoms(collections.UserDict):
                 if None, then don't generate a shapefile.
         returns
         -------
-        att : dict
+        att : dict with attime values for all columns
             with key self[name].name and fiels
-            ['x', 'y', 'z', 'iz', 't', usedcols, 'dd']
+            ['x', 'y', 'z', 'iz', 't', 'dd']
         '''
 
         att = dict()
+        missed=[]
         for name in self:
-            att[name]= self[name].attime(t, dd=dd, label=label)
+            try:
+                att[name]= self[name].attime(t, dd=dd, label=label)
+            except:
+                missed.append(name)
+
+        if missed:
+            pz_logger.debug("Couln't do attime for [{}]".format(', '.join(missed)))
 
         if shapefile:
             if not os.path.isfile(shapefile):
                 raise FileNotFoundError("Can't find file {}".format(shapefile))
 
-            shape.dict2shp(att, shapefile, shapetype='POINT', xy=('x', 'y'), usecols=cols)
+            shape.dict2shp(att, shapefile, shapetype='POINT', xy=('x', 'y'))
             pz_logger.info('Shapefile <{}> generated, containing {} points'.format(shapefile, len(att)))
 
         return att
@@ -659,6 +689,9 @@ class Base_Piezoms(collections.UserDict):
         ------
         kwargs : plot options
             all kwargs are pased on to plt.plot
+        returns
+        -------
+            None
         '''
 
         if not cols is None and not isinstance(cols, (tuple, list)):  cols = [cols]
@@ -715,6 +748,11 @@ class Base_Piezoms(collections.UserDict):
             start time to limit application range
         tend: pd.Timestamp or str represending one
             end time to truncate application range
+
+        Returns
+        -------
+            pd.DataFrame with index the name of the piezometer with
+            with the functions applied to all columns
 
         @ TO 2018-06-22 16:02
         '''
@@ -779,6 +817,9 @@ class Base_Piezoms(collections.UserDict):
                 fldnams form piez[names].dd to use
             dd : bool
                 if True drawdown will be saved else heads will be saved
+        returns
+        -------
+            None
         '''
 
         self.attime(t, dd=dd, shapefile=shapefile)
@@ -862,6 +903,11 @@ class Calib(Base_Piezom):
         t0sim : pd.Timestamp or str representing a pdTimestamp
             Absolute start time of Modflow simulation,
             this fixes HDS.times to absolute datetime.
+
+        Returns
+        -------
+            pd.DataFrame with computed and measured heads at
+            the simulation times times at each piezometer.
         '''
 
         aday = pd.Timedelta(1, 'D')
@@ -1106,6 +1152,10 @@ class Piezom(Base_Piezom):
             D < med - (Q3 - Q2) * fence OR D > med + (Q3 - Q2) * fence
         window: postive int
             width in centered rolling window to compute median
+
+        returns
+        -------
+            The self.hds datafram is replaced.
         '''
         D  = self.hds[col]
         Q3 = D.quantile(0.75)
@@ -1136,6 +1186,10 @@ class Piezom(Base_Piezom):
                 window: postive int
         window: positive int
             width in centered rolling window to compute median
+
+        returns
+        -------
+            None
 
         >>> df = pd.DataFrame(index=np.arange(10), data=np.random.randn(10, 3), columns=['a', 'b', 'c'])
         >>> df.loc[[2, 5], 'b'] = [2.4, -10]

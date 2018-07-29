@@ -7,5 +7,5 @@ Created on Wed Jan 24 16:47:22 2018
 """
 
 
-from .piezoms import *
+from .piezometers import *
 
