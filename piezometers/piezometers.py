@@ -212,7 +212,7 @@ def theis_analysis(obj, t0dd=None, well=None, col='measured'):
         # kD and S
         R = obj.distance(xWell, yWell)
 
-        kD = Q / (4 * np.pi * theis['dd_maxGrad'])
+        kD = 2.3 * Q / (4 * np.pi * theis['dd_maxGrad'])
 
         S  = 2.25 * kD * theis['t_dd0'] / R ** 2
 
