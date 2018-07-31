@@ -567,8 +567,6 @@ class Base_Piezoms(collections.UserDict):
     @TO 20180620
     '''
 
-
-
     def drwdn(self, t0dd=None, well=None, theis=False, cols=None):
         '''Sets the drawdown for all piezometers as self[name].dds
 
@@ -1042,6 +1040,19 @@ class Calibs(Base_Piezoms):
         if missed:
             pz_logger.info('Missed piezometers: [{}]'.format(', '.join(missed)))
 
+    def sub(self, keys):
+        '''Return of subsetof self. usage self.sub(keylist)
+
+        parameters
+        ----------
+            keys : a list or index of keys
+                iterable set of keys to select the subset
+        '''
+        subset = Calibs('')
+        for k in keys:
+            subset[k] = self[k]
+        return subset
+
 
 #%%
 
@@ -1307,6 +1318,22 @@ class Piezoms(Base_Piezoms):
                          their corresponding collar is missing''')
             pz_logger.debug('[{}]'.format(', '.join(missing)))
         return
+
+
+    def sub(self, keys):
+        '''Return of subsetof self. usage self.sub(keylist)
+
+        parameters
+        ----------
+            keys : a list or index of keys
+                iterable set of keys to select the subset
+        '''
+        subset = Piezoms('')
+        for k in keys:
+            subset[k] = self[k]
+        return subset
+
+
 
 
 #%%
