@@ -108,25 +108,27 @@ def outliers(df, cols=None, fence=3.0):
 
 #%%
 def theis_analysis(obj, t0dd=None, well=None, col='measured'):
-    '''Return steepest gradient per logcycle and t where s=0.
+    '''Return steepest gradient per logcycle and time when s=0 according to Jacob (1946).
 
     This is based on the simplified Theis solution that yield
     straight drawdown lines of half-logarithmic time scale.
 
         $s = \frac {Q} {4 \pi kD} ln(\frac {2.25 kD t} {r^2 S})$
 
-    uses self.dd, the drawdown DataFrame
+    Uses self.dd, the drawdown DataFrame
 
     parameters
     ----------
     obj: piezoms.Piezom or piezoms.Calib object
         piezometer, having the drawdown data on board
         as the pd.DatFrame self.dds
+    t0dd: pd.Timestamp
+        time from which drawdown is computed. Efective start of head change/pump/leak.
     well:  dict {'x': xwell, 'y': ywell, 'Q': Qwell} None
         The location and extraction used in the analysis.
         If None, kD and S will not be computed.
-    plot: bool
-        If True then plot the log approximation and at the dd curves.
+    col : str
+        header of column to be used
 
     returns
     -------
@@ -148,6 +150,10 @@ def theis_analysis(obj, t0dd=None, well=None, col='measured'):
         The maximum gradient is the gradient of the straight dd vs logt
         line. Where the gradiet of the measured curved line is maximum
         is taken as the tangent point of the straigh line.
+    `dd_max`: float
+        maximum head change in series (peak)
+    `tdmax`: float (time in days)
+        'time when maximum head change occured
     '''
 
     #import pdb; pdb.set_trace()
@@ -199,7 +205,8 @@ def theis_analysis(obj, t0dd=None, well=None, col='measured'):
         't_maxGrad'  : 10**(lt_maxGrad), # in days (floats)
         'dd_maxGrad' : dd_maxGrad,
         'maxGrad'    : maxGrad,
-        'dd_max'     : np.max(D[col])}
+        'dd_max'     : D[col].max(),
+        'tddmax'     : (D[col].idxmax() - t0dd) / pd.Timedelta(1, 'D')}
 
     if well is not None:
         try:
@@ -548,8 +555,8 @@ class Base_Piezom:
 
                     kwargs.update({'ls': '', 'marker': 'o'})
 
-                    ax.plot([Th[ 't_maxGrad'], Th['t_dd0' ]],
-                            [Th['dd_maxGrad'], 0],
+                    ax.plot([Th[ 't_maxGrad'], Th['t_dd0' ], Th['tddmax']],
+                            [Th['dd_maxGrad'], 0, Th['dd_max']],
                             label=self.name + ' tan./t0dd', **kwargs)
 
         if legend:

@@ -15,7 +15,6 @@ see
 
 #%% Import modules
 
-import os
 import sys
 
 tools ='/Users/Theo/GRWMODELS/python/tools/'
@@ -242,6 +241,8 @@ class Gmap:
 
         # Google statib map KEY
         mykey = 'AIzaSyDRETF3BLxtT-W3c7dXlk-7t3j3Z7wLTN8'
+        mykey = 'AIzaSyAN48fCblu3jCy7LIwTsuZMck9lRK7o_e4'
+
 
         center_ = center if isinstance(center, str) else '{},{}'.format(*center)
         size_  = '{}x{}'.format(*size)
@@ -261,10 +262,10 @@ class Gmap:
         if region:    params['region'] = region
         if visible:   params['visible'] = visible
         if style:     params['style'] = style
-        if signature: params['signature'] = signature
 
 
-        params["key"] = mykey
+        #params["key"] = mykey
+        #params["signature"] = 'UDYzf_cPQiOaxb0RXejcFQ0GEBA='
 
         self.__dict__.update(**params)
 
