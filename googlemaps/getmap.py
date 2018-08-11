@@ -240,7 +240,6 @@ class Gmap:
         '''
 
         # Google statib map KEY
-        mykey = 'AIzaSyDRETF3BLxtT-W3c7dXlk-7t3j3Z7wLTN8'
         mykey = 'AIzaSyAN48fCblu3jCy7LIwTsuZMck9lRK7o_e4'
 
 

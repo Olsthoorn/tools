@@ -19,8 +19,9 @@ import pandas as pd
 import shape
 import logging
 import etc
-import datetime
-
+from juka_tools import jukaTools
+import flopy
+import juka_com as com
 
 # timedelta to float
 # example td2float(piezom['PBGRA3'].dd.index)
@@ -139,7 +140,7 @@ def theis_analysis(obj, t0dd=None, well=None, col='measured'):
 
     `dd_logcycle` : float
         Drawdown (or head change) per log10 cycle [m]. (Sim)
-    `t_dd0` : float (t,  not logt)
+    `tdd0` : float (t,  not logt)
         The time since start pumping at which the straight drawdown curve
         hits dd=0. (Simlified Theis analysis.)
     `t_at_maxGrad` : float (t, nog logt)
@@ -166,6 +167,8 @@ def theis_analysis(obj, t0dd=None, well=None, col='measured'):
         raise ValueError('''Col must be one of the column headers
                 in obj.hds DataFrame: [{}]'''.format(', '.join(obj.hds.columns)))
 
+    if obj.name == 'PLP31A':
+        print()
 
     D = obj.dds.copy().dropna(axis=0, how='any')  # the drawdown pd.DataFrame
 
@@ -201,7 +204,7 @@ def theis_analysis(obj, t0dd=None, well=None, col='measured'):
     theis = {
         't0dd'       : t0dd, # absolute reference, pd.Timestamp
         'dd_logcycle': dd_logcycle,
-        't_dd0'      : 10**(lt_dd0),  # in days (floats)
+        'tdd0'       : 10**(lt_dd0),  # in days (floats)
         't_maxGrad'  : 10**(lt_maxGrad), # in days (floats)
         'dd_maxGrad' : dd_maxGrad,
         'maxGrad'    : maxGrad,
@@ -221,7 +224,7 @@ def theis_analysis(obj, t0dd=None, well=None, col='measured'):
 
         kD = 2.3 * Q / (4 * np.pi * theis['dd_maxGrad'])
 
-        S  = 2.25 * kD * theis['t_dd0'] / R ** 2
+        S  = 2.25 * kD * theis['tdd0'] / R ** 2
 
         theis.update({'r': R, 'kD': kD, 'S': S, 'well': well})
 
@@ -281,7 +284,7 @@ class Base_Piezom:
 
 
 
-    def drwdn(self, t0dd=None, well=None, theis=False, out=True, cols=None):
+    def drwdn(self, t0dd=None, t0hd=None, well=None, theis=False, out=True, cols=None):
         '''Return drawdown with respect to timestamp t0dd.
 
         In all cases, the resutting drawdown DataFrame is stored as self.dds
@@ -301,8 +304,10 @@ class Base_Piezom:
 
         Parameters
         ----------
-        t0dd : np.datetime64 or str representing a datatiem64 object
+        t0dd : pd.Timestamp or str representing one
             start of drawdown, absolute time like '2018-06-20 09:05'
+        t0hd : pd.Timestamp or str respresending one
+            time at which zero drawdown is assumed.
         well: dict {'x': xWell, 'y': yWell, 'Q': Qwell}
             well should contain (xwell, ywell, Q), Q starts at t0dd
             If well is None, kD and S will not be computed.
@@ -328,22 +333,19 @@ class Base_Piezom:
             raise ValueError(
                     't0dd must be specified when calling self.drwdn()')
 
-        if not isinstance(t0dd, (str,
-                            pd.Timestamp, np.datetime64, datetime.datetime)):
-            raise ValueError(
-                't0dd must be a pd.Timestamp or a str representing one, not {}'
-                             .format(str(t0dd)))
-
         t0dd = pd.Timestamp(t0dd)
+        t0hd = pd.Timestamp(t0hd)
 
         self.meta['t0dd'] = t0dd
+        self.meta['t0hd'] = t0hd
 
         # To genrerate drawdown strat by copying the heads
         # and truncate anything before t0dd
         self.dds = self.hds.loc[self.hds.index > t0dd].copy()
 
-        # Get the values in self.hds for all columns at t0dd
-        att = self.attime(t=t0dd, dd=True)
+        # Get the values in self.hds for all columns at t0hd
+        # Note that this time differes from t0dd
+        att = self.attime(t=t0hd, dd=False)
 
         # Subtract the values at t0dd, not that att is a dictionary
         for _col_ in self.dds.columns:
@@ -416,30 +418,27 @@ class Base_Piezom:
         '''
         t = pd.Timestamp(t)
 
-        # make sure self.att exists as dict and label is not None
-        if not 'att' in self.__dict__:
-            self.att = dict()
-
-        if label is None:
-            label = len(self.att)
-
-        self.att[label] = {'t': t, 'dd': dd}
-
         if dd == False:
-            DF = self.hds
+                DF = self.hds
         else:
-            DF = self.dds
+            try:
+                DF = self.dds
+            except:
+                raise ValueError('self.dds does not exist, run metho drwdn first')
 
         cols = DF.columns
 
+        self.att = {'t': t, 'dd': dd}
+
         td_f     = (t        - DF.index[0]) / pd.Timedelta(1, 'D')
         td_ind_f = (DF.index - DF.index[0]) / pd.Timedelta(1, 'D')
-        for col in cols:
-            self.att[label][col] = np.interp(td_f,
-                        td_ind_f[~np.isnan(DF[col].values)],
-                        DF[col].values[~np.isnan(DF[col].values)])
 
-        return self.att[label]
+        for col in cols:
+            values = DF[col].values
+            mask   = ~np.isnan(values)
+            self.att[col] = np.interp(td_f, td_ind_f[mask], values[mask])
+
+        return self.att
 
 
     def apply(self, fun):
@@ -462,17 +461,24 @@ class Base_Piezom:
         return df.T
 
 
-
-    def plot(self, cols=None, tstart=None, tend=None, dd=False,
-                             t0dd=None, well=None, theis=None, **kwargs):
+    def plot(self, cols=None, dd=False, tstart=None, tend=None,
+                     well=None, theis=None,
+                     size_inches=(6.4, 4.8), fsz_legend='xx-small', **kwargs):
         '''Plot self.data[what].
 
         parameters
         ----------
-            what : str
-                header of column to be plotted ['computed', 'measured', 'diff']
+            cols : str
+                header of column[s] to be plotted ['computed', 'measured', 'diff']
+                if None, plot all columns (often not useful)
             dd : bool
                 whether to plot heads or head-change (drawdown)
+            tstart, tend: pd.Timestamps or str represendint timestamps
+                start and end of plot in absolute times
+            size_inches: (w, h)
+                picture size in inches
+            fsz_legend : oneof [xx-small x-small small medium large x-large xxlarge]
+                fontsize of legend text
             kwargs: dict
                 parameters to be passed to ax.set and plot.
                 If kwargs['ax'] is plt.Axes then use it else create it
@@ -485,22 +491,12 @@ class Base_Piezom:
 
         # Make sure self.dds exists.
         if dd == True:
-            if t0dd is None:
-                raise ValueError('''Because drawdowns are computed on the fly,
-                    you must specify t0dd.
-                    Specify t0dd as a pd.Timestamp or a str representing one.''')
-
             try:
-                t0dd = pd.Timestamp(t0dd)
+                DF = self.dds
             except:
-                raise ValueError('''Can't handle t0dd given as {}.
-                        t0dd must be convertable to pd.Timestamp.'''.format(t0dd))
+                raise ValueError("self.dds fails/doesn't exist 'run calibs.drwdn first!")
 
-            # Generate drawdowns on the fly to ensure t0dd is up to data
-            self.dds = self.drwdn(t0dd=t0dd, well=well, theis=theis, out=True, cols=cols)[0]
-
-            DF = self.dds
-            plot_index = (DF.index - t0dd) / pd.Timedelta(1, 'D')
+            plot_index = (DF.index - self.meta['t0dd']) / pd.Timedelta(1, 'D')
         else:
             DF = self.hds
             plot_index = DF.index
@@ -514,7 +510,7 @@ class Base_Piezom:
             legend = True
 
             fig, ax = plt.subplots()
-            fig.set_size_inches(kwargs.pop('size_inches', size_inches))
+            fig.set_size_inches(size_inches)
 
             prep = 'Heads' if dd == False else 'Drawdowns'
 
@@ -544,8 +540,8 @@ class Base_Piezom:
 
             for col in cols:
                 Th = self.meta['theis'][col]
-                lgt = np.linspace(np.log10(Th['t_dd0']),
-                                  np.log10(Th['t_dd0']) + 1., 21)
+                lgt = np.linspace(np.log10(Th['tdd0']),
+                                  np.log10(Th['tdd0']) + 1., 21)
                 dd = np.linspace(0, Th['dd_logcycle'], 21)
 
                 if len(lgt) > 0:
@@ -555,12 +551,12 @@ class Base_Piezom:
 
                     kwargs.update({'ls': '', 'marker': 'o'})
 
-                    ax.plot([Th[ 't_maxGrad'], Th['t_dd0' ], Th['tddmax']],
+                    ax.plot([Th[ 't_maxGrad'], Th['tdd0' ], Th['tddmax']],
                             [Th['dd_maxGrad'], 0, Th['dd_max']],
                             label=self.name + ' tan./t0dd', **kwargs)
 
         if legend:
-            ax.legend(loc='best')
+            ax.legend(loc='best', fontsize=fsz_legend)
         return
 
 
@@ -574,7 +570,7 @@ class Base_Piezoms(collections.UserDict):
     @TO 20180620
     '''
 
-    def drwdn(self, t0dd=None, well=None, theis=False, cols=None):
+    def drwdn(self, t0dd=None, t0hd=None, well=None, theis=False, cols=None):
         '''Sets the drawdown for all piezometers as self[name].dds
 
         time of start drawdown is saved in self[name].mta['t0dd']
@@ -589,8 +585,10 @@ class Base_Piezoms(collections.UserDict):
 
         parameters
         ----------
-            t0dd: np.datetime64 object or str representing it
+            t0dd: pd.Timestamp object or str representing it
                 absolute time from which drawdown is computed.
+            t0hd: pd.Timestamp or str representing one
+                time from which heads are assumed for zero drawdown.
             well: dict {'x' : xwell, 'y': ywell, 'Q': Qwell}
                 if  None, then kD and S cannot be computed.
             theis: bool
@@ -606,7 +604,7 @@ class Base_Piezoms(collections.UserDict):
         for name in self:
             try:
                 self[name].dds = \
-                    self[name].drwdn(t0dd=t0dd, well=well, theis=theis,
+                    self[name].drwdn(t0dd=t0dd, t0hd=t0hd, well=well, theis=theis,
                         out=False, cols=cols)
             except:
                 missed.append(name)
@@ -674,8 +672,7 @@ class Base_Piezoms(collections.UserDict):
         return att
 
 
-    def plot(self, cols=None,
-             tstart=None, tend=None, t0dd=None, dd=False, well=None, theis=False, **kwargs):
+    def plot(self, cols=None, tstart=None, tend=None, dd=False, well=None, theis=False, **kwargs):
         '''Plot the measurements, not the drawdown h(t).
 
 
@@ -684,7 +681,7 @@ class Base_Piezoms(collections.UserDict):
         cols : list of str
             names of DataFrame columns to be plotted e.d:
                 cols=['computed', 'measured', 'diff']
-        tstart : np.datetime64 obj or a str that represents a datatime.
+        tstart : pd.Timestamp or str
             starting time of plot or moment relative to which drawdown is computed
         tend: same as tstart
             ending time of plot. Ignored in case dd=True
@@ -711,11 +708,13 @@ class Base_Piezoms(collections.UserDict):
             ax.set_title('{}, {}'.format(typeStr, 'column names unspecified'))
         else:
             ax.set_title('{}, {}'.format(typeStr, ', '.join(cols)))
+
         if dd == False:
             ax.set_xlabel('date and time')
             ax.set_ylabel('m NAP')
         else:
-            ax.set_xlabel('time since start [d] @ {}'.format(t0dd))
+            name = [n for n in self.data][0]
+            ax.set_xlabel('time since start [d] @ {}'.format(self[name].meta['t0dd']))
             ax.set_ylabel('head change [m]')
         if 'xlim'     in kwargs: ax.set_xlim(    kwargs.pop('xlim'))
         if 'ylim'     in kwargs: ax.set_ylim(    kwargs.pop('ylim'))
@@ -729,7 +728,7 @@ class Base_Piezoms(collections.UserDict):
         for name, ls in zip(self, etc.linestyle_cycler()):
             try:
                 self[name].plot(cols=cols, dd=dd,
-                        t0dd=t0dd, tstart=tstart, tend=tend,
+                        tstart=tstart, tend=tend,
                         well=well, theis=theis, **ls, ax=ax, **kwargs)
             except Exception as err:
                 pz_logger.debug("Couldn't plot []: {}".format(name, err))
@@ -850,21 +849,27 @@ class Calib(Base_Piezom):
 
     '''
 
-    def __init__(self, piez=None, gr=None, HDS=None, t0sim=None,
-                 t0dd=None, well=None, theis=None):
+    def __init__(self, piez=None, dd=True, gr=None, HDS=None, t0sim=None,
+                 t0dd=None, t0hd=None, well=None, theis=None):
         '''
         parameters
         ----------
+        piez: piezometer.Piezo object
+            piezometer from which the calib will be generated
+        dd: bool (default: True)
+            add .dds DataFrame for head change.
         gr : fdm.mfgrid.Grid
             fdm mesh
         HDS : flopy.binary head file object
             modflow-simulated heads
         piez : dict
             piezometer object, parent for Calib
-        t0hds: np.datetime64 obj or str representing it
+        t0hds: pd.Timestamp or str representing it
             starting time of simulation, to link MODFLOW times to abs. datetime.
-        t0dd : np.datetime64 objec, or str representing it
+        t0dd : pd.Timestamp, or str representing it
             starting time of drawdown, must be >= t0hds
+        t0hd: pd.Timestamp or a str representing one
+            time from which the heads are taken as zero drawdown.
 
 
         @TO 180618
@@ -885,11 +890,12 @@ class Calib(Base_Piezom):
 
         self.hds = self.interpolate(gr=gr, HDS=HDS, piez=piez, t0sim=t0sim)
 
-        self.hds['diff'] = self.hds['computed'] - self.hds['measured']
+        if 'computed' in self.hds.columns:
+            self.hds['diff'] = self.hds['computed'] - self.hds['measured']
 
-        if t0dd is not None:
+        if dd:
             # only if t0dd is explicityl specified wil the ddrawdown be computed here.
-            self.drwdn(t0dd=t0dd, well=well, theis=theis, out=False)
+            self.drwdn(t0dd=t0dd, t0hd=t0hd, well=well, theis=theis, out=False)
 
         return
 
@@ -917,20 +923,11 @@ class Calib(Base_Piezom):
 
         aday = pd.Timedelta(1, 'D')
 
-        piezom_times = (piez.hds.index - t0sim) / aday # in days
-        mflow_times  = HDS.times
-
-        h_mflow  = HDS.get_alldata();
-
-        mask = h_mflow < -900.;
-
-        h_mflow[mask] = np.nan
-
         M = self.meta
 
+        # =========== Piezometer cell indices =================================
         LRC = gr.ixyz(M['x'], M['y'], 0.5 * (M['z1'] + M['z2']),
                                                   order='LRC', world=True)
-
         L, R, C = LRC[0]
 
         # verify and change exchange if necessary (i.e. for PBU094A)
@@ -945,15 +942,40 @@ class Calib(Base_Piezom):
 
         self.meta['iz'] = L # store this, it's the model layer
 
-        # Get interpolated heads for all times at piezometer location:
-        ht_mflow_at_piezom = [ht_mflow[L, R, C] for ht_mflow in h_mflow]
+        piezom_times = (piez.hds.index - t0sim) / aday # in days
 
-        timestamps = [t0sim + t_mflow * aday for t_mflow in mflow_times]
+        # ==== Get computed heads in piezometer cells at simulation times =====
+        if isinstance(HDS, flopy.utils.binaryfile.HeadFile):
+            h_mflow  = jukaTools.clean_the_heads(gr, HDS.get_alldata(), tol=0.01)
+            ht_mflow_at_piezom = [ht_mflow[L, R, C] for ht_mflow in h_mflow]
+            mflow_times  = HDS.times
+            timestamps = [t0sim + t_mflow * aday for t_mflow in mflow_times]
 
-        # Get measured and computed heads in a DataFrame
-        ht_dframe =  pd.DataFrame({'computed' :ht_mflow_at_piezom}, index=timestamps)
+            ht_dframe =  pd.DataFrame({'computed' :ht_mflow_at_piezom},
+                                      index=timestamps)
 
-        for col in piez.hds.columns:
+            cols = piez.hds.columns
+        else: # when HDS is not HDS but a list of time stamps
+            timestamps = HDS  # must be
+            if (not isinstance(timestamps, (list, tuple)) and
+                not isinstance(timestamps[0], pd.Timestamp)):
+                raise ValueError(
+                    'list of pd.Timestamps expected at HDS, not a\n' +
+                    ' {} of {}.'.format(type(timestamps), type(timestamps[0])))
+
+            ht_dframe = pd.DataFrame({'computed': np.zeros_like(HDS) * np.nan},
+                                      index = timestamps)
+
+            mflow_times = (
+                    (ht_dframe.index - pd.Timestamp(t0sim))
+                    /pd.Timedelta(1, 'D')).values
+
+            ht_dframe = ht_dframe.drop(columns=['computed'])
+
+            cols = ['measured']
+
+        # ======= Get measured and computed heads in a DataFrame ==============
+        for col in cols:
             ht_dframe[col] = np.interp(mflow_times, piezom_times, piez.hds[col],
                      left=np.nan, right=np.nan)
 
@@ -978,8 +1000,8 @@ class Calibs(Base_Piezoms):
     @TO 2018-06-20
     '''
 
-    def __init__(self, piezoms=None, gr=None, HDS=None, t0sim=None,
-                 t0dd=None, well=None, theis=None):
+    def __init__(self, piezoms=None, dd=True, gr=None, HDS=None, t0sim=None,
+                 t0dd=None, t0hd=None, well=None, theis=None):
 
         '''Return a Calibs collection.
 
@@ -1007,6 +1029,8 @@ class Calibs(Base_Piezoms):
         ----------
             piezoms:
                 the piezometers
+            dd: bool
+                add .dds DataFrame (default: True)
             gr: fdm.mfgrid.Grid object
                 gr object holding the Modflow mesh
             HDS: flopy.utils.binaryfile.Headfile
@@ -1015,6 +1039,8 @@ class Calibs(Base_Piezoms):
                 start time of simulation
             t0dd: pd.Timestamp or a str representing one
                 time relative to which the drawdown is computed
+            t0hd: pd.Timestamp of a str representing one
+                time from which heads are taken as zero drawdown
             well: dict {x: x, y: y, Q: Q}
                 well info required when computing Theis/Jacob analysis
             theis : bool
@@ -1037,8 +1063,8 @@ class Calibs(Base_Piezoms):
 
         for name in piezoms:
             try:
-                self.data[name] = Calib(piez=piezoms[name],
-                         gr=gr, HDS=HDS, t0sim=t0sim,
+                self.data[name] = Calib(piez=piezoms[name],dd=dd,
+                         gr=gr, HDS=HDS, t0sim=t0sim, t0hd=t0hd,
                          t0dd=t0dd, well=well, theis=theis)
             except Exception as err:
                 pz_logger.debug("piezom[{}]: {}".format(name, err.args[0]))
@@ -1057,7 +1083,10 @@ class Calibs(Base_Piezoms):
         '''
         subset = Calibs('')
         for k in keys:
-            subset[k] = self[k]
+            try:
+                subset[k] = self[k]
+            except: # ignore if k not in self
+                pass
         return subset
 
 
