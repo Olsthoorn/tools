@@ -46,18 +46,18 @@ intNaN = -999999
 
 def show_lines(self, ax=None, co_dict=None,**kwargs):
     '''Show muliple lines contained in co_dict.
-    
+
     parameters
     ----------
         ax: plt.Axes
             axis or None to generate a fig with axis
         co_dict: dict with model coordinates to be plotted
             coordinates are co_dict[key][:,0], co_dict[key][:,1]
-            
+
         kwargs ['title', 'xlabel', 'ylabel', 'xlim', 'ylim'] --> ax
 
         all other kwargs --> ax.plot
-        
+
     TO 180608
     '''
     if ax is None:
@@ -68,26 +68,26 @@ def show_lines(self, ax=None, co_dict=None,**kwargs):
         ax.grid()
     if 'xlim' in kwargs: ax.set('xlim', kwargs.pop('xlim'))
     if 'ylim' in kwargs: ax.set('ylim', kwargs.pop('ylim'))
-    
+
     for k in co_dict:
         ax.plot(co_dict[k][:,0], co_dict[k][:,1], label=k)
 
 
 class StressPeriod:
-    
+
     def __init__(self, events_df, tsmult=1.25, dt0=1/24.):
         '''Return stress period object.
-        
+
         Note that only the start time of the last stress period will be used
         as the end time of the simulation. So at least two stress periods
         have to be defined. Doing so, only the first is used and its lengt
         is defined by the start time of the last stress period.
-        
+
         The number of time steps in each stress period is determined by
         tsmult and dt0. The time-step lengths will be adjusted such that
         tsmult is applied exactly and the first time_step is less or equal to
         dt0.
-        
+
         parameters
         ----------
             events_df : pd.DataFram
@@ -99,10 +99,10 @@ class StressPeriod:
             dt0 : float
                 approximate length of first time step of each stress period.
         '''
-        
+
         # time-unit_conversion from seconds
         self.events = events_df
-        
+
         # conversion of tiem dimension
         self.ufac =  {'s': 1., 'm': 1/60., 'h': 1/3600. , 'd': 1/86400.,
                     'w': 1/(7 * 86400.)}
@@ -114,32 +114,32 @@ class StressPeriod:
             missed = [m for m in required_columns.difference(columns)]
             raise Exception('Missing required columns:' +
                             ', '.join(missed)[1:])
-    
+
         self.events.fillna(method='ffill', inplace=True)
-    
+
         # Extract stress period information. Note that the last SP is a dummy
         # that does not count, so select [:-1]
         self.SP_numbers = np.asarray(np.unique(self.events['SP']),
                                      dtype=int)[:-1]
-        
+
         if any(np.diff(self.SP_numbers)>1):
             print(self.SP_numbers[1:][np.diff(self.SP_numbers)>1])
             raise Exception('Stress periods not consecutive')
 
         self.nper = len(self.SP_numbers)
-        
+
         if self.nper < 1:
             raise ValueError('Need at least 2 stress periods.\n' +
                     'The last one only determines the end time of the simulation.')
-        
+
         self.SP = dict()
         for i in self.events.index:
             se = self.events.loc[i] # next stress event
             sp = int(se['SP'])
-            
+
             ''' an arbitrary number of duplicates may be used. This implies
             that only the last line with this SP is kept.'''
-            
+
             start = np.datetime64(datetime(year  =int(se['year']),
                                  month =int(se['month']),
                                  day   =int(se['day']),
@@ -152,7 +152,7 @@ class StressPeriod:
 
         # Convert back to pd.DataFrame (now with one entry per stress period)
         self.SP = pd.DataFrame(self.SP).T
-        
+
         # prepare column with end-time of stress period
         end_times = self.SP['start']  # converst start column to pd.Series
         end_times.index  = [end_times.index[-1], *end_times.index[:-1]]
@@ -163,11 +163,11 @@ class StressPeriod:
         index. However, this index is lost as the last stress period is
         ignored; only its start time is used as the end time of the simulation.
         '''
-        
+
         # Yields perlen in days
         self.SP['perlen'] = np.abs(self.SP['end'] - self.SP['start'])
         perlen_days = np.asarray(self.SP['perlen'], dtype=float) / (1.e9 * 86400)
-        
+
         '''
         Step length multiplier:
             `dt0 = perlen ((tsmult-1) / (tsmult**nstp - 1))`
@@ -182,14 +182,14 @@ class StressPeriod:
 
         # Throw out the last line, we only needed its end time
         self.SP = self.SP.iloc[:-1]
-        
+
         self.SP['steady'] = np.asarray(self.SP['steady'], dtype=int)
 
         # stready or transient
         self.SP['nstp'].loc[self.SP['steady'] == 1] = 1
-        
+
         self.SP['tsmult'] = tsmult
-        
+
     def get_perlen(self, asfloat=True, tunit='D'):
         plen = np.asarray(self.SP['perlen'], dtype='timedelta64[s]')
         if asfloat:
@@ -200,18 +200,18 @@ class StressPeriod:
     @property
     def steady(self):
         return np.asarray(self.SP['steady'], dtype=bool)
-    
+
     @property
     def tsmult(self):
         return np.asarray(self.SP['tsmult'], dtype=float)
-    
+
     @property
     def nstp(self):
         return np.asarray(self.SP['nstp'], dtype=int)
-    
+
     def get_datetimes(self, sp_only=False, aslists=True, fmt=None):
         '''Return times all steps, starting at t=0
-        
+
         parameters
         ----------
         sp_only : bool
@@ -221,7 +221,7 @@ class StressPeriod:
             if False: return as tuples (key, value)
         fmt: None or format
             fmt like in datetime.strfime, results are strings
-        
+
         returns an OrderedDict with keys (sp, stpnr)
         '''
         _datetimes = OrderedDict()
@@ -236,8 +236,8 @@ class StressPeriod:
                     _datetimes[(stpnr, sp)] = pd.to_datetime(deltat)
                 else:
                     _datetimes[(stpnr, sp)] = pd.to_datetime(deltat).strftime(fmt)
-                
-        
+
+
         keys = list(_datetimes.keys())
         if sp_only:
             # the keys for the end of each stress period
@@ -248,16 +248,16 @@ class StressPeriod:
             _datetimes=od
         if aslists:
            return [list(_datetimes.keys()), list(_datetimes.values())]
-        else:            
+        else:
             return _datetimes
 
     def get_keys(self, sp_only=False):
         return self.get_datetimes(sp_only=sp_only, aslists=True)[0]
 
-            
+
     def get_oc(self, what=['save_head', 'print_budget', 'save_budget'], sp_only=False):
         '''Return input for OC (output control)
-        
+
         parameters
         ----------
             what: list. Optional items in list:
@@ -270,10 +270,10 @@ class StressPeriod:
             sp_only: bool
                 return oc only for stress periods (not for time steps)
         '''
-        
+
         labels=[]
         for w in [w.lower() for w in what]:
-            
+
             if   w.startswith('save'):  s1 = 'save'
             elif w.startswith('print'): s1 = 'print'
             else:
@@ -281,23 +281,23 @@ class StressPeriod:
 
             if   w.endswith('head'):     s2 = 'head'
             elif w.endswith('drawdown'): s2 = 'drawdown'
-            elif w.endswith('budget'):   s2 = 'budget' 
+            elif w.endswith('budget'):   s2 = 'budget'
             else:
                 raise ValueError("key must end with 'head', 'drawdown' or 'budget'" )
-            
+
             labels.append(' '.join([s1, s2]))
 
         keys = self.get_keys(sp_only=sp_only)
-        
+
         sp_stp = [(k[1], k[0]) for k  in keys]
-        
+
         return dict().fromkeys(sp_stp, labels)
-    
-    
-            
+
+
+
     def get_times(self, asfloats=True, tunit='D', sp_only=False, aslists=True):
         '''Return datetime all steps, starting at start time of SP[0].
-        
+
         returns OrderedDict with keys (sp, stepnr)
         '''
         dt   = self.get_datetimes(sp_only=False, aslists=False)
@@ -306,11 +306,11 @@ class StressPeriod:
         start = self.SP['start'][0]
         for k in keys:
             _times[k]=np.timedelta64(dt[k] - start,  's')
-        
+
         if asfloats:
-            for k in keys:                
+            for k in keys:
                 _times[k]=np.float32(_times[k]) * self.ufac[tunit.lower()] # to days
-        
+
         if sp_only:
             # the keys for the end of each stress period
             kk = [k for k, j in zip(keys[:-1], keys[1:]) if j[0] > k[0]] + [keys[-1]]
@@ -323,34 +323,34 @@ class StressPeriod:
            return [list(_times.keys()), list(_times.values())]
         else:
             return _times
-        
+
     def get_steplen(self, asfloats=True, tunit='D',  aslists=True):
         '''Return steplen all steps.
-        
+
         returns OrderedDict with keys (sp, stepnr)
         '''
         _dt      = self.get_datetimes(aslists=False, sp_only=False)
         _steplen = OrderedDict()
         keys = list(_dt.keys())
-        
+
         _steplen[keys[0]] = np.timedelta64(_dt[keys[0]] - self.SP['start'][0], 's')
-        
+
         for k0, k1 in zip(keys[:-1], keys[1:]):
             _steplen[k1] = np.timedelta64(_dt[k1] - _dt[k0], 's')
-        
+
         if asfloats:
             for k in keys:
                 _steplen[k] = np.float32(_steplen[k]) * self.ufac[tunit.lower()]
-        
+
         if aslists:
             return [list(_steplen.keys()),list( _steplen.values())]
         else:
-            return _steplen        
+            return _steplen
 
-            
+
     def show(self, ax=None, co_dict=None, **kwargs):
         '''Show the lekvakken.
-        
+
         parameters
         ----------
             ax: plt.Axis
@@ -358,7 +358,7 @@ class StressPeriod:
             co_dict: dict with model coordinates to be plotted
                 coordinates are co_dict[key][:,0], co_dict[key][:,1]
         '''
-        
+
         if ax is None:
             fig, ax = plt.subplots()
             ax.set_title(kwargs.pop('title', 'Title'))
@@ -366,8 +366,8 @@ class StressPeriod:
             ax.set_ylabel(kwargs.pop('ylabel', 'y [m]'))
         if 'xlim' in kwargs: ax.set_xlim('xlim')
         if 'ylim' in kwargs: ax.set_ylim('ylim')
-        
-        for i in self.events.index: 
+
+        for i in self.events.index:
             se = self.events.loc[i]
             ax.plot([se.x1, se.x2, se.x2, se.x1, se.x1],
                     [se.y2, se.y2, se.y1, se.y1, se.y2], **kwargs)
@@ -791,7 +791,7 @@ class Grid:
 
                 if dtype is bool, then I is a zone array of shape
                 [ny, nx] or [nz, ny, nx]
-                
+
             astuple: bool or None
                 return as ((l, r, c), (l, r, c), ...)
             aslist: bool or None:
@@ -967,11 +967,11 @@ class Grid:
                           np.hstack((self.NOD[0][east], self.NOD[0][south]))]).T
 
         return pairs
-    
-    
+
+
     def lines2HFB(self, lines, open=True, layers=0, cs=np.nan ):
         '''Return HFB input records for many barrier lines at once
-        
+
         parameters
         ----------
             lines : list of line. A line is a list of barrier coordinates
@@ -981,14 +981,14 @@ class Grid:
             cs : float or list of floats
                 hydraulic resistance of each barrier [T].
                 If scalar all barriers get the same resistance.
-                
+
         TO 180707
         '''
-        
+
         if not isinstance(lines[0], np.ndarray):
             if not isinstance(lines[0][0], float):
                 raise ValueError("Lines must be a list of lines")
-            
+
         if isinstance(layers, int):
             layer = layers
             layers = [layer for i in range(len(lines))]
@@ -999,7 +999,7 @@ class Grid:
             raise ValueError(
               'Nr of layers ({}) or of c values ({}) does not equal number of lines ({}).'
                                .format(len(layers), len(cs), len(lines)))
-            
+
         HFB = []
         for line, layer, c in zip(lines, layers, cs):
             Hfb = self.line2HFB(line, open=open, layer=layer, c=c)
@@ -1007,13 +1007,13 @@ class Grid:
                 HFB.append(hfb)
 
         return HFB
-            
-        
-        
-        
+
+
+
+
     def line2HFB(self, polyline, open=True, layer=0, c=np.nan):
         '''Return HFB input given a polyline (mdl coordinates.
-        
+
         parameters
         ----------
             polyline : list of coordinate tuples
@@ -1028,18 +1028,18 @@ class Grid:
         -------
             list of tuples of the form that HFB needs
             [(L, R1, C1, R2, C2, c), (....)]
-        
+
         TO 180607
         '''
 
         pairs = self.cell_pairs(polyline, open=open)
-        
+
         return self.cell_pairs2HFB(pairs, c=c)
-        
-    
+
+
     def cell_pairs2HFB(self, cell_pairs, c=np.nan):
         '''Return HFB input as  a list of tuples.
-        
+
         parameters
         ----------
             cell_pairs : np.array([nlines, 2]) of model node numbers
@@ -1050,8 +1050,8 @@ class Grid:
         -------
             list of tuples of the form that HFB needs
             [(L, R1, C1, R2, C2, c), (....)]
-        
-        '''        
+
+        '''
         LRC1 = self.I2LRC(cell_pairs[:, 0])
         LRC2 = self.I2LRC(cell_pairs[:, 1])
         R = np.ones_like(LRC1[:,0], dtype=float) / c
@@ -1060,34 +1060,34 @@ class Grid:
 
     def I2LRC(self, I):
         '''Return (IL, IR, IC) from array of nodes I
-        
+
         parramters
         ----------
              I : list of global node numbers
                  The node numbers to be converted to LRC
         returns
             list
-        
+
         '''
         I = np.asarray(I, dtype=int)
-        
+
         Nlay = self.ny * self.nx
 
         IL = I // Nlay
         IR = (I - IL * Nlay) // self.nx
         IC = I - IL * Nlay - IR * self.nx
-        
+
         return np.vstack((IL, IR, IC)).T
 
 
     def interpxy(self, Z, points, iz=0, **kwargs):
         '''
         Return values by interpolation at points.
-    
+
         Performs linear interpolation over the first dimension of a 3D array
         the last two dimenstions as y, x wiht points = np.array([nPoints, 2]),
         according to new values from a 2D array new_x.
-    
+
         Parameters
         ----------
         Z : 3-D ndarray (double type)
@@ -1107,33 +1107,33 @@ class Grid:
             each z.
             Notice that Z may also be time. It's just the first dimension of
             the 3D array that is interpolated on x, y.
-            
+
             If your array is 4D, i.e. (time, z, y, x), then squeeze out the
             z is squeezed out first. (Interpreted as layer.)
         '''
         from scipy.interpolate import interp2d as interp_
-        
+
         fill_value = -999.
-        
+
         if Z.ndim == 2:
             Z = Z[np.newaxis, : ,:] # makes it work also if Z.shape=(ny, nx)
         elif Z.ndim == 4:
             Z = Z[:, iz, :, :] # squeeze out the layer
-        
+
         assert Z.shape[-2:] == self.shape[-2:],\
             'Z must be 3D of shape (nz,{},{})'.format(self.ny, self.nx)
         assert Z.ndim == 3, 'Z.ndim must be 3.'
-    
+
         points = np.array(points)
-        assert points.shape[-1] == 2, 'Points must be of shape (npoints, 2)' 
-        
+        assert points.shape[-1] == 2, 'Points must be of shape (npoints, 2)'
+
         x, y = self.world2model(points[:,0], points[:,1])
-        
+
         result = np.zeros((len(Z), len(points)))
         for iz_, A in enumerate(Z):
             m = np.min(A)
             A[np.isnan(A)] = fill_value # prevent nan
-            f = interp_(self.xm, self.ym[::-1], A[::-1], fill_value=fill_value)            
+            f = interp_(self.xm, self.ym[::-1], A[::-1], fill_value=fill_value)
             result[iz_, :] = f(x, y)
         result[result < m] = np.nan
         return result
@@ -1661,7 +1661,7 @@ class Grid:
                 'LRC' = (Layer, Row, Col) (as wanted by Modflow packaeges)
             world : [True]|False
                 if True (default) then world coordinates else model coordinates
-                
+
         Returns:
         --------
         typle of cell indices, see descirption under 'order'
@@ -1753,7 +1753,7 @@ class Grid:
         x1, y1 = xy1
         if world:
             return (x1 - x0) * (self.YMw - y0) - (y1 - y0) * (self.XMw - x0)
-        else:                
+        else:
             return (x1 - x0) * (self.YM  - y0) - (y1 - y0) * (self.XM  - x0)
 
 
@@ -2067,15 +2067,15 @@ class Grid:
 
     def asdict(self):
         '''Return a dict containing the grid lines that can be plotted or saved as a shapfile.
-        
+
         Returns
         -------
         dict {'name': 'mfGrid', 'x': x, 'y':y, 'xw': xw, 'yw': yw}
-        
+
         to save it as a shapefile use dict2shp in module shapefile.shapetools
-        
+
         from shapefile import dict2shp
-        
+
         dict2shp(gr.asdict, shapefilename, xy=('xw', 'yw'), shapetype=sf.LINE)
         dict2shp(gr.asdict, shapefilename, xy=('x', 'y'), shapetype=sf.LINE)
 
@@ -2104,11 +2104,11 @@ class Grid:
                 x.append(self.x[ 0])
             y.append(y_)
             y.append(y_)
-                
+
         x = np.array(x)
         y = np.array(y)
         xw, yw = self.m2world(x, y)
-            
+
         return {'name': 'mfGrid',
                 'x' : x,  'y' : y,
                 'xw': xw, 'yw': yw}
@@ -2122,25 +2122,25 @@ class Grid:
         and surf['y'] are aligned with world axes.
         This interpolater pickes the surf['z'] value in which the grid coordinate
         lies. No smoothing is done.
-        
+
         This function is useful to for instance get elevations, when they
         are given as a high-resolution array aligned with world coordinates.
-        
+
         parameters
         ----------
             surf : dict {'x', 'y', 'z'}
                x : x_coordinates (world coordinates)
                y : y_coordinates (world coordinates)
-               
+
                z : value array of shape (len(y), len(x))
-            
+
                 make sure x and y cover total model to prevent NaNs.
-            
+
         TO 180609
-            
+
         '''
         x, y = surf['x'], surf['y']
-        
+
         sign = 1 if y[-1] > y[0] else -1
 
         ix = np.interp(       self.Xmw.ravel(),        x, np.arange(len(x)))
@@ -2148,7 +2148,7 @@ class Grid:
         ix = np.asarray(ix, dtype=int)
         iy = np.asarray(iy, dtype=int)
         return surf['z'][[iy], [ix]].reshape((self.ny, self.nx))
-        
+
 
     def plot_grid(self, ax=None, row=None, col=None, world=False, **kwargs):
         '''Plot the grid in model or world coordinates
@@ -2372,7 +2372,7 @@ class Grid:
         '''Contour array A and show it.
 
         Same as method gr.contour( )
-        
+
         parameters
         ----------
         A : np.ndarray or 3D np.array(nz, ny, nx) or list of 2D np.arrays(ny, nx)
@@ -2380,25 +2380,25 @@ class Grid:
         labels: list of labels for the arrays (for the legend).
         filled : bool
             if True, ax.contourf is used if False, ax.contour is used
-        
-        additional kwargs        
+
+        additional kwargs
         -----------------
             kwargs ['title', 'xlabel', 'ylabel', 'xlim', 'ylim',
-            'xscale', 'yscale'] --> ax 
+            'xscale', 'yscale'] --> ax
 
             kwargs ['fmt', 'fz',, 'inline', 'inline_spacing'] --> clabel
             will be passed on to plt.contourf
-            
+
             all other kwargs --> ax.contour, ax.contourf resp.
-            
+
             See doc of ax.contour for details
         '''
         return self.contour(A, filled=filled, **kwargs)
-        
-        
+
+
     def contour(self, A, filled=False,  **kwargs):
         '''Contour array A and show it.
-        
+
         parameters
         ----------
         A : np.ndarray or 3D np.array(nz, ny, nx) or list of 2D np.arrays(ny, nx)
@@ -2406,20 +2406,20 @@ class Grid:
         labels: list of labels for the arrays (for the legend).
         filled : bool
             if True, ax.contourf is used if False, ax.contour is used
-        
-        additional kwargs        
+
+        additional kwargs
         -----------------
             kwargs ['title', 'xlabel', 'ylabel', 'xlim', 'ylim',
-            'xscale', 'yscale'] --> ax 
+            'xscale', 'yscale'] --> ax
 
             kwargs ['fmt', 'fz',, 'inline', 'inline_spacing'] --> clabel
             will be passed on to plt.contourf
-            
+
             all other kwargs --> ax.contour, ax.contourf resp.
-            
+
             See doc of ax.contour for details
         '''
-        
+
         if A.ndim < 3:
             M = [A]
         else:
@@ -2429,11 +2429,11 @@ class Grid:
         for k in lblkw:
             lblkw[k] = kwargs.pop(k, lblkw[k])
         lblkw['fontsize'] = lblkw['fz']
-        
+
         ax = kwargs.pop('ax', None)
         if ax is None:
             fig, ax = plt.subplots()
-        
+
         ax.set_title(kwargs.pop('title', 'Showing contour of given 2D array'))
         ax.set_xlabel(kwargs.pop('xlabel', 'x [m]'))
         ax.set_ylabel(kwargs.pop('ylabel', 'y [m]'))
@@ -2441,23 +2441,23 @@ class Grid:
         ylim   = kwargs.pop('ylim',   None)
         xscale = kwargs.pop('xscale', None)
         yscale = kwargs.pop('yscale', None)
-        
+
         labels   = kwargs.pop('labels', np.arange(len(M), dtype=int))
         fontsize = kwargs.pop('fontsize', None)
         if fontsize is None:
             fontsize = kwargs.pop('fz', 8)
-        
+
         if xlim: ax.set_xlim(xlim)
         if ylim: ax.set_ylim(ylim)
         if xscale: ax.set_xscale(xscale)
         if yscale: ax.set_yscale(yscale)
         ax.grid()
-        
+
         if filled:
             cfun = ax.contourf
         else:
             cfun = ax.contour
-        
+
         for B, label in zip(M, labels):
             cs  = cfun(self.xm, self.ym, B, **kwargs)
             plt.clabel(cs, **lblkw)
@@ -2466,7 +2466,7 @@ class Grid:
 
         plt.show()
         return
-    
+
 
 
     def const(self, u, dtype=float, axial=False):
@@ -2497,7 +2497,7 @@ class Grid:
             raise ValueError("Len of input list must equal gr.nz")
         else:
             raise ValueError("Argument must be scalar or array of length gr.nz")
-            
+
         if axial: # only if explicitly demanded
             return 2 * np.pi * self.XM * out
         else:
@@ -2540,9 +2540,9 @@ class Grid:
                 j = 2 * i + 1
                 kv[j] = D[j] / c[i]
                 kh[j] = D[j] / c[i]
-            
+
         return kh, kv
-    
+
     def s2ss(self, S):
         '''Return ss array given S
         parameters
@@ -2551,11 +2551,11 @@ class Grid:
             sequence of storage coefficients of all layers [-]
         '''
         assert len(S) == self.nz, "len(S) must equal numbe of layers"
-        
+
         return self.const(S) / self.DZ
- 
-    
-    
+
+
+
     def well(self, x, y, z, Q, kh=None, order='LRC', world=True):
         '''Return well in grid as lRCQ
         parameters
@@ -2570,14 +2570,14 @@ class Grid:
             order : str: LRC | RLC | CRL order of index columns
             world : [True] | False
                 whether the coordinates are in world coordinate or model coordinates
-                
+
         returns
         -------
             tuple LRC, Q
                 LRC : Iz, Iy, Ix [nx3] cell indeces that screen penetrates
                 Q is the injection per cell propertional to its transmissivity
         '''
-        
+
         # make sure len x an len y are the same as len z
         assert np.isscalar(x), 'x must be a float'
         assert np.isscalar(y), 'y must be a float'
@@ -2585,7 +2585,7 @@ class Grid:
 
         x *= np.ones_like(z)
         y *= np.ones_like(z)
-        
+
         LRC = self.ixyz(x, y, z, order, world)
         I = self.I(LRC)
         n = self.ny * self.nx
@@ -2765,7 +2765,7 @@ def array2tuples(A):
         return [tuple(a) for a in A]
     except:
         raise "Can't convert array to list of tuples"
-        
+
 def extend_array(A, nx, ny, nz):
     '''returns extended array specified by  nx, ny nz
     parameters
@@ -2814,6 +2814,68 @@ def extend_array(A, nx, ny, nz):
     return A
 
 
+def gridspace(X, W):
+    '''Return grid spacing defined by points X and cell width W.
+
+    Useful for defining cell grid coordinates of a rectangular grids.
+
+    parameters
+    ----------
+        X : np.array(, dtype=float)
+                points along axis where cell width is defined by W
+        W : np.array_like(X)
+                cell widths at points defined by X
+    returns
+    -------
+        xGr: np.array( , dtype=float)
+            coordinates between X[0] and X[-1] np.diff(X) corresponds to
+            the relation given by X and W
+    usage
+    -----
+        x= np.array([0, 200, 400, 600, 1000]) #[::-1]
+        w =np.array([5, 20, 10, 20, 5])
+        xgr = gridspace(x, w)
+        plt.plot(xgr[:-1], np.abs(np.diff(xgr)), '.-')
+        plt.grid()
+        plt.show()
+    '''
+
+    X = np.array(X)
+    W = np.array(W)
+    assert len(X)==len(W), "len(x)={} must be equal to len(w)={}".format(len(X), len(W))
+    if np.any(np.diff(X) < 0):
+        sign = -1
+        X = X[::-1]
+        W = W[::-1]
+    else:
+        sign = +1
+
+    assert np.all(np.diff(X) > 0), "X must be monotonously increasing or decreasing"
+    assert np.all(W > 0), "W must all by > 0 (cell widths)"
+
+    dx = lambda xi: np.interp(xi, X, W)
+
+    XGR = [X[0]]
+    x   = X[0]
+    while True:
+        if x > X[-1]:
+            break
+        x += dx(x)
+        XGR.append(x)
+
+
+    if X[-1] - XGR[-1] < 0.2 * dx(XGR[-1]):
+        XGR[-1] = X[-1]
+    else:
+        XGR.append(X[-1])
+
+    if sign < 0:
+        XGR = XGR[::-1]
+
+    return XGR
+
+def sinespace(x1, x2, N=25, a1=0, a2=np.pi/2):
+    return sinspace(x1, x2, N=N, a1=a1, a2=a2)
 
 def sinspace(x1, x2, N=25, a1=0, a2=np.pi/2):
     """Return N points between x1 and x2, spaced according to sin betwwn a1 and a2.
@@ -2840,7 +2902,7 @@ def inpoly(x, y, pgcoords):
     """
     if not isinstance(pgcoords, np.ndarray):
         pgcoords = np.array(pgcoords)
-        
+
     assert pgcoords.shape[1]==2 and pgcoords.ndim==2,\
         "coordinates must be an array of [n, 2]"
     pgon = Polygon(pgcoords)
