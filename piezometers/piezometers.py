@@ -108,7 +108,7 @@ def outliers(df, cols=None, fence=3.0):
 
 
 #%%
-def theis_analysis(obj, t0dd=None, well=None, col='measured'):
+def theis_analysis(obj, well=None, col='measured'):
     '''Return steepest gradient per logcycle and time when s=0 according to Jacob (1946).
 
     This is based on the simplified Theis solution that yield
@@ -123,8 +123,6 @@ def theis_analysis(obj, t0dd=None, well=None, col='measured'):
     obj: piezoms.Piezom or piezoms.Calib object
         piezometer, having the drawdown data on board
         as the pd.DatFrame self.dds
-    t0dd: pd.Timestamp
-        time from which drawdown is computed. Efective start of head change/pump/leak.
     well:  dict {'x': xwell, 'y': ywell, 'Q': Qwell} None
         The location and extraction used in the analysis.
         If None, kD and S will not be computed.
@@ -170,6 +168,8 @@ def theis_analysis(obj, t0dd=None, well=None, col='measured'):
     if obj.name == 'PLP31A':
         print()
 
+    t0dd = obj.meta['t0dd']
+
     D = obj.dds.copy().dropna(axis=0, how='any')  # the drawdown pd.DataFrame
 
     logt = np.log10((D.index - t0dd) / pd.Timedelta('1 days')) # in days
@@ -179,7 +179,7 @@ def theis_analysis(obj, t0dd=None, well=None, col='measured'):
 
     # discrete time points at equal distance on log time scale
     logt_pnts  = np.arange(logt[0], logt[-1], lg_step)
-    dd_pnts    = np.interp(logt_pnts, logt, D[col] - D[col][0])
+    dd_pnts    = np.interp(logt_pnts, logt, D[col])
 
     # gradients between the discrte points
     gradients  = np.diff(dd_pnts) / np.diff(logt_pnts)
@@ -202,7 +202,8 @@ def theis_analysis(obj, t0dd=None, well=None, col='measured'):
 
     # store this in dict.
     theis = {
-        't0dd'       : t0dd, # absolute reference, pd.Timestamp
+        't0dd'       : obj.meta['t0dd'], # absolute reference, pd.Timestamp
+        't0hd'       : obj.meta['t0hd'], # absolute reference, pd.Timestamp
         'dd_logcycle': dd_logcycle,
         'tdd0'       : 10**(lt_dd0),  # in days (floats)
         't_maxGrad'  : 10**(lt_maxGrad), # in days (floats)
@@ -222,7 +223,7 @@ def theis_analysis(obj, t0dd=None, well=None, col='measured'):
         # kD and S
         R = obj.distance(xWell, yWell)
 
-        kD = 2.3 * Q / (4 * np.pi * theis['dd_maxGrad'])
+        kD = 2.3 * Q / (4 * np.pi * theis['dd_logcycle'])
 
         S  = 2.25 * kD * theis['tdd0'] / R ** 2
 
@@ -365,7 +366,7 @@ class Base_Piezom:
             for col in cols:
                 if not col=='diff':
                     self.meta['theis'][col] = theis_analysis(
-                                self, t0dd=t0dd, well=well, col=col)
+                                self, well=well, col=col)
 
             # In case user wants to catch it directly return this Theis object
             return self.dds, self.meta['theis']
@@ -463,7 +464,7 @@ class Base_Piezom:
 
     def plot(self, cols=None, dd=False, tstart=None, tend=None,
                      well=None, theis=None,
-                     size_inches=(6.4, 4.8), fsz_legend='xx-small', **kwargs):
+                     size_inches=(9.3, 7.3), fsz_legend='xx-small', **kwargs):
         '''Plot self.data[what].
 
         parameters
@@ -492,7 +493,7 @@ class Base_Piezom:
         # Make sure self.dds exists.
         if dd == True:
             try:
-                DF = self.dds
+                DF, meta = self.dds
             except:
                 raise ValueError("self.dds fails/doesn't exist 'run calibs.drwdn first!")
 
@@ -534,7 +535,8 @@ class Base_Piezom:
 
             kwargs.update(ls)
 
-            ax.plot(plot_index, DF[col], label='{} {}'.format(self.name, col), **kwargs)
+            ax.plot(plot_index, DF[col], label='{} {}'
+                    .format(self.name, col), **kwargs)
 
         if theis:
 
@@ -547,7 +549,7 @@ class Base_Piezom:
                 if len(lgt) > 0:
                     kwargs.update({'ls': '-', 'lw': 0.5, 'marker': None})
 
-                    ax.plot(10 ** lgt, dd, label=self.name + ' Th/Jac approx.', **kwargs)
+                    ax.plot(10 ** lgt, dd, label=self.name + ' Th/Jac approx, r={:.1f} m'.format(Th['r']), **kwargs)
 
                     kwargs.update({'ls': '', 'marker': 'o'})
 
