@@ -21,7 +21,6 @@ import logging
 import etc
 from juka_tools import jukaTools
 import flopy
-import juka_com as com
 
 # timedelta to float
 # example td2float(piezom['PBGRA3'].dd.index)
@@ -40,7 +39,7 @@ elli2CEST = lambda index: index - np.timedelta64(2, 'h') # used
 
 AND = np.logical_and
 
-pz_logger = logging.getLogger()
+logger = logging.getLogger()
 
 #%%
 
@@ -229,10 +228,10 @@ def theis_analysis(obj, well=None, col='measured'):
 
         theis.update({'r': R, 'kD': kD, 'S': S, 'well': well})
 
-        pz_logger.info("Theis for {} {}: kD = {:10.4g} and S = {:8.4g}"
+        logger.info("Theis for {} {}: kD = {:10.4g} and S = {:8.4g}"
                        .format(obj.name, col, kD, S))
     else:
-        pz_logger.info('Theis for {} {}, no well -> no kD, no S'
+        logger.info('Theis for {} {}, no well -> no kD, no S'
                        .format(obj.name, col))
 
     return theis # a dict
@@ -493,9 +492,12 @@ class Base_Piezom:
         # Make sure self.dds exists.
         if dd == True:
             try:
-                DF, meta = self.dds
+                DF, __meta = self.dds
             except:
-                raise ValueError("self.dds fails/doesn't exist 'run calibs.drwdn first!")
+                try:
+                    DF = self.dds
+                except:
+                    raise ValueError("self.dds fails/doesn't exist 'run calibs.drwdn first!")
 
             plot_index = (DF.index - self.meta['t0dd']) / pd.Timedelta(1, 'D')
         else:
@@ -611,14 +613,14 @@ class Base_Piezoms(collections.UserDict):
             except:
                 missed.append(name)
 
-        pz_logger.info("Drawdowns are saved in self[name].dds for {} piezometers."
+        logger.info("Drawdowns are saved in self[name].dds for {} piezometers."
                     .format(len(self) - len(missed)))
         if missed:
-            pz_logger.debug('Could not compute drawdown for [{}]'.format(', '.join(missed)))
-        pz_logger.info("t0dd <{}> saved in self[name].meta['t0dd']"
+            logger.warning('Could not compute drawdown for [{}]'.format(', '.join(missed)))
+        logger.info("t0dd <{}> saved in self[name].meta['t0dd']"
                     .format(self[name].meta['t0dd']))
         if theis:
-            pz_logger.info("Theis analysis results are saved in self[name].meta['theis']")
+            logger.info("Theis analysis results are saved in self[name].meta['theis']")
         return
 
 
@@ -662,14 +664,14 @@ class Base_Piezoms(collections.UserDict):
                 missed.append(name)
 
         if missed:
-            pz_logger.debug("Couln't do attime for [{}]".format(', '.join(missed)))
+            logger.warning("Couln't do attime for [{}]".format(', '.join(missed)))
 
         if shapefile:
             if not os.path.isfile(shapefile):
                 raise FileNotFoundError("Can't find file {}".format(shapefile))
 
             shape.dict2shp(att, shapefile, shapetype='POINT', xy=('x', 'y'))
-            pz_logger.info('Shapefile <{}> generated, containing {} points'.format(shapefile, len(att)))
+            logger.info('Shapefile <{}> generated, containing {} points'.format(shapefile, len(att)))
 
         return att
 
@@ -733,7 +735,7 @@ class Base_Piezoms(collections.UserDict):
                         tstart=tstart, tend=tend,
                         well=well, theis=theis, **ls, ax=ax, **kwargs)
             except Exception as err:
-                pz_logger.debug("Couldn't plot []: {}".format(name, err))
+                logger.warning("Couldn't plot []: {}".format(name, err))
                 missed.append(name)
 
         ax.legend(loc='best')
@@ -799,7 +801,7 @@ class Base_Piezoms(collections.UserDict):
 
                     Dout.loc[name, funName] = values
                 except Exception as err:
-                    pz_logger.info("Can't handle {} because {}".format(name, str(err)))
+                    logger.warning("Can't handle {} because {}".format(name, str(err)))
                     missed.append(name)
 
         if missed:
@@ -1069,11 +1071,11 @@ class Calibs(Base_Piezoms):
                          gr=gr, HDS=HDS, t0sim=t0sim, t0hd=t0hd,
                          t0dd=t0dd, well=well, theis=theis)
             except Exception as err:
-                pz_logger.debug("piezom[{}]: {}".format(name, err.args[0]))
+                logger.debug("piezom[{}]: {}".format(name, err.args[0]))
                 missed.append(name)
 
         if missed:
-            pz_logger.info('Missed piezometers: [{}]'.format(', '.join(missed)))
+            logger.warning('Missed piezometers: [{}]'.format(', '.join(missed)))
 
     def sub(self, keys):
         '''Return of subsetof self. usage self.sub(keylist)
@@ -1352,9 +1354,9 @@ class Piezoms(Base_Piezoms):
             except:
                 missing.append(filtNm)
         if missing:
-            pz_logger.debug('''The following CSV files could not be read because
+            logger.warning('''The following CSV files could not be read because
                          their corresponding collar is missing''')
-            pz_logger.debug('[{}]'.format(', '.join(missing)))
+            logger.warning('[{}]'.format(', '.join(missing)))
         return
 
 
@@ -1383,7 +1385,7 @@ if __name__ == '__main__':
 
     size_inches=(11.5, 7.0)
 
-    pz_logger = logging.getLogger(__name__)
+    logger = logging.getLogger(__name__)
 
     testpath = './testdata/'
     path2csvs = './testdata/csvfiles'
@@ -1403,6 +1405,7 @@ if __name__ == '__main__':
     well = {'x': 187008, 'y': 346037, 'Q': 28600}
     theis = True
 
+    logger.warning('piezometers.py running')
 
     with shelve.open(shelvefile) as s:
         gr = s['gr']
@@ -1495,4 +1498,4 @@ if __name__ == '__main__':
                       .format(p.name, p.meta['z1'], p.meta['z2']), end=', ')
             print()
 
-
+    logger.warning('piezometers.py finished')
