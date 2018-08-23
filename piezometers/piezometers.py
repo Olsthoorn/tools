@@ -21,6 +21,7 @@ import logging
 import etc
 from juka_tools import jukaTools
 import flopy
+import coords
 
 # timedelta to float
 # example td2float(piezom['PBGRA3'].dd.index)
@@ -155,6 +156,7 @@ def theis_analysis(obj, well=None, col='measured'):
     '''
 
     #import pdb; pdb.set_trace()
+    import warnings
 
     if isinstance(col, (list, tuple)):
         raise ValueError('''Col must be a str corresponding to one of the
@@ -194,7 +196,9 @@ def theis_analysis(obj, well=None, col='measured'):
     lt_maxGrad = 0.5 * (logt_pnts[imax] + logt_pnts[imax + 1])
 
     # log time where straight line of maximum gradient passes zero drawdown
-    lt_dd0    = lt_maxGrad - dd_maxGrad / maxGrad
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        lt_dd0    = lt_maxGrad - dd_maxGrad / maxGrad
 
     # drawdown per log cycle
     dd_logcycle = maxGrad
@@ -222,9 +226,10 @@ def theis_analysis(obj, well=None, col='measured'):
         # kD and S
         R = obj.distance(xWell, yWell)
 
-        kD = 2.3 * Q / (4 * np.pi * theis['dd_logcycle'])
-
-        S  = 2.25 * kD * theis['tdd0'] / R ** 2
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            kD = 2.3 * Q / (4 * np.pi * theis['dd_logcycle'])
+            S  = 2.25 * kD * theis['tdd0'] / R ** 2
 
         theis.update({'r': R, 'kD': kD, 'S': S, 'well': well})
 
@@ -284,7 +289,7 @@ class Base_Piezom:
 
 
 
-    def drwdn(self, t0dd=None, t0hd=None, well=None, theis=False, out=True, cols=None):
+    def drwdn(self, t0dd, t0hd, well=None, theis=False, out=True, cols=None):
         '''Return drawdown with respect to timestamp t0dd.
 
         In all cases, the resutting drawdown DataFrame is stored as self.dds
@@ -329,12 +334,11 @@ class Base_Piezom:
 
         #import pdb; pdb.set_trace()
 
-        if t0dd is None:
-            raise ValueError(
-                    't0dd must be specified when calling self.drwdn()')
-
         t0dd = pd.Timestamp(t0dd)
         t0hd = pd.Timestamp(t0hd)
+
+        assert not t0dd is pd.NaT, "t0dd is pd.NaT, verify your input!"
+        assert not t0hd is pd.NaT, "t0dh is pd.NaT, verify your input!"
 
         self.meta['t0dd'] = t0dd
         self.meta['t0hd'] = t0hd
@@ -439,6 +443,19 @@ class Base_Piezom:
             self.att[col] = np.interp(td_f, td_ind_f[mask], values[mask])
 
         return self.att
+
+
+    def add2meta(self, key, value):
+        '''Add key/value to the meta field.
+        parameters
+        ----------
+            key : key (hashable)
+                the key to be added to the self.meta dict
+            value: value anything
+                value to be added to the meta dict
+        '''
+        self.meta[key] = value
+
 
 
     def apply(self, fun):
@@ -717,7 +734,10 @@ class Base_Piezoms(collections.UserDict):
             ax.set_xlabel('date and time')
             ax.set_ylabel('m NAP')
         else:
-            name = [n for n in self.data][0]
+            try:
+                name = [n for n in self.data][0]
+            except:
+                print()
             ax.set_xlabel('time since start [d] @ {}'.format(self[name].meta['t0dd']))
             ax.set_ylabel('head change [m]')
         if 'xlim'     in kwargs: ax.set_xlim(    kwargs.pop('xlim'))
@@ -741,6 +761,20 @@ class Base_Piezoms(collections.UserDict):
         ax.legend(loc='best')
         if missed:
             print('Not plotted: [{}]'.format(', '.join(missed)))
+
+
+    def add2meta(self, key, value):
+        '''Adds key/value to meta field of all in self at once.
+
+        parameters
+        ----------
+            key : hashable key for meta dict
+                the key
+            value: anything
+                the value
+        '''
+        for name in self:
+            self[name].add2meta(key, value)
 
 
     def apply(self, funs, tstart='1900-01-01', tend='2250-01-01'):
@@ -893,6 +927,8 @@ class Calib(Base_Piezom):
             t0sim = pd.Timestamp(t0sim)
 
         self.hds = self.interpolate(gr=gr, HDS=HDS, piez=piez, t0sim=t0sim)
+        if self.hds.empty:
+            raise AttributeError('calib[{}].hds is empty'.format(self.name))
 
         if 'computed' in self.hds.columns:
             self.hds['diff'] = self.hds['computed'] - self.hds['measured']
@@ -900,6 +936,8 @@ class Calib(Base_Piezom):
         if dd:
             # only if t0dd is explicityl specified wil the ddrawdown be computed here.
             self.drwdn(t0dd=t0dd, t0hd=t0hd, well=well, theis=theis, out=False)
+            if self.dds.empty:
+                raise AttributeError('calib[{}].dds is empty.'.format(self.name))
 
         return
 
@@ -1184,11 +1222,16 @@ class Piezom(Base_Piezom):
 
 
         self.hds = data.loc[AND(data.index >= tstart, data.index <= tend), :].copy()
+        if self.name == 'PLP15B':
+            print()
 
         if outlier_col is not None:
             self.remove_outliers(col=outlier_col,
                                  fence=outlier_fence,
                                  window=outlier_window)
+        if self.hds.empty:
+            raise AttributeError('piezom {}.hds is empty'.format(self.name))
+
 
 
     def remove_outliers(self, col=None, fence=3.0, window=11):
@@ -1372,7 +1415,6 @@ class Piezoms(Base_Piezoms):
         for k in keys:
             subset[k] = self[k]
         return subset
-
 
 
 

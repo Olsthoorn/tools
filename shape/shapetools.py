@@ -153,7 +153,7 @@ def dict2shp(mydict, fileName, shapetype=None, xy=('x', 'y'),
     #is mydict a lst of dicts or a dict of dicts?
     assert isinstance(mydict, dict), "first arugment must be a dictionary whose keys are shape names."
 
-    if not isinstance(mydict[list(mydict.keys())[0]], (tuple, list)):
+    if  isinstance(mydict[list(mydict.keys())[0]], (tuple, list)):
         # then turn it into a dict of dict with key =__noname__
         old_dict = mydict
         mydict={}
