@@ -549,7 +549,6 @@ class Base_Piezom:
         else:
             legend=False
 
-
         for col, ls in zip(cols, etc.line_cycler()):
 
             kwargs.update(ls)
@@ -559,14 +558,14 @@ class Base_Piezom:
 
         if theis:
 
-            for col in cols:
+            for col, ls in zip(cols, etc.line_cycler()):
                 Th = self.meta['theis'][col]
                 lgt = np.linspace(np.log10(Th['tdd0']),
                                   np.log10(Th['tdd0']) + 1., 21)
                 dd = np.linspace(0, Th['dd_logcycle'], 21)
 
                 if len(lgt) > 0:
-                    kwargs.update({'ls': '-', 'lw': 0.5, 'marker': None})
+                    kwargs.update({**ls, 'lw': 0.5, 'marker': None})
 
                     ax.plot(10 ** lgt, dd, label=self.name + ' Th/Jac approx, r={:.1f} m'.format(Th['r']), **kwargs)
 
@@ -574,7 +573,7 @@ class Base_Piezom:
 
                     ax.plot([Th[ 't_maxGrad'], Th['tdd0' ], Th['tddmax']],
                             [Th['dd_maxGrad'], 0, Th['dd_max']],
-                            label=self.name + ' tan./t0dd', **kwargs)
+                             **kwargs) # label=self.name + ' tan./t0dd',
 
         if legend:
             ax.legend(loc='best', fontsize=fsz_legend)
@@ -693,7 +692,8 @@ class Base_Piezoms(collections.UserDict):
         return att
 
 
-    def plot(self, cols=None, tstart=None, tend=None, dd=False, well=None, theis=False, **kwargs):
+    def plot(self, cols=None, tstart=None, tend=None, dd=False,
+                 well=None, theis=False, fsz_legend='small', **kwargs):
         '''Plot the measurements, not the drawdown h(t).
 
 
@@ -747,7 +747,6 @@ class Base_Piezoms(collections.UserDict):
         if 'fontsize' in kwargs: ax.set_fontsize(kwargs.pop('fontsize'))
 
         ax.grid()
-        #import pdb; pdb.set_trace()
         missed = []
         for name, ls in zip(self, etc.linestyle_cycler()):
             try:
@@ -758,7 +757,7 @@ class Base_Piezoms(collections.UserDict):
                 logger.warning("Couldn't plot []: {}".format(name, err))
                 missed.append(name)
 
-        ax.legend(loc='best')
+        ax.legend(loc='best', fontsize=fsz_legend)
         if missed:
             print('Not plotted: [{}]'.format(', '.join(missed)))
 
