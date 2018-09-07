@@ -120,7 +120,7 @@ class StressPeriod:
         # Extract stress period information. Note that the last SP is a dummy
         # that does not count, so select [:-1]
         self.SP_numbers = np.asarray(np.unique(self.events['SP']),
-                                     dtype=int)[:-1]
+                                     dtype=int)
 
         if any(np.diff(self.SP_numbers)>1):
             print(self.SP_numbers[1:][np.diff(self.SP_numbers)>1])
@@ -133,6 +133,7 @@ class StressPeriod:
                     'The last one only determines the end time of the simulation.')
 
         self.SP = dict()
+        prev_sp = -1
         for i in self.events.index:
             se = self.events.loc[i] # next stress event
             sp = int(se['SP'])
@@ -146,17 +147,24 @@ class StressPeriod:
                                  hour  =int(se['hour']),
                                  minute=0,
                                  second=0), 's')
-            self.SP[sp] = {'start' : start,
-                            'steady': se['steady'],
-                            'remark': se['remark']}
+            if sp > prev_sp:
+                # use time and steady of fist event of new sp only (is safe)
+                self.SP[sp] = {'start' : start, 'steady': se['steady']}
+                if sp > 0:
+                    # set the end time of prev. sp, it is the start time of the new one
+                    self.SP[prev_sp]['end'] = start
+            prev_sp = sp
+
+        self.SP[sp]['end'] = start # last df_event is the end time of the last sp
 
         # Convert back to pd.DataFrame (now with one entry per stress period)
         self.SP = pd.DataFrame(self.SP).T
 
-        # prepare column with end-time of stress period
-        end_times = self.SP['start']  # converst start column to pd.Series
-        end_times.index  = [end_times.index[-1], *end_times.index[:-1]]
-        self.SP['end'] = end_times
+        decreasing = self.SP['start'].diff() < pd.Timedelta(0, 'D')
+        if np.any(decreasing):
+            np.where(decreasing)[0]
+            raise ValueError('Start times for stress period(s) {} not increasing !'
+                  .format(np.where(decreasing)[0]))
 
         ''' The three lines above moves the start times of the subsequent SP up.
         The original first start_time will end last because it gets the last
@@ -179,9 +187,6 @@ class StressPeriod:
                     np.log( (np.asarray(perlen_days) / dt0) * (tsmult - 1) + 1)\
                         / np.log(tsmult)
                         ), dtype=int)
-
-        # Throw out the last line, we only needed its end time
-        self.SP = self.SP.iloc[:-1]
 
         self.SP['steady'] = np.asarray(self.SP['steady'], dtype=int)
 
@@ -602,11 +607,11 @@ class Grid:
                 self._Z[1:, :, :] -= np.cumsum(DZ, axis=0)
 
         else: # illegal shape
-            print("\n\
+            s ='''\n\
                     z.shape = {}, but expected was a 1D vector\n\
-                    or 3D array (nz+1, {}, {})".
-                          format(z.shape, self._ny, self._nx))
-            raise ValueError("See printed message for details.")
+                    or 3D array (nz+1, {}, {})'''. \
+                          format(z.shape, self._ny, self._nx)
+            raise ValueError(s)
 
         self._shape = (self._nz, self._ny, self._nx)
 
@@ -1084,19 +1089,29 @@ class Grid:
         '''
         Return values by interpolation at points.
 
-        Performs linear interpolation over the first dimension of a 3D array
-        the last two dimenstions as y, x wiht points = np.array([nPoints, 2]),
+        Performs linear interpolation over the first dimension of a 3D array.
+        The last two dimenstions as y, x with points = np.array([nPoints, 2]),
         according to new values from a 2D array new_x.
+
+        So if Z is [nz, ny, nx] you get the interpolated values as [nz, np].
+
+        If Z is [nt, nz, ny, nx] then nz is squeezed out by using iz.
+        The results is an array of [nt np]
+
+        If Z is  [ny, nx] it is fist turned into [1, ny, nx] and the result
+        is a vector nx
 
         Parameters
         ----------
-        Z : 3-D ndarray (double type)
-            Array containing the y values to interpolate.
+        Z : 2D or a 3-D or 4-D ndarray (double type)
+            Array containing the z values to interpolate.
+            That is Z=([[nt ]nz,] ny, nx)
         points : 2-D ndarray (double type)
-            Array containg the points to interpolate at where
+            Array containing the points at which we want to interpolate Z
             xp = points[:,0] and yp = points[:, 1]
         iz : int
-            layer number in case Z is 4D. This layer number is first
+            layer number.
+            In case Z is 4D, this layer number is first
             squeezed out like Z = Z[:, ilay, :, :]
         kwargs : additional keyword arguments
             additional kwargs are passed on to interpolator.
@@ -1127,14 +1142,15 @@ class Grid:
         points = np.array(points)
         assert points.shape[-1] == 2, 'Points must be of shape (npoints, 2)'
 
-        x, y = self.world2model(points[:,0], points[:,1])
+        xM, yM = self.world2model(points[:,0], points[:,1])
 
         result = np.zeros((len(Z), len(points)))
         for iz_, A in enumerate(Z):
             m = np.min(A)
             A[np.isnan(A)] = fill_value # prevent nan
+
             f = interp_(self.xm, self.ym[::-1], A[::-1], fill_value=fill_value)
-            result[iz_, :] = f(x, y)
+            result[iz_, :] = [f(x, y) for x, y in zip(xM, yM)]
         result[result < m] = np.nan
         return result
 
