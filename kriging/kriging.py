@@ -94,6 +94,9 @@ def krige_it(gr, data=None, x='x', y='y', key=None, column=None, boundary=None, 
 
     x, y, zf = data['x'].values, data['y'].values, data[column].values
 
+    InPoints = coords.inpoly(x, y, boundary['points'])
+
+
     try:
         # Universal kriging with formation and terrace-specific parameters
         # In pyKrige, first an kriging object is generated which holds the
@@ -101,7 +104,8 @@ def krige_it(gr, data=None, x='x', y='y', key=None, column=None, boundary=None, 
         # semi-vartiograms and kriging the data onto a grid.
         # Se documentation for details
         # https://pykrige.readthedocs.io/en/latest/generated/pykrige
-        U = kr.uk.UniversalKriging(x, y, zf, variogram_model=kp['variogram_model'],
+        U = kr.uk.UniversalKriging(x[InPoints], y[InPoints], zf[InPoints],
+                               variogram_model=kp['variogram_model'],
                                variogram_parameters=kp['variogram_parameters'],
                                variogram_function=kp['variogram_function'],
                                nlags=20,
