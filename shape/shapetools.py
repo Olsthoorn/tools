@@ -102,7 +102,7 @@ def shapes2dict(path, key=None):
         try:
             idx = fld.index(key)
         except:
-            raise "key <{}>  not in fields of shape".format(key)
+            raise LookupError("key <{}>  not in fields of shape".format(key))
 
 
     shpdict={} # generate a dict with the borehole properties
