@@ -21,7 +21,6 @@ import logging
 import etc
 from juka_tools import jukaTools
 import flopy
-import coords
 
 # timedelta to float
 # example td2float(piezom['PBGRA3'].dd.index)
@@ -289,7 +288,7 @@ class Base_Piezom:
 
 
 
-    def drwdn(self, t0dd, t0hd, well=None, theis=False, out=True, cols=None):
+    def drwdn(self, t0dd=None, t0hd=None, well=None, theis=False, out=True, cols=None):
         '''Return drawdown with respect to timestamp t0dd.
 
         In all cases, the resutting drawdown DataFrame is stored as self.dds
@@ -333,6 +332,12 @@ class Base_Piezom:
         '''
 
         #import pdb; pdb.set_trace()
+        if not t0dd:
+            raise ValueError('You must specify t0dd')
+        if not t0hd:
+            raise ValueError('''You must specify t0hd = t,
+                The time when head is taken as represneting drawdown.
+                This does not have to be the same as t0dd!''')
 
         t0dd = pd.Timestamp(t0dd)
         t0hd = pd.Timestamp(t0hd)
@@ -347,8 +352,8 @@ class Base_Piezom:
         # and truncate anything before t0dd
         self.dds = self.hds.loc[self.hds.index > t0dd].copy()
 
-        # Get the values in self.hds for all columns at t0hd
-        # Note that this time differes from t0dd
+        # Get the interpolated heads at t0hd using self.hds for all columns
+        # Note that t0hd generally differs from t0dd
         att = self.attime(t=t0hd, dd=False)
 
         # Subtract the values at t0dd, not that att is a dictionary
@@ -717,6 +722,18 @@ class Base_Piezoms(collections.UserDict):
             None
         '''
 
+        classNm = str(type(self)).split('.')[-1].replace("'>","")
+
+        if dd: # verify that for at least one piezom the .dds dataframe exists
+            I = [hasattr(self.data[nm], 'dds') for nm in self.data]
+            I = np.asarray(I)
+            if not np.any(I):
+                raise ValueError(''''{} has not members with .ddn;
+                    run {}.ddwn first. To set the drawdown/head change data.'''
+                                 .format(classNm, classNm))
+            logger.debug('{} out of {} {} have no .dds (drawdown DataFrame'.format(
+                    sum(~I), len(I), classNm))
+
         if not cols is None and not isinstance(cols, (tuple, list)):  cols = [cols]
 
         fig, ax = plt.subplots()
@@ -760,7 +777,6 @@ class Base_Piezoms(collections.UserDict):
         ax.legend(loc='best', fontsize=fsz_legend)
         if missed:
             print('Not plotted: [{}]'.format(', '.join(missed)))
-
 
     def add2meta(self, key, value):
         '''Adds key/value to meta field of all in self at once.
@@ -901,12 +917,13 @@ class Calib(Base_Piezom):
             modflow-simulated heads
         piez : dict
             piezometer object, parent for Calib
-        t0hds: pd.Timestamp or str representing it
+        t0sim: pd.Timestamp or str representing it
             starting time of simulation, to link MODFLOW times to abs. datetime.
         t0dd : pd.Timestamp, or str representing it
-            starting time of drawdown, must be >= t0hds
+            starting time of drawdown, must be >= t0sim
         t0hd: pd.Timestamp or a str representing one
-            time from which the heads are taken as zero drawdown.
+            time from which the heads are taken as representing zero drawdown.
+            Note that t0dd and t0dh must both be specified as they are like different.
 
 
         @TO 180618
@@ -933,7 +950,10 @@ class Calib(Base_Piezom):
             self.hds['diff'] = self.hds['computed'] - self.hds['measured']
 
         if dd:
-            # only if t0dd is explicityl specified wil the ddrawdown be computed here.
+            # only if dd==True, the ddrawdown be computed here.
+            if not t0dd:
+                raise ValueError('You must specify t0dd if dd==True')
+
             self.drwdn(t0dd=t0dd, t0hd=t0hd, well=well, theis=theis, out=False)
             if self.dds.empty:
                 raise AttributeError('calib[{}].dds is empty.'.format(self.name))
@@ -943,6 +963,16 @@ class Calib(Base_Piezom):
 
     def interpolate(self, gr=None, HDS=None, piez=None, t0sim=None):
         '''Interpolate series at t where t are pd.Timestamps.
+
+        The piez object was created from csv files and, therefore has
+        its column "measured" while its index has absolute timestamps.
+
+        Here we want to add the computed column using the computed heads.
+        That is, we want to interpololate the computed heads on the spatial
+        location of this piezometer, keeping its times, watever they are.
+        That is after spatial interpolation for all simulation times, we
+        do an interpolating of the time using the timestamps of the index
+        of the piez object, whatever they are.
 
         Parameters
         ----------
@@ -964,52 +994,78 @@ class Calib(Base_Piezom):
 
         aday = pd.Timedelta(1, 'D')
 
+        # Get the x, y, z of the piezom using its meta data
         M = self.meta
 
-        # =========== Piezometer cell indices =================================
-        LRC = gr.ixyz(M['x'], M['y'], 0.5 * (M['z1'] + M['z2']),
-                                                  order='LRC', world=True)
-        L, R, C = LRC[0]
+        # Use the mid pont of the screen as it's effective z value
+        x, y, z = M['x'], M['y'], 0.5 * (M['z1'] + M['z2']),
 
-        # verify and change exchange if necessary (i.e. for PBU094A)
+        # Make sure that z1 is above z2 (necessary for i.e. for PBU094A)
         if M['z1'] < M['z2']:
             M['z1'], M['z2'] = M['z2'], M['z1']
 
-        if M['z2']<M['topBreda']: L=1  # not dominant
-        if M['z1']>M['topBreda']: L=0  # this is dominant, overwrites previous
+        # Determine the model layer number that the screen is in.
+        # Id the bottom of the screen is below the top of Breda Formation
+        # Tthe screen is in Breda else it is in Beegden.
+        if M['z2']<M['topBreda']:
+            L=1
+        else:
+            L=0  # this is dominant, overwrites previous
 
         # also set whether this piezometer is dry or not
         M['dry'] = M['hdate'] < M['z2']
 
         self.meta['iz'] = L # store this, it's the model layer
 
+        # piez object already has an index of absolut times
+        # compute the times in days since start of simulation t0sim
+        # The piez object always has a column "measured" created when
+        # it was instantiated.
         piezom_times = (piez.hds.index - t0sim) / aday # in days
 
-        # ==== Get computed heads in piezometer cells at simulation times =====
+        # ==== Get spatially computed heads for all simulation times =====
         if isinstance(HDS, flopy.utils.binaryfile.HeadFile):
+
+            # Get all heads as a masked array: shape is [nTime, nLayer, nRow, nCol]
+            # These heads are cleand up by masking inactive and dry cells
             h_mflow  = jukaTools.clean_the_heads(gr, HDS.get_alldata(), tol=0.01)
-            ht_mflow_at_piezom = [ht_mflow[L, R, C] for ht_mflow in h_mflow]
+
+            # Spatially interpolate heads at x, y, iz for all times. Slahpe: [nt, 1]
+            ht_mflow_at_piezom = gr.interp2(hds=h_mflow, x=x, y=y, z=z, world=True)
+
+            # deprecated, get heads in cell where point lies, dim [nt, 1]
+            #ht_mflow_at_piezom = [ht_mflow[L, R, C] for ht_mflow in h_mflow]
+
+            # Get absolute times for the heads (at all nt instances)
             mflow_times  = HDS.times
             timestamps = [t0sim + t_mflow * aday for t_mflow in mflow_times]
 
+            # Put the heads in a pd.DataFrame with times as index
             ht_dframe =  pd.DataFrame({'computed' :ht_mflow_at_piezom},
                                       index=timestamps)
 
+            # Rememenber the columns in the piezom object
             cols = piez.hds.columns
+
         else: # when HDS is not HDS but a list of time stamps
-            timestamps = HDS  # must be
+              # This is for compleltely different usage.
+            timestamps = HDS  # must be a list of timeStamps
             if (not isinstance(timestamps, (list, tuple)) and
                 not isinstance(timestamps[0], pd.Timestamp)):
                 raise ValueError(
                     'list of pd.Timestamps expected at HDS, not a\n' +
                     ' {} of {}.'.format(type(timestamps), type(timestamps[0])))
 
+            # This makes a pd.Dataframe with one col "computed" with all NaNs
+            # and as index the list of timestamps.
             ht_dframe = pd.DataFrame({'computed': np.zeros_like(HDS) * np.nan},
                                       index = timestamps)
 
+            # Compute the modflow timse in days from the list of timestamps
             mflow_times = (
                     (ht_dframe.index - pd.Timestamp(t0sim))
                     /pd.Timedelta(1, 'D')).values
+
 
             ht_dframe = ht_dframe.drop(columns=['computed'])
 

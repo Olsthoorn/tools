@@ -21,7 +21,7 @@ from matplotlib.axes import Axes
 from datetime import datetime
 import pandas as pd
 from collections import OrderedDict
-
+import scipy.interpolate as ip
 
 def AND(*args):
     L = args[0]
@@ -1083,6 +1083,140 @@ class Grid:
         IC = I - IL * Nlay - IR * self.nx
 
         return np.vstack((IL, IR, IC)).T
+
+    def interp2(self, hds=None, x=None, y=None, z=None, world=False):
+        '''Return interpolated hds at x, y using the heads in layer defined by z
+
+        Point x, y is generally not the cell center. So interpololate the head at
+        x, y using he heads in the surrounding cells such that the point
+        x, y is in a rectanble formed by 2 by 2 cells in the plane.
+
+        The 2 x 2 set of cells is lookedup between which mids the point lies.
+        Then a bilinear interpolation is done to get the head.
+
+        parameters
+        ----------
+            hds: hds from flopy a 4D np.ndarray
+                computed heads
+            x, y, z : floats
+                considered ponts(s)
+            world: bool
+                true of x, y, z in world coordinates
+        returns
+        -------
+            heads: np.ndarray of shape [nt, nz, 1]
+        '''
+
+        if world:
+            x, y = self.world2model(x, y)
+
+        LRC = self.lrc(x, y, z)[0]
+        L, R1, C1 = LRC[0], LRC[1], LRC[2]
+
+        C2 = C1 + 1 if x > self.xm[C1] else C1 - 1
+        R2 = R1 + 1 if y < self.ym[R1] else R1 - 1
+
+        if C2 < C1: C1, C2 = C2, C1
+        if R2 < R1: R1, R2 = R2, R1
+
+        C2 = C2 if C2 < self.nx else C1
+        C1 = C1 if C1 >= 0    else C2
+        R2 = R2 if R2 < self.ny else R1
+        R1 = R1 if R1 >= 0    else R2
+
+        hsub = hds[:, L, [R1, R2], :][:, :, [C1, C2]]
+
+        u = 0 if C1 == C2 else 2 * (x - self.xm[C1]) / (self.xm[C2] - self.xm[C1]) - 1
+        v = 0 if R1 == R2 else 2 * (y - self.ym[R1]) / (self.ym[R2] - self.ym[R1]) - 1
+
+        h = np.zeros_like(hds[:, 0, 0, 0])
+
+        for ir, b in zip([0, 1], [-1, +1]):
+            for ic, a in zip([0, 1], [-1, +1]):
+                h += hsub[:, ir, ic] * (a + u) * (b + v) * a * b
+                #print(a - u, b - v, (a - u) * (b - v))  a * b
+
+        return h / 4
+
+
+    def interp(self, points, Z=None, world=True, **kwargs):
+        '''Return interpolated Z values at points.
+
+        parameters
+        ----------
+            points: np.ndarray of ponts like so np.array([[x1m y1], [x2, y2], ...])
+                Array of points to interpolate between.
+            Z : array of shape [n, ny, nx] to be interpolated
+                Array to be interpolated, default is self.Z
+            world: bool
+                true if points are in world coordinates
+            kwargs: additional kwargs
+        returns
+            [s, zp, I: 3 np arrays
+                    s has shape [n, 3] where columns are s, x, y
+                    zp has shape [n, len(Z)]
+                    I has shape (n,) = indices of cornerpoints
+        @TO 20180919
+        '''
+
+        points = np.asarray(points)
+        if world:
+            points = np.vstack(self.world2model(*points.T)).T
+
+        P1, P2 = points[:-1], points[1:]
+
+        x0, y0 = P1[0]
+
+        S  = np.array([]) # the points and interpolated points
+        SP = np.array([]) # the points themselves (piezom locations in the profile)
+
+        for (x1, y1), (x2, y2) in zip(P1, P2):
+            dx, dy = x2 - x1, y2 - y1
+            L = np.sqrt(dx ** 2 + dy ** 2)
+
+            if len(SP) == 0: SP = np.array([[0, x0, y0]]) # initialize
+            if len(S)  == 0: S  = np.array([[0, x0, y0]])
+
+            SP = np.vstack((SP, np.array([[SP[-1][0] + L, x2, y2]])))
+
+            lam1 = (self.x - x1) / dx
+            lam2 = (self.y - y1) / dy
+            lam = np.hstack((0, lam1, lam2, 1.0))
+
+            # only within 0 1 , sort and remove doubles
+            lam = np.unique(lam[np.logical_and(lam >= 0., lam <=  1.)])
+
+            if len(lam) == 0:
+                continue # two piezoms in same borehole
+
+            # use [startpoint, points_in_cells, endpoint]
+            lamb = np.hstack((lam[0], 0.5 * (lam[:-1] + lam[1:]), lam[-1]))
+
+            s = np.vstack((lamb * L, x1 + lamb * dx, y1 + lamb * dy)).T
+
+            if len(s)  == 0:
+                continue
+
+            s[:, 0] += S[-1][0]
+            S = np.vstack((S, s))
+
+        if Z is None: Z = self.Z
+
+        if Z.ndim != 3:
+            raise ValueError('Z must be a 3D array')
+
+        z = np.zeros((len(S), len(Z)))
+        for i, zeta in enumerate(Z):
+            #f1 = ip.interp2d(self.Xm, self.Ym[::-1], Z[i, ::-1,  :].T)
+            #A = f1(self.xm, self.ym)
+            f = ip.RectBivariateSpline(self.xm, self.ym[::-1],
+                    Z[i, ::-1,  :].T, kx=1, ky=1, s=0)
+            x, y = S[:, 1], S[:, 2]
+            z[:, i] = f(x, y, grid=False)
+
+        I = np.unique(S.T[0], return_index=True)
+
+        return S[I[1]], z[I[1]], SP
 
 
     def interpxy(self, Z, points, iz=0, **kwargs):
@@ -2410,6 +2544,31 @@ class Grid:
             See doc of ax.contour for details
         '''
         return self.contour(A, filled=filled, **kwargs)
+
+
+    def imshow(self, A, **kwargs):
+        ''''Show array A using imshow
+
+        # this implies that axes are cell numbers !!
+
+        parameters
+        ----------
+            A: ndarray of size self.ny, self.nx
+                the array to be shown
+            kwargs: additional kwargs
+                xlabel, ylabel, title, xlim, ylim, set_inches
+                addtional kwargs are passed on to ax.imshow
+        '''
+        fig, ax = plt.subplots()
+
+        ax.set_xlabel(kwargs.pop('xlabel', 'ix'))
+        ax.set_ylabel(kwargs.pop('ylabel', 'iy'))
+        ax.set_title(kwargs.pop('title', 'gr.imshow()'))
+        if 'xlim' in kwargs: ax.set_xlim(kwargs.pop('xlim'))
+        if 'ylim' in kwargs: ax.set_ylim(kwargs.pop('xlim'))
+        if 'size_inches' in kwargs: fig.set_size_inches(kwargs.pop('size_inches'))
+        ax.grid()
+        ax.imshow(A)  #, extent=(*self.xm[[0, -1]], *self.ym[[-1, 0]]), **kwargs)
 
 
     def contour(self, A, filled=False,  **kwargs):

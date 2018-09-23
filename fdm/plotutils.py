@@ -5,7 +5,10 @@ shapefiles are also included.
 
 """
 import numpy as np
-import maplotlib.pyplot as plt
+import matplotlib.pyplot as plt
+import pandas as pd
+import juka_tools.pestTools as pt
+
 
 from matplotlib.colors import LinearSegmentedColormap
 '''Some vectorixed grid related functions from flopy plotutil.py
@@ -14,7 +17,347 @@ from matplotlib.colors import LinearSegmentedColormap
 '''
 
 
+def get_contour_levels(A, dh=0.5):
+    '''Return array of suitable levels for contouring array A.
 
+    parameters
+    ----------
+        A: an ndarray
+            array to be contoured
+        dh: postive float
+            distance between succesive levels.
+    '''
+    m = np.floor(np.nanmin(A))
+    M = np.ceil( np.nanmax(A))
+    n = int((M - m) / dh) + 1
+    return np.linspace(m, M, n)
+
+
+def show_layers(gr, coords=None, titles=None, Z=None, world=False, **kwargs):
+    '''Plot layer levations in full color with colorbars usng contourf.
+
+    This could be a method of mfgrid
+
+    parameters
+    ----------
+    gr: fdm.mfgrid.Grid object
+        model mesh object.
+    coords = dict
+        dict of point arrays to show on each map in model coordinates
+        coords[k] must be in the form of [[x1, y1], [x2, y2], ...]
+    world == bool, Default = False
+        if True, coords must be in world coordinates and plot is made
+        in world coordinates
+        if False, coords must be in model coordinates and plot will be
+        in model coordinates
+    titles: list
+        list if layer titles to use in header of subplots
+    Z : 3D array LRC
+        Array of layers to plot, if None, gr.Z is used
+    '''
+
+    if Z is None:
+        Z = gr.Z
+
+    n = len(Z) // 2 if len(Z) % 2 == 0 else len(Z) // 2 + 1
+
+    fig, ax = plt.subplots(n, 2, sharex=True, sharey=True)
+
+    if ax.ndim == 1: ax = ax[np.newaxis, :]
+
+    if 'size_inches' in kwargs:
+        fig.set_size_inches(kwargs.pop('size_inches'))
+
+    cs = np.zeros_like(ax, dtype=object)
+
+    if titles is None:
+        titles = ['layer +{:02d}'.format(i) for i in range(len(Z))]
+
+    for i in range(2):
+        for j in range(2):
+            try: # incase j fig [n, 2] does not exist
+                ax[i,j].set_title(titles[2 * i + j])
+                ax[i,j].set_xlabel('x [m]')
+                ax[i,j].set_ylabel('y [m]')
+                if 'xlim' in kwargs: ax[i,j].set_xlim(kwargs.pop('xlim'))
+                if 'ylim' in kwargs: ax[i,j].set_ylim(kwargs.pop('ylim'))
+                ax[i,j].grid()
+                if world==False:
+                    cs[i,j] = ax[i,j].contourf(gr.xm, gr.ym, Z[2 * i + j],\
+                          levels=get_contour_levels(Z[2 * i + j]))
+                else:
+                    cs[i,j] = ax[i,j].contourf(gr.Xmw, gr.Ymw, Z[2 * i + j],\
+                          levels=get_contour_levels(Z[2 * i + j]))
+                plt.colorbar(cs[i, j], ax=ax[i, j])
+                for k in coords:
+                    ax[i, j].plot(*coords[k].T)
+            except:
+                pass
+    return
+
+
+def _show_layers(gr, wrld):
+    '''Plot the layers as full contours in world coordinates.
+
+    parameters
+    ---------
+    gr: fdm.mfgrid.Grid object
+        model grid objects
+    wrld: dict
+        dictionary with world coordinates of spatial features.
+    '''
+
+    fig, ax = plt.subplots(1, 2)
+    fig.set_size_inches((13.5, 4.5))
+    ax[0].set_title('Layer elevation for top of Beegden formation')
+    ax[1].set_title('Layer elevation of top of Breda formation')
+
+    m, M, n, levels, cs = dict(), dict(), dict(), dict(), dict()
+
+    for layer in [0, 1]:
+        ax[layer].set(xlabel='x [m]', ylabel='y [m]')
+        ax[layer].grid()
+        m[layer] = np.floor(np.min(gr.Z[layer][~np.isnan(gr.Z[layer])]))
+        M[layer] = np.ceil( np.max(gr.Z[layer][~np.isnan(gr.Z[layer])]))
+        n[layer] = int(4 * ( M[layer] - m[layer]) + 1)
+        levels[layer]= np.linspace(m[layer], M[layer], n[layer])
+        cs[layer] = ax[layer].contourf(gr.XMw[0], gr.YMw[0], gr.Z[layer], levels[layer])
+        ax[layer].plot(wrld['modelgebied'].T[0], wrld['modelgebied'].T[1],
+            color='brown', label='model area')
+        plt.colorbar(cs[layer], ax=ax[layer])
+
+        for name in com.Obb['show_items']:
+            try:
+                ax[layer].plot(wrld[name].T[0], wrld[name].T[1], label=name)
+            except:
+                ax[layer].plot(wrld[name][0][0], wrld[name][0][1], label=name)
+    return
+
+
+def plot_x_sections(gr, locations=None, coords=None, Z=None,
+                    labels=None, size_inches=(10.0, 7.5), world=True, mask=None,
+                    **kwargs):
+    '''Plot a umber of WE cross sections to show layer elevations through locations
+
+    parameters
+    ----------
+    gr: fdm.mfgrid.Grid object
+        grid object (needed for its coordinates)
+    locations: list of str
+        location names, these names must be keys in the coords dict
+    coords: dict
+        coordinates of locations, which must be of shape [[x, y]]
+    Z : ndarray, 3D to use shape must be [n, gr.ny, gr.nx]
+        default is gr.Z
+    labels: list of str to name the layers in the legend
+        One label for every layer in Z
+    size_inches: tuple of 2 floats
+        Size of figure in inches
+    world: bool
+        Whether coords are in world or model coordinates
+    kwargs: additional kwargs
+        will be passed on to plt.plot
+    '''
+
+    fig, ax = plt.subplots(len(locations), 1)
+    fig.set_size_inches(size_inches)
+
+    if 'fontsize' in kwargs : fz = kwargs.pop('fontsize', 'medium')
+    if 'fz'       in kwargs:  fz = kwargs.pop('fz','medium')
+    plt.rcParams.update({'axes.titlesize': fz})
+
+    # make sure coords are in both wrld and mdl coordinates
+    if world==True:
+        wrld = coords
+        mdl = dict()
+        for location in locations:
+            mdl[location] = gr.world2model(*wrld[location].T)
+    else:
+        mdl = coords
+        wrld = dict()
+        for location in locations:
+            wrld[location] = gr.m2world(*mdl[location].T)
+
+
+    for i, location in enumerate(locations):
+        iy = gr.iy(mdl[location][0][1])
+
+        ax[i].set_title('WE section, at {}, yM={:.0f} m, row={}'
+              .format(location, wrld[location][1][0], iy))
+
+        ax[i].title.set_fontsize(fz)
+
+
+        ax[i].set_ylabel(kwargs.pop('ylabel', 'elevation [m]'))
+        if location == locations[-1]: # only the last gets an xlabel
+            ax[i].set_xlabel(kwargs.pop('xlabel', 'xMdl [m]'))
+
+        if 'xlim' in kwargs:
+            ax[i].set_xlin(kwargs.pop('xlim'))
+        if 'ylim' in kwargs:
+            ax[i].set_ylim(kwargs.pop('ylim'))
+        ax[i].grid()
+
+        if Z is None: Z = gr.Z # use default
+
+        if mask is not None:
+            Z = np.ma.masked_array(Z, mask=mask)
+
+        for iz, label in enumerate(labels):
+            ax[i].plot(gr.xm, Z[iz, iy, :],label=label)
+
+        ax[i].legend(loc='best')
+    return
+
+def plot_section(gr, piezoms=None, t0sim=None, time=None, hds=None, Z=None,
+                 znames=None, hnames=None, colors=None, gmap=None, wrld=None, **kwargs):
+    '''Plot a section along the piezometers (or calibs)
+
+    parameters
+    ----------
+        gr: tools.fdm.mfgrid.Grid object
+            the modflow mesh
+        piezoms: tools.piezoms.piezoms or calibs object
+            piezometers along which the section is to be plotted
+        t0sim: pd.Timestamp object
+            time corresponding to the start of the simulation
+        time: np.array of times as floats
+            modflow simulation times [d]
+        hds: 4d array [nt, nz, ny, nx]
+            simulated heads
+        Z: 3D array of [n, ny, nx]
+            elevations to plot
+        znames: list of str
+            labels for the layers in the Z array for legend
+        hnames: list of str
+            labels for the head layers for legend
+        colors: list of str
+            layer colors for the heads
+        gmap: googlemaps.getmap.Gmap
+            map to plot the piezometer locations on
+        wrld: dict
+            wrld[key] had coordinates of item to be plotted
+        kwargs: additional kwargs to specify ax and grid:
+            title, xlabel ylabel xlim ylim size_inches
+            other left-over kwargs are passed on to ax.plot(..., **kwargs)
+
+    '''
+
+    names = [n for n in piezoms] # names
+
+    # get the points for the piezoms
+    xy = np.array([(piezoms[nm].meta['x'], piezoms[nm].meta['y']) for nm in piezoms])
+
+    # interpolated the Z
+    s, z, SP = gr.interp(xy, Z=Z)
+
+    # interpolate the hds
+    _, h, _ = gr.interp(xy, hds)
+
+    fig, ax = plt.subplots(2, 1)
+
+    # absolute time of heads in plotted section
+    t = pd.Timestamp(t0sim)
+
+    ax[0].set_title(kwargs.pop('title', 'Section along piezometers with head at time {}'
+                .format(t.strftime('%Y-%m-%d %H:%M'))))
+    ax[0].set_xlabel(kwargs.pop('xlabel', 'Distance along section [m]'))
+    ax[0].set_ylabel(kwargs.pop('ylabel', 'm NAP'))
+    ax[0].grid()
+
+    if 'xlim' in kwargs:
+        ax[0].set_xlim(kwargs.pop('xlim'))
+    if 'ylim' in kwargs:
+        ax[0].set_ylim(kwargs.pop('ylim'))
+    if 'size_inches' in kwargs:
+        fig.set_size_inches(kwargs.pop('size_inches'))
+
+    for z_, zname in zip(z.T, znames):
+        ax[0].plot(s.T[0], z_, lw=3, label='layer {}'.format(zname))
+    for color, h_, hname in zip(colors, h.T, hnames):
+        ax[0].plot(s.T[0], h_, color=color, label='hds {}'.format(hname))
+
+    xlim = ax[0].get_xlim()
+    ylim = ax[0].get_ylim()
+    xoff = (xlim[1] - xlim[0]) / 80.
+    ytxt = ylim[0] + 0.95 * (ylim[1] - ylim[0])
+    colors_used = np.ones_like(colors, dtype=bool) * False
+    for nm, sp in zip(names, SP):
+        iz = piezoms[nm].meta['iz']
+        ax[0].axvline(sp[0], linewidth=0.5, color='k')
+        ylim = ax[0].get_ylim()
+        att = piezoms[nm].attime(t)
+        marker = dict( mec=colors[iz], mfc=None, fillstyle='none',
+                  markerfacecoloralt='black')
+        if not colors_used[iz]:
+            ax[0].plot(sp[0], att['computed'], 'o', markersize=3, label='computed', **marker)
+            ax[0].plot(sp[0], att['measured'], 'o', markersize=6, label='measured', **marker)
+        else:
+            ax[0].plot(sp[0], att['computed'], 'o', markersize=3, **marker)
+            ax[0].plot(sp[0], att['measured'], 'o', markersize=6, **marker)
+        if iz == 0:   # same as nm.endswith('A'):
+            ax[0].text(sp[0] -xoff, ytxt, nm, rotation=90)
+        else:
+            ax[0].text(sp[0], ytxt, nm, rotation = 90)
+        colors_used[iz] = True
+
+    ax[0].legend(loc='best')
+
+    pt.plot_piezoms(piezoms, gmap, wrld=wrld, xoff=10, yoff=25, ax=ax[1], **kwargs)
+
+
+def add_piezoms_map(piez, gmap, fs=10, pos1=[0.125, 0.55, 0.75, 0.35],
+                    pos2 = [0.32, 0.12, 0.4, 0.35], size_inches=(12, 10),
+                    wrld=None,
+                    xoff=10, yoff=25):
+    '''Adds map below the axis on the current figure.
+
+    parameters
+    ----------
+     piez: piezometers.piezometers.Calibs or piezometers.piezometers.Piezoms collection object
+         the piezometers to be plotted on the map
+     gmap: a googlemaps.getmap.Gmap object
+         the backgroound map
+    fs : int
+        fontsize to be used for all labels in the axes
+     pos1: [l,b, w,h] default = [0.125, 0.55, 0.88, 0.35]
+         resets the original axis default
+     pos2: [l, b, w, h] default = [0.32, 0.1, 0.4, 0.35]
+         sets the new axis position for the map
+     size_inches: [w, h] default [16, 9]
+         resets the size of the figure
+    wrld: dict
+        dict with coordinates of features wrld[nm]=[[x1, y1], [x2, y2], ...]
+    xoff: float default 10
+        horizontal label offset in map coorcinates
+    yoff: float default 25
+        vertical label offset in map coordinates
+
+    @TO 20180923
+    '''
+
+    # get currenf figure and reset its size
+    fig = plt.gcf()
+    fig.set_size_inches(size_inches)
+
+    # get current axis and reset its position
+    ax0 = plt.gca()
+    ax0.set_position(pos1)
+
+    # add new axis of map
+    ax1 = fig.add_axes(pos2)
+
+
+    pt.plot_piezoms(piez, gmap, wrld=wrld, xoff=10, yoff=25, ax=ax1)
+
+    ax1.set_xlabel('xRd[m]', size=fs)
+    ax1.set_ylabel('yRd[m]', size=fs)
+
+    for a in [ax0, ax1]:
+        for label in (a.get_xticklabels() + a.get_yticklabels()):
+            label.set_fontsize(fs)
+
+    plt.show()
 
 
 def findrowcolumn(pt, edges, fraction=False):
