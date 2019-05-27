@@ -737,9 +737,12 @@ class Grid:
             return self._Z.copy()# prevent ref. to original
 
     @property
-    def shape(self):
+    def shape(self, cbd=False):
         '''Shape of the grid'''
-        return self._nlay, self._ny, self._nx # prevent ref. to original
+        if cbd is False:
+            return self._nlay, self._ny, self._nx # prevent ref. to original
+        else:
+            return self._ncbd, self._ny, self._nx
 
     @property
     def nx(self):
@@ -1269,7 +1272,7 @@ class Grid:
         elif Z.ndim == 4:
             Z = Z[:, iz, :, :] # squeeze out the layer
 
-        assert Z.shape[-2:] == self.shape[-2:],\
+        assert Z.shape[-2:] == self._shape[-2:],\
             'Z must be 3D of shape (nz,{},{})'.format(self.ny, self.nx)
         assert Z.ndim == 3, 'Z.ndim must be 3.'
 
@@ -1458,12 +1461,12 @@ class Grid:
     @property
     def XM(self):
         '''Column center coordinates as a 3D grid [nz, ny, nx]'''
-        return np.ones(self.shape) * self.xm.reshape((1, 1, self._nx))
+        return np.ones(self._shape) * self.xm.reshape((1, 1, self._nx))
 
     @property
     def YM(self):
         '''Row center coordinates as a 3D grid [nz, ny, nx]'''
-        return self.ym.reshape((1, self._ny, 1)) * np.ones(self.shape)
+        return self.ym.reshape((1, self._ny, 1)) * np.ones(self._shape)
 
     @property
     def ZM(self):
@@ -2644,8 +2647,8 @@ class Grid:
 
 
 
-    def const(self, u, dtype=float, axial=False):
-        """generate an ndarray of gr.shape with value u.
+    def const(self, u, dtype=float, axial=False, lay=True, cbd=False):
+        """Return an ndarray of gr.shape with value u.
         -----
         u can be a scaler or a vector of shape (nz,) or (1,1,nz) in which
         case the values of u are use to set the layers of the array with
@@ -2657,18 +2660,22 @@ class Grid:
 
         TO 161007
         """
+        if lay is True:
+            nz = self._nlay
+        elif cbd is True:
+            nz = self._ncbd
+        else:
+            nz = self._nz
+
         if isinstance(u, (float, int)):
-            out = u * np.ones(self._shape, dtype=dtype)
+            out = u * np.ones((nz, self._ny, self._nx), dtype=dtype)
         elif isinstance(u, np.ndarray):
-            if len(u.ravel()) == self._shape[0]:
-                u = u.reshape((self._nz, 1, 1))
-                out = u * np.ones(self.shape, dtype=dtype)
-            else:
-                raise ValueError("Len of input array not equal to gr.nz")
+            nz = np.array(u.ravel())[:, np.newaxis, np.newaxis]
+            out = u * np.ones(self.shape, dtype=dtype)
         elif isinstance(u, list):
             if len(u) == self._shape[0]:
                 u = np.array(u).reshape((self._nz, 1, 1))
-                out = u * np.ones(self.shape, dtype=dtype)
+                out = u * np.ones(self._shape, dtype=dtype)
             raise ValueError("Len of input list must equal gr.nz")
         else:
             raise ValueError("Argument must be scalar or array of length gr.nz")

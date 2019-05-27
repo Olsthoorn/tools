@@ -31,9 +31,10 @@ from coords import rd2wgs
 import matplotlib.pyplot as plt
 from coords import wgs2rd
 
-mykey = 'AIzaSyDRETF3BLxtT-W3c7dXlk-7t3j3Z7wLTN8'
-
-API   = 'https://maps.googleapis.com/maps/api/staticmap?'
+def gmkey():
+    #subprocess.run(['env', '| grep -e GMAPI /Users/Theo/.bash_profile'], capture_output=True)
+    #return gmapi[0].split('=')[1].replace('"','')
+    return 'AIzaSyBRcG5lwN1Mlfu-RDkunJBNL0fDHZMR_sI'
 
 r_earth = 6378137 # m
 
@@ -149,7 +150,7 @@ class Gmap:
                   size=(640, 640),
                   scale=1, format='png', language='en', region=None,
                   markers=None, path=None, visible=None,
-                  style=None, signature=None):
+                  style=None, timeout=0.01, signature=None):
         '''Return a google maps image
 
         for API see
@@ -181,6 +182,8 @@ class Gmap:
                 a few of the formats for saving the image
             language: en default
                 language in which to print labels
+            timeout: float (seconds)
+                timeout in case response is slow.
             region:
                 defines appropriate borders to display, based on geo-political
                 sensitivities. Accepts a region code specified as a two-character
@@ -240,8 +243,7 @@ class Gmap:
 
         '''
 
-        # Google statib map KEY
-        mykey = 'AIzaSyDRETF3BLxtT-W3c7dXlk-7t3j3Z7wLTN8'
+        # Google statib map KEY was put in in os.environ['mapapi']
 
         center_ = center if isinstance(center, str) else '{},{}'.format(*center)
         size_  = '{}x{}'.format(*size)
@@ -251,7 +253,7 @@ class Gmap:
                   "zoom"   : zoom,    # between 0 and 21
                   "size"   : size_,    # max 640x640
                   "maptype": maptype, # satellite, hybrid, ...  4 types
-                  "timeout": 0.01,    # timeout should always be used
+                  "timeout": timeout,    # timeout should always be used
                   "format" : format,     # image format
                   }
 
@@ -264,7 +266,7 @@ class Gmap:
         if signature: params['signature'] = signature
 
 
-        params["key"] = mykey
+        params["key"] = gmkey()
 
         self.__dict__.update(**params)
 
@@ -272,6 +274,7 @@ class Gmap:
         self.size = size     # keep original
 
         # Do the request
+        API = 'https://maps.googleapis.com/maps/api/staticmap?'
         response = requests.get(API, params=params)
 
         # Get the image from the response
@@ -478,14 +481,14 @@ class Gmap:
 
 if __name__=="__main__":
 
-    center = 'Heemstede, Netherlands'
-    gmap1 = Gmap(center, zoom=14, maptype='roadmap',
-                  size=(640, 640),
-                  scale=1, format='png', language='en', region=None,
-                  markers=None, path=None, visible=None,
-                  style=None, signature=None)
-    gmap1.imshow()
-    plt.show()
+    #center = 'Heemstede, Netherlands'
+    #gmap1 = Gmap(center, zoom=14, maptype='roadmap',
+    #              size=(640, 640),
+    #              scale=1, format='png', language='en', region=None,
+    #              markers=None, path=None, visible=None,
+    #              style=None, signature=None)
+    #gmap1.imshow()
+    #plt.show()
 
 
     '''
@@ -503,7 +506,7 @@ if __name__=="__main__":
     ylim = (336400, 337600) # 1200
 
 
-    gmap = get_gmap_from_RDwindow(xlim, ylim, maptype='hybrid',  scale=2)
+    gmap = get_gmap_from_RDwindow(xlim, ylim, maptype='hybrid',  timout=1.0, scale=2)
 
     ax = gmap.imshow(extent=(*xlim, *ylim), aspect='equal')
     ax = plt.gca()

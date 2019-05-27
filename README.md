@@ -2,7 +2,7 @@
 
 Various tools developed to do geo-hydrological work and modeling.
 
-Note that the tools were developed as needed. They will be adapted as needed in the future without notice. These tools also reflect my improving skills in python, which also leads to adaptations. There's neither any warranty nor guarantee, but you can be sure that I use them all the time, and that at the moment I use them I will make sure they work. But of course, when I change code, this might break other code using it. This is merely a consequence of a developing environment, which was made for myself.
+Note that the tools were developed as needed. They will be adapted as needed in the future without notice. These tools also reflect my improving skills in python, which also naturally leads to adaptations. There's neither any warranty nor guarantee, but you can be sure that I use them all the time, and that at the moment I use them I will make sure they work. But of course, when I change code, this might break other code using it, although I try to prevent this. This is merely a consequence of a developing environment, which was intended for myself.
 
 Any suggestions are welcome.
 

@@ -122,6 +122,16 @@ def dict2shp(mydict, fileName, shapetype=None, xy=('x', 'y'),
              usecols=None, verbose=False):
     '''Save dict to shapefile.
 
+    mydict may be a pd.DataFrame or a dictionary
+    in both cases the key will be the name of the individual shapes that
+    reside in the shapefile that is generated.
+
+    In case mydict is a pd.DataFrame, each record represents a separate shape with
+    the column headers equal the fields of the shape records.
+    But with a pd.DataFrame x, and y can only be a single number, so this is
+    suitable only for POINT shape, not for POLYLINES or POLYGONS because these
+    have more x, and y values each.
+
     parameters
     ----------
         mydict : a dict of dicts or a list of dicts like
@@ -151,7 +161,7 @@ def dict2shp(mydict, fileName, shapetype=None, xy=('x', 'y'),
     '''
 
     #is mydict a lst of dicts or a dict of dicts?
-    assert isinstance(mydict, dict), "first arugment must be a dictionary whose keys are shape names."
+    assert isinstance(mydict, (dict, list, tuple, pd.DataFrame))
 
     if  isinstance(mydict[list(mydict.keys())[0]], (tuple, list)):
         # then turn it into a dict of dict with key =__noname__
@@ -159,10 +169,16 @@ def dict2shp(mydict, fileName, shapetype=None, xy=('x', 'y'),
         mydict={}
         mydict['noname'] = old_dict
 
-    shape_names = list(mydict.keys())
+    if isinstance(mydict, dict):
+        shape_names = list(mydict.keys())
+    elif isinstance(mydict, pd.DataFrame):
+        shape_names = list(mydict.keys)
+    else:
+        raise TypeError(
+            'mydict of illegal type {}, must be list, dict or pd.DataFrame'
+            .format(type(mydict)))
 
-    if usecols is None:
-        usecols = []
+    if usecols is None: usecols = []
 
     if shapetype is None:
         if len(xy) == 2:
@@ -187,22 +203,22 @@ def dict2shp(mydict, fileName, shapetype=None, xy=('x', 'y'),
     wr.field('name', 'C', 20)   # firrst field will be the name of the shape record
 
     # add the other fields
-    keys = usecols if usecols else [
-                        k for k in mydict[list(mydict.keys())[0]] if not k in xy]
+    fields = [k for k in mydict[shape_names[0]].keys()]
+    rec_keys = usecols if usecols else [k for k in fields if not k in xy]
 
-    for k in keys: # fields of sub dict
+    for k in rec_keys: # fields of sub dict
         try:
             wr.field(str(k), *dbasefield[str(type(k))])
         except:
             logger.debug("Can't handle field <{}>".format(str(k)))
 
     if verbose:
-        print(', '.join(keys))
+        print(', '.join(rec_keys))
 
     # generate records and points (or parts of polyline)
     for shape_name in shape_names:
         rec = mydict[shape_name]
-        wr.record(shape_name, *[rec[k] for k in keys]) # includes name
+        wr.record(shape_name, *[rec[k] for k in rec_keys]) # includes name
 
         if shapetype.startswith('POLY'):
             if shapetype.startswith('POLYG'): # close polyline if necessary
@@ -487,4 +503,7 @@ if __name__ == '__main__':
     z = [0, -1]
     gr = fdm.Grid(x, y, z)
     dict2shp(gr.asdict(), 'grid', shapetype='POLYLINE', xy=('x', 'y'))
+
+
+
 

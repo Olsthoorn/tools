@@ -49,12 +49,81 @@ import logging
 from coords import wgs2rd
 import shelve
 import matplotlib.pyplot as plt
+import collections
+
+import pdb
 
 logger=logging.getLogger()
 
 KNMI_URL = {'w' : "http://projects.knmi.nl/klimatologie/daggegevens/getdata_dag.cgi",
             'r' : "http://projects.knmi.nl/klimatologie/monv/reeksen/getdata_rr.cgi",
             'h' : "http://projects.knmi.nl/klimatologie/uurgegevens/getdata_uur.cgi"}
+
+def date_parser(data, col='YYYYMMDD'):
+    return [pd.datetime(d[:4] + '-' + d[4:6] + '-' + d[6:8])
+                     for d in data[col]]
+
+
+
+def parseKNMI(knmifname, fields=['RH', 'EV24'], to_mpd=True):
+    '''return pd.DataFrame form knmi weather statio with given fields
+
+    The files can be downloaed from (20190106)
+    https://www.knmi.nl/nederland-nu/klimatologie/daggegevens
+    You may want to check if this URL is still valid.
+
+    parameters
+    ----------
+    knmifname: str
+        name of knmi file for one of their weather stations.
+        These names are usually calloed etmgeg_???.txt where
+        ??? is the number of the weather station.
+    fields: list of str
+        list of the desired fields.
+
+    The field 'YYYYMMDD' will be converted to timestamps and used
+    as the index.
+    Lines with Nan in any of the fields are dropped.
+
+    @TO 20190106
+
+    '''
+    with open(knmifname, 'r') as f:
+        skiprows = -1
+        while True:
+            skiprows += 1
+            s = f.readline()
+            if s.startswith('# STN'):
+                header = s.replace(',',' ').split()[1:]
+                break
+
+        fields.insert(0, 'YYYYMMDD')
+        usecols = []
+        for fld in fields:
+            usecols.append(header.index(fld))
+        dtype = {1: str}
+
+        #skiprows = None
+        data = pd.read_csv(f, header=None, skip_blank_lines=False,
+                           skiprows=skiprows, skipinitialspace=True,
+                           usecols=usecols, dtype=dtype
+                           )
+        #                           date_parser=dateParser)
+        data.columns = fields
+        data.index = pd.to_datetime(
+            ['-'.join([d[:4], d[4:6], d[6:]]) for d in data['YYYYMMDD']])
+
+        # drop NaN's and the unused date column
+        # note that we have to assign
+        data = (data.dropna()).drop(columns='YYYYMMDD')
+
+        if to_mpd:
+            for fld in fields:
+                if fld in ['RH', 'EV24']:
+                    b = data.loc[:, fld]  < 0
+                    data.loc[b, fld] = 0.25
+                    data[fld] /= 10000.0 # original is in 0.1 mm units
+    return data
 
 
 def getWstations(loc="http://climexp.knmi.nl/KNMIData/list_dx.txt"):
@@ -93,8 +162,6 @@ def getWstations(loc="http://climexp.knmi.nl/KNMIData/list_dx.txt"):
                     'x': RD[0], 'y': RD[1], 'z': RD[2],
                     'period': period, 'meta': meta}
     return stations
-
-
 
 
 def getPstations(loc="http://climexp.knmi.nl/KNMIData/list_dx.txt"):
@@ -303,17 +370,25 @@ def index2tstamp(df):
                                                         for ds in index]
     return ts
 
+#https://www.knmi.nl/nederland-nu/klimatologie/daggegevens
 
 if __name__ == '__main__':
 
+    P = parseKNMI('./data/uurgeg_240_2001-2010.txt', fields=['HH', 'P'], to_mpd=False)
+
+    exit()
+
+    data = parseKNMI('./data/etmgeg_260.txt', fields=['RH', 'EV24'])
+
     if False:
         station = getWstations(loc='KNMI_stations.txt')
-    pprint(station)
+        pprint(station)
 
     # Get overview of all stations
     if False:
-        stations = getPstations(loc=
-                               "http://climexp.knmi.nl/KNMIData/list_dx.txt")
+        loc = "http://www.climexp.knmi.nl/KNMIData/list_dx.txt"
+        #loc = "./data/KNMI_stations.txt"
+        stations = getPstations(loc=loc)
 
     # Get data for a weather station
     if False:
@@ -331,8 +406,9 @@ if __name__ == '__main__':
 
     # Get data for a precipitation station
     if True:
-        name, station = 'Buchten', 974
-        Pdf = getPdata(station=station, start='20180501', end='20180720')
+        name, station = 'De Bilt', 260
+        #name, station = 'Buchten', 974
+        Pdf = getPdata(station=station, start='20500101', end='20181231')
         Pdf = data2iso(Pdf)
         Pdf.index = index2tstamp(Pdf)
         Pdf.plot()
