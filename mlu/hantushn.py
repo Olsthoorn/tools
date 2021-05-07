@@ -1,4 +1,5 @@
-
+# -*- coding: utf-8 -*-
+"""Analytical multi-layer Hantush with with storage in aquifers and aquitards."""
 import sys
 
 tools = 'Users/Theo/GRWMODELS/python/tools/'
@@ -17,51 +18,50 @@ from scipy.interpolate import interp1d
 from colors import colors
 
 def bcoth(z):
+    """Return coth of an array."""
     z[z>20.  ] = 20.
     z[z<1.e-6] = 1e-6
     return z * (np.exp(z) + np.exp(-z)) / (np.exp(z) - np.exp(-z))
 
 
 def hantushn(Q=None, r=None, t=None, Sat=None, Saq=None, c=None, T=None, N=10):
-    '''
-    Return analytical drawdown of n-layer transient solution multiple aquifer system.
-
+    """Return analytical drawdown of n-layer transient solution multiple aquifer system.
 
     Laplace transform is applied with back-transformation from Laplace space
     according to Stehfest.
 
     Implies the solution given by Hemker and Maas (1987)
 
-    Example:
-        hantushn();  % selfTest
-        s = hantushn(Q,r,t,Sat,S,c,T[,N]);
+    Example
+    -------
+    hantushn();  % selfTest
+    s = hantushn(Q,r,t,Sat,S,c,T[,N]);
 
     The solution has been used for the interpretation of the pumping test
     De Zilk, Pastoorslaan by Jochem Fritz and Rob Rijsen. Sept 3-14 2007.
 
-    parameters
+    Parameters
     ----------
-        Q : ndarray of floats
-            extraction vector (positive extractions will create positive dd')
-        r : nadarray of floats
-            distance vector
-        t : ndarray of floats
+    Q : ndarray of floats
+        extraction vector (positive extractions will create positive dd')
+    r : nadarray of floats
+        distance vector
+    t : ndarray of floats
 
 
-        Sat: ndarray of floats
-            storage coefficients of aquitards
-        S : ndarray of floats
-            storage coefficient of aquifers
-        c : ndarray of floats
-            hydraulic resistance vector
-            to model absence of a top or bottom aquifer, just make the
-            resistance of the top and or bottom aquifer infinite. You can
-            make any or all aquitard resistances infinite.
-        T : ndarray of floats
-            transmissivity vector
-        N : int
-            Stehfest's parameter, default 10
-
+    Sat: ndarray of floats
+        storage coefficients of aquitards
+    S : ndarray of floats
+        storage coefficient of aquifers
+    c : ndarray of floats
+        hydraulic resistance vector
+        to model absence of a top or bottom aquifer, just make the
+        resistance of the top and or bottom aquifer infinite. You can
+        make any or all aquitard resistances infinite.
+    T : ndarray of floats
+        transmissivity vector
+    N : int
+        Stehfest's parameter, default 10
 
     The first resistance layer is on top of the first aquifer by definition.
     apply Inf to close off the given zero drawdown on top of this layer.
@@ -72,22 +72,21 @@ def hantushn(Q=None, r=None, t=None, Sat=None, Saq=None, c=None, T=None, N=10):
     If, however, length(T)==length(c), then the lowest layer is an
     aquifer closed at its bottom.
 
-    returns
+    Returns
     -------
-        drawdown (Nt, Naq, Nr) ndarray
+    drawdown (Nt, Naq, Nr) ndarray
 
-        If instead r= list of tubples with (r, iLyer, t), the drawdown will
-        be in list format
-        providing the drawdown for every coordinate pair
-        in that case t is not used as a separate input is dummy !
+    If instead r= list of tubples with (r, iLyer, t), the drawdown will
+    be in list format
+    providing the drawdown for every coordinate pair
+    in that case t is not used as a separate input is dummy !
 
-    See also
+    See Also
     --------
-        stehfest (in this modulle)
-    %
-    % TO 090329 090330 180122 converstion to Python
-    '''
+    stehfest (in this modulle)
 
+    @ TO 090329 090330 180122 converstion to Python
+    """
     print('Running Hantushn')
 
     Q   = np.array(Q)
@@ -125,9 +124,7 @@ eig = np.linalg.eig
 
 def ddOnePoint(Q=None, r=None, t=None,
                Sat=None, Saq=None, c=None, T=None, top_aquitard=True, v=None):
-    '''Return drawdown for all layers for this r and t.
-    '''
-
+    """Return drawdown for all layers for this r and t."""
     s = np.zeros(T.shape)
 
     if len(c) < len(T):
@@ -186,13 +183,12 @@ def ddOnePoint(Q=None, r=None, t=None,
 
 
 def selfTestHM87Fig2(N=8):
-    ''' Solves problem stated in figure 2 of Hemker and Maas (1987)
+    """Solve problem stated in figure 2 of Hemker and Maas (1987).
 
     N = 8 seems optimal.
 
-    TO 180125
-    '''
-
+    @TO 180125
+    """
     c   = np.array([[1e12, 100, 1e12],
                     [100, 100, 100],
                     [100, 100, 100],
@@ -238,13 +234,12 @@ def selfTestHM87Fig2(N=8):
     return dd
 
 def selfTestHM87Fig3(N=8):
-    ''' Solves problem stated in figure 2 of Hemker and Maas (1987)
+    """Solve problem stated in figure 2 of Hemker and Maas (1987).
 
     N = 8 seems optimal.
 
-    TO 180125
-    '''
-
+    @TO 180125
+    """
     c   = np.array([1000., 1500., 1000., 4000., 20000.])   # resistance of aquitards
     # also possible: c   = np.array([np.inf, np.inf, np.inf, np.inf, np.inf])   # resistance of aquitards
     Sat = np.array([   3,  0.5,  0.3,  0.2,     1]) * 1e-3 # Stor coef of aquitards
@@ -291,13 +286,12 @@ def selfTestHM87Fig3(N=8):
 
 
 def selfTestHM87Fig4(N=8):
-    ''' Solves problem stated in figure 2 of Hemker and Maas (1987)
+    """Solves problem stated in figure 2 of Hemker and Maas (1987).
 
     N = 8 seems optimal.
 
-    TO 180125
-    '''
-
+    @TO 180125
+    """
     c   = np.array([[1e12, 100, 1e12],
                     [100, 100, 100],
                     [100, 100, 100],
@@ -345,16 +339,15 @@ def selfTestHM87Fig4(N=8):
     return dd
 
 def stehfest(N=10):
-    '''Return Stehfest's v-coefficients.
+    """Return Stehfest's v-coefficients.
 
-    parameters
+    Parameters
     ----------
-        N : int
-            Numberof Stefest coefficients
+    N : int
+        Numberof Stefest coefficients
 
     This needs to be calculated only once
-    '''
-
+    """
     v = np.zeros((N, 1))
 
     for i in range(1, N+1):
@@ -370,15 +363,15 @@ def stehfest(N=10):
 
 
 def compare_hant_fdm(aqSys, obsWells, t=None, Q=None, epsilon=1.0, **kwargs):
-    '''Compare hantushn vor r's and all t with fdm3t
+    """Compare hantushn vor r's and all t with fdm3t.
+
     obsWells : dictionarary with keyys ['name', 'r', 'layer')
 
     Input prerequisites
     aqSys : Aquifer_system
     epsilon : float
         implicitness, use value between 0.5 to 1 (Modflow uses 1.0)
-    '''
-
+    """
     N = kwargs.pop('N', 10)
 
     # simulate analytically using Hantushn
@@ -443,6 +436,8 @@ def compare_hant_fdm(aqSys, obsWells, t=None, Q=None, epsilon=1.0, **kwargs):
 
 
 class Aquifer_system:
+    """Define aquifer system."""
+
     def __init__(self, z=None, c=None, kD=None, Sat=None, Saq=None,
                  rw=0.1, R=1e4,
                  top_aquitard=True):
@@ -494,15 +489,16 @@ class Aquifer_system:
 
 
 class ObsWells:
+    """Defien obeservation wells."""
+
     def __init__(self, points, aqSys):
-        '''generate an instance of observation points.
+        """Generate an instance of observation points.
 
-        parameters
+        Parameters
         ----------
-            points: (name, r, z)
-                observation point locations
-        '''
-
+        points: (name, r, z)
+            observation point locations
+        """
         if isinstance(points, dict):
             self.names = [p['name'] for p in points]
             self.r     = [p['r']    for p in points]
