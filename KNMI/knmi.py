@@ -1,430 +1,323 @@
-"""Reading data files of the Royal Dutch Meteorological Institute KNMI
+"""Reading data files of the Royal Dutch Meteorological Institute KNMI.
 
-KNMI provides data files for all of its rain gauge and meteo stations for free, which are
-downloadable either by hand or by script. See how-to here:
+KNMI provides data files for all of its rain gauge stations and meteo stations for free.
+These data can be downloaded by hand or by script.
 
+How to download KNMI data by script is described here (site last checkked on 20200516)
 http://www.knmi.nl/kennis-en-datacentrum/achtergrond/data-ophalen-vanuit-een-script
 
-Dowloading is done from:
+However, we can just use the more convenient requests module.
 
+Dowloading is done from: (site last checked on 20200516)
 http://www.knmi.nl/nederland-nu/klimatologie/daggegevens
 
-This is done using the wget utility (which may be installed with homebrew)
-
-# general way to request the data:
-wget -O infile --post-data="variable=value&variable=value&...." "http://projects.knmi.nl/klimatologie/daggegevens/getdata_dag.cgi"
-
-
-# for example if you want data for stations 235, 280 and 260, for variables VICL and PRCB
-for a period defined by begin year, month day and end year month day hten the argument of
- the --post_data should be (note the double quotes):
---post-data="stns=235:280:260&vars=VICL:PRCP&byear=1970&bmonth=1&bday=1&eyear=2009&emonth=8&eday=18"
-
 vars
-List of desired variablesin arbitrary order, see selection page, separated by ':', for example 'TG:TN:EV24'.
 Some convenience acronymes are defined to select related parameter groups
 
-WIND = DDVEC:FG:FHX:FHX:FX wind
-TEMP = TG:TN:TX:T10N temperatuur
-SUNR = SQ:SP:Q Zonneschijnduur en globale straling
-PRCP = DR:RH:EV24 neerslag en potentiële verdamping
-PRES = PG:PGX:PGN druk op zeeniveau
-VICL = VVN:VVX:NG zicht en bewolking
-MSTR = UG:UX:UN luchtvochtigheid
-ALL  = all variables
+WIND = DDVEC:FG:FHX:FHX:FX             wind
+TEMP = TG:TN:TX:T10N                   Temperatuur
+SUNR = SQ:SP:Q                         Zonneschijnduur en globale straling
+PRCP = DR:RH:EV24                      Neerslag en potentiële verdamping
+PRES = PG:PGX:PGN                      Druk op zeeniveau
+VICL = VVN:VVX:NG                      Zicht en bewolking
+MSTR = UG:UX:UN                        luchtvochtigheid
+ALL  =                                 All variables
 Default is ALL.
 
-The header l line is in lines 1 through NSTN+NVAR+11 and starts with #
+The header line is in lines 1 through NSTN+NVAR+11 and starts with #
 Data are in lines NSTN+NVAR+12 and beyond
 
-So just for Gilze-Rijen, station ..
+See below how the data can be downloaded using requests.
 
-wget -O "gilze-rijen.dat" --post_data="stns=235&vars=PRCP&start=19900101&end=20101231" "http://projects.knmi.nl/klimatologie/daggegevens/getdata_dag.cgi"
+@TO 2020-05-23
 """
+
+import os
 import requests
-from pprint import pprint
 import pandas as pd
 import numpy as np
 import logging
-from coords import wgs2rd
-import shelve
-import matplotlib.pyplot as plt
-import collections
+#import matplotlib.pyplot as plt
 
-import pdb
 
 logger=logging.getLogger()
 
-KNMI_URL = {'w' : "http://projects.knmi.nl/klimatologie/daggegevens/getdata_dag.cgi",
-            'r' : "http://projects.knmi.nl/klimatologie/monv/reeksen/getdata_rr.cgi",
-            'h' : "http://projects.knmi.nl/klimatologie/uurgegevens/getdata_uur.cgi"}
+# Uses 'w' for weather station, 'r' for rainstation and 'h' for hourly data
+KNMI_URL = {'weer' : 'http://projects.knmi.nl/klimatologie/daggegevens/getdata_dag.cgi',
+            'neerslag' : 'http://projects.knmi.nl/klimatologie/monv/reeksen/getdata_rr.cgi',
+            'uur' : 'http://projects.knmi.nl/klimatologie/uurgegevens/getdata_uur.cgi'}
 
-def date_parser(data, col='YYYYMMDD'):
-    return [pd.datetime(d[:4] + '-' + d[4:6] + '-' + d[6:8])
-                     for d in data[col]]
+def datetime_index(data, datecol='YYYYMMDD', UTC=None):
+    """Return datetime index for a pd dataframe parsed from column 'YYYYYDDMM'.
+
+    Parameters
+    ----------
+        data: pd.DataFrame holding all the data including the column col
+            the pd.DataFrame with the data
+        col: str
+            col to be converted into a pd.datetime index. The name of the col
+            is used as the format yyyymmdd in the columns
+        UTC: int
+            UTC time in hours in UTC, marking the end of the prevous 24 hour
+            period over which the values are reported. Mostly at 08:00 UTC.
+            Wintertime is UTC +1h, summer time is UTC + 2h in the Netherlands
+    """
+    dt = np.asarray([d[:4] + '-' + d[4:6] + '-' + d[6:8]
+                      for d in data[datecol].astype(str).values], dtype=np.datetime64)
+    if UTC: # then add the UTC hours to the date
+       return dt + np.timedelta64(int(UTC), 'h')
+    else:
+        return dt
+
+def skiprows(fname, lookfor='STN', maxlines=100):
+    """Return column names and rows to skip when reading into pd.DataFrame.
+
+    Sections in KNMI data files generally start with '# STN' where STN is the
+    station number.
+
+    Parameters
+    ----------
+        filename: str
+            name of file
+        lookfor: str
+            str to look for at the beginning of the line that was read
+        times: int
+            the number of time that lookfor must have occurred
+
+    Returns
+    -------
+        columns: list of tokens find on the last line read (column headers)
+        nrow: the number of lines processed (linenumber + 1)
+    """
+    irow, n = 0, -1
+    with open(fname, 'r') as f:
+        # Some files have commment lines starting with # others not
+        # These files have a blank line after the header others not
+        s = f.readline()
+        hatch = s[0] == '#'
+        irow += 1
+
+        # Keep the last line with flookfor as header
+        while irow < maxlines:
+            s = f.readline()
+            if hatch:
+                s = s[2:]
+            if s.startswith(lookfor):
+                n = irow
+                header = s
+            irow += 1
+    if n < 1:
+        raise ValueError(
+            f'"{lookfor}" was not found in {maxlines} lines of file {fname}')
+    columns = header.replace(',',' ').split()
+
+    # nskip is n + 1 if no blank line in file else it is n + 2
+    nskip = n + 2 if hatch else n + 1
+    return columns, nskip
 
 
+def parseKNMI(knmifname, fields=['RH', 'EV24'], datecol='YYYYMMDD', tompd=None, UTC=None):
+    """Return pd.DataFrame form knmi weather station with given fields.
 
-def parseKNMI(knmifname, fields=['RH', 'EV24'], to_mpd=True):
-    '''return pd.DataFrame form knmi weather statio with given fields
+    The knmi file was downlaoded from KNMI site see above
 
-    The files can be downloaed from (20190106)
-    https://www.knmi.nl/nederland-nu/klimatologie/daggegevens
-    You may want to check if this URL is still valid.
-
-    parameters
+    Parameters
     ----------
     knmifname: str
-        name of knmi file for one of their weather stations.
-        These names are usually calloed etmgeg_???.txt where
-        ??? is the number of the weather station.
-    fields: list of str
+        name of knmi file for one of their weather or precipitation stations.
+    fields: list of str of None to get all fields
         list of the desired fields.
+    tompd: bool
+        if True, then fields in fields will be converted from 0.1 mm/d to mpd
+    UTC: int
+        number of hours to add to index to match exact time of value registration in UTC
+        MET = UTC + 1, MEZT = UTC + 2
 
-    The field 'YYYYMMDD' will be converted to timestamps and used
-    as the index.
+    The datecol will be converted to timestamps and used as the index.
     Lines with Nan in any of the fields are dropped.
 
-    @TO 20190106
+    @TO 20190106, 20200512
 
-    '''
-    with open(knmifname, 'r') as f:
-        skiprows = -1
-        while True:
-            skiprows += 1
-            s = f.readline()
-            if s.startswith('# STN'):
-                header = s.replace(',',' ').split()[1:]
-                break
+    """
+    columns, skip = skiprows(knmifname)
 
-        fields.insert(0, 'YYYYMMDD')
-        usecols = []
+    data = pd.read_csv(knmifname, header=None, skip_blank_lines=False,
+                       skiprows=skip, skipinitialspace=True)
+
+    # set column headers. Some files (precipitationstaton files have an extra
+    # field with the station name, without a specific header. So we add it
+    try:
+        data.columns = columns
+    except ValueError:
+        data.columns = columns + ['NAME']
+    data.index = datetime_index(data, datecol=datecol, UTC=UTC)
+    data.index.name = 'dateUTC'
+    data = data.drop(columns=datecol) # remove the datacol, we have how datetime as index
+
+    # See if you want to convert the columns to m/d
+    if fields is not None and tompd:
         for fld in fields:
-            usecols.append(header.index(fld))
-        dtype = {1: str}
+            b = data.loc[:, fld]  < 0
+            data.loc[b, fld] = 0.25
+            data[fld] /= 10000.0 # original is in 0.1 mm units
+        return data[fields] # Only the specified fields!
+    else:
+        return data
 
-        #skiprows = None
-        data = pd.read_csv(f, header=None, skip_blank_lines=False,
-                           skiprows=skiprows, skipinitialspace=True,
-                           usecols=usecols, dtype=dtype
-                           )
-        #                           date_parser=dateParser)
-        data.columns = fields
-        data.index = pd.to_datetime(
-            ['-'.join([d[:4], d[4:6], d[6:]]) for d in data['YYYYMMDD']])
 
-        # drop NaN's and the unused date column
-        # note that we have to assign
-        data = (data.dropna()).drop(columns='YYYYMMDD')
 
-        if to_mpd:
-            for fld in fields:
-                if fld in ['RH', 'EV24']:
-                    b = data.loc[:, fld]  < 0
-                    data.loc[b, fld] = 0.25
-                    data[fld] /= 10000.0 # original is in 0.1 mm units
+def get_weather(stn=240, start='20100101', end='20191231', folder=''):
+    """Return pd.DataFrame with recharge and makkink evapotranspiration for station.
+
+    The data are downloaded and save in the current directory and then read into
+    a pandas DataFrame, which is returned.
+
+    Only the columns 'RH' and 'EV24' are used and the valuea are converted
+    to m/d.
+
+    The index is datetime, with time equal to UTC.
+
+    Parameters
+    ----------
+        stn : int or str
+            number of ond of the KNMI weather stations
+        start: str in the form 'yyyymmdd'
+            first day
+        end: str of the form 'yyyymmdd'
+            last day
+        folder: str, default is '' (not None)
+            folder name to store the file and look for it.
+    @TO 2020-05-20
+    """
+    # This allows to get a list of all weather stations, including coordinaters
+    what = 'weer'
+    URL = KNMI_URL[what]
+    stns  = [str(stn)]
+    vars_ = 'PRCP'
+    fields = ['RH', 'EV24']
+    payload = {'start':start, 'end':end, 'vars':vars_, 'stns':':'.join(stns)}
+    fname =os.path.join(folder, f"{what}{'+'.join(stns):}_{start}_{end}.txt")
+    if os.path.isfile(fname): # file exists, don't download the data
+        print(f"File <{fname}> exists, download was skipped.")
+    else:
+        r = requests.post(URL, data=payload)
+        with open(fname, 'wb') as fd:
+            for chunk in r.iter_content(chunk_size=128):
+                fd.write(chunk)
+        print(f"File <{fname}> saved.")
+
+    data = parseKNMI(fname, fields=fields, tompd=True, UTC=8)
     return data
 
-
-def getWstations(loc="http://climexp.knmi.nl/KNMIData/list_dx.txt"):
-    """return dict with meta data of KNMI stations.
-
-    The URL was valid in March 2017.
-
-    """
-    r = requests.get(loc)
-    #data = r.content.decode('utf-8').split('\n')
-    data = r.text.split('\n')
-
-    stations=dict()
-
-    for i, line in enumerate(data[1:]):
-        j = i%5
-        if j==0:
-            pass # '===='
-        if j==1: # name and country we'll get it from station code
-            pass
-        elif j==2: # coordinates
-            coords, meta = line.split(' <a href=')
-            _, coords = coords.split(':')
-            coords = coords.strip().replace(',','').replace('  ',' ')\
-                .replace('  ',' ').replace('  ',' ').split(' ')
-            meta = meta.split(' ')[0].replace('"', '')
-
-            WGS = [float(c[:-1]) for c in coords]
-            RD = WGS[:]
-            RD[0], RD[1] = wgs2rd(WGS[1], WGS[0])
-        elif j==3:
-            code, name = line.split(':')[1].strip().split(' ')
-        elif j==4:
-            period = line.split(' ')[-1]
-            stations[name] = {'code': code, 'lat': WGS[0], 'lon': WGS[1],
-                    'x': RD[0], 'y': RD[1], 'z': RD[2],
-                    'period': period, 'meta': meta}
-    return stations
-
-
-def getPstations(loc="http://climexp.knmi.nl/KNMIData/list_dx.txt"):
-    """rReturn dict with meta data of KNMI precipitation stations.
-
-    The default URL was valid in March 2017.
-
-    TODO:
-    ----
-        get their coordinates from somewhere, pref. the KNMI site
-        which was not possible on march 30
-
-    """
-    with open(loc, 'r') as rdr:
-        lines = rdr.readlines()
-
-    station=dict()
-    for line in lines:
-        try:
-            L = line.replace('\t', '|', 2).replace(' t/m ','|',1).split('|')
-            station[L[0]] = {'code': L[1], 'period': (L[2], L[3])}
-        except:
-            break
-    return station
-
-
-def getWdata(station=None, start=None,
-                                        end=None, vars=None):
-    '''Requests and saves KNMI data for specific KNMI weather stations.
-
-    parameters:
-    -----------
-    station : int, e.d. 260 for De Bilt
-        list of legal KNMI station code. See `getStations` to get the them.
-    sDate: str
-        start date like 'yyyyymmdd'
-    eDate: str
-        end date like 'yyyyymmdd'
-    vars: [var, var, var ...], strings, must be legal variable names
-        as defined in header of KNMI data files.
-        Use `getVars()` to retrieve them.
-
-        Acceptable vars and their group acronyms:
-        WIND = DDVEC:FG:FHX:FHX:FX wind
-        TEMP = TG:TN:TX:T10N temperatuur
-        SUNR = SQ:SP:Q Zonneschijnduur en globale straling
-        PRCP = DR:RH:EV24 neerslag en potentiële verdamping
-        PRES = PG:PGX:PGN druk op zeeniveau
-        VICL = VVN:VVX:NG zicht en bewolking
-        MSTR = UG:UX:UN luchtvochtigheid
-        ALL alle variabelen
-        Default is ALL.
-
-    Returns
-    -------
-        stationData as a pd.DataFrame
-
-        stationData will also be shelved to file  'etmgeg' + str(station) + '.db'
-    '''
-
-    URL = 'http://projects.knmi.nl/klimatologie/daggegevens/getdata_dag.cgi'
-
-    payload = {'start' : start, 'end': end, 'stns': [station], 'vars': vars}
-
-    # post the request
-    resp = requests.post(URL, data=payload)
-
-    # get the data
-    data = resp.text.split('\r\n')
-
-    # find the header line
-    i, got2 = 0, False
-    for dline in data:
-        if dline.startswith('# STN'):
-            if got2:
-                i += 1 # skip empty line
-                break
-            got2 = True
-        i += 1
-
-    # Get the headers for the data frame we make in the end
-    columns = [c.strip() for c in dline.split(',')]
-    columns[0] = columns[0].split(' ')[1]
-
-    # Collect the data
-    Data = []
-    for d in data[i+1:]:
-        Data.append([v.strip() for v in d.split(',')])
-
-    stationData = pd.DataFrame(Data[:-1], columns=columns)
-
-    fname = './etmgeg_' + str(station)
-    with shelve.open(fname,  flag='n') as s:
-        s[str(station)] = stationData
-        print('Data for station {} saved to file {}'.format(station, fname))
-
-    return stationData
-
-
-def getPdata(station=260, start='19900101', end='20161231'):
-    '''Requests and shelves precipitation from a KNMI regenstation.
-
-    Saving will be on file 'neersl' + str(station) + '.db'
-
-    parameters:
-    -----------
-    sDate: str
-        start date like 'yyyyymmdd'
-    eDate: str
-        end date like 'yyyyymmdd'
-
-    Returns
-    -------
-        stationData as a pd.DataFrame
-
-        STN,YYYYMMDD, RD, SX,
-        458,19731101, 0, 0, Aalsmeer
-        458,19731102, 0, 0, Aalsmeer
-        458,19731103, 0, 0, Aalsmeer
-    '''
-
-    URL = 'http://projects.knmi.nl/klimatologie/monv/reeksen/getdata_rr.cgi'
-
-    payload = {'start' : start, 'end': end, 'stns': [station]}
-
-    # post the request
-    resp = requests.post(URL, data=payload)
-
-    # get the data
-    data = resp.text.split('\r\n')
-
-    # find the header line
-    i, got2 = 0, False
-    for dline in data:
-        if dline.startswith('STN'):
-            if got2:
-                i += 1 # skip empty line
-                break
-            got2 = True
-        i += 1
-
-    # Get the headers for the data frame we make in the end
-    columns = [c.strip() for c in (dline + 'NAME').split(',')]
-
-    # Collect the data
-    Data = []
-    for d in data[i+1:]:
-        Data.append([v.strip() for v in d.split(',')])
-
-    stationData = pd.DataFrame(Data[:-1], columns=columns)
-
-    fname = './neersl_' + str(station)
-    with shelve.open(fname,  flag='n') as s:
-        s[str(station)] = stationData
-        print('Precipidation data for station {} saved to file {}'
-                                              .format(station, fname))
-
-    return stationData
-
-
-def data2iso(df):
-    '''Return pd.DataFrame with \ 'YYYYMMDD' as index and precip and evap in m/d'
-
-    Returns nothing and does nothing if 'YYYYMMDD' is still a column header.
-
-    parameters
-    ----------
-        df : pd.DataFrame
-            Meteo data as obtained with getWdata ()and getPdata()
-    returns
-    -------
-        df : pd.DataFrame
-            with YYYYMMDD as index and prec and evap in m/d.
-
-    '''
-
-    if 'YYYYMMDD' in df.columns:
-        df = df.copy()
-        df.index = df['YYYYMMDD']
-        df = df.drop(columns=['YYYYMMDD'])
-
-        for col in df.columns:
-            if col in ['RH', 'EV24', 'RD']:
-                tseries = df[col].copy().astype(float)
-                tseries[tseries < 0] = 0.5
-                df[col] = tseries / 10000  # from 0.1 mm/d to m/d
-    else:
-        print('Nothing to do the dataframe was already converted.')
-
-    return df
-
-def index2tstamp(df):
-    '''Return index of df as pd.Timestamps
-
-    parameters
-    ----------
-        df : pd.DataFrame
-            data with 'YYYYMMDD' as (integer) index
-    returns
-    -------
-        a list that can be used as a new index
-
-    '''
-    index = [str(s) for s in list(df.index)]
-    ts = [pd.Timestamp('{}-{}-{} 08:00'.format(ds[0:4], ds[4:6], ds[6:8]))
-                                                        for ds in index]
-    return ts
-
-#https://www.knmi.nl/nederland-nu/klimatologie/daggegevens
+# kaart neerslagstations KNMI:
+# https://www.google.com/maps/d/viewer?mid=121t7Wgv0wTC7m4PZeDwk5I6jx8aaBZGP&ll=52.30459614052015%2C5.104167804120152&z=10
 
 if __name__ == '__main__':
 
-    P = parseKNMI('./data/uurgeg_240_2001-2010.txt', fields=['HH', 'P'], to_mpd=False)
+    # The follwing 4 requests allow to caputure lists of all available stations
+    # However, not that these requests may take time, even though only a single day's data is requested
+    # Also not that the weather stations and teh station for the hourly data are identical.
+    # Furthermore, the # are missing for the header lines.
+    # The precipitaton data are from 08:00 UTC on the previouw day to 08:00 UTC on the current day.
+    # The precipidation station of tbe same name as a weather station has a differenct station number.
 
-    exit()
-
-    data = parseKNMI('./data/etmgeg_260.txt', fields=['RH', 'EV24'])
+    # Get the precipitation and evaporation data for some stations
+    if False:
+        what = 'neerslag'
+        URL = KNMI_URL[what]
+        stns  = ['664', '458', '680', '678']
+        start = '20030101'
+        end   = '20030103'
+        vars_ = 'PRCP'
+        payload = {'start':start, 'end':end, 'vars':vars_, 'stns':':'.join(stns)}
+        fname =f"{what}{'+'.join(stns):}_{start}_{end}.txt"
+        r = requests.post(URL, data=payload)
+        with open(fname, 'wb') as fd:
+            for chunk in r.iter_content(chunk_size=128):
+                fd.write(chunk)
 
     if False:
-        station = getWstations(loc='KNMI_stations.txt')
-        pprint(station)
+        # This allows to get a list of all precipitaion stations. The obtained data do not
+        # have the coordinates of the precipitation station on board.
+        stns  = ['ALL']
+        start = '20030101'
+        end   = '20030101'
+        vars_ = 'PRCP'
+        payload = {'start':start, 'end':end, 'vars':vars_, 'stns':':'.join(stns)}
+        fname =f"{what}{'+'.join(stns):}_{start}_{end}.txt"
+        r = requests.post(URL, data=payload)
+        with open(fname, 'wb') as fd:
+            for chunk in r.iter_content(chunk_size=128):
+                fd.write(chunk)
 
-    # Get overview of all stations
     if False:
-        loc = "http://www.climexp.knmi.nl/KNMIData/list_dx.txt"
-        #loc = "./data/KNMI_stations.txt"
-        stations = getPstations(loc=loc)
+        # This allows to get a list of all weather stations, including coordinaters
+        what = 'weer'
+        URL = KNMI_URL[what]
+        stns  = ['ALL']
+        start = '20030101'
+        end   = '20030101'
+        vars_ = 'PRCP'
+        payload = {'start':start, 'end':end, 'vars':vars_, 'stns':':'.join(stns)}
+        fname =f"{what}{'+'.join(stns):}_{start}_{end}.txt"
+        r = requests.post(URL, data=payload)
+        with open(fname, 'wb') as fd:
+            for chunk in r.iter_content(chunk_size=128):
+                fd.write(chunk)
 
-    # Get data for a weather station
     if False:
-        Wdf = getWdata(station=380, start='20180501',
-                                        end='20180720', vars=None) # ['RH', 'EV24'] )
-
-        W380 = data2iso(Wdf)
-        W380.index = index2tstamp(W380)
-        W380.plot()
-        ax = plt.gca()
-        ax.set_title('KNMI-station Maastricht (380)')
-        ax.set_ylabel('m/d')
-        ax.grid(True)
-
-
-    # Get data for a precipitation station
-    if True:
-        name, station = 'De Bilt', 260
-        #name, station = 'Buchten', 974
-        Pdf = getPdata(station=station, start='20500101', end='20181231')
-        Pdf = data2iso(Pdf)
-        Pdf.index = index2tstamp(Pdf)
-        Pdf.plot()
-        ax = plt.gca()
-        ax.set_title('KNMI-station {} ({})'.format(name, station))
-        ax.set_ylabel('m/d')
-        ax.grid(True)
-        plt.gca().set_xlim((736824.7859375001, 736896.6411458333))
+        # This allows to get a list of all hourly data stations
+        what = 'uur'
+        URL = KNMI_URL[what]
+        stns  = ['ALL']
+        start = '20030101'
+        end   = '20030101'
+        vars_ = 'PRCP'
+        payload = {'start':start, 'end':end, 'vars':vars_, 'stns':':'.join(stns)}
+        fname =f"{what}{'+'.join(stns):}_{start}_{end}.txt"
+        r = requests.post(URL, data=payload)
+        with open(fname, 'wb') as fd:
+            for chunk in r.iter_content(chunk_size=128):
+                fd.write(chunk)
 
 
-    # Same thing with kwargs
-    if False:
-        kwargs = {'start': '19900101', 'end' : '20161231', 'vars' : ['RH', 'EV24']}
-        AWSpdf = getWdata(station=260, **kwargs)
+    if False: # ABCOUDE neerslagstation
+        what = 'neerslag'
+        URL = KNMI_URL[what]
+        stns=['572'] # Abcoude
+        start = '20100101'
+        end = '20191231'
+        vars_ = 'PRCP'
+        payload = {'start':start, 'end':end, 'vars':vars_, 'stns':':'.join(stns)}
+        fname =f"{what}{'+'.join(stns):}_{start}_{end}.txt"
+        r = requests.post(URL, data=payload)
+        with open(fname, 'wb') as fd:
+            for chunk in r.iter_content(chunk_size=128):
+                fd.write(chunk)
+            print('File ' + fname + ' saved')
+
+        dataAbcoude = parseKNMI(fname, fields=['RD'], tompd=True, UTC=8)
+
+    # Download weather station data Schiphol
+    # Parse this into a pd.DataFrame
+    # Retain only columns RH and EV24 and convert to m/d.
+    if False: # Schiphol weerstation
+        what = 'weer'
+        URL = KNMI_URL[what]
+        stns=['240'] # Schiphol
+        start = '20100101'
+        end = '20191231'
+        vars_ = 'PRCP'
+        payload = {'start':start, 'end':end, 'vars':vars_, 'stns':':'.join(stns)}
+        fname =f"{what}{'+'.join(stns):}_{start}_{end}.txt"
+        r = requests.post(URL, data=payload)
+        with open(fname, 'wb') as fd:
+            for chunk in r.iter_content(chunk_size=128):
+                fd.write(chunk)
+            print('File ' + fname + ' saved')
+
+        data = parseKNMI(fname, fields=['RH', 'EV24'], tompd=True, UTC=8)
 
 
-
-
-
+    # This is the way to get a data (240 is schiphol) directly from KNMI website
+    data = get_weather(stn=240, start='20100101', end='20191231')

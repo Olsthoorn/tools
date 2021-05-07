@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-tools by Theo Olsthoo
+tools by Theo Olsthoon
 
 @author: Theo
 """

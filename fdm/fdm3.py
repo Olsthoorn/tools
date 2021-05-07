@@ -11,7 +11,7 @@ Created on Fri Sep 30 04:26:57 2016
 """
 import sys
 
-myModules = './modules/'
+myModules = '/Users/Theo/GRWMODELS/python/tools/fdm/'
 
 if not myModules in sys.path:
     sys.path.insert(0, myModules)
@@ -148,9 +148,9 @@ def fdm3(gr, K, FQ, HI, IBOUND, axial=False):
         print("axial==True so that y coordinates and ky are ignored")
         print("            and x stands for r, so that all x coordinates must be >= 0.")
     if isinstance(K, np.ndarray): # only one ndaray was given
-        kx = ky = kz = K
+        kx, ky, kz = K.copy(), K.copy(), K.copy()
     elif isinstance(K, tuple): # 3-tuple of ndarrays was given
-        kx, ky, kz = K
+        kx, ky, kz = K[0].copy(), K[1].copy(), K[2].copy()
     else:
         raise ValueError("", "K must be an narray of shape (Ny,Nx,Nz) or a 3tuple of ndarrays")
 

@@ -14,7 +14,7 @@ NOT = np.logical_not
 
 def fdm3t(gr=None, t=None, kxyz=None, Ss=None,
           FQ=None, HI=None, IBOUND=None, epsilon=0.67):
-    '''Transient 3D Finite Difference Model returning computed heads and flows.
+    """Transient 3D Finite Difference Model returning computed heads and flows.
 
     Heads and flows are returned as 3D arrays as specified under output parmeters.
 
@@ -61,12 +61,11 @@ def fdm3t(gr=None, t=None, kxyz=None, Ss=None,
             intercell flows in z-direction (vertially upward postitive)
 
     TO 161024
-    '''
-
+    """
     if gr.axial:
         print('Running in axial mode, y-values are ignored.')
 
-    if isinstance(kxyz, tuple):
+    if isinstance(kxyz, (tuple, list)):
         kx, ky, kz = kxyz
     else:
         kx = ky = kz = kxyz
@@ -196,13 +195,11 @@ def fdm3t(gr=None, t=None, kxyz=None, Ss=None,
     return {'t': t, 'Phi': Phi, 'Q': Q, 'Qs': Qs, 'Qx': Qx, 'Qy': Qy, 'Qz': Qz}
 
 
-
-
 class Fdm3t:
 
     def __init__(self, gr=None, t=None, kxyz=None, Ss=None, FQ=None, HI=None,
                  IBOUND=None, epsilon=1.0):
-        '''Set-up and run a 3D transient axially symmetric groundwater
+        """Set-up and run a 3D transient axially symmetric groundwater
         finite difference model.
 
         All model arrays must have shape [nlay, nrow, ncol]. This is so
@@ -245,8 +242,7 @@ class Fdm3t:
             self.out : dictionary
                 the simulation results: Phi, Q, Qx, Qy, Qz, Qs
                 ndarrays with time as first dimension.
-        '''
-
+        """
         if isinstance(kxyz, (tuple, list)):
             if len(kxyz)==3:
                 Kh, _, Kv = kxyz
