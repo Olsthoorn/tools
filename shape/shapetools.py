@@ -85,8 +85,8 @@ class Shape_df:
     """
 
     def __init__(self, data=None, paths=None, xy=None,
-                 shapeType=shapefile.POLYLINE):
-        """Generate a Shape_df object using a list of paths, and a pd_dataframe.
+                 shapeType=shapefile.POLYLINE, enforce_shapeType=False):
+        """Generate a Shape_df object using a list of paths and a pandas Dataframe.
 
         The input is a list of paths or lines (n, 2) coordiates and the data is
         the corresponding DataFrame with the properties of each shape.
@@ -107,6 +107,7 @@ class Shape_df:
             In that case paths must be None
         shapeType: int (rather use one of shapefile module constants)
             `ARCGIS` shapefile type. See attributes of `shapefile` module.
+            If None it's detected from the paths.
 
         Remarks
         -------
@@ -121,10 +122,12 @@ class Shape_df:
 
         if data is None:
             if paths is None:
+                if shapeType is None:
+                    raise ValueError("if paths is None, shapeType must not be None")
                 self.shapeType = shapeType
-                return
+                return # return empty shape_df with given shape_type
             else:
-                raise ValueError("Data must be a pd.DataFrame is paths is None")
+                raise ValueError("Data must be a pd.DataFrame if paths is None")
         else:
             assert isinstance(data, pd.DataFrame), "dadta must be a pd.DataFrame"
             self.data = data
@@ -146,7 +149,8 @@ class Shape_df:
                         self.data['path'] = [Path([pnt], codes=[MOVETO]) for pnt in XY]
 
         self.update_bbox()
-        self.set_shape_type()
+        self.shapeType = shapeType if shapeType is not None \
+                                   else self.get_shape_type_from_path(self.data['path'].iloc[0])
         return
 
     def __getitem__(self, key):
@@ -159,7 +163,7 @@ class Shape_df:
         self.data[key] = values
 
 
-    def set_shape_type(self):
+    def get_shape_type_from_path(self, p):
         """Return shapeType (ESRI shapefile types).
 
         One shapeType allowed per DataFrame colun 'path'. So only the first
@@ -167,17 +171,21 @@ class Shape_df:
 
         The type is determined based on only the codes of the firs path.
         Recognized types are POINT, MULTIPOINT, POLYLINE and POLYCON.
+        
+        Parameters
+        ----------
+        p : a matplotlib.path Path object
         """
-        p = self.data['path'].iloc[0]
+        
         if len(p.codes) == 1:
-            self.shapeType = shapefile.POINT
+            shapeType = shapefile.POINT
         elif np.all(p.codes) == MOVETO:
-            self.shapeType = shapefile.MULTIPOINT
+            shapeType = shapefile.MULTIPOINT
         elif p.codes[-1] == CLOSE:
-            self.shapeType = shapefile.POLYGON
+            shapeType = shapefile.POLYGON
         else:
-            self.shapeType = shapefile.POLYLINE
-        return
+            shapeType = shapefile.POLYLINE
+        return shapeType
 
 
     def update_bbox(self):
@@ -270,7 +278,8 @@ class Shape_df:
             elif len(p.vertices) == 1:
                 shpTypes.append(shpcode(p, (1, 11, 21)))
             else:
-                if np.all(p.vertices[0] == p.vertices[-1]) or p.codes[-1] == CLOSE:
+                #if np.all(p.vertices[0] == p.vertices[-1]) or p.codes[-1] == CLOSE:
+                if p.codes[-1] == CLOSE:
                     shpTypes.append(shpcode(p, (5, 15, 25)))
                 else:
                     shpTypes.append(shpcode(p, (3, 13, 23)))
@@ -350,8 +359,11 @@ class Shape_df:
                 codes = LINETO * np.ones(len(pth), dtype=int)
                 codes[part] = MOVETO
                 if sf.shapeTypeName in PGONKEYS:
-                    ends = [p - 1 for p in part + [len(part)]][1:]
-                    codes[ends] = CLOSE
+                    if part[0] > 0:
+                        ends = [p - 1 for p in part + [len(part)]][1:]
+                        codes[ends] = CLOSE
+                    else:
+                        codes[-1] = CLOSE
                 pth.codes = codes
             self.data['path'] = paths
             self.update_bbox()
@@ -359,7 +371,7 @@ class Shape_df:
 
 
     def get_id_array(self, X=None, Y=None):
-        """Return array of the same shape as X and or Y telling the path in which each ponit lies.
+        """Return array of the same shape as X and or Y telling the path in which each point lies.
 
         Values outside all paths will be indicated by -9999
 
@@ -451,6 +463,23 @@ class Shape_df:
         for path in self.data['path'].values[1:]:
             bboxes.append(path.get_extents())
         return Bbox.union(bboxes)
+
+    def add_area_ctr(self):
+        """Add area and center to the shape_df's DataFrame.
+        
+        The object's DataFrame must have a column "path" holding Path objects, which must be
+        either polygons or polylines (which will be assued open polylines)
+        
+        @TO 220301
+        """
+        
+        self.data['area']=0.0
+        self.data['xc'] = 0.0
+        self.data['yc'] = 0.0
+        
+        for id in self.data.index:
+            self.data.loc[id, "area"], self.data.loc[id, "xc"], self.data.loc[id, "yc"] = \
+                polygon_area_ctr(self.data.loc[id, "path"])
 
 
     def plot(self, ax=None, color_key='color', xlim=None, ylim=None, rounder=None,
@@ -1169,6 +1198,36 @@ def show_p2polyline(point, polyline):
     ax.plot([xp, xs], [yp, ys], 'm')
     ax.set_aspect(1.)
     return abs(r)
+
+def polygon_area_ctr(path):
+    """return area and center of polygon defined in path.
+    
+    Parameters
+    ----------
+    path  : a Path object
+        the path of which the codes end with CLOSE (=79)
+    """
+    CLOSE = 79
+    try:
+        path.codes[-1] == CLOSE
+        pass
+    except: # Treat polyline as an open polygon
+        path.vertices = np.vstack((path.vertices, path.vertices[0:1]))
+        path.codoes   = np.hstack((path.codes, CLOSE))
+    
+    vertices = path.vertices
+    ctr = np.array([0.0, 0.0])
+    pc = np.mean(vertices[0:-1], axis=0)
+    A = 0.0
+    for p1, p2 in zip(vertices[:-1], vertices[1:]):
+        v1, v2 = p1 - pc, p2 - pc
+        dA = np.cross(v1, v2) / 2       
+        ctr += dA * np.mean([p1, p2, pc], axis=0)
+        A   += dA
+    return np.abs(A), ctr[0] / A, ctr[1] / A
+        
+        
+
 
 
 #%% main

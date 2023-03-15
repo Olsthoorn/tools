@@ -5,4 +5,4 @@ KNMI by Theo Olsthoon
 @author: Theo
 """
 
-
+from .KNMIstation import *

@@ -618,15 +618,14 @@ class Grid:
                 self._Z = np.array(z, dtype=float)
                 self._nz = self._Z.shape[0] - 1
                 # make sure Z runs downward
-                if self._Z[0, 0, 0] < self._Z[-1, 0, 0]:
+                if np.all(self._Z[0] < self._Z[-1]): # @TO 210629 np.all
                     self._Z = self._Z[::-1]
 
-                # guarantee min_dz
-                DZ = np.fmax(abs(np.diff(self._Z, axis=0)), self._min_dz)
-
-                self._Z = self._Z[0:1, :, :] * np.ones((self._nz + 1, 1, 1))
-
-                self._Z[1:, :, :] -= np.cumsum(DZ, axis=0)
+                # make sure the Z[i] - Z[i+1] >= self._min_dz (min layer thickness)
+                for iz in range(self.nz):
+                    dz = self._Z[iz] - self._Z[iz + 1] # must be positive
+                    dz[dz <= self._min_dz] = self._min_dz
+                    self._Z[iz + 1] = self._Z[iz] - dz
 
         else: # illegal shape
             s ="""\n\
@@ -747,6 +746,10 @@ class Grid:
             return np.arange(self._ny, -1., -1.) - 1
         else:
             return self._y.copy() # prevent ref. to self._y
+
+    @property
+    def extent(self):
+        return self.x[0], self.x[-1], self.y[-1], self.y[0]
 
     @property
     def z(self):
