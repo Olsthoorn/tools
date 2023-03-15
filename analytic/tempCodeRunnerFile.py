@@ -1,0 +1,1 @@
+V @ K0r @ Vm1 @ Q[:, np.newaxis] / (2 * np.pi * p)

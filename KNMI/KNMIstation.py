@@ -5,13 +5,16 @@ Created on Wed Feb  1 23:33:55 2017
 
 @author: Theo
 """
+
+__all__ = ['KNMI_daystation',  'KNMI_hourstation',  'KNMI_stations', 'plot_station']
+ 
 tools = '/Users/Theo/GRWMODELS/python/tools/'
 
 import sys
 import os
 
 if not tools in sys.path:
-    sys.path.insert(1, tools)
+    sys.path.insert(0, tools)
 
 import numpy as np
 import pandas as pd
@@ -19,10 +22,11 @@ import datetime as dt
 from collections import UserDict
 import matplotlib.pyplot as plt
 from datetime import datetime
-from coords import wgs2rd
-from coords.kml import nederland
+from coords.transformations import wgs2rd, rd2wgs
+from etc import newfig
 
 
+# %%
 class KNMI_stations(UserDict):
     '''Class contains meta data of all KNMI weather stations
 
@@ -141,10 +145,10 @@ class KNMI_stations(UserDict):
             ax.text(self[k]['x'], self[k]['y'], '{}_{}'.format(k, self[k]['nr']),
                     ha=ha, va=va, rotation=rotation, fontsize=fontsize)
 
-        nederland(ax=plt.gca(), color='brown')
+        #nederland(ax=plt.gca(), color='brown')
         return ax
 
-
+# %%
 class KNMI_hourstation:
     '''Class returning a KNMI weather station with hourly data.
     The data are stored in a pandas DataFrame held in its `data` attribute.
@@ -223,7 +227,7 @@ class KNMI_hourstation:
     def __repr__(self):
         return self.data.__repr__()
 
-
+# %%
 class KNMI_daystation:
     '''Class returning a KNMI weather station with daily data.
     The data are stored in a `pandas` `DataFrame` held in the `data` attribute.
@@ -234,7 +238,20 @@ class KNMI_daystation:
     TO 180507
     '''
 
-    def __init__(self, knmiDataFileName):
+    def __init__(self, knmiDataFileName, start=None, end=None):
+        """Return KNMI station DataFrame, with only columns 'p_air', 'p_max', 'prec', 'evap' in mm/d.
+        
+        Lines with no data are not dropped.
+        
+        Parameters 
+        ----------
+        knmiDataFileName: str (path)
+            Path to the file of downloaded data text file for a particular KNMI "weerstation".
+        start: np.datetime64 object 
+            desired start of the data 
+        end: np.datetime64 object 
+            disired end of the data
+        """
         
         if not os.path.isfile(knmiDataFileName):
             raise FileNotFoundError(knmiDataFileName)
@@ -253,24 +270,24 @@ class KNMI_daystation:
             self._info = [next(f).replace('# ','') for i in range(iHdr-1)]
 
             # Then use pandsa to read the dta
-            self.data = pd.read_csv(knmiDataFileName,
-                                header=iHdr - blanks,
-                                skipinitialspace=True,
-                                parse_dates=True,
-                                index_col='YYYYMMDD'
-                                )
-            cols = self.data.columns
-            if '# STN' in cols:
-                cols[cols.index('# STN')] = 'STN'
-                self.data.columns = cols
-            self.nr = self.data['STN'][0]
-            self.data.drop('STN', axis=1)
-
-            self.data['p_air'] = self.data['PG'] / 10.
-            self.data['p_max'] = self.data['PX'] / 10.
-            self.data['prec'] = self.data['RH'] / 10.
-            self.data.loc[self.data['RH'] < 0, 'prec'] = 0.05
-            self.data['evap']  = self.data['EV24'] / 10.
+            data = pd.read_csv(knmiDataFileName,
+                    header=iHdr - blanks,
+                    skipinitialspace=True,
+                    parse_dates=True,
+                    index_col='YYYYMMDD'
+                    )
+            col_labels_to_drop = data.columns[1:]
+            data['p_air'] = data['PG'] / 10.
+            data['p_max'] = data['PX'] / 10.
+            data['prec']  = data['RH'] / 10.
+            data.loc[data['RH'] < 0, 'prec'] = 0.05
+            data['evap']  = data['EV24'] / 10.
+            
+            self.data = data.drop(col_labels_to_drop, axis=1)
+            if start:
+                self.data = self.data.loc[self.data.index.values >= start]
+            if end:
+                self.data = self.data.loc[self.data.index.values <= end]
 
     @property
     def info(self):
@@ -301,65 +318,110 @@ class KNMI_daystation:
     def __repr__(self):
         return self.data.__repr__()
 
+# %%
+def plot_station(title, xlabel, ylabel, data=None, columns=None, xlim=None, ylim=None, xscale=None, yscale=None, figsize=(12, 8), **kwargs):
+    """From the wheather station plot the desired columns. 
+    
+    Parameters
+    ----------
+    title, xlabel, ylabel: str, str, str
+        obvious
+    data: KNMI_station object of pd.DataFrame with np.datetime64 as index 
+        The data
+    columns: list
+        the names of the columns that should be plotted.
+    xlim: two np.datetime64 objects 
+        start and end of plot 
+    ylim: two float 
+        ylim 
+    xscale, yscale: str 
+        either 'log' or 'linear', leave None for 'linear' 
+    figsize: tuple of 2 floats 
+        desired figsize in inches
+    kwargs: dict 
+        other parmeters to pass to pyplot.plot
+    """
 
-def plot_station(nr, data, what,  **kwargs):
+    if not isinstance(columns, list):
+        columns = [columns]
 
-    if not isinstance(what, list):
-        what = [what]
+    fig, ax     = plt.subplots()
+    fig.set_size_inches(figsize)
+    ax.set_title(title)
+    ax.set_xlabel(xlabel)
+    ax.set_ylabel(ylabel)
 
-    ax     = kwargs.pop('ax', None)
-    xlabel = kwargs.pop('xlabel', None)
-    ylabel = kwargs.pop('ylabel', None)
-    xlim   = kwargs.pop('xlim', None)
-    ylim   = kwargs.pop('ylim', None)
-    title  = kwargs.pop('title', 'KNMI station {}'.format(nr))
-    grid   = kwargs.pop('grid', True)
+    if xlim:
+        ax.set_xlim(xlim)
+        assert isinstance(xlim[0], np.datetime64) and isinstance(xlim[1], np.datetime64), "xlim must be two values of type np.datetime64"
+    if ylim: ax.set_ylim(ylim)
+    if xscale: ax.set_xscale(xscale)
+    if yscale: ax.set_yscale(yscale)
+    ax.grid(True)
 
-    if ax is None:
-        fig, ax = plt.subplots()
-        if xlabel: ax.set_xlabel(xlabel)
-        if ylabel: ax.set_ylabel(ylabel)
-        if xlim:
-            if (not isinstance(xlim[0], datetime) or
-                not isinstance(xlim[1], datetime)):
-                raise ValueError('xlim must be (datetime, datetime)')
-            else:
-                ax.set_xlim(xlim)
-
-            if ylim: ax.set_ylim(ylim)
-        if title: ax.set_title(title)
-
-    ax.grid(grid)
-
-    for w in what:
-        ax.plot(data.index, data[w], label=w, **kwargs)
+    if xlim:
+        data = data.loc[np.logical_and(data.index >= xlim[0], data.index <= xlim[1])]
+        
+    for column in columns:
+        ax.plot(data.index, data[column], label=column, **kwargs)
 
     ax.legend(loc='best')
     return ax
 
+def show_neerslag_stations_groningen():
+    neerslagstations = pd.read_table('./Neerslagstations_mei2021_1d.csv', header=0, sep=',', decimal='.', index_col=0)
+    ns, xcol, ycol = neerslagstations, 'STN_POS_X', 'STN_POS_Y'
 
+    xlim = (225, 245)
+    ylim = (570, 590)
+
+    groningen = neerslagstations.loc[ np.logical_and(ns[xcol] > xlim[0], ns[xcol] < xlim[1], ns[ycol] > ylim[0], ns[ycol] < ylim[1])]
+
+    ax = newfig("Neeslagstatons KNMI ), rond Groningen", "xRD km", "yRD km", xlim=xlim, ylim=ylim)
+
+    for stn in groningen.index:
+        station = groningen.loc[stn]
+        x, y, name = station['STN_POS_X'], station['STN_POS_Y'], station['LOCATIE']
+        ax.plot(x, y, 'r.')
+        ax.text(x, y, "  {} {}".format(stn, name))
+    ax.set_xlim(xlim)
+    ax.set_ylim(ylim)
+    plt.show()
+
+# %%
 if __name__ == '__main__':
+
+    os.chdir('/Users/Theo/GRWMODELS/python/tools/KNMI/')
 
     stationsFile = './data/KNMI_stations.txt'
     stations = KNMI_stations(stationsFile)
     stations.plot(xlim=(-50000, 300000), ylim=(300000, 650000))
 
-    fName_h = './data/uurgeg_240_2001-2010.txt'
-    fName_d = './data/etmgeg_350.txt'
+    start = np.datetime64("2016-01-01")
+    end   = np.datetime64(datetime.now())
+    xlim = (start, end)
 
-    stat_h = KNMI_hourstation(fName_h)
-    stat_d = KNMI_daystation(fName_d)
+    stn = 350 # Gilze_rijen
+    stn = 280 # Eelde
 
-    #the data are stored in a pd.DataFrame as self.data
+    #fName_h = './data/uurgeg_240_2001-2010.txt'
+    fName_d = './data/etmgeg_350.txt' # Gilze-rijen
+    fName_d = './data/etmgeg_{}.txt'.format(stn) # Eelde
+    
+    #stat_h = KNMI_hourstation(fName_h)
+    station = KNMI_daystation(fName_d, start=start)
+    data = station.data.loc[station.data.index >= start]
 
-    stat_d.plot(what='p_air', title='barometer pressure (daily)')
-    stat_h.plot(what='p_air', title='barometer pressure (hourly)')
-    t1 = datetime(1990, 1, 1)
-    t2 = datetime(2001, 1, 1)
-    stat_d.plot(what=['prec', 'evap'], xlim=(t1, t2), ylabel='mm/d')
+    #plot_station('barometer pressure (daily) ' + fName_d, "time", "mbar", data=data, columns='p_air', xlim=xlim)
+    #stat_h.plot(what='p_air', title='barometer pressure (hourly)')
+    
+    plot_station(fName_d, "time", "mm/d", data=data, columns=['prec', 'evap'], xlim=xlim)
 
-    stat_d.data['rch'] = stat_d['prec'] - stat_d['evap']
+    data['rch'] = data['prec'] - data['evap']
 
-    stat_d.plot(what='rch', xlim=(t1, t2), ylabel='mm/d')
+    plot_station(fName_d, "time", "mm/d", data=data, columns='rch', xlim=xlim)
+    
+    data.to_pickle('eeld280.pkl')
+    data_back = pd.read_pickle('eeld280.pkl')
 
-
+# %%

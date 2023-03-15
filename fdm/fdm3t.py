@@ -79,9 +79,9 @@ def fdm3t(gr=None, t=None, kxyz=None, Ss=None,
     if Ss.shape != gr.shape:
         raise AssertionError("shape of Ss {0} differs from that of model {1}".format(Ss.shape,gr.shape))
 
-    kx[kx<1e-20] = 1e-20
-    ky[ky<1e-20] = 1e-20
-    kz[kz<1e-20] = 1e-20
+    kx[kx<1e-20] = 1e-50
+    ky[ky<1e-20] = 1e-50
+    kz[kz<1e-20] = 1e-50
 
     active = (IBOUND >0).reshape(gr.nod,)  # boolean vector denoting the active cells
     inact  = (IBOUND==0).reshape(gr.nod,)  # boolean vector denoting inacive cells
@@ -98,8 +98,8 @@ def fdm3t(gr=None, t=None, kxyz=None, Ss=None,
         Ry1 = 0.5 *    dy / (gr.DZ *    dx) / ky
         Rz1 = 0.5 * gr.DZ / (   dx *    dy) / kz
     else:
-        # prevent div by zero warning in next line; has not effect because x[0] is not used
-        x = gr.x.copy();  x[0] = x[0] if x[0]>0 else 0.1* x[1]
+        # prevent div by zero warning in next line; has no effect because x[0] is not used
+        x = gr.x.copy();  x[0] = x[0] if x[0]>0 else 0.001* x[1]
 
         Rx1 = 1 / (2 * np.pi * kx * gr.DZ) * np.log(x[1:] /  gr.xm).reshape((1, 1, gr.nx))
         Rx2 = 1 / (2 * np.pi * kx * gr.DZ) * np.log(gr.xm / x[:-1]).reshape((1, 1, gr.nx))
@@ -135,8 +135,8 @@ def fdm3t(gr=None, t=None, kxyz=None, Ss=None,
     # notice the call  csc_matrix( (data, (rowind, coind) ), (M,N))  tuple within tupple
     # also notice that Cij = negative but that Cii will be postive, namely -sum(Cij)
     A = sp.csc_matrix(( np.concatenate(( R(Cx), R(Cx), R(Cy), R(Cy), R(Cz), R(Cz)) ),\
-                        (np.concatenate(( R(IE), R(IW), R(IN), R(IS), R(IB), R(IT)) ),\
-                         np.concatenate(( R(IW), R(IE), R(IS), R(IN), R(IT), R(IB)) ),\
+                        (np.concatenate(( R(IE), R(IW), R(IN), R(IS), R(IT), R(IB)) ),\
+                         np.concatenate(( R(IW), R(IE), R(IS), R(IN), R(IB), R(IT)) ),\
                       )),(gr.nod,gr.nod))
 
     A = -A + sp.diags( np.array(A.sum(axis=1)).ravel() ) # Change sign and add diagonal

@@ -1,0 +1,472 @@
+#LyX 2.3 created this file. For more info see http://www.lyx.org/
+\lyxformat 544
+\begin_document
+\begin_header
+\save_transient_properties true
+\origin unavailable
+\textclass elsarticle
+\begin_preamble
+% Any characters can be typed directly from the keyboard, eg éçñ
+% provide lots of new symbols
+% Add graphics capabilities
+%\usepackage{epstopdf} % to include .eps graphics files with pdfLaTeX
+\usepackage{flafter}% Don't place floats before their definition
+%\usepackage{topcapt}   % Define \topcation for placing captions above tables (not in gwTeX)
+%\usepackage{natbib} % use author/date bibliographic citations
+\@ifundefined{definecolor}
+ {\usepackage{color}}{}
+% necessary to use colos
+% Better maths support & more symbols
+\usepackage{bm}% Define \bm{} to use bold math fonts
+\usepackage[pdftex,bookmarks,colorlinks,breaklinks]{hyperref}% PDF hyperlinks, with coloured links
+\definecolor{dullmagenta}{rgb}{0.4,0,0.4}% #660066
+\definecolor{darkblue}{rgb}{0,0,0.4}\hypersetup{linkcolor=red,citecolor=blue,filecolor=dullmagenta,urlcolor=darkblue}% coloured links
+%\hypersetup{linkcolor=black,citecolor=black,filecolor=black,urlcolor=black} % black links, for printed output
+\usepackage{memhfixc}% remove conflict between the memoir class & hyperref
+% \usepackage[activate]{pdfcprot}  % Turn on margin kerning (not in gwTeX)
+\usepackage{pdfsync}% enable tex source and pdf output syncronicity
+\usepackage{hyperref}
+
+\usepackage{alltt}
+\usepackage{color}
+\definecolor{string}{rgb}{0.7,0.0,0.0}
+\definecolor{comment}{rgb}{0.13,0.54,0.13}
+\definecolor{keyword}{rgb}{0.0,0.0,1.0}
+
+\usepackage{listings}
+\definecolor{mygreen}{RGB}{28,172,0} % color values Red, Green, Blue
+\definecolor{mylilas}{RGB}{170,55,241}
+
+
+\newtheorem{issue}{Issue}
+
+\lstset{language=Matlab,%
+    %basicstyle=\color{red},
+    breaklines=true,%
+    morekeywords={matlab2tikz},
+    keywordstyle=\color{blue},%
+    morekeywords=[2]{1}, keywordstyle=[2]{\color{black}},
+    identifierstyle=\color{black},%
+    stringstyle=\color{mylilas},
+    commentstyle=\color{mygreen},%
+    showstringspaces=false,%without this there will be a symbol in the places where there is a space
+    numbers=left,%
+    numberstyle={\tiny \color{black}},% size of the numbers
+    numbersep=9pt, % this defines how far the numbers are from the text
+    emph=[1]{for,end,break},emphstyle=[1]\color{red}, %some words to emphasise
+    %emph=[2]{word1,word2}, emphstyle=[2]{style},    
+}
+\end_preamble
+\use_default_options true
+\maintain_unincluded_children false
+\language american
+\language_package default
+\inputencoding auto
+\fontencoding global
+\font_roman "default" "default"
+\font_sans "default" "default"
+\font_typewriter "default" "default"
+\font_math "auto" "auto"
+\font_default_family default
+\use_non_tex_fonts false
+\font_sc false
+\font_osf false
+\font_sf_scale 100 100
+\font_tt_scale 100 100
+\use_microtype false
+\use_dash_ligatures true
+\graphics default
+\default_output_format default
+\output_sync 0
+\bibtex_command default
+\index_command default
+\paperfontsize default
+\spacing single
+\use_hyperref false
+\papersize a4paper
+\use_geometry false
+\use_package amsmath 1
+\use_package amssymb 1
+\use_package cancel 1
+\use_package esint 1
+\use_package mathdots 1
+\use_package mathtools 1
+\use_package mhchem 1
+\use_package stackrel 1
+\use_package stmaryrd 1
+\use_package undertilde 1
+\cite_engine natbib
+\cite_engine_type default
+\biblio_style plain
+\use_bibtopic false
+\use_indices false
+\paperorientation portrait
+\suppress_date false
+\justification true
+\use_refstyle 0
+\use_minted 0
+\index Index
+\shortcut idx
+\color #008000
+\end_index
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation indent
+\paragraph_indentation default
+\is_math_indent 0
+\math_numbering_side default
+\quotes_style english
+\dynamic_quotes 0
+\papercolumns 1
+\papersides 1
+\paperpagestyle default
+\tracking_changes false
+\output_changes false
+\html_math_output 0
+\html_css_as_file 0
+\html_be_strict false
+\end_header
+
+\begin_body
+
+\begin_layout Title
+Affine tranformations
+\end_layout
+
+\begin_layout Author
+T.N.Olsthoorn (March 26, 2022)
+\end_layout
+
+\begin_layout Abstract
+The mathematician says, there can be only an affine transformation of 3
+ points to three other points, then all degrees of freedom are used up.
+ So there is no affine back-transformation for quadrangles.
+\end_layout
+
+\begin_layout Section
+Intro
+\end_layout
+
+\begin_layout Standard
+We use affine an transformation between a unit square with coordinates 
+\begin_inset Formula $u,v$
+\end_inset
+
+ where 
+\begin_inset Formula $-0.5\le u\le0.5$
+\end_inset
+
+ and 
+\begin_inset Formula $-0.5\le v\le0.5$
+\end_inset
+
+, and a quadrangle in the real world, i.e.
+ a cell in our model, where the corners of the cell form a quadrangle instead
+ of a rectangle.
+\end_layout
+
+\begin_layout Standard
+The transformation from 
+\begin_inset Formula $u,y$
+\end_inset
+
+ to 
+\begin_inset Formula $x,y$
+\end_inset
+
+ looks like this
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+\left(u-0.5\right)\left(v-0.5\right)x_{ll}-\left(u+0.5\right)\left(v-0.5\right)x_{lr}+\left(u+0.5\right)\left(v+0.5\right)x_{ur}-\left(u-0.5\right)\left(v+0.5\right)x_{ul} & =x\\
+\left(u-0.5\right)\left(v-0.5\right)y_{ll}-\left(u+0.5\right)\left(v-0.5\right)y_{lr}+\left(u+0.5\right)\left(v+0.5\right)y_{ur}-\left(u-0.5\right)\left(v+0.5\right)y_{ul} & =y
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+How do we get 
+\begin_inset Formula $u,v$
+\end_inset
+
+ given 
+\begin_inset Formula $x,y$
+\end_inset
+
+?
+\end_layout
+
+\begin_layout Standard
+We have two equations with just two unknowns, so this should be readily
+ possible.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\left(uv-0.5v-0.5u+0.25\right)x_{ll}-\left(uv+0.5v-0.5u-0.25\right)x_{lr}+\left(uv+0.5v+0.5u+0.25\right)x_{ur}-\left(uv-0.5v+0.5u-0.25\right)x_{ul}=x
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+So we have two equations with two unknowns:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+uv\left(x_{ll}-x_{lr}+x_{ur}-x_{ul}\right)+0.5u\left(-x_{ll}+x_{lr}+x_{ur}-x_{ul}\right)+0.5v\left(-x_{ll}-x_{lr}+x_{ur}+x_{ul}\right)+0.25\left(x_{ll}+x_{lr}+x_{ur}+x_{ul}\right) & =x\\
+uv\left(y_{ll}-y_{lr}+y_{ur}-y_{ul}\right)+0.5u\left(-y_{ll}+y_{lr}+y_{ur}-y_{ul}\right)+0.5v\left(-y_{ll}-y_{lr}+y_{ur}+y_{ul}\right)+0.25\left(y_{ll}+y_{lr}+y_{ur}+y_{ul}\right) & =y
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+This reduces to
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+A_{x}uv+0.5B_{x}u+0.5C_{x}v+0.25D_{x} & =x\\
+A_{y}uv+0.5B_{y}u+0.5C_{y}v+0.25D_{y} & =y
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+First eliminate uv:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+A_{y}A_{x}uv+0.5A_{y}B_{x}u+0.5A_{y}C_{x}v+0.25A_{y}D_{x} & =A_{y}x\\
+A_{x}A_{y}uv+0.5A_{x}B_{y}u+0.5A_{x}C_{y}v+0.25A_{x}D_{y} & =A_{x}y
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+0.5\left(A_{y}B_{x}-A_{x}B_{y}\right)u+0.5\left(A_{y}C_{x}-A_{x}C_{y}\right)v & =\left(A_{y}x-A_{x}y\right)-0.25\left(A_{y}D_{x}-A_{x}D_{y}\right)\\
+0.5\left(A_{x}B_{y}-A_{y}B_{x}\right)u+0.5\left(A_{x}C_{y}-A_{y}C_{x}\right)v & =\left(A_{x}y-A_{y}x\right)-0.25\left(A_{x}D_{y}-A_{y}D_{x}\right)
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\left[\begin{array}{ccc}
+0.5\left(A_{y}B_{x}-A_{x}B_{y}\right), & 0.5\left(A_{y}C_{x}-A_{x}C_{y}\right), & 0.25\left(A_{y}D_{x}-A_{x}D_{y}\right)\\
+0.5\left(A_{x}B_{y}-A_{y}B_{x}\right), & 0.5\left(A_{x}C_{y}-A_{y}C_{x}\right), & 0.25\left(A_{x}D_{y}-A_{y}D_{x}\right)\\
+0, & 0, & 1
+\end{array}\right]\times\left[\begin{array}{c}
+u\\
+v\\
+1
+\end{array}\right]=\left[\begin{array}{c}
+A_{y}x-A_{x}y\\
+A_{x}y-A_{y}x\\
+1
+\end{array}\right]
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Solving this equation yields 
+\begin_inset Formula $u_{xy}v_{xy}$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+Given x, y we find u, v and so we can interpolate bi-linearly within the
+ cell:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\left(u_{xy}-0.5\right)\left(v_{xy}-0.5\right)h_{ll}-\left(u_{xy}+0.5\right)\left(v_{xy}-0.5\right)h_{lr}+\left(u_{xy}+0.5\right)\left(v_{xy}+0.5\right)h_{ur}-\left(u_{xy}-0.5\right)\left(v_{xy}+0.5\right)h_{ul}=h_{xy}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+A_{x} & =x_{ll}-x_{lr}+x_{ur}-x_{ll}\\
+B_{x} & =-x_{ll}-x_{lr}+x_{ur}+x_{ul}\\
+C_{x} & =-x_{ll}+x_{lr}+x_{ur}-x_{ul}\\
+D_{x} & =x_{ll}-x_{lr}+x_{ur}-x_{ul}
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The same way for the constants with the y index.
+\end_layout
+
+\begin_layout Standard
+This does not work, because the resulting two equations are mutually dependent,
+ and so the inversion yields singularity.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+A_{x}uv+0.5B_{x}u+0.5C_{x}v+0.25D_{x} & =x\\
+A_{y}uv+0.5B_{y}u+0.5C_{y}v+0.25D_{y} & =y
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+So there seems to be no back-transformation possible.
+\end_layout
+
+\begin_layout Standard
+The mathematician says, there can be only an affine transformation of 3
+ points to three other points, then all degrees of freedom are used up.
+ So there is no affine back-transformation for quadrangles (Stack Overflow
+ (2014)/ Mathematics.
+ How to find affine transformations if any that map one quadrilateral into
+ another).
+\end_layout
+
+\begin_layout Section
+Homogeneous mapping
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\left[\begin{array}{cccccccc}
+-.5 & -.5 & 1 & 0 & 0 & 0 & .5x_{0} & .5x_{0}\\
+.5 & -.5 & 1 & 0 & 0 & 0 & -.5x_{1} & .5x_{1}\\
+.5 & .5 & 1 & 0 & 0 & 0 & -.5x_{2} & -.5x_{2}\\
+-.5 & .5 & 1 & 0 & 0 & 0 & .5x_{3} & -.5x_{3}\\
+0 & 0 & 0 & -.5 & -.5 & 1 & .5y_{0} & .5y_{0}\\
+0 & 0 & 0 & .5 & -.5 & 1 & -.5y_{1} & .5y_{1}\\
+0 & 0 & 0 & .5 & .5 & 1 & -.5y_{2} & -.5y_{2}\\
+0 & 0 & 0 & -.5 & .5 & 1 & .5y_{3} & -.5y_{3}
+\end{array}\right]\left[\begin{array}{c}
+a\\
+b\\
+c\\
+d\\
+e\\
+f\\
+g\\
+h
+\end{array}\right]=\left[\begin{array}{c}
+x_{0}\\
+x_{1}\\
+x_{2}\\
+x_{3}\\
+y_{0}\\
+y_{1}\\
+y_{2}\\
+y_{3}
+\end{array}\right]
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+-.5a-.5b+c+.5x_{0}g+.5x_{0}h & =x_{0}\\
+.5a-.5b+c-.5gx_{1}+.5hx_{1} & =x_{1}\\
+.5a+.5b+c-.5gx_{2}-.5hx_{2} & =x_{2}\\
+-.5a+.5b+c+.5gx_{3}-.5hx_{3} & =x_{3}\\
+-.5d-.5e+f+.5gy_{0}+.5hy_{0} & =y_{0}\\
+.5d-.5e+f-.5gy_{1}+.5hy_{1} & =y_{1}\\
+.5d+.5e+f-.5gy_{2}-.5hy_{2} & =y_{2}\\
+-.5d+.5d+f+.5gy_{3}-.5hy_{3} & =y_{3}
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+-a-b+2c & =x_{0}\left(2-g-h\right)\\
+a-b+2c & =x_{1}\left(2+g-h\right)\\
+a+b+2c & =x_{2}\left(2+g+h\right)\\
+-a+b+2c & =x_{3}\left(2-g+h\right)\\
+-d-e+2f & =y_{0}\left(2-g-h\right)\\
+d-e+2f & =y_{1}\left(2+g-h\right)\\
+d+e+2f & =y_{2}\left(2+g+h\right)\\
+-d+e+2f & =y_{3}\left(2-g+h\right)
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+-2b+4c & =x_{0}\left(2-g-h\right)+x_{1}\left(2+g-h\right)\\
+4c & =x_{0}\left(2-g-h\right)+x_{2}\left(2+g+h\right)\\
+2b & =x_{0}\left(2-g-u\right)-x_{3}\left(2-g+h\right)\\
+-a+b+2c & =x_{3}\left(2-g+h\right)\\
+-d-e+2f & =y_{0}\left(2-g-h\right)\\
+d-e+2f & =y_{1}\left(2+g-h\right)\\
+d+e+2f & =y_{2}\left(2+g+h\right)\\
+-d+e+2f & =y_{3}\left(2-g+h\right)
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\end_body
+\end_document

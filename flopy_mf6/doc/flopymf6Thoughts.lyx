@@ -1,0 +1,372 @@
+#LyX 2.3 created this file. For more info see http://www.lyx.org/
+\lyxformat 544
+\begin_document
+\begin_header
+\save_transient_properties true
+\origin unavailable
+\textclass scrartcl
+\begin_preamble
+% Any characters can be typed directly from the keyboard, eg éçñ
+% provide lots of new symbols
+% Add graphics capabilities
+%\usepackage{epstopdf} % to include .eps graphics files with pdfLaTeX
+\usepackage{flafter}% Don't place floats before their definition
+%\usepackage{topcapt}   % Define \topcation for placing captions above tables (not in gwTeX)
+%\usepackage{natbib} % use author/date bibliographic citations
+\@ifundefined{definecolor}
+ {\usepackage{color}}{}
+% necessary to use colos
+% Better maths support & more symbols
+\usepackage{bm}% Define \bm{} to use bold math fonts
+\usepackage[pdftex,bookmarks,colorlinks,breaklinks]{hyperref}% PDF hyperlinks, with coloured links
+\definecolor{dullmagenta}{rgb}{0.4,0,0.4}% #660066
+\definecolor{darkblue}{rgb}{0,0,0.4}\hypersetup{linkcolor=red,citecolor=blue,filecolor=dullmagenta,urlcolor=darkblue}% coloured links
+%\hypersetup{linkcolor=black,citecolor=black,filecolor=black,urlcolor=black} % black links, for printed output
+\usepackage{memhfixc}% remove conflict between the memoir class & hyperref
+% \usepackage[activate]{pdfcprot}  % Turn on margin kerning (not in gwTeX)
+\usepackage{pdfsync}% enable tex source and pdf output syncronicity
+\usepackage{hyperref}
+
+\usepackage{alltt}
+\usepackage{color}
+\definecolor{string}{rgb}{0.7,0.0,0.0}
+\definecolor{comment}{rgb}{0.13,0.54,0.13}
+\definecolor{keyword}{rgb}{0.0,0.0,1.0}
+
+\usepackage{listings}
+\definecolor{mygreen}{RGB}{28,172,0} % color values Red, Green, Blue
+\definecolor{mylilas}{RGB}{170,55,241}
+
+
+\newtheorem{issue}{Issue}
+
+\lstset{language=Matlab,%
+    %basicstyle=\color{red},
+    breaklines=true,%
+    morekeywords={matlab2tikz},
+    keywordstyle=\color{blue},%
+    morekeywords=[2]{1}, keywordstyle=[2]{\color{black}},
+    identifierstyle=\color{black},%
+    stringstyle=\color{mylilas},
+    commentstyle=\color{mygreen},%
+    showstringspaces=false,%without this there will be a symbol in the places where there is a space
+    numbers=left,%
+    numberstyle={\tiny \color{black}},% size of the numbers
+    numbersep=9pt, % this defines how far the numbers are from the text
+    emph=[1]{for,end,break},emphstyle=[1]\color{red}, %some words to emphasise
+    %emph=[2]{word1,word2}, emphstyle=[2]{style},    
+}
+\end_preamble
+\use_default_options true
+\maintain_unincluded_children false
+\language american
+\language_package default
+\inputencoding auto
+\fontencoding global
+\font_roman "default" "default"
+\font_sans "default" "default"
+\font_typewriter "default" "default"
+\font_math "auto" "auto"
+\font_default_family default
+\use_non_tex_fonts false
+\font_sc false
+\font_osf false
+\font_sf_scale 100 100
+\font_tt_scale 100 100
+\use_microtype false
+\use_dash_ligatures true
+\graphics default
+\default_output_format default
+\output_sync 0
+\bibtex_command default
+\index_command default
+\paperfontsize default
+\spacing single
+\use_hyperref false
+\papersize a4paper
+\use_geometry false
+\use_package amsmath 1
+\use_package amssymb 1
+\use_package cancel 1
+\use_package esint 1
+\use_package mathdots 1
+\use_package mathtools 1
+\use_package mhchem 1
+\use_package stackrel 1
+\use_package stmaryrd 1
+\use_package undertilde 1
+\cite_engine basic
+\cite_engine_type default
+\biblio_style plain
+\use_bibtopic false
+\use_indices false
+\paperorientation portrait
+\suppress_date false
+\justification true
+\use_refstyle 0
+\use_minted 0
+\index Index
+\shortcut idx
+\color #008000
+\end_index
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation indent
+\paragraph_indentation default
+\is_math_indent 0
+\math_numbering_side default
+\quotes_style english
+\dynamic_quotes 0
+\papercolumns 1
+\papersides 1
+\paperpagestyle default
+\tracking_changes false
+\output_changes false
+\html_math_output 0
+\html_css_as_file 0
+\html_be_strict false
+\end_header
+
+\begin_body
+
+\begin_layout Title
+Flopy mf6 thoughts
+\end_layout
+
+\begin_layout Author
+T.N.Olsthoorn
+\end_layout
+
+\begin_layout Date
+11 April 2022
+\end_layout
+
+\begin_layout Section
+Introduction
+\end_layout
+
+\begin_layout Standard
+Working with flopy often is frustrating as it feels mind-blowing complex
+ at times.
+ To get more grip on the design basics, this document collect thoughts on
+ working with flopy and tries to crackdown some of its complexity.
+ Many examples in the flopy tutorials seem simple, but in fact are not.
+ Many options seem to drop from the open sky without the user has was given
+ the ability to internalize its design philosophy, so he/she could build
+ a knowledge tree in his/her mind allowing to given all items and moves
+ their place and thus keep oversight.
+ The idea behind this document to provide some of just this design philosophy.
+\end_layout
+
+\begin_layout Standard
+Flopy is built around Modflow 6, the framework of which is documented in
+ 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "MF6-Framework"
+literal "false"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+Within the MODFLOW 6 framework, a simulation consists of a single forward
+ run, which may include multiple models.
+ The simulation is the highest level component and is controlled by the
+ main program.
+ A simulation contains several modules shown next to each other in Fig.
+ 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Schematic-diagram-showing-simulation"
+plural "false"
+caps "false"
+noprefix "false"
+
+\end_inset
+
+ A component may be a module, object, subroutine, or collection of these
+ used to handle a part of the program function.
+\end_layout
+
+\begin_layout Enumerate
+The TimingModule divides the simulation period into time steps and stress
+ periods.
+ The TimingModule also sets a flag for the last time step of a stress period
+ and the last time step of the simulation.
+\end_layout
+
+\begin_layout Enumerate
+A solution solves one or more models and the exchanges between models.
+ The NumericalSolutionType is one type of solution that is available in
+ the MODFLOW 6 framework.
+ The downward arrow between BaseSolutionType and NumericalSolutionType is
+ used to denote that NumericalSolutionType is a subclass of BaseSolutionType.
+ The NumericalSolutionType was designed specifically to solve one or more
+ numerical models, such as the GWF Model, which are subclasses of NumericalModel
+Type.
+ The NumericalSolutionType can also represent exchange terms between connected
+ numerical models.
+ These exchanges must be subclasses of NumericalExchangeType.
+ 
+\end_layout
+
+\begin_layout Enumerate
+Three separate model components are shown in figure 1.
+ Each one of these components represents a class.
+ The arrows between these classes indicate the inheritance starting with
+ the BaseModelType, extending to the NumericalModelType, and ending with
+ the GwfModelType, which defines the GWF Model described in Langevin and
+ others (2017).
+ BaseModelType defines the members and methods shared by all models within
+ the framework.
+ NumericalModelType defines members and methods shared by all numerical
+ models.
+ Models that inherit from NumericalModelType can be solved by NumericalSolutionT
+ype.
+\end_layout
+
+\begin_layout Enumerate
+Figure 1 also shows three separate exchange types.
+ BaseExchangeType is the superclass for all exchanges.
+ NumericalExchangeType defines exchanges between any two numerical models.
+ The GwfExchangeType defines the exchange between two GWF Models.
+ A simulation can include as many exchanges as necessary to define the problem.
+\end_layout
+
+\begin_layout Enumerate
+Lastly, figure 1 shows several of the important utility components, which
+ are described in the report.
+ These include observation utility (ObservationType), the time series and
+ time-array series utilities (TimeSeriesType and TimeArraySeriesType, respective
+ly), and the memory manager utility (MemoryManagerType).
+\end_layout
+
+\begin_layout Enumerate
+The framework also includes many other minor utilities for reading and writing
+ arrays, parsing strings, and so forth, but those minor utilities are not
+ described in this report.
+ 
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename simulation_components.png
+	lyxscale 50
+	width 90text%
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:Schematic-diagram-showing-simulation"
+
+\end_inset
+
+Schematic diagram showing MODFLOW 6 components.
+ The GwfModelType and the GwfExchangeType are described in Langevin and
+ others (2017).
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+Overall structure of the modeling with flopy
+\end_layout
+
+\begin_layout Standard
+Flopy builds around the idea of a simulation which is incorporated in a
+ sim-module to which an arbitrary number of models with their own packages
+ and parameters are coupled.
+ To date only modflow may be coupled, but other models could be as well.
+\end_layout
+
+\begin_layout Standard
+This leads to instantiation of an object `sim` that is instantiated using
+ `flopy.mf6.MFSimulation` as shown by the code:
+\end_layout
+
+\begin_layout Standard
+\begin_inset listings
+inline false
+status open
+
+\begin_layout Plain Layout
+
+# set up simulation and basic packages
+\end_layout
+
+\begin_layout Plain Layout
+
+name = "tutorial02_mf6"
+\end_layout
+
+\begin_layout Plain Layout
+
+sim = flopy.mf6.MFSimulation(sim_name=name, sim_ws=".")
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The simulation get a name and a working directory, which may be relative
+ or absolute.
+\end_layout
+
+\begin_layout Standard
+`sim` is an object with a large number of properties and methods, more than
+ 50 or so.
+ Then instantiations wants essentially its `sim_name`, `sim_ws` and `exe_name`.
+ The latter two may be given as relative or full paths.
+\end_layout
+
+\begin_layout Bibliography
+\begin_inset CommandInset bibitem
+LatexCommand bibitem
+label "Hughes et al (2017)"
+key "MF6-Framework"
+literal "false"
+
+\end_inset
+
+Hughes, J.D., Langevin, C.D., and Banta, E.R.
+ (2017).
+ Documentation for the MODFLOW 6 framework: U.S.
+ Geological Survey Techniques and Methods, book 6, chap.
+ A57, 42 p., https://doi.org/10.3133/tm6A57.
+ 30pp.
+\end_layout
+
+\end_body
+\end_document

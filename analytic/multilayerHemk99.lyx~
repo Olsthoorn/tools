@@ -1,0 +1,646 @@
+#LyX 2.3 created this file. For more info see http://www.lyx.org/
+\lyxformat 544
+\begin_document
+\begin_header
+\save_transient_properties true
+\origin unavailable
+\textclass scrreprt
+\begin_preamble
+%\usepackage{epstopdf} % to include .eps graphics files with pdfLaTeX
+\usepackage{flafter}   % Don't place floats before their definition
+%\usepackage{topcapt}  % Define \topcation for placing captions above tables (not in gwTeX)
+
+\usepackage{xurl}      % better URL setting, uses old url package
+
+\usepackage{xcolor}
+\definecolor{darkblue}{rgb}{0,0,0.4}
+\usepackage[]{hyperref} % Generates all cross references
+\hypersetup{            % Setting options for hyperref package
+	breaklinks=true,    % break line with long hyperlinks
+	colorlinks=true,    % coloured links
+	linkcolor=blue,
+	filecolor=magenta,
+	urlcolor=darkblue,
+	citecolor=blue,
+	backref=page
+} 
+
+\usepackage{memhfixc}  % remove conflict between the memoir class & hyperref
+\usepackage{pdfsync}   % enable tex source and pdf output syncronicity
+
+\usepackage{memhfixc}  % remove conflict between the memoir class & hyperref
+\usepackage{pdfsync}   % enable tex source and pdf output syncronicity
+
+\usepackage{alltt}
+\end_preamble
+\use_default_options true
+\maintain_unincluded_children false
+\language english
+\language_package default
+\inputencoding utf8
+\fontencoding global
+\font_roman "default" "default"
+\font_sans "default" "default"
+\font_typewriter "default" "default"
+\font_math "auto" "auto"
+\font_default_family default
+\use_non_tex_fonts false
+\font_sc false
+\font_osf false
+\font_sf_scale 100 100
+\font_tt_scale 100 100
+\use_microtype false
+\use_dash_ligatures true
+\graphics default
+\default_output_format default
+\output_sync 0
+\bibtex_command biber
+\index_command default
+\paperfontsize default
+\spacing single
+\use_hyperref false
+\papersize default
+\use_geometry false
+\use_package amsmath 1
+\use_package amssymb 1
+\use_package cancel 1
+\use_package esint 1
+\use_package mathdots 1
+\use_package mathtools 1
+\use_package mhchem 1
+\use_package stackrel 1
+\use_package stmaryrd 1
+\use_package undertilde 1
+\cite_engine biblatex
+\cite_engine_type authoryear
+\biblio_options hyperref=true, backref=true, backrefstyle=three,backreffloats=true,indexing=bib,date=year
+\biblatex_bibstyle authoryear
+\biblatex_citestyle authoryear
+\use_bibtopic false
+\use_indices false
+\paperorientation portrait
+\suppress_date false
+\justification true
+\use_refstyle 1
+\use_minted 0
+\index Index
+\shortcut idx
+\color #008000
+\end_index
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation indent
+\paragraph_indentation default
+\is_math_indent 0
+\math_numbering_side default
+\quotes_style english
+\dynamic_quotes 0
+\papercolumns 1
+\papersides 1
+\paperpagestyle default
+\listings_params "language=Python,extendedchars=false,frameround=fttt,numbers=none,% left,line numbers use none,numberstyle={\tiny},stepnumber=2,% line numbers only every so many,numbersep=9pt,% how far line numbers from text?,showspaces=false,showstringspaces=false,showtabs=false,tab={\rightarrowfill},basicstyle={\small},keywordstyle={\color{blue}},commentstyle={\color{green}},%,stringstyle={\ttfamily \color{magenta}},identifierstyle={\color{black}}"
+\tracking_changes false
+\output_changes false
+\html_math_output 0
+\html_css_as_file 0
+\html_be_strict false
+\end_header
+
+\begin_body
+
+\begin_layout Title
+Transient well flow in vertically heterogeneous aquifers
+\end_layout
+
+\begin_layout Subtitle
+Implementation of solution by Hemker(1999)
+\end_layout
+
+\begin_layout Author
+T.N.Olsthoorn
+\end_layout
+
+\begin_layout Date
+March 2023
+\end_layout
+
+\begin_layout Section*
+Intro
+\end_layout
+
+\begin_layout Standard
+Hemker (99) given a hybrid soution for trainsient radial flow to a partially
+ screend well with well storage in a layered aquifer system.
+ The vertical discritization is hybrid, the horizontal is analytical.
+ He shows that the solution is accurate for both multiaquifer systems and
+ continous 3d systems if sufficient layers are used.
+ He als shows that his method is accurate and comprises those of several
+ other solutions presented in the past by various authors.
+ The extraction starts at 
+\begin_inset Formula $t=0$
+\end_inset
+
+.
+ The initial boundaries are that the drawdown 
+\begin_inset Formula $s(r,z,t=0)=0$
+\end_inset
+
+ with boundary condition at the top either 
+\begin_inset Formula $s=0$
+\end_inset
+
+ or flow through a top aquitard and equivalently at the bottom.
+ At 
+\begin_inset Formula $r=r_{w}$
+\end_inset
+
+ the condition is 
+\begin_inset Formula $Q=\intop_{0}^{D}K_{r}\left(z\right)\frac{\partial s}{\partial r}|_{r_{w}}dz-\pi r_{w}^{2}\frac{ds_{r_{w}}}{dt}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename Hem99Fig1.png
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:Schematic-diagram"
+
+\end_inset
+
+Schematic diagram of a partially penetrating finite-diameter well in a verticall
+y heterogeneous aquifer (Hemker(1999) fig 1).
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section*
+The solution
+\end_layout
+
+\begin_layout Standard
+The solution is given in the Laplace domain and is back-transformed using
+ Stehfest's method.
+ In the Laplace domain, the solution is the same as that for the steady
+ state solution in the real domain.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+K_{r}\left(\frac{\partial^{2}s}{\partial s^{2}}+\frac{1}{r}\frac{\partial s}{\partial s}\right)+K_{z}\frac{\partial^{2}s}{\partial z^{2}}=S\frac{\partial s}{\partial t}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+with
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+s\left(r,z,0\right) & =0\\
+s\left(\infty,z,t\right) & =0
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+\frac{\partial s}{\partial z}|_{z=0} & =0\,\,\,\,or\,\,\,\,s\left(r,0,t\right)=s_{0}=0\\
+\frac{\partial s}{\partial z}|_{z=D} & =0\,\,\,\,or\,\,\,s\left(r,D,t\right)=s_{n+1}=0
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+2\pi r_{w}K_{z}\frac{\partial s}{\partial r}|_{r=r_{w}}=-q_{w}\left(z,t\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The relation between 
+\begin_inset Formula $q_{w}\left(z,t\right)$
+\end_inset
+
+ and 
+\begin_inset Formula $Q$
+\end_inset
+
+ is given by the wellbore-balance equation
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\intop_{0}^{D}q_{w}\left(z,t\right)dz+\pi r_{c}^{2}\frac{ds_{w}}{dt}=Q
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+For the individual layers we have
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\frac{\partial^{2}s_{i}}{\partial r^{2}}+\frac{1}{r}\frac{\partial s}{\partial r}=\frac{K_{zi+1}\left(s_{i+1}-s\right)-K_{zi}\left(s-s_{i-1}\right)}{K_{ri}D_{i}^{2}}+\frac{S_{si}}{K_{ri}}\frac{\partial s}{\partial t},\,\,\,\,i=1,2,...,n
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula $K_{ri}$
+\end_inset
+
+ is the arithmetric mean 
+\begin_inset Formula $K_{r}$
+\end_inset
+
+ of sublayer 
+\begin_inset Formula $i$
+\end_inset
+
+, 
+\begin_inset Formula $K_{zi}$
+\end_inset
+
+ is the harmonic mean 
+\begin_inset Formula $K_{z}$
+\end_inset
+
+ of the upper half of sublayer 
+\begin_inset Formula $i$
+\end_inset
+
+ and the lower half of sublayer 
+\begin_inset Formula $i-1$
+\end_inset
+
+.
+ For the general case with sublayers with different thicknesses, sublayer
+ variables are defined: the sublayer transmissivity 
+\begin_inset Formula $T_{i}=K_{ri}D_{i}$
+\end_inset
+
+ and the inter-sublayer vertical resistance 
+\begin_inset Formula $c_{i}=\left(D_{i}+D_{i-1}\right)/\left(2K_{zi}\right)$
+\end_inset
+
+ and the subplayer storatavity 
+\begin_inset Formula $S_{i}=S_{si}D_{i}$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+With this, the governing partial differential equations can now be written
+ as
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\frac{\partial s_{i}^{2}}{\partial r^{2}}+\frac{1}{r}\frac{\partial s_{i}}{\partial r}=\frac{s_{i+1}-s_{i}}{c_{i+1}T_{i}}-\frac{s_{i}-s_{s-1}}{c_{i}T_{i}}+\frac{S_{i}}{T_{i}}\frac{\partial s_{i}}{\partial t},\,\,\,\,i=1,2,...,n
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+with modified boundaries at the top and the bottom of the aquifer: 
+\begin_inset Formula $c_{1}=\infty$
+\end_inset
+
+ if the top is confined, or 
+\begin_inset Formula $s_{0}=0$
+\end_inset
+
+ and 
+\begin_inset Formula $c_{1}=D_{1}/\left(2K_{z1}\right)$
+\end_inset
+
+ if the top is a no-drawdown boundary.
+ The same applies to the base conditions, using 
+\begin_inset Formula $c_{n+1},s_{n+1},D_{n}$
+\end_inset
+
+ and 
+\begin_inset Formula $K_{zn}$
+\end_inset
+
+ instead.
+\end_layout
+
+\begin_layout Standard
+By replacing the cross flow by the finite difference approximation, the
+ statement of the problem becomes similar to that for transient well flow
+ in leaky multiaquifer systems (Hemerk and Maas (1987), with three modifications
+: (1) the storativities in the aquitards of the multiaquifer model are neglected
+; (2) there is a single pumping well of constant discharge, screened in
+ one of more sublayers; and (3) storage in the well is taken into account.
+\end_layout
+
+\begin_layout Standard
+It requires less computational effort to use a solution in the Laplace domain
+ and a numerical inversion technique.
+\end_layout
+
+\begin_layout Standard
+For each screende sublayer, the discharge is given as
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+Q_{i}=-2\pi r_{w}T_{i}\frac{\partial s_{i}}{\partial r}|_{r=r_{w}}
+\]
+
+\end_inset
+
+
+\begin_inset Newline newline
+\end_inset
+
+while 
+\begin_inset Formula $Q_{i}=0$
+\end_inset
+
+ in all unscreende layers.
+ As an approximation, it is assumed that 
+\begin_inset Formula $Q_{i}$
+\end_inset
+
+ is proportional to 
+\begin_inset Formula $T_{i}$
+\end_inset
+
+ at any time.
+ This proportioinalily allows the wellbore storage to be included in the
+ inner boundary condition as
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+Q_{i}=\left(Q-\pi r_{c}^{2}\frac{ds_{w}}{dt}\right)\frac{T_{i}}{T_{w}}
+\]
+
+\end_inset
+
+
+\begin_inset Newline newline
+\end_inset
+
+where 
+\begin_inset Formula $T_{w}$
+\end_inset
+
+ is the total transmissivity of all screened sublayers.
+ Although this boundary condtion at the well is a simple approximation,
+ it allows a proper comparison with all analytical solutioins that assume
+ a uniform flux along the well screen.
+\end_layout
+
+\begin_layout Standard
+The Laplace transform solution to the previous equations (see appendix Hemker
+ (1999)) is given as
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\overline{s}=\frac{Q}{2\pi T_{w}}V\left[\frac{K_{0}\left(r\sqrt{w_{i}}\right)}{r_{w}\sqrt{w_{i}}K_{1}\left(r_{w}\sqrt{w_{i}}\right)}\right]V^{T}\times TEU^{-1}1
+\]
+
+\end_inset
+
+
+\begin_inset Newline newline
+\end_inset
+
+where 
+\begin_inset Formula $U$
+\end_inset
+
+ is the 
+\begin_inset Formula $m\times m$
+\end_inset
+
+ matrix
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+U=E^{T}V\left[1+pC_{2}\frac{K_{0}\left(r_{w}\sqrt{w_{i}}\right)}{r_{w}\sqrt{w_{i}}K_{1}\left(r_{w}\sqrt{w_{i}}\right)}\right]V^{T}TE
+\]
+
+\end_inset
+
+
+\begin_inset Newline newline
+\end_inset
+
+or, in case the well is screened in all sublayers
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\overline{s}=\frac{Q}{2\pi T_{w}}V\left[\frac{K_{0}\left(r\sqrt{w_{i}}\right)}{r_{w}\sqrt{w_{i}}K_{1}\left(r_{w}\sqrt{w_{i}}\right)}+\frac{pr_{c}^{2}}{2T_{w}}K_{0}\left(r_{w}\sqrt{w_{i}}\right)\right]V^{T}T1
+\]
+
+\end_inset
+
+
+\begin_inset Newline newline
+\end_inset
+
+where 
+\begin_inset Formula $\overline{s}$
+\end_inset
+
+ is the Laplace transformed drawdown, 
+\begin_inset Formula $p$
+\end_inset
+
+ is the Laplace variable, 
+\begin_inset Formula $V$
+\end_inset
+
+ and 
+\begin_inset Formula $w_{i}$
+\end_inset
+
+ are eigenvectors and eigenvalues of the system matrix, 
+\begin_inset Formula $K_{0}$
+\end_inset
+
+ and 
+\begin_inset Formula $K_{1}$
+\end_inset
+
+are modified Bessel functions, 
+\begin_inset Formula $T$
+\end_inset
+
+ contains all sublayer transmissivities and 
+\begin_inset Formula $E$
+\end_inset
+
+ and 
+\begin_inset Formula $e$
+\end_inset
+
+ indicated which sublayers are discharged by the well.
+ The equtions can be inverted by the Stehfest (1970) algorithm.
+\end_layout
+
+\begin_layout Section*
+Testing math, checking dimensions
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+\frac{\partial^{2}s_{i}}{\partial r^{2}}+\frac{1}{r}\frac{\partial s_{i}}{\partial r} & =-\frac{K_{i}^{,}}{T_{i}}\left|\frac{\partial s_{i}^{,}}{\partial z}\right|_{z=z_{i}^{,}}+\frac{K_{i+1}^{,}}{T_{i}}\left|\frac{\partial s_{i+1}^{,}}{\partial z}\right|_{z=z_{i+1}}+\frac{S_{i}}{T_{i}}\frac{\partial s_{i}}{\partial t}\\
+\left[\frac{m}{m^{2}}\right]+\left[\frac{1}{m}\frac{m}{m}\right] & =\left[\frac{m}{d}\frac{d}{m^{2}}\frac{m}{m}\right]+\left[\frac{m}{d}\frac{d}{m^{2}}\frac{m}{m}\right]+\left[\frac{d}{m^{2}}\frac{m}{d}\right]\\
+\left[\frac{1}{m}\right] & =\left[\frac{1}{m}\right]
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+\overline{s}\left(r,p\right) & =\frac{1}{2\pi p}K_{0}\left(r\sqrt{A\left(p\right)}\right)T^{-1}q\\
+\left[md\right] & =\left[d\right]K_{0}\left[m\sqrt{\frac{1}{m^{2}}}\right]\left[\frac{d}{m^{2}}\right]\left[\frac{m^{3}}{d}\right]\\
+\left[md\right] & =\left[md\right]
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+a_{i} & =\sqrt{pS_{si}^{,}/K_{i}^{,}}\\
+b_{1} & =D'_{t}\sqrt{pS_{si}^{,}/K_{i}^{,}}=\sqrt{pS_{i}^{'}c_{i}}\left[-\right]
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+b_{i}=D_{i}'\sqrt{pS'_{s}K'_{i}}\left[m\sqrt{\frac{1}{dm}\frac{m}{d}}\right]=\left[\frac{m}{d}\right]
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+d_{i}=\frac{pS_{i}}{T_{i}}\left[\frac{1}{d}\frac{d}{m^{2}}\right]=\left[\frac{1}{m}\right]
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+e_{ij} & =\frac{b_{i}}{c_{i}T_{j}\tanh b_{i}}\\
+f_{ij} & =\frac{b_{i}}{c_{i}T_{j}\sinh b_{i}}
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Bibliography
+\begin_inset CommandInset bibitem
+LatexCommand bibitem
+key "key-1"
+
+\end_inset
+
+Hemkere CJ (1999) Transient well flow in vertically heterogeneous aquifers.
+ Journal of Hydrology 225 (1999) 1–18
+\end_layout
+
+\end_body
+\end_document
