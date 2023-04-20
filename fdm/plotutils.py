@@ -488,8 +488,8 @@ def get_contour_levels(A, dh=0.5):
 
 def cell_value_points(pts, xGr, yGr, zGr, vdata, mid=False):
     """
-    Return vertices of points obtained by intersecting ponts pts with a grid
-    defined by xGr, yGt, zGr and deliver thel values at these points interpolated
+    Return vertices of points obtained by intersecting points pts with a grid
+    defined by xGr, yGt, zGr and deliver the values at these points interpolated
     within vdata.
 
     If mid==False, the cell values are computed at exactly these points.

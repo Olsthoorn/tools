@@ -2,6 +2,30 @@
 # -*- coding: utf-8 -*-
 
 #%%
+#    Multilayer analytic single-point model with vertical resistance at top
+#    and bottom for connection to outside world.
+#    
+#    The aquifer is a stack of n + 1 aquitards interlaced with n aquifers, defined
+#    only by their storage coefficient, since there is no horizontal flow.
+#    The aquitards are defined only by their resistance.
+#    There is a prescribed head above the top aquitard, and below the bottom aquitard.
+#    
+#    With n layers, there are n + 1 aquitards and n + 2 heads, i.e. n
+#    for the aquifers plus one above the stack and one below it.
+#
+# Used to simulate drawdown associated with Groningen A7 tunnel construction 2022
+
+# The Hantush well drawdown function
+# The Hantush well drawdown convoluting the extraction input to deal
+# with time-variable extacctioin
+#
+# Analytic single point multi-layer drawdown model developed, also with convolution
+# ColumnMdlAnal   multilayer analytical model
+# Column1LAnal    single layer analytical model
+# ColumnMultiNum  multi-layer one cell numerical model to verify the analytical
+#
+# Several scenarios at the end of this file,
+# TO 20230416
 
 tools = '/Users/Theo/GRWMODELS/python/tools/'
 
@@ -21,7 +45,7 @@ from etc import newfig
 
 #%%
 def Wh(u, rho):
-    """Return Hantush well function by integration using scipy functinality.
+    """Return Hantush well function by integration using scipy functionality.
     
     This turns out to be a very accurate yet fast impementation, about as fast
     as the exp1 function form scipy.special.
@@ -43,8 +67,8 @@ class Hantush:
     """"Class implementing Hantush objects. 
     
     Such an object is situated as a point and computes the drawdown
-    accoring to Hantush at an other point given a time series
-    input for the extraction. 
+    accoring to Hantush at an other point given a time-series
+    input for the extraction by the object. 
     """
     def __init__(self, kD=None, S=None, c=None, xw=0.0, yw=0.0, rw=0.25):
         """Return a Hantush object. 
@@ -70,7 +94,7 @@ class Hantush:
         return
         
     def ddn_simple(self, Q=None, xp=None, yp=None, t=None):
-        """Return drawdown time series que to simple Q starting at t=0 (no convolution).
+        """Return drawdown time series due to simple extraction Q starting at t=0 (no convolution).
         
         Parameters
         ----------
@@ -93,13 +117,16 @@ class Hantush:
     
         
     def ddn_conv(self, Qandt=None, x=None, y=None, t=None):
-        """Compute (by convolution) the drawdown at x, y as a time series.
-         Parameters
+        """Compute the drawdown by convolution at a point x, y as a time series.
+        
+        Parameters
         ----------
+        Qandt: pd.DataFrame
+         DataFrame with index dtype np.datetime64 and columns 'Q' and 't'
         x, y: floats 
-            location of observation point 
+         location of observation point 
         t: ndarray 
-            times at which drawdown is desired
+         times at which drawdown is desired
         """
         assert Qandt.dtype == np.datetime64,\
             "Qandt must be pd.DataFrame with index dtype np.datetime64 not{}".format(Qandt.dtype)
@@ -109,7 +136,16 @@ class Hantush:
         blk_resp = self.BR(tau)
         self.ddn = signal.lfilter(blk_resp, 1.0, Qandt['Q'])
         
-    def BR(self, t):
+    def BR(self, t=None, xp=None, yp=None):
+        """Return block response of the Hantush object.
+        
+        Parameters
+        ----------
+        t: ndarray of floats or np.datetime64
+         time series
+        xp, yp: floats
+         location of observation point    
+        """
         tau = t - t[0]
         r = np.sqrt((self.xw - xp) ** 1 + (self.yw - yp) ** 2)
         rho = r / self.L
@@ -121,14 +157,13 @@ class Hantush:
 
 #%% 
 class ColumnMdlAnal:
-    """Multilayer analytic single point model with resistance at top and bottom for connection to outside world.
+    """Multilayer analytic single-point model with vertical resistance at top and bottom for connection to outside world.
     
-    The aquifer is a stack of n + 1 aquitards with interlaced n aquifers, defined by their storage coefficient.
-    The aquitards are defined by their resistance.
-    There is a given head above the top and below the bottom aquitard.
+    The aquifer is a stack of n + 1 aquitards interlaced with n aquifers, defined only by their storage coefficient, since there is no horizontal flow.
+    The aquitards are defined only by their resistance.
+    There is a prescribed head above the top aquitard, and below the bottom aquitard.
     
     With n layers, there are n + 1 aquitards and n + 2 heads, i.e. n for the aquifers plus one above the stack and one below it.
-    
     """
     def __init__(self, name=None, S=None, c=None, x=0, y=0):
         """
@@ -608,7 +643,7 @@ def checkLeakageHantush(kD=900, S=0.2, c=500, r=np.logspace(1, 2, 11), Q=1200, t
 
 #%% 
 if __name__ == '__main__':
-    scen = 0
+    scen = 1
     name='sterrebos'
     kD = [50, 200, 2000] # m2.day
     Q = 1200
