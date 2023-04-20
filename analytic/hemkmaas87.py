@@ -1,4 +1,13 @@
-# Maas and Hemker 1987 Unsteady flow to wells in layered and fissured aquifer systems JoH 90 (1987)231-249
+"""Implementation of:
+   
+   Maas and Hemker 1987 Unsteady flow to wells in layered and fissured aquifer
+   systems JoH 90 (1987)231-249
+
+    A the end, the implementation is tested using the the graph in the
+    publication and reproducing it both analytically and nuemrically
+
+   TO 2023-03-03
+"""
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -406,10 +415,7 @@ cases ={ # Numbers refer to Hemker Maas (1987 figs 2 and 3)
 }
     
 
-    
 if __name__ == "__main__":
-
-    
 
     ts =50
     rs = np.array([1.0, 3.0, 10., 30., 100., 300., 1000., 3000., 10000.])
