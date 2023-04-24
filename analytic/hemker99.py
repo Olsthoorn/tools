@@ -15,7 +15,8 @@ import scipy.special as sp
 from hantush_conv import Wh
 from fdm import Grid
 from fdm.fdm3t import fdm3t
-from etc import newfig
+from analytic import hantush_conv
+from etc import newfig, color_cycler
 import scipy
 
 
@@ -339,56 +340,94 @@ def solution(ts=None, rs=None, rw=None, rc=None,
 cases ={ # Numbers refer to Hemker Maas (1987 figs 2 and 3)
     'test0': {'name': 'Test input and plotting',
         't': np.logspace(-3., 1., 40),
-        'r': np.hstack((0., 0.1, np.logspace(0., 4., 100))),
+        'r': np.hstack((0., np.logspace(-1., 4., 100))), # [0, rw, rPVC ...
         'z0': 0.,
         'rw': 0.1,
-        'rc': 0.5,
+        'rc': 10.,
         'Q' : 1.0e+3,
         'D' : np.array([10., 10., 10., 10.]),
         'kr' : np.array([10., 10., 1., 1.]),        
         'kz': np.array([ 1., 1., 0.1, 0.1]),
         'Ss': np.array([10., 10., 1., 1.,]) * 1e-5,
         'c' : np.array([0., 0., 0.,]),
-        'e' : np.array([1., 0, 0, 0]),
+        'e' : np.array([1, 0, 0, 0]),
         'topclosed': True,
         'botclosed': True,
         'label': 'Test input',
         },
 
+    'Hantush': {'name': 'Hantush using one layer', # Hantush (single layer, does it work with one aquifer?)
+        't' : None,
+        'r' : np.hstack((0., np.logspace(-1, 6, 141))),
+        'z0': 0.,
+        'rw': 0.01,
+        'rc': 0.01,
+        'Q' : 4 * np.pi * 10,  # Q = 4 pi kD
+        'D' : np.array([1., 10.]),
+        'kr': np.array([1e-6, 1e+0]),
+        'kz': np.array([1e+6, 1e+6]),
+        'Ss': np.array([1e-1, 1e-6]),
+        'c' : np.array([9e+3]),
+        'e':  np.array([0., 1]),
+        'topclosed': False,
+        'botclosed': True,
+        'label': 'Hantush (1955)',
+    },
     'Boulton': {'name': 'Bouton (1963) Delayed yield',
-        'rw': 0.5,
-        'rc': 0.5,
-        'Q' : 1.2e+3,
-        'kD': np.array([1e-6, 1e+2]) * 1.5,
-        'S' : np.array([1e-1, 1e-3]),
-        'c' : np.array([1e+5, 1e+2, 1e+2]) * 2.5,
+        't' : None,
+        'r' : np.hstack((0., np.logspace(-1, 6, 141))),
+        'z0': 0.,
+        'rw': 0.01,
+        'rc': 0.01,
+        'Q' : 4 * np.pi * 10,  # Q = 4 pi kD
+        'D' : np.array([1., 10.]),
+        'kr': np.array([1e-6, 1e+0]),
+        'kz': np.array([1e+6, 1e+6]),
+        'Ss': np.array([1e-1, 1e-6]),
+        'c' : np.array([9e+3]),
+        'e':  np.array([0., 1]),
         'topclosed': True,
         'botclosed': True,
         'label': 'Boulton (1963)',
         },
-    'Hant1': {'name': 'Hantush using one layer', # Hantush (single layer, does it work with one aquifer?)
-        'rw': 0.5,
-        'rc': 0.5,
-        'Q' : 1.2e+3,
-        'kD': np.ones(21) * 150,
-        'S' : np.array([1e-1]),
-        'c' : np.array([1e+3, 1e+7]), # Artificially closed using high c at bottom
-        'topclosed': False,
-        'botclosed': True, # This should also work
-        'label': 'Hantush',
-        },
-    'Moench': {'name': 'Moench using 20 sublaters and 1 drainage layer on top',
-        'rw': 0.5,
-        'rc': 0.5,
-        'Q' : 1.2e+3,
-        'kD': np.hstack((1e-5, np.ones(20) * 150)),
-        'S' : np.hstack((0.1,  np.ones(20) * 1e-3)),
-        'c' : np.hstack((100., np.ones(21) * 100.)),
+    
+    'Vennebulten': {'name': 'Kruse & De Ridder (1994, p105) Delayed yield',
+        't' : np.logspace(0, 5, 101) /(24 * 60), # d
+        'r' : np.hstack((0., np.logspace(-1, 4, 41))),
+        'z0': 0.,
+        'rw': 0.1,
+        'rc': 0.1,
+        'rp': [10., 30., 90., 280.],
+        'Q' : 873,  # m3/d
+        'D' : np.array([10., 11.]),
+        'kr': np.array([0.4, 135.]),
+        'kz': np.array([0.04, 13.5]),
+        'Ss': np.array([5e-3 / 10., 5e-4 / 11.]),
+        'c' : np.array([0.]),
+        'e':  np.array([0., 1]),
         'topclosed': True,
         'botclosed': True,
-        'label': 'Moench (95, 96) (20 layers)',
+        'label': 'Vennebulten (1966)',
         },
-    'PPW': { 'name': 'Partially penetrating well', 
+
+    'Moench': {'name': 'Moench using 20 sublaters and 1 drainage layer on top',       
+        't' : None,
+        'r' : np.hstack((0., np.logspace(-1, 6, 141))),
+        'z0': 1.0,
+        'rw': 0.01,
+        'rc': 0.01,
+        'Q' : 4 * np.pi / 20.,  # Q = 4 pi kD
+        'D' : np.ones(21),
+        'kr': np.hstack((1e-6, np.ones(20))),
+        'kz': np.hstack((1e+6, np.ones(20))),
+        'Ss': np.hstack((1e-1, np.ones(20) * 1e-6)), 
+        'c' : np.hstack((9000, np.zeros(19))),
+        'e':  np.hstack((0, np.ones(20, dtype=int))),
+        'topclosed': True,
+        'botclosed': True,
+        'label': 'Moench (1995/95)',
+        },
+'PPW': { 'name': 'Partially penetrating well', 
         'rw': 0.5,
         'rc': 0.5,
         'Q' : 1.2e+3,
@@ -426,38 +465,74 @@ cases ={ # Numbers refer to Hemker Maas (1987 figs 2 and 3)
         },
 }
     
-def hemk99numerically(t=None, z=None, r=None, rw=None, rc=None, **kw):
+def hemk99numerically(t=None, z=None, r=None, rw=None, rc=None, topclosed=True, **kw):
     """Check Hemker(1999) numerically.
     
-    Run axially multilayer model and show results for r, z as function of t
-    if t is an array
+    Run axially multilayer model. To deal with multiple screens, and uniform
+    head inside the well, rPVC and rOut are included in the distance array.
+    Then rW < r < rPVC is considered PVC in the unscreend layers. And
+    rPVC < r < rOut is considered just out of the well representing the
+    head just outside the well casing both where the well is screend and where
+    it is unscreend. Just in plotting for all r, only the heads for r > r[2] == rPVC
+    are shown by showPhi.
+    
+    
+    Parameter
+    ----------
+    t: simulation times
+        times
+    z: None, sequence of array
+       elevation of layer planes (tops and bottoms in one array)
+    r: np.array of floats
+        distances from well center
+    rw: float
+        well radius; must be same as r[1]
+    rc: float
+        radius of well bore storage, used to calculation Ss in top well cell.
     """
+    AND, NOT = np.logical_and, np.logical_not
     _, _, kw = assert_input(**kw)
+        
+    # Make sure rw is r[1] and we include rw + dr
+    dr = 0.005
+    r = np.hstack((r[0], rw, rw + dr, r[r > rw + dr]))
     
     gr = Grid(r, None, kw['z'], axial=True)
 
-    e = kw['e']
+    # Well screen array
+    e = kw['e'][:, np.newaxis, np.newaxis] #  * np.ones((1, gr.nx))
+    E = e * np.ones((1, gr.nx))
     
-    inwell = np.logical_and(gr.XM < rw, e[:, np.newaxis, np.newaxis] * np.ones((1, gr.nx)))
-        
+    screen = AND(gr.XM < rw,     E)
+    casing = AND(gr.XM < rw, NOT(E))
+    
+    # No fixed heads
     IBOUND = gr.const(1, dtype=int)
-    kr = gr.const(kw['kr']); kr[inwell] = 1e6 # inside well
-    kz = gr.const(kw['kz']); kz[inwell] = 1e6 # inside well
+    if not topclosed:
+        IBOUND[0,  :, 1:] = -1
+    
+    # No horizontal flow in casing, vertical flow in screen and casing
+    kr = gr.const(kw['kr']); kr[screen] = 1e+6; kr[casing]=1e-6 # inside well
+    kz = gr.const(kw['kz']); kz[screen] = 1e+6; kz[casing]=1e+6 # inside well
+    
     c  = gr.const(kw['c'])
+    c[:, :, gr.xm < rw] = 0. # No resistance in well
+    
     Ss = gr.const(kw['Ss'])
+    Ss[0, 0, 0] = (rc / rw) ** 2 / gr.DZ[0, 0, 0] # Well bore storage (top well cell)
+    
     HI = gr.const(0.)
     FQ = gr.const(0.)
     
+    # Boundary conditions, extraction from screens proportional to kDscreen / kDwell
     kD = kw['kr'] * kw['D']
-    
-    # Boundary conditions
-    FQ[e != 0, 0, 0] = kw['Q'] * kD[e != 0] / np.sum(kD[e != 0])
-            
+    FQ[e.ravel() != 0, 0, 0] = kw['Q'] * kD[e.ravel() != 0] / np.sum(kD[e.ravel() != 0])
+           
     return fdm3t(gr=gr, t=t, kxyz=(kr, kr, kz), Ss=Ss, c=c,
                 FQ=FQ, HI=HI, IBOUND=IBOUND)
     
 def showPhi(t=None, r=None, z=None, IL=None, method=None, fdm3t=None,
-              xlim=None, ylim=None, xscale=None, yscale=None, **kw):
+              xlim=None, ylim=None, xscale=None, yscale=None, show=True, **kw):
     """Return head for given times, distances and layers.
     
     Parameters
@@ -472,6 +547,10 @@ def showPhi(t=None, r=None, z=None, IL=None, method=None, fdm3t=None,
         layers for which output is desired of none for specified (interpolated) zs is use
     method: 'linear', 'cubic' or 'spline'
         interpolation method
+    fdm3t: dictionary
+        output of fdm.fdrm3t.fdm3t
+    show: bool
+        Weather to plot or only return PhiI
     
     Options:
     if t is None and z is not None:
@@ -535,6 +614,9 @@ def showPhi(t=None, r=None, z=None, IL=None, method=None, fdm3t=None,
         L, T, R = np.meshgrid(IL, t, r)
         PhiI = interp(np.vstack((T.ravel(), L.ravel(), R.ravel())).T).reshape(T.shape)
 
+    if show == False:
+        return PhiI
+
     graphOpts = {
         1: {'title': '(z, r) comb. for all t',   'xlabel': 'time [d]', 'ylabel': 'h [m]',
             'label': 'z={:.4g} m, r={:4g} m'},
@@ -546,7 +628,6 @@ def showPhi(t=None, r=None, z=None, IL=None, method=None, fdm3t=None,
             'label': 't={:4g} d, layer={}'},
     }
     
-    
     o = graphOpts[option]
     ax = newfig(o['title'], o['xlabel'], o['ylabel'], xlim=xlim, ylim=ylim,
                 xscale=xscale, yscale=yscale)
@@ -554,21 +635,23 @@ def showPhi(t=None, r=None, z=None, IL=None, method=None, fdm3t=None,
     if option == 1:
         for iz, z_ in enumerate(z):
             for ir, r_ in enumerate(r):
-                ax.plot(t, PhiI[:, iz, ir], label=o['label'].format(z_, r_))
+                ax.plot(t[1:], PhiI[1:, iz, ir], label=o['label']
+                        .format(z_, r_))
     if option == 2:
         for il, iL_ in enumerate(IL):
             for ir, r_ in enumerate(r):
-                ax.plot(t, PhiI[:, il, ir], label=o['label']
+                ax.plot(t[1:], PhiI[1:, il, ir], label=o['label']
                         .format(iL_,r_))                    
     if option == 3:
         for it, t_ in enumerate(t):
-            for iz, z_ in enumerate(r):
-                ax.plot(r, PhiI[it, iz, :], label=o['label'].format(t_, z_))
+            for iz, z_ in enumerate(z):
+                ax.plot(r[1:], PhiI[it, iz, 1:], label=o['label']
+                        .format(t_, z_))
     if option == 4:
         for it, t_ in enumerate(t):
             for il, iL_ in enumerate(IL):
-                ax.plot(r, PhiI[it, iL_, :], label=o['label']
-                    .format(t_, iL_))                    
+                ax.plot(r[1:], PhiI[it, iL_, 1:], label=o['label']
+                        .format(t_, iL_))                    
 
     ax.legend(loc='best')
     return PhiI, ax
@@ -578,17 +661,171 @@ if __name__ == "__main__":
     ts =np.linspace(0, 50, 11)
     rs = np.array([1.0, 3.0, 10., 30., 100., 300., 1000., 3000., 10000.])
  
-    case = 'test0'
-    kw = cases[case]
-        
-    out = hemk99numerically(**kw)
-        
-    PhiI, ax = showPhi(t=None, r=500, z=[-5, -35], IL=None, method='linear', fdm3t=out,
-              xlim=None, ylim=None, xscale=None, yscale=None)
+    case = 'Moench'
     
-    print('Done')
+    if case == 'test0':
+        kw = cases[case]
+
+        out = hemk99numerically(**kw)
+
+        PhiI, ax = showPhi(t=None, r=[5, 50, 500], z=[-5, -35], IL=None,
+                        method='linear', fdm3t=out,
+                        xlim=None, ylim=None, xscale=None, yscale=None)
+
+        PhiI, ax = showPhi(t=None, r=[5, 50, 500], z=None, IL=[0, 1, 2],
+                            method='linear', fdm3t=out,
+                            xlim=None, ylim=None, xscale=None, yscale=None)
+
+        PhiI, ax = showPhi(t=[1, 3, 10], r=None, z=[-5, -20, -35], IL=None,
+                        method='linear', fdm3t=out,
+                        xlim=None, ylim=None, xscale='log', yscale=None)
+
+        PhiI, ax = showPhi(t=[1, 3, 10], r=None, z=None, IL=[0, 1, 2],
+                        method='linear', fdm3t=out,
+                        xlim=None, ylim=None, xscale='log', yscale=None)
+        
+    if case == 'Boulton' or case=='Hantush':
+        # Hantush = Boulton with topclosed == False
+        kw = cases[case]
+        
+        r_ = 500.
+
+        tauA = np.logspace(-2, 9, 111) # A is aquifer (layer 1)
+
+        kD = kw['kr'][1] * kw['D'][1]        
+        Sy = kw['D'][0] * kw['Ss'][0]
+        SA = kw['D'][1] * kw['Ss'][1]
+        
+        kw['t'] = r_  ** 2 * SA * tauA / (4 * kD) 
+
+        tauB = 4 * kD * kw['t'] / (r_ ** 2 * Sy)
+
+        title ='{}, type curves and time-dependent drainage for r/B from 0.01 to 3'\
+                    .format(kw['name'])
+        xlabel = r'$\tau = 4 kD t /(r^2 S_2)$'
+        ylabel = r'$\sigma = 4 \pi kD s / Q$' 
+        ax = newfig(title, xlabel, ylabel,
+                    ylim=(1e-3, 1e2), xlim=(1e-1, 1e9),
+                    xscale='log', yscale='log')
+
+        ax.plot(tauA, scipy.special.exp1(1/tauA), 'r', lw=3, label='Theis for SA')
+        ax.plot(tauA, scipy.special.exp1(1/tauB), 'b', lw=3, label='Theis for Sy + SA')
+        
+        r_B = np.array([0.01, 0.1, 0.2, 0.4, 0.6, 0.8, 1.0, 1.5, 2.0, 2.5, 3.0])
+        
+        cc = color_cycler()
+        
+        for rho in r_B:
+            
+            color = next(cc)
+            
+            B = r_ / rho
+            kw['c'][0] = np.array([B ** 2 / kD])
+            
+            out = hemk99numerically(**kw)
+        
+            PhiI = showPhi(t=None, r= rho * B, z=None, IL=[0, 1],
+                            method='linear', fdm3t=out,
+                            xlim=None, ylim=None, xscale='log', yscale='log', show=False)
+
+            if case == 'Hantush':
+                assert kw['topclosed'] == False, 'topclosed must be False for Hantush!'
+                ax.plot(tauA, hantush_conv.Wh(1/tauA, rho)[0], color=color, marker='x',
+                        label='Wh(tau, {:.4g})'.format(rho))
+            else:
+                assert kw['topclosed'] == True, 'topclosed must be true for Boulton'
+
+            for il in [0, 1]:
+                sigma = 4 * np.pi * kD / kw['Q'] * PhiI[:, il, 0]
+                if rho in [0.01, 1.0, 1.5, 3.]:
+                    label = 'r/B = {}'.format(rho)
+                    lw = 2.
+                else:
+                    label = '_'
+                    color = 'k'
+                    lw = 0.5
+                ax.plot(tauA[1:], sigma[1:], color=color, lw=lw, label=label)
+        
+        ax.legend(loc='lower right')
+        
+        
+    if case == 'Moench':
+        kw = cases[case]
+        
+        r_ = 500.
+
+        tauA = np.logspace(-2, 5, 71) # A is aquifer (layer 1)
+
+        kD = np.sum(kw['kr'][1:] * kw['D'][1:])
+        Sy = kw['D'][0] * kw['Ss'][0]
+        SA = np.sum(kw['D'][1:] * kw['Ss'][1:])
+        
+        kw['t'] = r_  ** 2 * SA * tauA / (4 * kD) 
+
+        tauB = 4 * kD * kw['t'] / (r_ ** 2 * Sy)
+
+        title ='{}, type curves and time-dependent drainage for values of gamma'\
+                    .format(kw['name'])
+        xlabel = r'$\tau = 4 kD t /(r^2 S_2)$'
+        ylabel = r'$\sigma = 4 \pi kD s / Q$' 
+        ax = newfig(title, xlabel, ylabel,
+                    ylim=(1e-2, 1e1), xlim=(1e-1, 1e5),
+                    xscale='log', yscale='log')
+
+        ax.plot(tauA, scipy.special.exp1(1/tauA), 'r', lw=3, label='Theis for SA')
+        ax.plot(tauA, scipy.special.exp1(1/tauB), 'b', lw=3, label='Theis for Sy + SA')
+        
+        gammas = np.array([1.0, 10., 100.])
+        
+        cc = color_cycler()
+        
+        for gamma in gammas:
+            
+            c2 = np.sum(kw['D'][1:] / kw['kz'][1:])
+            color = next(cc)
+            
+            kw['c'][0] = gamma * c2
+            
+            out = hemk99numerically(**kw)
+        
+            PhiI = showPhi(t=None, r= r_, z=None, IL=[1, 20],
+                            method='linear', fdm3t=out,
+                            xlim=None, ylim=None, xscale='log', yscale='log', show=False)
+
+            assert kw['topclosed'] == True, 'topclosed must be true for Boulton'
+
+            for il in [1, -1]:
+                sigma = 4 * np.pi * kD / kw['Q'] * PhiI[:, il, 0]
+                label = 'gamma = {}'.format(gamma)
+                lw = 2.
+                ax.plot(tauA[1:], sigma[1:], color=color, lw=lw, label=label)
+        
+        ax.legend(loc='lower right')
+        
+        
+        
+    
+    if case == 'Vennebulten':
+        kw = cases[case]
+
+        out = hemk99numerically(**kw)
+
+        kD = kw['kr'][1] * kw['D'][1]
+        B = np.sqrt(kD * kw['c'][0])
+        c = kw['c'][0]
+        
+        PhiI, ax = showPhi(t=None, r=[90.], z=None, IL=[1],
+                        method='linear', fdm3t=out,
+                        xlim=None, ylim=None, xscale='log', yscale='log')
+        
+        ax.set_title('{}, kD={:.4g} m2/d, kz={}, Sa = {}, Sy = {}'\
+            .format(kw['name'], kD, kw['kz'][0],
+                    kw['Ss'][1] * kw['D'][1],
+                    kw['Ss'][0] * kw['D'][0]))
+    
     plt.show()
     
+    print('Done')
     
     raise SystemExit
     
