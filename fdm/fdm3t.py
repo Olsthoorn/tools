@@ -108,6 +108,8 @@ def fdm3t(gr=None, t=None, kxyz=None, c=None, Ss=None,
         Rx2 = Rx1
         Ry1 = 0.5 *    dy / (gr.DZ *    dx) / ky
         Rz1 = 0.5 * gr.DZ / (   dx *    dy) / kz
+        if c is not None:
+            Rc  = c / (dx * dy)
     else:
         # prevent div by zero warning in next line; has no effect because x[0] is not used
         x = gr.x.copy();  x[0] = x[0] if x[0]>0 else 0.001* x[1]
@@ -116,6 +118,8 @@ def fdm3t(gr=None, t=None, kxyz=None, c=None, Ss=None,
         Rx2 = 1 / (2 * np.pi * kx * gr.DZ) * np.log(gr.xm / x[:-1]).reshape((1, 1, gr.nx))
         Ry1 = np.inf * np.ones(gr.shape)
         Rz1 = 0.5 * gr.DZ / (np.pi * (gr.x[1:]**2 - gr.x[:-1]**2).reshape((1, 1, gr.nx)) * kz)
+        if c is not None:
+            Rc  = c / (np.pi * (gr.x[1:]**2 - gr.x[:-1]**2).reshape((1, 1, gr.nx)))
 
     # set flow resistance in inactive cells to infinite
     Rx1[inact.reshape(gr.shape)] = np.inf
@@ -131,7 +135,7 @@ def fdm3t(gr=None, t=None, kxyz=None, c=None, Ss=None,
     if c is None:
         Cz = 1 / (Rz1[1:, :, :] + Rz2[:-1,:  ,:  ])
     else:
-        Cz = 1 / (Rz1[1:, :, :] + c + Rz2[:-1,:  ,:  ])
+        Cz = 1 / (Rz1[1:, :, :] + Rc + Rz2[:-1,:  ,:  ])
 
     # storage term, variable dt not included
     Cs = (Ss * gr.Volume / epsilon).ravel()
