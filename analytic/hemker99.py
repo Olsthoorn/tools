@@ -56,6 +56,12 @@ def sysmat(p=None, kD=None, c=None, S=None,
     botclosed: bool
         bottom of system is closed (impervious)
     """
+    n = len(kD)
+    if topclosed and len(c) < n:
+        c = np.hstack((np.inf, c))
+    if botclosed and len(c) < n + 1:
+        c = np.hstack((c, np.inf))
+        
     aSt = np.ones_like(c)
     bSt = np.ones_like(c)
     B = - np.diag(aSt[ :-1] / c[ :-1] + aSt[1:] / c[1:], k=0)\
@@ -163,9 +169,9 @@ def sLaplace(p=None, r=None, rw=None, rc=None,
     Tm05   = np.diag(1. / np.sqrt(kD))
     
     T = np.diag(kD)
-    Ti = kD * E # vector of floats
+    Ti = kD * e # vector of floats
     Tw = np.sum(Ti)
-    One = np.ones((len(kD), 1))
+    One = np.ones((np.sum(e > 0), 1))
     
     C1 = Q / (2 * np.pi * Tw) # float, constant
     C2 = rc ** 2 / (2 * Tw)   # float, constant
@@ -179,27 +185,27 @@ def sLaplace(p=None, r=None, rw=None, rc=None,
                     (rw * np.sqrt(W.real) * sp.k1(rw * np.sqrt(W.real))))
     
     E = np.diag(e)[:, e != 0]
-    assert np.all(E.T @ e[:, np.newaxis] == np.ones((len(e), 1))
+    assert np.all(E.T @ e[:, np.newaxis] == np.ones(len(e[e > 0]))
                   ), "E.T @ e must be all ones"
         
     U   = E.T @ V @ (np.eye(len(kD)) + p * C2 * K0K1r) @ Vm1 @ E
     Um1 = la.inv(U)
 
-    s_ = Q / (2 * np.pi * p * Tw) @ V @ K0K1r @ V.T @ T @ E @ Um1 @ One
+    s_ = Q / (2 * np.pi * p * Tw) * V @ K0K1r @ V.T @ T @ E @ Um1 @ One
     
     return s_.flatten() # Laplace drawdown s(p)
 
 
 def assert_input(ts=None, rs=None, z0=None, D=None, kr=None, kz=None, c=None,
-                 Ss=None, e=None, **kwargs):
+                 Ss=None, e=None, **kw):
     """Return r, t after verifying length of variables.
     
     Parameters
     ----------
-    ts: float or np.ndarray [d]
-        tine or times
-    rs: float or np.ndarray [m]
-        distances to well center
+    ts:  float or np.ndarray [d]
+        time or times, analytical solution
+    rs:  float or np.ndarray [m]
+        distances to well center, analytical solution
     z0: float
         top of flow system (top of top aquitard)
     rw: float [m]
@@ -219,19 +225,18 @@ def assert_input(ts=None, rs=None, z0=None, D=None, kr=None, kz=None, c=None,
     e: np.ndarray [-] length n
        screened aquifers indicated by 1 else 0
     """
-    assert not (isinstance(ts, np.ndarray) and isinstance(rs, np.ndarray)),\
-        "ts and rs must not both be vectors, at least one must be a scalar."
+    assert kw['r'] is not None, "r must not be None"
     
-    t = ts if np.isscalar(ts) else None
-    r = rs if np.isscalar(rs) else None
-    
+    if np.isscalar(rs): rs = [rs]
+    if rs is not None: rs = np.array(rs)
+        
     if c is None:
         c = np.zeros_like(D)[:-1]
     
     for name, var in zip(['kr', 'kz', 'D', 'c', 'Ss', 'e'],
                          [kr, kz, D, c, Ss, e]):
         assert isinstance(var, np.ndarray), "{} not an np.ndarray".format(name)
-        kwargs[name] = var
+        kw[name] = var
      
     assert len(D) == len(kr),  "Len(D) {} != len(k) {}".format(len(D), len(kr))
     assert len(c) == len(D) - 1 , "Len(c)={} != len(D) - 1 = {}".format(len(c), len(D) - 1)
@@ -243,13 +248,29 @@ def assert_input(ts=None, rs=None, z0=None, D=None, kr=None, kz=None, c=None,
     assert np.all(np.array([ee == 0 or ee == 1 for ee in e], dtype=bool)),\
             'All values in e must be 0 or 1'
     
-    kwargs['z0'] = z0
-    kwargs['z' ] = np.hstack((z0, z0 -  np.cumsum(D)))
-    kwargs['kD'] = D * kr
-    kwargs['C']  = 0.5 * (D / kz)[:-1] + c + 0.5 * (D / kz)[1:]
-    kwargs['S']  = D * Ss
+    kw['z0'] = z0
+    kw['z' ] = np.hstack((z0, z0 -  np.cumsum(D)))
+    kw['kD'] = D * kr
+    kw['C']  = 0.5 * (D / kz)[:-1] + c + 0.5 * (D / kz)[1:]
+    kw['S']  = D * Ss
+    
+    kD = np.sum(kw['kD'][1:])
+    
+    # Simulation time and Q
+    if kw['Q'] is None:
+        kw['Q'] = 4 * np.pi * kD
+    
+    if t is None:
+        kw['t'] = kw['Q'] / (4 * np.pi * kD) * kw['tau']
+    else:
+        kw['t'] = np.array(kw['t'])
         
-    return t, r, kwargs
+    assert isinstance(kw['t'], np.ndarray) and isinstance(kw['r'], np.ndarray),\
+        "t and r must both be vectors, at this point."
+        
+    kw['shape'] = (len(ts), len(D), len(rs))
+
+    return ts, rs, kw
 
 def backtransform(t, r, rw=None, rc=None, Q=None, kD=None,
                   c=None, S=None, e=None, **kwargs):
@@ -257,9 +278,9 @@ def backtransform(t, r, rw=None, rc=None, Q=None, kD=None,
 
     Parameters
     ----------
-    ts: float or np.ndarray [d]
-        tine or times
-    rs: float or np.ndarray [m]
+    t:  float or np.ndarray [d]
+        tinme or times
+    r:  float or np.ndarray [m]
         distances to well center
     rw: float [m]
         well radius
@@ -285,65 +306,53 @@ def backtransform(t, r, rw=None, rc=None, Q=None, kD=None,
     return s.flatten()
 
 
-def solution(ts=None, rs=None, rw=None, rc=None,
-             Q=None, kD=None, c=None, S=None, e=None, **kwargs):
+def solution(ts=None, rs=None, **kw):
     """Return the multilayer transient solution Maas Hemker 1987
     
-    ts: float or np.ndarray [d]
+    ts:  float or np.ndarray [d]
         Time at which the dradown is to be computed
-    rs: float or np.ndarray [m]
+    rs:  float or np.ndarray [m]
         Vector of distances from the well center at which drawdown is computed
-    rw: float [m]
-        well radius
-    rc: float [m]
-        radius of casing or storage part of well in which water table fluctuates
-    Q: float
-        Vector of extractions from the aquifers
-    kD: np.ndarray
-        Vector of transmissivities of the aquifers [m2/d]
-    c:  np.ndarray
-        Vector of the vertical hydraulic resistances of the aquitards [d]
-    S:  np.ndarray
-        Vector of  the storage coefficients of the aquifers
-    e: np.ndarray [-] length n
-       screened aquifers indicated by 1 else 0
+    kw: dict
+     other required and superfluous arguments
         
     Notice
     ------
-    Either ts or rs must be a scalar.
+    Either t or r must be a scalar.
         
     Returns
     -------
-    s[:, ts] for given r if rs is scalar
+    s[:, t] for given r if r is scalar
     or
-    s[:, rs] for given t if ts is scalar
+    s[:, r] for given t if t is scalar
     or
-    s[:, 0] for both rs and ts scalars
+    s[:, 0] for both r and t scalars
     """
-
-    t, r = assert_input(ts, rs, Q=Q, kD=kD, c=c, S=S, e=e)
+    _, _, kw = assert_input(ts=ts, rs=rs, **kw)
     
-    if isinstance(rs, np.ndarray):        
-        s = np.zeros((len(kD), len(rs)))
-        for ir, r in enumerate(rs):
-            s[:, ir] = backtransform(t, r, rw=rw, rc=rc, Q=Q,
-                                     kD=kD, c=c, S=S, e=e, **kw)
-    elif isinstance(ts, np.ndarray):
-        s = np.zeros((len(kD), len(ts)))
-        for it, t in enumerate(ts):
-            s[:, it] = backtransform(t, r, rw=rw, rc=rc, Q=Q, kD=kD, c=c, S=S, e=e, **kw)
-    else:
-        s = np.zeros((len(kD), 1))
-        s[:, 0] = backtransform(t, r, rw=rw, rc=rc, Q=Q, kD=kD, c=c, S=S, e=e, **kw)
-        
-    return s # Drawdown s[:, it] or s[:, ir] or s[:, 0]
+    n = len(kw['D'])
+    c = kw['c']
 
+    kw['c'] = np.hstack((0, c, 0))\
+        if len(c) == n - 1 else np.hstack((c, 0))\
+            if len(c) == n else c
+    
+    kw['c'][:-1] += 0.5 * (kw['D'] / kw['kz'])
+    kw['c'][1: ] += 0.5 * (kw['D'] / kw['kz'])
+    
+    
+    s = np.zeros(kw['shape'])
+    for it, t in enumerate(ts):
+        for ir, r in enumerate(rs):
+            s[it, :, ir] = backtransform(t=t, r=r, **kw)
+    return s # Drawdown s[it, il, ir]
 
 cases ={ # Numbers refer to Hemker Maas (1987 figs 2 and 3)
     'test0': {
-        'name': 'Test input and plotting',
-        't': np.logspace(-3., 1., 40),
-        'r': np.hstack((0., np.logspace(-1., 4., 100))), # [0, rw, rPVC ...
+        'name': 'Test input and plotting', # (4 pi kD / Q) t
+        't': None,
+        'tau': np.logspace(-3, 1., 41),
+        'r': np.hstack((0., np.logspace(-1., 4., 101))), # [0, rw, rPVC ...
         'z0': 0.,
         'rw': 0.1,
         'rc': 10.,
@@ -353,7 +362,7 @@ cases ={ # Numbers refer to Hemker Maas (1987 figs 2 and 3)
         'kz': np.array([ 1., 1., 0.1, 0.1]),
         'Ss': np.array([10., 10., 1., 1.,]) * 1e-5,
         'c' : np.array([0., 0., 0.,]),
-        'e' : np.array([1, 0, 0, 0]),
+        'e' : np.array([1, 1, 1, 0]),
         'topclosed': True,
         'botclosed': True,
         'label': 'Test input',
@@ -455,7 +464,7 @@ cases ={ # Numbers refer to Hemker Maas (1987 figs 2 and 3)
         'D' : np.ones(21),
         'kr': np.hstack((1e-6, np.ones(20))),
         'kz': np.hstack((1e+6, np.ones(20) * 1e-1)),
-        'Ss': np.hstack((1e-1, np.ones(20) * 1e-5)), 
+        'Ss': np.hstack((1e-1, np.ones(20) * 1e-4)), 
         'c' : None, # depends on gamma
         'e':  np.hstack((0, np.ones(20, dtype=int))),
         'topclosed': True,
@@ -465,6 +474,7 @@ cases ={ # Numbers refer to Hemker Maas (1987 figs 2 and 3)
     'Boulton Well Bore Storage': {
         'name': 'Boulton Well Bore Storage and Delayed Yield',
         't' : None,
+        'tau': np.logspace(-2, 5, 71),
         'r' : np.hstack((0., np.logspace(-1, 6, 141))),
         'z0': 0.,
         'rw': 0.128,
@@ -483,6 +493,7 @@ cases ={ # Numbers refer to Hemker Maas (1987 figs 2 and 3)
     'H99 F4': {
         'name': 'Partially penetrating well with vertically varying Ss', 
         't' : None,
+        'tau': np.logspace(-2, 7, 91),
         'r' : np.hstack((0., np.logspace(-1, 6, 141))),
         'z0': 0.,
         'rw': 0.128,
@@ -498,28 +509,27 @@ cases ={ # Numbers refer to Hemker Maas (1987 figs 2 and 3)
         'botclosed': True,
         'label': 'Boulton (19??)',
         },
-    'H99 F6': {
-        'name': 'Wellbore storage: P&S (1967), B&S (1976)', 
-        'comment': """Fully penetrating well in confinded aquifer with well-bore storage, no delayed yield.
-        
-        To verify multi- layer results, a more complicated solution for flow to a
+    'H99 F6 well bore storage ppw': {
+        'name': 'Wellbore storage: P&S (1967), B&S (1976)',
+        'comment':"""To verify multi- layer results, a more complicated solution for flow to a
         partially penetrating well with wellbore storage, recharged by a no-drawdown top boundary
         (Boulton and Streltsova, 1976) was used. The plotted family of type curves (Fig. 6) are
         dimensionless drawdowns in the second layer of a five-layer model with storativity S = 1e-3 at dimensionless distances of 0.001, 0.1 and 0.5, discharged by a well of various diameters, screened in the upper three layers. 
         """,
         't' : None,
-        'r' : np.hstack((0., np.logspace(-1, 6, 141))),
-        'z0': 0.,
-        'rw': 0.1,
-        'rc': 0.1,
-        'Q' : 1.2e+3,
-        'D' : np.array([1.0, 1.0]),
-        'kr': np.array([1e-3, 1.0]),
-        'kz': np.array([1e-3, 1e-6]),
-        'Ss': np.array([1e-7, 1e-3]),
-        'c' : None,
-        'e' : np.array([1]),
-        'topclosed': True,
+        'tau': np.logspace(-2, 5, 71),
+        'r' : np.hstack((0., np.logspace(-1, 4, 101))),
+        'z0': 1.0,
+        'rw': 0.01,
+        'rc': 0.01,
+        'Q' : None,
+        'D' : np.ones(6),
+        'kr': np.hstack((1e-6, np.ones(5))),
+        'kz': np.hstack((1e+6, np.ones(5) * 1e-1)),
+        'Ss': np.hstack((1e-1, np.ones(5) * 0.2e-3)), 
+        'c' : None, # depends on gamma
+        'e':  np.array([0, 1, 1, 1, 0, 0], dtype=int),
+        'topclosed': False,
         'botclosed': True,
         'label': 'Papadopoulos & Cooper (1967)',
     },
@@ -540,6 +550,7 @@ cases ={ # Numbers refer to Hemker Maas (1987 figs 2 and 3)
         although prominent in the well, has practically disappeared at the base of the aquifer.
         """,
         't' : None,
+        'tau': np.logspace(-3, 6, 91),
         'r' : np.hstack((0., np.logspace(-1, 6, 141))),
         'z0': 0.,
         'rw': 0.1,
@@ -591,6 +602,7 @@ cases ={ # Numbers refer to Hemker Maas (1987 figs 2 and 3)
             and estimated Ss-values for the sublayers of 7., 5., 3.5, 2.5 and 2. x 1e-5.
             """,
         't' : None,
+        'tau': np.logspace(-2, 8, 81),
         'r' : np.hstack((0., np.logspace(-1, 6, 141))),
         'z0': 0.,
         'rw': 0.1,
@@ -627,7 +639,7 @@ cases ={ # Numbers refer to Hemker Maas (1987 figs 2 and 3)
         },
 }
     
-def hemk99numerically(t=None, z=None, r=None, rw=None, rc=None, topclosed=True, botclosed=True, **kw):
+def hemk99numerically(z=None, rw=None, rc=None, topclosed=True, botclosed=True, **kw):
     """Check Hemker(1999) numerically.
     
     Run axially multilayer model. To deal with multiple screens, and uniform
@@ -645,8 +657,6 @@ def hemk99numerically(t=None, z=None, r=None, rw=None, rc=None, topclosed=True, 
         times
     z: None, sequence of array
        elevation of layer planes (tops and bottoms in one array)
-    r: np.array of floats
-        distances from well center
     rw: float
         well radius; must be same as r[1]
     rc: float
@@ -658,7 +668,7 @@ def hemk99numerically(t=None, z=None, r=None, rw=None, rc=None, topclosed=True, 
     _, _, kw = assert_input(**kw)
         
     # Make sure rw is r[1] and we include rw + dr
-    dr = 0.005
+    r, dr = kw['r'], 0.005
     r = np.hstack((r[0], rw, rw + dr, r[r > rw + dr]))
     
     gr = Grid(r, None, kw['z'], axial=True)
@@ -696,7 +706,7 @@ def hemk99numerically(t=None, z=None, r=None, rw=None, rc=None, topclosed=True, 
     kDwell   = np.sum(kDscreen)
     FQ[:, 0, 0] = kw['Q'] * kDscreen / kDwell
            
-    return fdm3t(gr=gr, t=t, kxyz=(kr, kr, kz), Ss=Ss, c=c,
+    return fdm3t(gr=gr, t=kw['t'], kxyz=(kr, kr, kz), Ss=Ss, c=c,
                 FQ=FQ, HI=HI, IBOUND=IBOUND)
     
 def showPhi(t=None, r=None, z=None, IL=None, method=None, fdm3t=None,
@@ -827,18 +837,22 @@ def showPhi(t=None, r=None, z=None, IL=None, method=None, fdm3t=None,
     
 if __name__ == "__main__":
       
-    ts =np.linspace(0, 50, 11)
-    rs = np.array([1.0, 3.0, 10., 30., 100., 300., 1000., 3000., 10000.])
- 
+    case = 'test0'
     # case = 'Boulton Well Bore Storage'
     # case = 'H99_F08'
     # case = 'H99_F07 Szeleky'
-    # case = 'H99 F6'
+    #case = 'H99 F6 well bore storage ppw'
     # case = 'H99 F2 Boulton'
-    case = 'H99 F3 Moench'
+    # case = 'H99 F3 Moench'
     
     # TODO: not yet right
     kw = cases[case]
+    
+    t = kw['t']
+    D  = kw['D']
+    kD = np.sum(kw['kr'][1:] * D[1:])
+    Q  = kw['Q']
+    ts = t if t is not None else ...
     
     if case == 'H99_F07 Szeleky':
         # TODO: Not yet right
@@ -979,6 +993,8 @@ if __name__ == "__main__":
     if case == 'test0':
 
         out = hemk99numerically(**kw)
+        sa  = solution(ts=np.logspace(-1, 6, 22), rs=[5, 50, 500], **kw)
+        
 
         PhiI, ax = showPhi(t=None, r=[5, 50, 500], z=[-5, -35], IL=None,
                         method='linear', fdm3t=out,
@@ -1078,7 +1094,7 @@ if __name__ == "__main__":
         # the delayed yield is due to vertical anisotropy.
         kw = cases[case]
         
-        r_ = 500.
+
 
         tauA = np.logspace(-2, 5, 71) # A is aquifer (layer 1)
 
@@ -1086,23 +1102,29 @@ if __name__ == "__main__":
         C  = np.sum(kw['D'][1:] / kw['kz'][1:])
         kD = np.sum(kw['D'][1:] * kw['kr'][1:])
         Sy = kw['D'][0] * kw['Ss'][0]
-        SA = np.sum(kw['D'][1:] * kw['Ss'][1:])
+        SA = 1e-3 * Sy
+        kw['Ss'][1:] = SA / D
+        
+        r_ = D * np.sqrt(kw['kr'][1] / kw['k'][1])
+        
+        sigma = SA / Sy
+        beta = kw['kz'][1] * r_ ** 2  / (kw['kr'][1] * D ** 2)
         
         kw['Q'] = 4 * np.pi * kD
-        kw['t'] = r_  ** 2 * SA * tauA / (4 * kD) 
+        kw['t'] = r_  ** 2 * SA * tauA / (kD)   # / (4 kD)
 
-        tauB = 4 * kD * kw['t'] / (r_ ** 2 * Sy)
+        tauB = kD * kw['t'] / (r_ ** 2 * Sy)
 
-        title ='{}, type curves for values of gamma. r/D = {:.4g} '\
-                    .format(kw['name'], r_ / D)
+        title =r'{}, type curves for values of gamma. $\sigma$ = {:.4g}, $\beta$={:.4g}'\
+                    .format(kw['name'], sigma, beta)
         xlabel = r'$\tau = 4 kD t /(r^2 S_2)$'
         ylabel = r'$\sigma = 4 \pi kD s / Q$' 
         ax = newfig(title, xlabel, ylabel,
                     ylim=(1e-2, 1e1), xlim=(1e-1, 1e5),
                     xscale='log', yscale='log')
 
-        ax.plot(tauA, scipy.special.exp1(1/tauA), 'r', lw=3, label='Theis for SA')
-        ax.plot(tauA, scipy.special.exp1(1/tauB), 'b', lw=3, label='Theis for Sy + SA')
+        ax.plot(tauA / 4, scipy.special.exp1(1/tauA), 'r', lw=3, label='Theis for SA')
+        ax.plot(tauA / 4, scipy.special.exp1(1/tauB), 'b', lw=3, label='Theis for Sy + SA')
         
         # Gamma is (D/k)/c
         gammas = np.array([1.0, 10., 100.])
@@ -1129,27 +1151,29 @@ if __name__ == "__main__":
             assert kw['topclosed'] == True, 'topclosed must be true for Boulton'
 
             ll = line_cycler()
-            for il in [0, 1, -1]:
+            for il in [0, 1, -1]: # top and bottom layer of the aquifer
                 ls = next(ll)
-                sigma = 4 * np.pi * kD / kw['Q'] * PhiI[:, il, 0]
+                s = 4 * np.pi * kD / kw['Q'] * PhiI[:, il, 0]
                 label = r'$\gamma$={:.4g}, layer={}'.format(gamma, il)
-                ax.plot(tauA[1:], sigma[1:], color=color, ls=ls, label=label)
+                ax.plot(tauA[1:], s[1:], color=color, ls=ls, label=label)
         
         ax.legend(loc='lower right')     
     
-    if case == 'H99 F6':
+    if case == 'H99 F6 well bore storage ppw':
         # Papadopoulos and Cooper (1967)
         kw = cases[case]
-        assert kw['topclosed'] == True, 'topclosed must be true for Boulton'
+        assert kw['topclosed'] == False, 'topclosed must be False for {}'\
+            .format(case)
         
         RcRw = [1., 5., 20., 100., 1000.]
-        RRD = [0.01, 0.1, 0.5] 
+        RRD = [0.001, 0.1, 0.5] 
         
         tau = np.logspace(-2, 6, 81) # A is aquifer (layer 1)
 
-        D  = np.sum(kw['D'])
-        kD = np.sum(kw['kr'] * kw['D'])
-        S  = np.sum(kw['Ss'] * kw['D'])
+        D  = np.sum(kw['D'][1:])
+        kD = np.sum(kw['kr'][1:] * kw['D'][1:])
+        S  = np.sum(kw['Ss'][1:] * kw['D'][1:])
+        Sy = kw['Ss'][0] * kw['D'][0]
         Q  = 4 * np.pi * kD
         
         kw['Q'] = Q
@@ -1174,12 +1198,14 @@ if __name__ == "__main__":
                 kw['t'] = r_  ** 2 * S * tau / (4 * kD) 
                 out = hemk99numerically(**kw)
         
-                PhiI = showPhi(t=None, r= [r_], z=None, IL=[1],
+                PhiI = showPhi(t=None, r= [r_], z=None, IL=None,
                                 method='linear', fdm3t=out,
                                 show=False)
 
-                sigma = 4 * np.pi * kD / kw['Q'] * PhiI[:, 0, 0]                
-                ax.plot(tau[1:], sigma[1:], color=color, label='r/D = {:.4g}'.format(r_))
+                sigma = 4 * np.pi * kD / kw['Q'] * PhiI[:, 2, 0]                
+                ax.plot(tau[1:], sigma[1:], color=color,
+                        label='rc/rw={:.4g}, r/D = {:.4g}, r={:.4g} m'
+                        .format(rcrw, rrd, r_))
         
         ax.legend(loc='lower right')
         
@@ -1271,10 +1297,9 @@ if __name__ == "__main__":
     
 
 
-    shn = solution(ts=ts, rs=rs, **kw)
+    shn = solution(t=t, r=r, **kw)
     
     if case == 'Hant': # Hantush
-        t  = ts
         Q  = cases[case]['Q' ][0]
         kD = cases[case]['kD'][0]
         S  = cases[case]['S' ][0]
@@ -1323,12 +1348,12 @@ if __name__ == "__main__":
         ax.legend()
         print('Done steady !')
         
-    # As a function of time for given distance (ts is ndarray, r=scalar)
-    ts, rs = 1.e-3, np.logspace(1, 4, 16)
+    # As a function of time for given distance (t is ndarray, r=scalar)
+    t, r = 1.e-3, np.logspace(1, 4, 16)
     
     case='3'
     kw = cases[case]
-    shn = solution(ts=ts, rs=rs, **kw)
+    shn = solution(t=t, r=r, **kw)
     for iL in range(len(kw['kD'])):
         plt.plot(rs, shn[iL], label=f'layer {iL}')
     #plt.xscale('log')
