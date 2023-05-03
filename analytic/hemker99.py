@@ -196,15 +196,15 @@ def sLaplace(p=None, r=None, rw=None, rc=None,
     return s_.flatten() # Laplace drawdown s(p)
 
 
-def assert_input(ts=None, rs=None, z0=None, D=None, kr=None, kz=None, c=None,
+def assert_input(t=None, r=None, z0=None, D=None, kr=None, kz=None, c=None,
                  Ss=None, e=None, **kw):
     """Return r, t after verifying length of variables.
     
     Parameters
     ----------
-    ts:  float or np.ndarray [d]
+    t:  float or np.ndarray [d]
         time or times, analytical solution
-    rs:  float or np.ndarray [m]
+    r:  float or np.ndarray [m]
         distances to well center, analytical solution
     z0: float
         top of flow system (top of top aquitard)
@@ -225,10 +225,10 @@ def assert_input(ts=None, rs=None, z0=None, D=None, kr=None, kz=None, c=None,
     e: np.ndarray [-] length n
        screened aquifers indicated by 1 else 0
     """
-    assert kw['r'] is not None, "r must not be None"
+    assert r is not None, "r must not be None"
     
-    if np.isscalar(rs): rs = [rs]
-    if rs is not None: rs = np.array(rs)
+    if np.isscalar(r): r = [r]
+    if r is not None: r = np.array(r)
         
     if c is None:
         c = np.zeros_like(D)[:-1]
@@ -237,7 +237,7 @@ def assert_input(ts=None, rs=None, z0=None, D=None, kr=None, kz=None, c=None,
                          [kr, kz, D, c, Ss, e]):
         assert isinstance(var, np.ndarray), "{} not an np.ndarray".format(name)
         kw[name] = var
-     
+    
     assert len(D) == len(kr),  "Len(D) {} != len(k) {}".format(len(D), len(kr))
     assert len(c) == len(D) - 1 , "Len(c)={} != len(D) - 1 = {}".format(len(c), len(D) - 1)
     
@@ -261,16 +261,19 @@ def assert_input(ts=None, rs=None, z0=None, D=None, kr=None, kz=None, c=None,
         kw['Q'] = 4 * np.pi * kD
     
     if t is None:
-        kw['t'] = kw['Q'] / (4 * np.pi * kD) * kw['tau']
+        t = kw['Q'] / (4 * np.pi * kD) * kw['tau']
+    elif np.isscalar(t):
+        t = np.array([t])
     else:
-        kw['t'] = np.array(kw['t'])
+        assert isinstance(t, np.ndarray), \
+            't must be np.ndarray as this point, not {}'.format(type(t))
         
-    assert isinstance(kw['t'], np.ndarray) and isinstance(kw['r'], np.ndarray),\
+    assert isinstance(t, np.ndarray) and isinstance(r, np.ndarray),\
         "t and r must both be vectors, at this point."
         
-    kw['shape'] = (len(ts), len(D), len(rs))
+    kw['shape'] = (len(t), len(D), len(r))
 
-    return ts, rs, kw
+    return t, r, kw
 
 def backtransform(t, r, rw=None, rc=None, Q=None, kD=None,
                   c=None, S=None, e=None, **kwargs):
@@ -306,7 +309,7 @@ def backtransform(t, r, rw=None, rc=None, Q=None, kD=None,
     return s.flatten()
 
 
-def solution(ts=None, rs=None, **kw):
+def solution(t=None, r=None, **kw):
     """Return the multilayer transient solution Maas Hemker 1987
     
     ts:  float or np.ndarray [d]
@@ -328,7 +331,7 @@ def solution(ts=None, rs=None, **kw):
     or
     s[:, 0] for both r and t scalars
     """
-    _, _, kw = assert_input(ts=ts, rs=rs, **kw)
+    t, r, kw = assert_input(t=t, r=r, **kw)
     
     n = len(kw['D'])
     c = kw['c']
@@ -342,9 +345,9 @@ def solution(ts=None, rs=None, **kw):
     
     
     s = np.zeros(kw['shape'])
-    for it, t in enumerate(ts):
-        for ir, r in enumerate(rs):
-            s[it, :, ir] = backtransform(t=t, r=r, **kw)
+    for it, t_ in enumerate(t):
+        for ir, r_ in enumerate(r):
+            s[it, :, ir] = backtransform(t=t_, r=r_, **kw)
     return s # Drawdown s[it, il, ir]
 
 cases ={ # Numbers refer to Hemker Maas (1987 figs 2 and 3)
@@ -639,7 +642,7 @@ cases ={ # Numbers refer to Hemker Maas (1987 figs 2 and 3)
         },
 }
     
-def hemk99numerically(z=None, rw=None, rc=None, topclosed=True, botclosed=True, **kw):
+def hemk99numerically(t=None, r=None, z=None, rw=None, rc=None, topclosed=True, botclosed=True, **kw):
     """Check Hemker(1999) numerically.
     
     Run axially multilayer model. To deal with multiple screens, and uniform
@@ -665,10 +668,10 @@ def hemk99numerically(z=None, rw=None, rc=None, topclosed=True, botclosed=True, 
         if False then IBOUND becomes -1 instead of 1
     """
     AND, NOT = np.logical_and, np.logical_not
-    _, _, kw = assert_input(**kw)
+    t, r, kw = assert_input(t=t, r=r, **kw)
         
     # Make sure rw is r[1] and we include rw + dr
-    r, dr = kw['r'], 0.005
+    dr = 0.05 * rw
     r = np.hstack((r[0], rw, rw + dr, r[r > rw + dr]))
     
     gr = Grid(r, None, kw['z'], axial=True)
@@ -706,7 +709,7 @@ def hemk99numerically(z=None, rw=None, rc=None, topclosed=True, botclosed=True, 
     kDwell   = np.sum(kDscreen)
     FQ[:, 0, 0] = kw['Q'] * kDscreen / kDwell
            
-    return fdm3t(gr=gr, t=kw['t'], kxyz=(kr, kr, kz), Ss=Ss, c=c,
+    return fdm3t(gr=gr, t=t, kxyz=(kr, kr, kz), Ss=Ss, c=c,
                 FQ=FQ, HI=HI, IBOUND=IBOUND)
     
 def showPhi(t=None, r=None, z=None, IL=None, method=None, fdm3t=None,
@@ -841,22 +844,20 @@ if __name__ == "__main__":
     # case = 'Boulton Well Bore Storage'
     # case = 'H99_F08'
     # case = 'H99_F07 Szeleky'
-    #case = 'H99 F6 well bore storage ppw'
+    # case = 'H99 F6 well bore storage ppw'
     # case = 'H99 F2 Boulton'
     # case = 'H99 F3 Moench'
     
     # TODO: not yet right
     kw = cases[case]
     
-    t = kw['t']
-    D  = kw['D']
-    kD = np.sum(kw['kr'][1:] * D[1:])
-    Q  = kw['Q']
-    ts = t if t is not None else ...
+    D  = kw['D'] # Vector
+    kD = np.sum(kw['kr'][1:] * D[1:]) # Vector
+    
     
     if case == 'H99_F07 Szeleky':
         # TODO: Not yet right
-        R_ = [0.1, 1., 10.]
+        rs = [0.1, 1., 10.]
         tau = np.logspace(-3, 6, 91)
         kD = np.sum(kw['kr'] * kw['D'])
         S  = np.sum(kw['Ss'] * kw['D'])
@@ -864,11 +865,15 @@ if __name__ == "__main__":
         ax = newfig(kw['name'], r'$t_D$', r'$s [m]$',
             xlim=(1e-2, 1e6), ylim=(1e-3, 1e1), xscale='log', yscale='log')
 
-        for ir, r_ in enumerate(R_):
+        for ir, r_ in enumerate(rs):
             kw['t'] = tau * r_ ** 2 * S / (4 * kD)
             out = hemk99numerically(**kw)
-            PhiI = showPhi(t=None, r=[r_], z=None, IL=None,
+            kw['r'] = rs
+            sa = solution(r=kw['r'], **kw)
+
+            PhiI = showPhi(t=kw['t'], r=rs, z=None, IL=None,
                         method='linear', fdm3t=out, show=False)
+
 
             ax.plot(tau, kw['Q'] / (4 * np.pi * kD) * scipy.special.exp1(1/tau), '--',
                 label='Theis')
@@ -992,25 +997,43 @@ if __name__ == "__main__":
 
     if case == 'test0':
 
+        rs = [5, 50, 500]
         out = hemk99numerically(**kw)
-        sa  = solution(ts=np.logspace(-1, 6, 22), rs=[5, 50, 500], **kw)
+        kw['r'] = rs
+        sa  = solution(**kw)
         
 
-        PhiI, ax = showPhi(t=None, r=[5, 50, 500], z=[-5, -35], IL=None,
+        PhiI, ax = showPhi(t=None, r=rs, z=[-5, -35], IL=None,
                         method='linear', fdm3t=out,
                         xlim=None, ylim=None, xscale=None, yscale=None)
 
-        PhiI, ax = showPhi(t=None, r=[5, 50, 500], z=None, IL=[0, 1, 2],
+        IL = [0, 1, 2]
+        PhiI, ax = showPhi(t=None, r=rs, z=None, IL=IL,
                             method='linear', fdm3t=out,
                             xlim=None, ylim=None, xscale=None, yscale=None)
+        for il in IL:
+            for ir, r_ in enumerate(rs):
+                label='layer={}, r={:0.4g} m'.format(il, r_)
+                ax.plot(kw['t'], sa[:, il, ir], label=label)
+        ax.legend(loc='lower right')
 
         PhiI, ax = showPhi(t=[1, 3, 10], r=None, z=[-5, -20, -35], IL=None,
                         method='linear', fdm3t=out,
                         xlim=None, ylim=None, xscale='log', yscale=None)
 
-        PhiI, ax = showPhi(t=[1, 3, 10], r=None, z=None, IL=[0, 1, 2],
+        ts = [1., 3., 10.]
+        kw['t'] = ts
+        sa  = solution(**kw)
+        PhiI, ax = showPhi(t=ts, r=None, z=None, IL=IL,
                         method='linear', fdm3t=out,
                         xlim=None, ylim=None, xscale='log', yscale=None)
+        for it, t_ in enumerate(ts):
+            for il in IL:                
+                label='layer={}, t={:0.4g} d'.format(il, t_)
+                ax.plot(rs, sa[it, il, :], label=label)
+        ax.legend(loc='lower right')
+
+        
         
     if case == 'H99 F2 Boulton' or case=='Hantush':
         # Hantush = Boulton with topclosed == False
@@ -1037,8 +1060,7 @@ if __name__ == "__main__":
         kw['t'] = r_  ** 2 * SA * tauA / (4 * kD) 
 
         # tau values for the aquifer with Sy instead of SA
-        tauB = tauA * SA / Sy
-        tauB = 4 * kD * kw['t'] / (r_ ** 2 * Sy)
+        tauB = tauA * SA / Sy  # =  4 * kD * kw['t'] / (r_ ** 2 * Sy)
 
         title ='{}, type curves for r/B from 0.01 to 3'\
                     .format(kw['name'])
@@ -1055,37 +1077,46 @@ if __name__ == "__main__":
         ax.plot(tauA, scipy.special.exp1(1/tauB), 'b', lw=3, label='Theis for Sy + SA')
                 
         cc = color_cycler()
+        rNum = kw['r']
         for rho in r_B:
             color = next(cc)
             
             # Adapt c to to get the right r/B            
             B = r_ / rho
             kw['c'][0] = np.array([B ** 2 / kD])
-            
+            kw['r'] = rNum
             out = hemk99numerically(**kw) # using correct c
+            
+            # Analytisch:
+            kw['r'] = rho * B
+            sa = solution(**kw)
         
+            # Interpolate numerical to set of times layers and distances:
             PhiI = showPhi(t=None, r= rho * B, z=None, IL=[0, 1],
                             method='linear', fdm3t=out,
                             xlim=None, ylim=None, xscale='log', yscale='log', show=False)
 
             if case == 'Hantush':
-                assert kw['topclosed'] == False, 'topclosed must be False for Hantush!'
+                assert kw['topclosed'] == False, 'topclosed must be False for numerical Hantush!'
                 ax.plot(tauA, hantush_conv.Wh(1/tauA, rho)[0], color=color, marker='x',
                         label='Wh(tau, {:.4g})'.format(rho))
             else:
                 assert kw['topclosed'] == True, 'topclosed must be true for Boulton'
 
-            # Show the drawdown in the top and first layer for this r/B
+            # Plot Theis for S = Sy (specific yield)Show the drawdown in the top and first layer for this r/B
             for il in [0, 1]:
                 sigma = 4 * np.pi * kD / kw['Q'] * PhiI[:, il, 0]
                 if rho in [0.01, 1.0, 1.5, 3.]:
-                    label = 'r/B = {}'.format(rho)
+                    labelN = 'num: r/B = {:.4g}'.format(rho)
+                    labelA = 'ana: r/B = {:.4g}'.format(rho)
                     lw = 2.
                 else:
-                    label = '_'
+                    labelN = '_'
+                    labelA = '_'
                     color = 'k'
                     lw = 0.5
-                ax.plot(tauA[1:], sigma[1:], color=color, lw=lw, label=label)
+                ax.plot(tauA[1:], sigma[1:], '-', color=color, lw=lw, label=labelN)
+                ax.plot(tauA[1:], sa[1:,il], 'x', color=color, lw=lw, label=labelA)
         
         ax.legend(loc='lower right')    
         
@@ -1094,7 +1125,6 @@ if __name__ == "__main__":
         # the delayed yield is due to vertical anisotropy.
         kw = cases[case]
         
-
 
         tauA = np.logspace(-2, 5, 71) # A is aquifer (layer 1)
 
