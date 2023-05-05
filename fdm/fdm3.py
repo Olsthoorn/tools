@@ -19,7 +19,7 @@ if not myModules in sys.path:
 import numpy as np
 import scipy.sparse as sp
 import scipy.sparse.linalg as la
-import scipy.special
+from scipy.special import k0 as K0, k1 as K1
 from collections import namedtuple
 import matplotlib.pylab as plt
 import mfgrid
@@ -105,40 +105,49 @@ def psi(Qx, row=0):
     return Psi
 
 
-#def fdm3(x, y, z, kx, ky, kz, FQ, HI, IBOUND, axial=False):
-def fdm3(gr, K, FQ, HI, IBOUND, axial=False):
+#def fdm3(x, y, z, (kx, ky, kz), c, GHB, FQ, HI, IBOUND, axial=False):
+def fdm3(gr=None, K=None, c=None, FQ=None, HI=None, IBOUND=None, GHB=None, axial=False):
     '''Compute a 3D steady state finite diff. model
 
-    Returns a namedtuple with fields Phi, Qx, Qy, Qz and cell flow Q
-    Output shapes are
-    (Ny,Nx,Nz) (Ny,Nx-1,Nz), (Ny-1,Nx,Nz), (Ny,Nx,Nz-1), (Ny, Nx, Nz)
-        --------------------------------------------
-    inputs:
-    gr  --- Grid instance (see mfgrid.Grid)
-    K   --- np.ndarray or a 3-tuple of np.ndarrays containing
+    Parameters
+    ----------
+    gr: mfgrid.Grid object instance
+        object holding the grid/mesh (see mfgrid.Grid)
+    K: np.ndarray of floats (nlay, nrow, nocl) or a 3-tuple of such array
         if 3-tuple then the 2 np.ndarrays are kx, ky and kz
             kx  --- array of cell conductivities along x-axis (Ny, Nx, Nz)
             ky  --- same for y direction (if None, then ky=kx )
             kz  --- same for z direction
-        else then kx = ky = kz = K
-
-    FQ  --- array of prescrived cell flows (injection positive (Ny, Nx, Nz),
-             zero of no inflow/outflow)
-    IH  ---  array of initial heads. (Ny,Nx, Nz)
-    IBOUND --- the boundary array like in MODFLOW (Ny, Nx, Nz)
-               with values denoting:
-    * IBOUND>0  the head in the corresponding cells will be computed
-    * IBOUND=0  cells are inactive, will be given value NaN
-    * IBOUND<0  coresponding cells have prescribed head
-    --------------------------------------------
+        else: kx = ky = kz = K
+    c: np.ndarray (nlay - 1, nrow, ncol) or None of not used
+        Resistance agains vertical flow between the layers [d]
+    GHB: array (ncell, 3)
+        dtype = dtype([('cellid', 'O'), ('h', float), ('cond', float)])
+        list of sequence, cellid may also be the global cell index
+        [[(k,j ,i), h, cond],
+         [...]]
+    FQ: np.ndarray of floats (nlay, nrow, ncol)
+        Prescrived cell flows (injection positive)
+    IH: np.ndarray (nlay, nrow, ncol)
+        Initial heads
+    IBOUND: np.ndarray of ints (nlay, nrow, ncol)
+        the boundary array like in MODFLOW
+        with values denoting:
+        * IBOUND>0  the head in the corresponding cells will be computed
+        * IBOUND=0  cells are inactive, will be given value NaN
+        * IBOUND<0  coresponding cells have prescribed head
+        
+    Returns
+    -------
+    out: dict
+        a dict with fields Phi, Qx, Qy, Qz and cell flow Q
+        Output shapes are
+        (Ny,Nx,Nz) (Ny,Nx-1,Nz), (Ny-1,Nx,Nz), (Ny,Nx,Nz-1), (Ny, Nx, Nz)
 
     TO 160905
     '''
-
     # notice that Our is a class. It is instantiated in the return below
-    Out = namedtuple('Out',['Phi', 'Q', 'Qx', 'Qy', 'Qz'])
-    Out.__doc__ = """From fdm3: with fields Phi, 'Q', Qx, Qy, Qz and Q."""
-
+    Out = dict()
 
     Nz, Ny, Nx = SHP = gr.shape
     Nod = Ny * Nx * Nz
@@ -175,6 +184,8 @@ def fdm3(gr, K, FQ, HI, IBOUND, axial=False):
         Rx1 = 0.5 * dx / (dy * dz) / kx
         Ry  = 0.5 * dy / (dz * dx) / ky
         Rz  = 0.5 * dz / (dx * dy) / kz
+        if c is not None:
+            Rc  =        c / (dx * dy)
         #half cell resistances regular grid
     else:
         Rx2 = 1 / (2 * np.pi * kx[:,:, 1: ] * dz) * np.log(gr.xm[ 1:]/gr.x[1:-1]).reshape((1, 1, Nx-1))
@@ -183,6 +194,8 @@ def fdm3(gr, K, FQ, HI, IBOUND, axial=False):
         Rx1 = np.concatenate((Rx1, np.Inf * np.ones((Nz, Ny, 1))), axis=2)
         Ry = np.Inf * np.ones(SHP)
         Rz = 0.5 * dz.reshape((Nz, 1, 1))  / (np.pi * (gr.x[1:]**2 - gr.x[:-1]**2).reshape((1, 1, Nx)) * kz)
+        if c is not None:
+            Rc = c  / (np.pi * (gr.x[1:]**2 - gr.x[:-1]**2).reshape((1, 1, Nx)))
         #half cell resistances with grid interpreted as axially symmetric
 
     # set flow resistance in inactive cells to infinite
@@ -194,7 +207,19 @@ def fdm3(gr, K, FQ, HI, IBOUND, axial=False):
 
     Cx = 1 / (Rx1[:, :,:-1] + Rx2[:, :,1:])
     Cy = 1 / (Ry[:, :-1, :] + Ry[:, 1:, :])
-    Cz = 1 / (Rz[:-1, :, :] + Rz[:-1, :,:])
+    if c is None:
+        Cz = 1 / (Rz[:-1, :, :] + Rz[:-1, :,:])
+    else:
+        Cz = 1 / (Rz[:-1, :, :] + Rc + Rz[:-1, :,:])
+        
+    # General head bounaries
+    if GHB is not None:
+        Cghb = gr.const(0.)
+        Hghb = gr.const(0.)
+        I = GHB['I']
+        Cghb.ravel()[I] = GHB['C'] 
+        Hghb.ravel()[I] = GHB['h']
+        
     #conductances between adjacent cells
 
     IE = NOD[:, :, 1: ]  # east neighbor cell numbers
@@ -226,16 +251,26 @@ def fdm3(gr, K, FQ, HI, IBOUND, axial=False):
     # diagonal matrix, a[i,i]
 
     RHS = FQ.reshape(Nod,1) - A[:,fxhd].dot(HI.reshape(Nod,1)[fxhd])
+    
     # Right-hand side vector.
 
     Phi = HI.flatten()
     # Allocate space to store heads.
 
-    Phi[active] = la.spsolve( A[active][:,active] ,RHS[active] )
+    if GHB is not None:
+        Cghb_diag = sp.diags(R(Cghb), offsets=0, shape=A.shape)
+        Phi[active] = la.spsolve( (A + Cghb_diag)[active][:,active],
+                                 (RHS + R(Cghb * Hghb)[:, np.newaxis])[active] )
+    else:
+        Phi[active] = la.spsolve( A[active][:,active] ,RHS[active] )
+        
     # Solve heads at active locations.
 
     # net cell inflow
-    Q  = A.dot(Phi).reshape(gr.shape)
+    if GHB is not None:
+        Q  = (A + Cghb_diag).dot(Phi).reshape(gr.shape)
+    else:
+        Q  = A.dot(Phi).reshape(gr.shape)
 
     # reshape Phi to shape of grid
     Phi = Phi.reshape(gr.shape)
@@ -244,11 +279,18 @@ def fdm3(gr, K, FQ, HI, IBOUND, axial=False):
     Qx =  -np.diff(Phi, axis=2) * Cx
     Qy =  +np.diff(Phi, axis=1) * Cy
     Qz =  +np.diff(Phi, axis=0) * Cz
+    
+    out=dict()
+    out.update(Phi=Phi, Q=Q, Qx=Qx, Qy=Qy, Qz=Qz)
+    
+    if GHB is not None:
+        Qghb = (Hghb - Phi) * Cghb
+        out.update(Qghb=Qghb)
 
         # set inactive cells to NaN
-    Phi[inact.reshape(gr.shape)] = np.NaN # put NaN at inactive locations
+    out['Phi'][inact.reshape(gr.shape)] = np.NaN # put NaN at inactive locations
 
-    return Out(Phi=Phi, Q=Q, Qx=Qx, Qy=Qy, Qz=Qz) # this instantiates an Out object
+    return out
 
 # Examples that take the function of tests
 def example_Mazure():
@@ -258,7 +300,7 @@ def example_Mazure():
     to the dike of a regional aquifer covered by a semi-confining layer with
     a maintained head in it. The head in the regional aquifer at the dike was
     given as well. The head obeys the following analytical expression
-    phi(x) - hp = (phi(0)-hp) * exp(-x/lam), lam = sqrt(kDc)
+    phi(x) - hp = (phi(0)-hp) * exp(-x/B), B = sqrt(kDc)
     To compute we use 2 model layers and define the values such that we obtain
     the Mazure result.
     """
@@ -272,7 +314,7 @@ def example_Mazure():
     k1 = d/c # m/d conductivity of the top layer
     k2 = 10. # m/d conductivity of the regional aquifer
     kD = k2 * D # m2/d, transmissivity of regional aquifer
-    lam = np.sqrt(kD * c) # spreading length of semi-confined aquifer
+    B = np.sqrt(kD * c) # spreading length of semi-confined aquifer
     K = gr.const([k1/2., k2]) # k1 = 0.5 d/c because conductance from layer center
     FQ = gr.const(0) # prescribed flows
     s0 = 2.0 # head in aquifer at x=0
@@ -282,10 +324,24 @@ def example_Mazure():
     plt.figure()
     plt.setp(plt.gca(), 'xlabel','x [m]', 'ylabel', 'head [m]', 'title', 'Mazure 1D flow')
     plt.plot(gr.xm, Out.Phi[-1, 0 ,:], 'ro-', label='fdm3') # numeric solution
-    plt.plot(gr.x, s0 * np.exp(-gr.x / lam),'bx-', label='analytic') # analytic solution
+    plt.plot(gr.x, s0 * np.exp(-gr.x / B),'bx-', label='analytic') # analytic solution
     plt.legend()
 
-def example_De_Glee():
+cases = {
+    'DeGlee': {
+        'Q': -1200., # m3/d, well extraction
+        'rw':    1.,   # m, well radius
+        'R' : 2500.,  # m, outer radius of model
+        'd' :   10.,  # m, thickness of confining top layer
+        'D' :   50.,  # m, thickness of regional aquifer
+        'c' :  500.,  # d, vertical resistance of confining top layer
+        'k' :   10.,  # m/d conductivity of regional aquifer
+        'r' : np.logspace(-2, 4, 61),  # distance to well center
+        'y' : None,   # dummy, ignored because problem is axially symmetric
+    }
+        
+}
+def example_De_Glee(Q=None, rw=None, d=None, D=None, c=None, k=None, r=None, z=None, **kw):
     """Axial symmetric example, well in semi-confined aquifer (De Glee case)
     De Glee was a Dutch engineer/groundwater hydrologist and later the
     first director of the water company of the province of Groningen.
@@ -295,39 +351,77 @@ def example_De_Glee():
     The example computes the heads in the regional aquifer below a semi confining
     layer with a fixed head above. It uses two model layers a confining one in
     which the heads are fixed and a semi-confined aquifer with a prescribed
-    extraction at r=r0. If r0>>0, both K0 and K1 Bessel functions are needed.
+    extraction at r=rw. If rw>>0, both K0 and K1 Bessel functions are needed.
     The grid is signaled to use inteprete the grid as axially symmetric.
     """
-    K0 = lambda x: scipy.special.kn(0, x) # Bessel function second kind, order 0
-    K1 = lambda x: scipy.special.kn(1, x) # Bessel function second kind, order 1
-    Q  = -1200.0 # m3/d, well extraction
-    r0 = 100.  # m, well radius
-    R  = 2500. # m, outer radius of model
-    d = 10. # m, thickness of confining top layer
-    D = 50. # m, thickness of regional aquifer
-    c = 250 # d, vertical resistance of confining top layer
-    k1 = d/c # m/d conductivity of confining top layer
-    k2 = 10.  # m/d conductivity of regional aquifer
-    kD = k2 * D # m2/d, transmissivity of regional aquifer
-    lam = np.sqrt(kD * c) # spreading length of regional aquifer
-    r  = np.hstack((r0+0.001, np.logspace(np.log10(r0), np.log10(R), 41))) # distance to well center
-    y = None # dummy, ignored because problem is axially symmetric
-    z = np.array([0, -d, -d-D]) # m, elevation of tops and bottoms of model layers
-    gr = mfgrid.Grid(r, y, z, axial=True) # generate grid
-    FQ = gr.const(0.)
-    FQ[-1, 0, 0] = Q # m3/d fixed flows
-    IH = gr.const(0.) # m, initial heads
-    IBOUND = gr.const(1)
-    IBOUND[0, :, :] = -1 # modflow like boundary array
-    K = gr.const([k1/2., k2]) # full 3D array of conductivities
-    Out = fdm3(gr, K, FQ, IH, IBOUND) # run model
+    k1 = d/c        # m/d conductivity of confining top layer
+    kD = k * D      # m2/d, transmissivity of regional aquifer
+    B  = np.sqrt(kD * c) # spreading length of regional aquifer
+    
+    r  = np.hstack((0, rw, rw + 0.01, r[r > rw + 0.001])) # distance to well center
+    
+    z0 = 0.
+    z = z0 - np.array([0., d, d + D])       # m, elevation of tops and bottoms of model layers
+    
+    gr = mfgrid.Grid(r, None, z, axial=True)   # generate grid
+    
+    FQ = gr.const(0.); FQ[-1, 0, 0] = Q     # m3/d fixed flows
+    IH = gr.const(0.)                       # m, initial heads
+    
+    IBOUND = gr.const(1); IBOUND[0, :, :] = -1 # modflow like boundary array
+    
+    K = gr.const([d/(2 * c), k])               # full 3D array of conductivities
+    
+    Out = fdm3(gr=gr, K=K, FQ=FQ, IH=IH, IBOUND=IBOUND) # run model
+    
     plt.figure()
     plt.setp(plt.gca(), 'xlabel', 'r [m]', 'ylabel', 'head [m]',\
              'title', 'De Glee, well extraction, axially symmetric', 'xscale', 'log', 'xlim', [1.0, R])
     plt.plot(gr.xm, Out.Phi[-1, 0, :], 'ro-', label='fdm3')
-    plt.plot(gr.x, Q/(2 * np.pi * kD) * K0(gr.x / lam) / (r0/ lam * K1(r0/ lam)), 'bx-',label='analytic')
+    plt.plot(gr.x, Q/(2 * np.pi * kD) * K0(gr.x / B) / (rw/ B * K1(rw/ B)), 'bx-',label='analytic')
     plt.legend()
+    return Out
+    
+def example_De_Glee_with_GHB(Q=None, rw=None, d=None, D=None, c=None, k=None, r=None, z=None, **kw):
+    """Run Axial symmetric example, as before, but now using GHB instead of an extra layer on top.
+    """
+    kD = k * D      # m2/d, transmissivity of regional aquifer
+    B  = np.sqrt(kD * c) # spreading length of regional aquifer
+    
+    r  = np.hstack((0, rw, rw + 0.01, r[r > rw + 0.001])) # distance to well center
+    
+    z0 = -d; z = z0 - np.array([0., D])              # m, elevation of tops and bottoms of model layers
+    
+    gr = mfgrid.Grid(r, None, z, axial=True)   # generate grid
+    
+    FQ = gr.const(0.); FQ[-1, 0, 0] = Q     # m3/d fixed flows
+    HI = gr.const(0.)                       # m, initial heads
+    
+    IBOUND = gr.const(1, dtype=int)         # modflow like boundary array
+    
+    K = gr.const(k)                         # full 3D array of conductivities
+    
+    cellid = gr.LRC(gr.NOD[0])
+    hds = np.zeros(len(cellid))
+    C   = gr.Area.ravel() / c
+    GHB = gr.GHB(cellid, hds, C)
+    
+    out = fdm3(gr=gr, K=K, FQ=FQ, HI=HI, IBOUND=IBOUND, GHB=GHB) # run model
+    
+    plt.figure()
+    plt.setp(plt.gca(), 'xlabel', 'r [m]', 'ylabel', 'head [m]',\
+             'title', 'De Glee, well extraction, axially symmetric', 'xscale', 'log', 'xlim', [1e0, 1e4])
+    plt.grid(True)
+    plt.plot(gr.xm, out['Phi'][-1, 0, :], 'ro-', label='fdm3')
+    plt.plot(gr.x, Q/(2 * np.pi * kD) * K0(gr.x / B) / (rw/ B * K1(rw/ B)), 'bx-',label='analytic')
+    plt.legend()
+    return out
+        
 
 if __name__ == "__main__":
-    example_Mazure()
-    example_De_Glee()
+    # example_Mazure()
+    # out = example_De_Glee()
+    out = example_De_Glee_with_GHB(**cases['DeGlee'])
+    print('Done')
+    
+    

@@ -350,7 +350,7 @@ def solution(t=None, r=None, **kw):
             s[it, :, ir] = backtransform(t=t_, r=r_, **kw)
     return s # Drawdown s[it, il, ir]
 
-class Hem99:
+class Hemker1999:
     """Analytic solution of multilayer axial flow with well storage  by Kick Hemker (1999)
     
     Using a class allows keeping fixed data in memort and make computation faster by
@@ -1111,9 +1111,9 @@ def showPhi(t=None, r=None, z=None, IL=None, method=None, fdm3t=None,
     
 if __name__ == "__main__":
       
-    case = 'test0'
+    # case = 'test0'
     # case = 'test1'
-    # case = 'test2'
+    case = 'test2'
     # case = 'Boulton Well Bore Storage'
     # case = 'H99_F08'
     # case = 'H99_F07 Szeleky'
@@ -1308,7 +1308,7 @@ if __name__ == "__main__":
     if case == 'test1':
 
         # Using the class
-        test1 = Hem99(**kw)
+        test1 = Hemker1999(**kw)
         sa  = test1.simulate(kw['t'], kw['r'], kw['Q'])
 
         # Using the function
@@ -1335,12 +1335,14 @@ if __name__ == "__main__":
         # rho = r_ over B values used by Hemker (1999)
         r_B = np.array([0.01, 0.1, 0.2, 0.4, 0.6,
                              0.8, 1.0, 1.5, 2.0, 2.5, 3.0])
-
+        xlim, ylim = None, None
+        # xlim, ylim = (1e-1, 1e9), (1e-3, 1e2)
+        
         ax = newfig("Test 2 analytic for Boulton case",
                     r"$\tau = r^2 S / (4 kD t)$",
                     r"$(4 \pi kD) / Q s$",
                     xscale='log', yscale='log',
-                    xlim=(1e-1, 1e9), ylim=(1e-3, 1e2))
+                    xlim=xlim, ylim=ylim)
         ax.plot(tauA, scipy.special.exp1(1/tauA), 'r-',
                 label='Theis for S=SA')
         ax.plot(tauA, scipy.special.exp1(1/tauB), 'b-',
@@ -1356,7 +1358,7 @@ if __name__ == "__main__":
             sb  = solution(**kw)
 
             # Using the class
-            h99obj = Hem99(**kw)        
+            h99obj = Hemker1999(**kw)        
             t = kw['t']
             t = h99obj.tau2t(r=r_, tau=kw['tau'])
         
@@ -1394,7 +1396,7 @@ if __name__ == "__main__":
         
         r_ = 500.
         
-        hem = Hem99(**kw)
+        hem = Hemker1999(**kw)
         Q = 4 * np.pi * hem.kD.sum()
         t = hem.tau2t(r=r_, tau=kw['tau'])
         
@@ -1454,7 +1456,7 @@ if __name__ == "__main__":
             kw['r'] = rho * B
             sa = solution(**kw)
             
-            hem = Hem99(**kw)
+            hem = Hemker1999(**kw)
             Q = 4 * np.pi * hem.kD.sum()
             t = hem.tau2t(r=r_, tau=kw['tau'])
             r = rNum[rNum > hem.rw] 
