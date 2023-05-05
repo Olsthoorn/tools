@@ -1,18 +1,24 @@
 
+import os
+import sys
+sys.path.insert(0, os.path.abspath('../'))
+
 import numpy as np
 import matplotlib.pyplot as plt
 import scipy.sparse as sp
 from scipy.interpolate import interp1d
 from scipy.sparse.linalg import spsolve # to use its short name
-from colors import colors
+from matplotlib import colors
+from etc import newfig
 
+from fdm.mfgrid import Grid
 
 class InputError(Exception):
     pass
 
 NOT = np.logical_not
 
-def fdm3t(gr=None, t=None, kxyz=None, c=None, Ss=None,
+def fdm3t(gr=None, t=None, kxyz=None, c=None, Ss=None, GHB=None,
           FQ=None, HI=None, IBOUND=None, epsilon=0.67):
     """Transient 3D Finite Difference Model returning computed heads and flows.
 
@@ -27,11 +33,17 @@ def fdm3t(gr=None, t=None, kxyz=None, c=None, Ss=None,
         which is usually zero, but can have any value.
     kxyz: 3-tuple of ndarray, shape: (Ny, Nx, Nz), [L/T]
         hydraulic conductivities along the three axes, 3D arrays.
-    c: nd.array of shape (Ny, Nx, Nz-1)
+    c: nd.array of shape (Nz-1, Ny, Nx) or (Nz, Nx, Ny) or (Nz+1, Ny, Nx)
         vertical resistances between the layers
+            - between the layers if shape(0) == nlay - 1
+            - includes above top layer if shape(0) = nlay
+            - includes both  top and bottom layers if shape(0) = nlay + 1
         may be None
     Ss : ndarray, shape: (Ny, Nx, Nz), [L-1]
         specific elastic storage
+    GHB: dict
+        General head boundaries dict with items given stress period and recarray([lgc, h, Cond])
+        The stress periods follow from t after so manyith time.
     FQ : ndarray, shape: (Ny, Nx, Nz), [L3/T]
         prescrived cell flows (injection positive, zero of no inflow/outflow)
     IH : ndarray, shape: (Ny, Nx, Nz), [L]
@@ -74,9 +86,16 @@ def fdm3t(gr=None, t=None, kxyz=None, c=None, Ss=None,
         kx = ky = kz = kxyz
         
     if isinstance(c, np.ndarray):
-        if not c.shape == (gr.nz - 1, gr.ny, gr.nx):
-            raise AssertionError("shape of c {0} differs from  {1}".
-                                 format(c.shape, (gr.nz - 1, gr.ny, gr.nx)))
+        if not c.shape[1:] == (gr.ny, gr.nx):
+            raise AssertionError("shape of c[0] {0} differs from  {1}".
+                                 format(c.shape, (gr.ny, gr.nx)))
+        ctb = gr.const(0.)            # ctb = c at top and  at bottom of the system.
+        if c.shape[0] == gr.nz:       # c array incudes c at top of the system
+            ctb[0] = c[0].copy()
+            c = c[1:]
+        elif c.shape[0] == gr.nz + 1: # c array includes c at top and at bottom of the system.
+            ctb[[0, -1]] = c[[0, -1]].copy()
+            c = c[1:-1]
     else:
         if c is not None:
             raise InputError("c must be a 3D array or None")
@@ -109,7 +128,8 @@ def fdm3t(gr=None, t=None, kxyz=None, c=None, Ss=None,
         Ry1 = 0.5 *    dy / (gr.DZ *    dx) / ky
         Rz1 = 0.5 * gr.DZ / (   dx *    dy) / kz
         if c is not None:
-            Rc  = c / (dx * dy)
+            Rc   = c   / (dx * dy)
+            Rctb = ctb / (dx * dy)
     else:
         # prevent div by zero warning in next line; has no effect because x[0] is not used
         x = gr.x.copy();  x[0] = x[0] if x[0]>0 else 0.001* x[1]
@@ -119,7 +139,8 @@ def fdm3t(gr=None, t=None, kxyz=None, c=None, Ss=None,
         Ry1 = np.inf * np.ones(gr.shape)
         Rz1 = 0.5 * gr.DZ / (np.pi * (gr.x[1:]**2 - gr.x[:-1]**2).reshape((1, 1, gr.nx)) * kz)
         if c is not None:
-            Rc  = c / (np.pi * (gr.x[1:]**2 - gr.x[:-1]**2).reshape((1, 1, gr.nx)))
+            Rc   = c   / (np.pi * (gr.x[1:]**2 - gr.x[:-1]**2).reshape((1, 1, gr.nx)))
+            Rctb = ctb / (np.pi * (gr.x[1:]**2 - gr.x[:-1]**2).reshape((1, 1, gr.nx)))
 
     # set flow resistance in inactive cells to infinite
     Rx1[inact.reshape(gr.shape)] = np.inf
@@ -135,7 +156,8 @@ def fdm3t(gr=None, t=None, kxyz=None, c=None, Ss=None,
     if c is None:
         Cz = 1 / (Rz1[1:, :, :] + Rz2[:-1,:  ,:  ])
     else:
-        Cz = 1 / (Rz1[1:, :, :] + Rc + Rz2[:-1,:  ,:  ])
+        Cz =  1 / (Rz1[1:, :, :] + Rc + Rz2[:-1,:  ,:  ])
+        Ctb = 1 /                  Rctb
 
     # storage term, variable dt not included
     Cs = (Ss * gr.Volume / epsilon).ravel()
@@ -169,7 +191,7 @@ def fdm3t(gr=None, t=None, kxyz=None, c=None, Ss=None,
     Qz  = np.zeros((Nt, gr.nz-1, gr.ny, gr.nx))
 
     # reshape input arrays to vectors for use in system equation
-    FQ = R(FQ);  HI = R(HI);  Cs = R(Cs)
+    FQ = R(FQ);  HI = R(HI);  Cs = R(Cs); Ctb = R(Ctb)
 
     # initialize heads
     Phi[0] = HI
@@ -184,9 +206,9 @@ def fdm3t(gr=None, t=None, kxyz=None, c=None, Ss=None,
         it = idt+1
 
         # this A is not complete !!
-        RHS = FQ - (A + sp.diags(Cs / dt))[:,fxhd].dot(Phi[it-1][fxhd]) # Right-hand side vector
+        RHS = FQ - (A + sp.diags(Ctb) + sp.diags(Cs / dt))[:,fxhd].dot(Phi[it-1][fxhd]) # Right-hand side vector
 
-        Phi[it][active] = spsolve( (A + sp.diags(Cs / dt))[active][:,active],
+        Phi[it][active] = spsolve( (A + sp.diags(Ctb) + sp.diags(Cs / dt))[active][:,active],
                                   RHS[active] + Cs[active] / dt * Phi[it-1][active])
 
         # net cell inflow
@@ -285,6 +307,7 @@ class Fdm3t:
         self.t  = t
         self.Kh = Kh
         self.Kv = Kv
+        self.c  = c
         self.Ss = Ss
         self.FQ = FQ
         self.HI = HI
@@ -292,7 +315,7 @@ class Fdm3t:
 
         # Immediately runs the model and stores its output
         self.out = fdm3t(gr=self.gr, t=self.t,
-                         kxyz=(self.Kh, self.Kh, self.Kv),
+                         kxyz=(self.Kh, self.Kh, self.Kv), c=self.c,
                          Ss=self.Ss, FQ=self.FQ, HI=self.HI,
                          IBOUND=IBOUND, epsilon=1.0)
 
@@ -461,5 +484,37 @@ class Fdm3t:
                 ax.add_patch(p)
 
         return ax
+    
+if __name__ == '__main__':
+    
+    x = np.linspace(0, 20, 21)
+    y = [-0.5, 0.5]
+    z = [0, -2, -5, -7, -10]
+    gr = Grid(x, y, z, axial=False)
+    
+    HI = gr.const(0.)
+    FQ = gr.const(0.)
+    FQ[2, 0, 0] = -1.
+    IBOUND = gr.const(1, dtype=int)
+    IBOUND[2, 0, -1] = -1
+    Ss = gr.const(1e-5)
+    kx = gr.const(10.)
+    kz = gr.const(1.0)
+    C = getGHB(top, htop, ctop)
+    top = gr.const(False, dtype=bool); top[0] = True
+    ctop = 100.
+    Ctop = gr.Aread * ctop
+    lrc = gr.LRC(top)
+    
+    c[ 0, :, :] = 100
+    c[-1, :, :] = np.inf
+    t = np.logspace(-3, 3, 61)
+    
+    out = fdm3t(gr=gr, t=t, kxyz=(kx, kx, kz), c=c, Ss=Ss, FQ=FQ, HI=HI, IBOUND=IBOUND)
+    
+    ax = newfig("Test resistance in top and bottom of system", 'x [m]', 'h [m]')
+    
+    for il  in range(gr.nlay):
+        ax.plot(gr.xm, out['Phi'][-1, il, 0, :], label='layer {}, t={:.4g} d'.format(il, out['t'][-1]))
 
 

@@ -937,6 +937,36 @@ class Grid:
         LRC = np.array(LRC)
         return LRC[:,0] * self._ny * self._nx + LRC[:, 1] * self._nx + LRC[:, 2]
 
+    def GHB(self, cells, hds, cond):
+        """Return recarray for GHB from 3 arrays: cells, hds, cond.
+        
+        Parameters
+        ----------
+        cells: np.ndarray of bool
+            the cells with the GHB
+        hds: np.ndarray of float
+            the heads
+        cond: nd.array of float
+            the conductances
+            
+        @TO 230505
+        """
+        for A, name, tp in zip((cells, hds, cond), ('cells', 'hds', 'cond'), (bool, float, float)):
+            assert isinstance(A, np.ndarray), "{} not an ndarray of type {}".format(name, tp)
+        assert cells.shape[0] == hds.shape[0], "length of cell array ({}) != length hds array ({})"\
+                                    .format(cells.shape[0], hds.shape[0])
+        assert np.all(cells.shape[0] == cond.shape[0]), "length cell array ({}) != lenth of cond array ({})"\
+                                    .format(cells.shape[0], cond.shape[0])
+                                    
+        dtype = np.dtype([('I', int), ('h', float), ('C', float)])
+        
+        ghb = np.zeros(len(cells), dtype=dtype)
+        ghb['I'] = self.I(cells)
+        ghb['h']    = hds
+        ghb['C']   = cond
+        
+        return ghb
+
 
     def cell_pairs(self, polyline, open=False):
         """Return cell pairs left and right of polygon contour like for HB package.
@@ -2906,7 +2936,7 @@ class Grid:
 
 
     def inblock(self, xx=None, yy=None, zz=None):
-        """Return logical array denoding cells in given block."""
+        """Return logical array denoting cells in given block."""
         if xx == None:
             Lx = self.const(0) > -np.inf # alsways false
         else:
