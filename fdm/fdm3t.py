@@ -6,17 +6,19 @@ sys.path.insert(0, os.path.abspath('../'))
 import numpy as np
 import matplotlib.pyplot as plt
 import scipy.sparse as sp
-from scipy.interpolate import interp1d
+from scipy.special import exp1
+from scipy.interpolate import interp1d, RegularGridInterpolator
 from scipy.sparse.linalg import spsolve # to use its short name
 from matplotlib import colors
-from etc import newfig
+from analytic.hantush_conv import Wh
+from etc import newfig, color_cycler
 
 from fdm.mfgrid import Grid
 
 class InputError(Exception):
     pass
 
-NOT = np.logical_not
+ghb_dtype = np.dtype([('I', int),('h', float),('C', float)])
 
 def fdm3t(gr=None, t=None, kxyz=None, c=None, Ss=None, GHB=None,
           FQ=None, HI=None, IBOUND=None, epsilon=0.67):
@@ -41,9 +43,9 @@ def fdm3t(gr=None, t=None, kxyz=None, c=None, Ss=None, GHB=None,
         may be None
     Ss : ndarray, shape: (Ny, Nx, Nz), [L-1]
         specific elastic storage
-    GHB: dict
-        General head boundaries dict with items given stress period and recarray([lgc, h, Cond])
-        The stress periods follow from t after so manyith time.
+    GHB: recarray with dtype = np.dtype([(I, 'int'), ('h', float), ('C', float)])
+        General head boundaries recarray. I=index in flatten array, h, head and C conductance.
+        TODO: Generalize this to include times.
     FQ : ndarray, shape: (Ny, Nx, Nz), [L3/T]
         prescrived cell flows (injection positive, zero of no inflow/outflow)
     IH : ndarray, shape: (Ny, Nx, Nz), [L]
@@ -85,20 +87,11 @@ def fdm3t(gr=None, t=None, kxyz=None, c=None, Ss=None, GHB=None,
     else:
         kx = ky = kz = kxyz
         
-    if isinstance(c, np.ndarray):
-        if not c.shape[1:] == (gr.ny, gr.nx):
-            raise AssertionError("shape of c[0] {0} differs from  {1}".
-                                 format(c.shape, (gr.ny, gr.nx)))
-        ctb = gr.const(0.)            # ctb = c at top and  at bottom of the system.
-        if c.shape[0] == gr.nz:       # c array incudes c at top of the system
-            ctb[0] = c[0].copy()
-            c = c[1:]
-        elif c.shape[0] == gr.nz + 1: # c array includes c at top and at bottom of the system.
-            ctb[[0, -1]] = c[[0, -1]].copy()
-            c = c[1:-1]
-    else:
-        if c is not None:
-            raise InputError("c must be a 3D array or None")
+    if c is not None:
+        if isinstance(c, np.ndarray):
+            if not np.all(c.shape == (gr.nlay -1, gr.ny, gr.nx)):
+                raise AssertionError("shape c ({0}) should be {1}".
+                                 format(c.shape, (gr.nlay, gr.ny, gr.nx)))
 
     if kx.shape != gr.shape:
         raise AssertionError("shape of kx {0} differs from that of model {1}".format(kx.shape,gr.shape))
@@ -109,10 +102,10 @@ def fdm3t(gr=None, t=None, kxyz=None, c=None, Ss=None, GHB=None,
     if Ss.shape != gr.shape:
         raise AssertionError("shape of Ss {0} differs from that of model {1}".format(Ss.shape,gr.shape))
 
-    kx[kx<1e-20] = 1e-50
+    kx[kx<1e-20] = 1e-50 # Why?
     ky[ky<1e-20] = 1e-50
     kz[kz<1e-20] = 1e-50
-
+    
     active = (IBOUND >0).reshape(gr.nod,)  # boolean vector denoting the active cells
     inact  = (IBOUND==0).reshape(gr.nod,)  # boolean vector denoting inacive cells
     fxhd   = (IBOUND <0).reshape(gr.nod,)  # boolean vector denoting fixed-head cells
@@ -126,21 +119,17 @@ def fdm3t(gr=None, t=None, kxyz=None, c=None, Ss=None, GHB=None,
         Rx1 = 0.5 *    dx / (   dy * gr.DZ) / kx
         Rx2 = Rx1
         Ry1 = 0.5 *    dy / (gr.DZ *    dx) / ky
-        Rz1 = 0.5 * gr.DZ / (   dx *    dy) / kz
-        if c is not None:
-            Rc   = c   / (dx * dy)
-            Rctb = ctb / (dx * dy)
+        Rz1 = 0.5 * gr.DZ / (   dx *    dy) / kz        
+        Rc  = 0 if c is None else c   / (dx * dy)
     else:
         # prevent div by zero warning in next line; has no effect because x[0] is not used
-        x = gr.x.copy();  x[0] = x[0] if x[0]>0 else 0.001* x[1]
+        x = gr.x.copy();  x[0] = x[0] if x[0]>0 else 0.001 * x[1]
 
         Rx1 = 1 / (2 * np.pi * kx * gr.DZ) * np.log(x[1:] /  gr.xm).reshape((1, 1, gr.nx))
         Rx2 = 1 / (2 * np.pi * kx * gr.DZ) * np.log(gr.xm / x[:-1]).reshape((1, 1, gr.nx))
         Ry1 = np.inf * np.ones(gr.shape)
-        Rz1 = 0.5 * gr.DZ / (np.pi * (gr.x[1:]**2 - gr.x[:-1]**2).reshape((1, 1, gr.nx)) * kz)
-        if c is not None:
-            Rc   = c   / (np.pi * (gr.x[1:]**2 - gr.x[:-1]**2).reshape((1, 1, gr.nx)))
-            Rctb = ctb / (np.pi * (gr.x[1:]**2 - gr.x[:-1]**2).reshape((1, 1, gr.nx)))
+        Rz1 = 0.5 * gr.DZ / (np.pi * (gr.x[1:] ** 2 - gr.x[:-1] ** 2).reshape((1, 1, gr.nx)) * kz)
+        Rc  = 0 if c is None else c   / (np.pi * (gr.x[1:] ** 2 - gr.x[:-1] ** 2).reshape((1, 1, gr.nx)))
 
     # set flow resistance in inactive cells to infinite
     Rx1[inact.reshape(gr.shape)] = np.inf
@@ -153,15 +142,11 @@ def fdm3t(gr=None, t=None, kxyz=None, c=None, Ss=None, GHB=None,
     # conductances between adjacent cells
     Cx = 1 / (Rx1[: , :,1:] + Rx2[:  ,:  ,:-1])
     Cy = 1 / (Ry1[: ,1:, :] + Ry2[:  ,:-1,:  ])
-    if c is None:
-        Cz = 1 / (Rz1[1:, :, :] + Rz2[:-1,:  ,:  ])
-    else:
-        Cz =  1 / (Rz1[1:, :, :] + Rc + Rz2[:-1,:  ,:  ])
-        Ctb = 1 /                  Rctb
-
+    Cz = 1 / (Rz1[1:, :, :] + Rc + Rz2[:-1,:  ,:  ])
+    
     # storage term, variable dt not included
-    Cs = (Ss * gr.Volume / epsilon).ravel()
-
+    Cs = Ss * gr.DZ * gr.Area[np.newaxis, :, :, ] / epsilon
+    
     # cell number of neighboring cells
     IW = gr.NOD[:,:,:-1]  # east neighbor cell numbers
     IE = gr.NOD[:,:, 1:] # west neighbor cell numbers
@@ -191,8 +176,18 @@ def fdm3t(gr=None, t=None, kxyz=None, c=None, Ss=None, GHB=None,
     Qz  = np.zeros((Nt, gr.nz-1, gr.ny, gr.nx))
 
     # reshape input arrays to vectors for use in system equation
-    FQ = R(FQ);  HI = R(HI);  Cs = R(Cs); Ctb = R(Ctb)
-
+    FQ = R(FQ);  HI = R(HI);  Cs = R(Cs)
+    
+    if GHB is not None:
+        assert GHB.dtype == np.dtype([('I', int), ('h', float), ('C', float)])
+        assert np.all(np.logical_and(GHB['I'] >= 0, GHB['I'] < gr.nod)),\
+            "All global indices must be 0 <= I < gr.nod = {} !".format(gr.nod)
+        Cghb = gr.const(0.)
+        Hghb = gr.const(0.1)
+        Cghb.ravel()[GHB['I']] = GHB['C']
+        Hghb.ravel()[GHB['I']] = GHB['h']
+        Qghb = np.zeros((Nt, gr.nod))
+        
     # initialize heads
     Phi[0] = HI
 
@@ -205,34 +200,44 @@ def fdm3t(gr=None, t=None, kxyz=None, c=None, Ss=None, GHB=None,
 
         it = idt+1
 
-        # this A is not complete !!
-        RHS = FQ - (A + sp.diags(Ctb) + sp.diags(Cs / dt))[:,fxhd].dot(Phi[it-1][fxhd]) # Right-hand side vector
-
-        Phi[it][active] = spsolve( (A + sp.diags(Ctb) + sp.diags(Cs / dt))[active][:,active],
-                                  RHS[active] + Cs[active] / dt * Phi[it-1][active])
+        RHS = FQ - (A + sp.diags(Cs / dt))[:,fxhd].dot(Phi[it-1][fxhd]) # Right-hand side vector
+        if GHB is None:  
+            Phi[it][active] = spsolve( (A + sp.diags(Cs / dt))[active][:,active],
+                RHS[active] + Cs[active] / dt * Phi[it-1][active])
+        else:
+            Phi[it][active] = spsolve( (A + sp.diags(Cghb.ravel()) + sp.diags(Cs / dt))[active][:,active],
+                RHS[active] + R(Cghb * Hghb)[active] + Cs[active] / dt * Phi[it-1][active])
 
         # net cell inflow
         Q[idt]  = A.dot(Phi[it])
 
         Qs[idt] = -Cs/dt * (Phi[it]-Phi[it-1])
 
-
         #Flows across cell faces
         Qx[idt] =  -np.diff( Phi[it].reshape(gr.shape), axis=2) * Cx
         Qy[idt] =  +np.diff( Phi[it].reshape(gr.shape), axis=1) * Cy
         Qz[idt] =  +np.diff( Phi[it].reshape(gr.shape), axis=0) * Cz
+        if GHB is not None:
+            Qghb[idt] = (Hghb.ravel() - Phi[it]) * Cghb.ravel()
 
         # update head to end of time step
         Phi[it][active] = Phi[it-1][active] + (Phi[it]-Phi[it-1])[active]/epsilon
         Phi[it][fxhd]   = Phi[it-1][fxhd]
-        Phi[it][inact] = np.nan
+        Phi[it][inact]  = np.nan
 
     # reshape Phi to shape of grid
-    Phi = Phi.reshape((Nt,) + gr.shape)
-    Q   = Q.reshape( (Ndt,) + gr.shape)
-    Qs  = Qs.reshape((Ndt,) + gr.shape)
+    Phi = Phi.reshape(  (Nt, ) + gr.shape)
+    Q   = Q.reshape(    (Ndt,) + gr.shape)
+    Qs  = Qs.reshape(   (Ndt,) + gr.shape) 
 
-    return {'gr': gr, 't': t, 'Phi': Phi, 'Q': Q, 'Qs': Qs, 'Qx': Qx, 'Qy': Qy, 'Qz': Qz}
+    out = dict()
+    out.update(gr=gr, t=t, Phi=Phi, Q=Q, Qs=Qs, Qx=Qx, Qy=Qy, Qz=Qz)
+    
+    if GHB is not None:
+        Qghb = Qghb.reshape((Ndt,) + gr.shape)
+        out.update(Qghb=Qghb)
+    
+    return out 
 
 
 class Fdm3t:
@@ -486,35 +491,128 @@ class Fdm3t:
         return ax
     
 if __name__ == '__main__':
+        
+    cases = {
+        'Theis':
+            {'title': r"""Theis numeric
+             $\tau_0$ corresponds to the smallest time for given $r$""",
+            'tau': np.logspace(-4, 9, 131), # tau = 1/ u
+            'r': np.hstack((0., np.logspace(-2, 6, 81))),
+            'D': np.array([50.]),
+            'kr': np.array([10.]),
+            'kz': np.array([1e6]),
+            'Ss': np.array([1e-5]),
+            'r_' :30.,
+            'rhos': [0.01, 0.03, .1, .3, 1., 3.],
+            },
+        'Hantush 1L':
+            {'title' : 'Hantush using 1 layer and GHB',
+            'tau': np.logspace(-4, 9, 131), # tau = 1/ u
+            'r': np.hstack((0., np.logspace(-2, 6, 81))),
+            'D': np.array([50.]),
+            'kr': np.array([10.]),
+            'kz': np.array([1e6]),
+            'Ss': np.array([1e-5]),
+            'r_' :30.,
+            'rhos': [0.01, 0.03, .1, .3, 1., 3.],
+            },
+        'Hantush 2L': {
+            'title': 'Hantush using 2 layers',
+            'tau': np.logspace(-4, 9, 131), # tau = 1/ u
+            'r': np.hstack((0., np.logspace(-2, 6, 81))),
+            'D': np.array([  10., 50.]),
+            'kr': np.array([ 1e-6, 10.]),
+            'kz': np.array([ 1e6,  1e6]),
+            'Ss': np.array([   0., 1e-5]),
+            'r_' :30.,
+            'rhos': [0.01, 0.03, .1, .3, 1., 3.],
+            }
+        }
     
-    x = np.linspace(0, 20, 21)
-    y = [-0.5, 0.5]
-    z = [0, -2, -5, -7, -10]
-    gr = Grid(x, y, z, axial=False)
+    #case = 'Hantush 1L'
+    #case = 'Hantush 2L'
+    case = 'Theis'
     
-    HI = gr.const(0.)
-    FQ = gr.const(0.)
-    FQ[2, 0, 0] = -1.
+    kw = cases[case]
+    
+    z0 = 0.
+    z = np.hstack((z0, z0 - np.cumsum(kw['D'])))
+    gr = Grid(kw['r'], None, z, axial=True)
+    kD = kw['kr'] * kw['D']  
+    S = kw['Ss'] * kw['D']  
+    Q = 4 * np.pi * kD.sum()
+    HI, FQ = gr.const(0.), gr.const(0.)    
+    FQ[-1, 0, 0] = Q
+    HI[-1] = 0. # exp1(kw['tau'][0])
     IBOUND = gr.const(1, dtype=int)
-    IBOUND[2, 0, -1] = -1
-    Ss = gr.const(1e-5)
-    kx = gr.const(10.)
-    kz = gr.const(1.0)
-    C = getGHB(top, htop, ctop)
-    top = gr.const(False, dtype=bool); top[0] = True
-    ctop = 100.
-    Ctop = gr.Aread * ctop
-    lrc = gr.LRC(top)
+    Ss = gr.const(kw['Ss'])
+    Kr  = gr.const(kw['kr'])
+    Kz  = gr.const(kw['kz'])
     
-    c[ 0, :, :] = 100
-    c[-1, :, :] = np.inf
-    t = np.logspace(-3, 3, 61)
+    if case == 'Theis':
+        t = kw['r_'] ** 2 * S.sum() / (4 * kD.sum()) * kw['tau']
+    else:
+        t = kw['r_'] ** 2 * S.sum() / (4 * kD.sum()) * kw['tau']
+
+    xlim = None # (1e-1, kw['tau'][-1]) 
+    ylim = (1e-2, 1e2)
     
-    out = fdm3t(gr=gr, t=t, kxyz=(kx, kx, kz), c=c, Ss=Ss, FQ=FQ, HI=HI, IBOUND=IBOUND)
+    ax = newfig(kw['title'],
+                r'$\tau = r^2 S/(4 kD)$', r'$4 \pi kD s / Q$',
+                xscale='log', yscale='log', xlim=xlim, ylim=ylim)
+
+    ax.plot(kw['tau'], exp1(1/kw['tau']), 'r-', lw=2, label='Theis')
+
+    if case == "Theis":
+        kD = (kw['kr'] * kw['D']).sum()
+        S = (kw['Ss'] * kw['D']).sum()
+        
+        out = fdm3t(gr=gr, t=t, kxyz=(Kr, Kr, Kz), Ss=Ss, FQ=FQ, HI=HI, IBOUND=IBOUND, epsilon=1.0)
+        
+        cc = color_cycler()
+        for ir in range(1, len(gr.xm), 4):  #, rm in enumerate(gr.xm[1:-1:5]):
+            color = next(cc)
+            rm = gr.xm[ir]
+            u = rm ** 2 * S / (4 * kD * t)
+            
+            tau0 = 1 / u[0] 
+            
+            ax.plot(1/u, out['Phi'][:, 0, 0, ir], color=color, label="$r_m$={:.3g}, $tau_0$={:.3g}".format(rm, tau0))
+            ax.plot(1/u, exp1(u), '.', color=color, label=r"$r_m$={:.3g} m, exp1(u)".format(rm))
+            ax.plot(tau0, 2 * ylim[0], 'o', color=color)
+        ax.text(1e6, 2 * ylim[0], 'o = corresponds with smallest tau for given r', ha='left', va='center')
     
-    ax = newfig("Test resistance in top and bottom of system", 'x [m]', 'h [m]')
-    
-    for il  in range(gr.nlay):
-        ax.plot(gr.xm, out['Phi'][-1, il, 0, :], label='layer {}, t={:.4g} d'.format(il, out['t'][-1]))
+    elif case.startswith('Hantush'):        
+        for rho in kw['rhos']:
+            B = kw['r_'] / rho
+            ctop = B ** 2  / kD.sum()
+                
+            if case == 'Hantush 1L':
+                c = None            
+                GHB = np.zeros(gr.nx, dtype=ghb_dtype)
+                GHB['I'] = gr.NOD[0].ravel()
+                GHB['h'] = np.zeros(gr.nx, dtype=float)
+                GHB['C'] = gr.Area / ctop
+            elif case == 'Hantush 2L':
+                IBOUND[0] = -1
+                GHB = None
+                c = gr.const(0.); c = c[1:], c[0] = ctop                            
+            
+                out = fdm3t(gr=gr, t=t, kxyz=(Kr, Kr, Kz), Ss=Ss, FQ=FQ, HI=HI, IBOUND=IBOUND, c=c, GHB=GHB, epsilon=1.0)
+
+            if case == 'Hantush 1L':
+                points = (kw['tau'], gr.xm)
+                interp = RegularGridInterpolator(points=points, values=out['Phi'][:, -1, 0, :], method='linear')
+                xi = np.vstack((kw['tau'], np.ones_like(kw['tau']) *  kw['r_'])).T
+            elif case == 'Hantush 2L':
+                points = (kw['tau'], np.arange(gr.nlay), gr.xm)
+                interp = RegularGridInterpolator(points=points, values=out['Phi'][:, :, 0, :], method='linear')
+                xi = np.vstack((kw['tau'], np.ones(len(kw['tau'])) * gr.nlay - 1, np.ones_like(kw['tau']) *  kw['r_'])).T
+                    
+            ax.plot(kw['tau'], interp(xi), label="rho={:.4g}".format(rho))
+            ax.plot(kw['tau'], Wh(1/kw['tau'], rho)[0], '.', label=r'$Wh(1/\tau, \rho)$'.format(rho))
+        
+    ax.legend()
+    plt.show()
 
 
