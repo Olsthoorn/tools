@@ -490,51 +490,8 @@ class Fdm3t:
 
         return ax
     
-if __name__ == '__main__':
-        
-    cases = {
-        'Theis':
-            {'title': r"""Theis numeric
-             $\tau_0$ corresponds to the smallest time for given $r$""",
-            'tau': np.logspace(-4, 9, 131), # tau = 1/ u
-            'r': np.hstack((0., np.logspace(-2, 6, 81))),
-            'D': np.array([50.]),
-            'kr': np.array([10.]),
-            'kz': np.array([1e6]),
-            'Ss': np.array([1e-5]),
-            'r_' :30.,
-            'rhos': [0.01, 0.03, .1, .3, 1., 3.],
-            },
-        'Hantush 1L':
-            {'title' : 'Hantush using 1 layer and GHB',
-            'tau': np.logspace(-4, 9, 131), # tau = 1/ u
-            'r': np.hstack((0., np.logspace(-2, 6, 81))),
-            'D': np.array([50.]),
-            'kr': np.array([10.]),
-            'kz': np.array([1e6]),
-            'Ss': np.array([1e-5]),
-            'r_' :30.,
-            'rhos': [0.01, 0.03, .1, .3, 1., 3.],
-            },
-        'Hantush 2L': {
-            'title': 'Hantush using 2 layers',
-            'tau': np.logspace(-4, 9, 131), # tau = 1/ u
-            'r': np.hstack((0., np.logspace(-2, 6, 81))),
-            'D': np.array([  10., 50.]),
-            'kr': np.array([ 1e-6, 10.]),
-            'kz': np.array([ 1e6,  1e6]),
-            'Ss': np.array([   0., 1e-5]),
-            'r_' :30.,
-            'rhos': [0.01, 0.03, .1, .3, 1., 3.],
-            }
-        }
-    
-    #case = 'Hantush 1L'
-    #case = 'Hantush 2L'
-    case = 'Theis'
-    
-    kw = cases[case]
-    
+def testPars(kw):
+    """Get test parameters."""
     z0 = 0.
     z = np.hstack((z0, z0 - np.cumsum(kw['D'])))
     gr = Grid(kw['r'], None, z, axial=True)
@@ -548,71 +505,283 @@ if __name__ == '__main__':
     Ss = gr.const(kw['Ss'])
     Kr  = gr.const(kw['kr'])
     Kz  = gr.const(kw['kz'])
+    return gr, kD, S, Kr, Kz, Ss, Q, HI, FQ, IBOUND
+
+def test0(kw):
+    gr, kD, S, Kr, Kz, Ss, Q, HI, FQ, IBOUND = testPars(kw)
+        
+    out = fdm3t(gr=gr, t=kw['t'], kxyz=(Kr, Kr, Kz), Ss=Ss, FQ=FQ, HI=HI, IBOUND=IBOUND, epsilon=1.0)
+
+    xlim = kw['t'][[0, -1]]
+    ylim = (1e-3, 1e2)
+
+    ax = newfig(kw['title'],
+        't [d]', r'$4 \pi kD s / Q$',
+        xscale='log', yscale='log', xlim=xlim, ylim=ylim)
+    cc = color_cycler()
+    for ir in range(0, gr.nx, 10):
+        color = next(cc)
+        ax.plot(kw['t'][1:], out['Phi'][1:, 0, 0, ir], '-', color=color, label='r={:.3g} m'.format(gr.xm[ir]))
+        u = gr.xm[ir] ** 2 * S.sum() / (4 * kD.sum() * kw['t'])
+        ax.plot(kw['t'], exp1(u), '.', label='Theis, color=color, r={:.3g} m'.format(gr.xm[ir]))
+    ax.legend()
     
-    if case == 'Theis':
-        t = kw['r_'] ** 2 * S.sum() / (4 * kD.sum()) * kw['tau']
-    else:
-        t = kw['r_'] ** 2 * S.sum() / (4 * kD.sum()) * kw['tau']
+    xlim = gr.xm[[0, -1]]
+    ylim = (1e-3, 1e2)
+
+    ax = newfig(kw['title'],
+        'r [m]', r'$4 \pi kD s / Q$',
+        xscale='log', yscale='log', xlim=xlim, ylim=ylim)
+    cc = color_cycler()
+    for it in range(0, len(kw['t']), 10):
+        color = next(cc)
+        ax.plot(gr.xm, out['Phi'][it, 0, 0, :], '-', color=color, label='t={:.3g} d'.format(kw['t'][it]))
+        u = gr.xm ** 2 * S.sum() / (4 * kD.sum() * kw['t'][it])
+        ax.plot(gr.xm, exp1(u), '.', color=color, label='Theis, t={:.3g} d'.format(kw['t'][it]))
+    ax.legend()
+    return ax
+
+def theis(kw):
+    gr, kD, S, Kr, Kz, Ss, Q, HI, FQ, IBOUND = testPars(kw)
+    
+    t = kw['r_'] ** 2 * S.sum() / (4 * kD.sum()) * kw['tau']
+            
+    out = fdm3t(gr=gr, t=t, kxyz=(Kr, Kr, Kz), Ss=Ss, FQ=FQ, HI=HI, IBOUND=IBOUND, epsilon=1.0)
 
     xlim = None # (1e-1, kw['tau'][-1]) 
     ylim = (1e-2, 1e2)
+       
+    ax = newfig(kw['title'],
+        r'$\tau = r^2 S/(4 kD)$', r'$4 \pi kD s / Q$',
+        xscale='log', yscale='log', xlim=xlim, ylim=ylim)
+    
+    cc = color_cycler()
+    for ir in range(1, len(gr.xm), 4):  #, rm in enumerate(gr.xm[1:-1:5]):
+        color = next(cc)
+        rm = gr.xm[ir]
+        u = rm ** 2 * S.sum() / (4 * kD.sum() * t)
+        
+        tau0 = 1 / u[0] 
+        
+        ax.plot(1/u, out['Phi'][:, 0, 0, ir], color=color, label="$r_m$={:.3g}, $tau_0$={:.3g}".format(rm, tau0))
+        ax.plot(1/u, exp1(u), '.', color=color, label=r"$r_m$={:.3g} m, exp1(u)".format(rm))
+        ax.plot(tau0, 2 * ylim[0], 'o', color=color)
+    ax.text(1e6, 2 * ylim[0], 'o = corresponds with smallest tau for given r', ha='left', va='center')
+
+    ax.legend()
+    plt.show()
+    return ax
+
+def hantush1L(kw):
+    gr, kD, S, Kr, Kz, Ss, Q, HI, FQ, IBOUND = testPars(kw)
+    
+    t = kw['r_'] ** 2 * S.sum() / (4 * kD.sum()) * kw['tau']
     
     ax = newfig(kw['title'],
-                r'$\tau = r^2 S/(4 kD)$', r'$4 \pi kD s / Q$',
-                xscale='log', yscale='log', xlim=xlim, ylim=ylim)
+            r'$\tau = r^2 S/(4 kD)$', r'$4 \pi kD s / Q$',
+            xscale='log', yscale='log', xlim=kw['tau'][1, -1], ylim=(1e-3, 1e2))
 
     ax.plot(kw['tau'], exp1(1/kw['tau']), 'r-', lw=2, label='Theis')
-
-    if case == "Theis":
-        kD = (kw['kr'] * kw['D']).sum()
-        S = (kw['Ss'] * kw['D']).sum()
+       
+    for rho in kw['rhos']:
+        B = kw['r_'] / rho
+        ctop = B ** 2  / kD.sum()
+        GHB = np.zeros(gr.nx, dtype=ghb_dtype)
+        GHB['I'] = gr.NOD[0].ravel()
+        GHB['h'] = np.zeros(gr.nx, dtype=float)
+        GHB['C'] = gr.Area / ctop
         
-        out = fdm3t(gr=gr, t=t, kxyz=(Kr, Kr, Kz), Ss=Ss, FQ=FQ, HI=HI, IBOUND=IBOUND, epsilon=1.0)
+        out = fdm3t(gr=gr, t=t, kxyz=(Kr, Kr, Kz), Ss=Ss, FQ=FQ, HI=HI, IBOUND=IBOUND, c=c, GHB=GHB, epsilon=1.0)
         
-        cc = color_cycler()
-        for ir in range(1, len(gr.xm), 4):  #, rm in enumerate(gr.xm[1:-1:5]):
-            color = next(cc)
-            rm = gr.xm[ir]
-            u = rm ** 2 * S / (4 * kD * t)
-            
-            tau0 = 1 / u[0] 
-            
-            ax.plot(1/u, out['Phi'][:, 0, 0, ir], color=color, label="$r_m$={:.3g}, $tau_0$={:.3g}".format(rm, tau0))
-            ax.plot(1/u, exp1(u), '.', color=color, label=r"$r_m$={:.3g} m, exp1(u)".format(rm))
-            ax.plot(tau0, 2 * ylim[0], 'o', color=color)
-        ax.text(1e6, 2 * ylim[0], 'o = corresponds with smallest tau for given r', ha='left', va='center')
+        points = (kw['tau'], gr.xm)
+        interp = RegularGridInterpolator(points=points, values=out['Phi'][:, -1, 0, :], method='linear')
+        xi = np.vstack((kw['tau'], np.ones_like(kw['tau']) *  kw['r_'])).T
+        ax.plot(kw['tau'], interp(xi), label="rho={:.4g}".format(rho))
     
-    elif case.startswith('Hantush'):        
-        for rho in kw['rhos']:
-            B = kw['r_'] / rho
-            ctop = B ** 2  / kD.sum()
-                
-            if case == 'Hantush 1L':
-                c = None            
-                GHB = np.zeros(gr.nx, dtype=ghb_dtype)
-                GHB['I'] = gr.NOD[0].ravel()
-                GHB['h'] = np.zeros(gr.nx, dtype=float)
-                GHB['C'] = gr.Area / ctop
-            elif case == 'Hantush 2L':
-                IBOUND[0] = -1
-                GHB = None
-                c = gr.const(0.); c = c[1:], c[0] = ctop                            
-            
-                out = fdm3t(gr=gr, t=t, kxyz=(Kr, Kr, Kz), Ss=Ss, FQ=FQ, HI=HI, IBOUND=IBOUND, c=c, GHB=GHB, epsilon=1.0)
+    ax.legend()
+    plt.show()
+    return ax
 
-            if case == 'Hantush 1L':
-                points = (kw['tau'], gr.xm)
-                interp = RegularGridInterpolator(points=points, values=out['Phi'][:, -1, 0, :], method='linear')
-                xi = np.vstack((kw['tau'], np.ones_like(kw['tau']) *  kw['r_'])).T
-            elif case == 'Hantush 2L':
-                points = (kw['tau'], np.arange(gr.nlay), gr.xm)
-                interp = RegularGridInterpolator(points=points, values=out['Phi'][:, :, 0, :], method='linear')
-                xi = np.vstack((kw['tau'], np.ones(len(kw['tau'])) * gr.nlay - 1, np.ones_like(kw['tau']) *  kw['r_'])).T
-                    
-            ax.plot(kw['tau'], interp(xi), label="rho={:.4g}".format(rho))
-            ax.plot(kw['tau'], Wh(1/kw['tau'], rho)[0], '.', label=r'$Wh(1/\tau, \rho)$'.format(rho))
+
+def hantush2L(kw):
+    gr, kD, S, Kr, Kz, Ss, Q, HI, FQ, IBOUND = testPars(kw)
+    
+    t = kw['r_'] ** 2 * S.sum() / (4 * kD.sum()) * kw['tau']
+    
+    ax = newfig(kw['title'],
+            r'$\tau = r^2 S/(4 kD)$', r'$4 \pi kD s / Q$',
+            xscale='log', yscale='log', xlim=kw['tau'][1, -1], ylim=(1e-3, 1e2))
+
+    ax.plot(kw['tau'], exp1(1/kw['tau']), 'r-', lw=2, label='Theis')
+       
+    for rho in kw['rhos']:
+        B = kw['r_'] / rho
+        ctop = B ** 2  / kD.sum()        
+        IBOUND[0] = -1
+        GHB = None
+        c = gr.const(0.)[:-1]; c[0] = ctop
+        
+        out = fdm3t(gr=gr, t=t, kxyz=(Kr, Kr, Kz), Ss=Ss, FQ=FQ, HI=HI, IBOUND=IBOUND, c=c, GHB=GHB, epsilon=1.0)
+
+        points = (kw['tau'], np.arange(gr.nlay), gr.xm)
+        interp = RegularGridInterpolator(points=points, values=out['Phi'][:, :, 0, :], method='linear')
+        xi = np.vstack((kw['tau'], np.ones(len(kw['tau'])) * gr.nlay - 1, np.ones_like(kw['tau']) *  kw['r_'])).T
+        ax.plot(kw['tau'], interp(xi), label="rho={:.4g}".format(rho))
+        ax.plot(kw['tau'], Wh(1/kw['tau'], rho)[0], '.', label=r'$Wh(1/\tau, \rho)$'.format(rho))
+
+    ax.legend()
+    plt.show()
+    return ax
+
+
+def boulton(kw):
+    gr, kD, S, Kr, Kz, Ss, Q, HI, FQ, IBOUND = testPars(kw)
+    
+    t = kw['r_'] ** 2 * S.sum() / (4 * kD.sum()) * kw['tau']
+
+    ax = newfig(kw['title'],
+            r'$\tau = r^2 S/(4 kD)$', r'$4 \pi kD s / Q$',
+            xscale='log', yscale='log', xlim=kw['tau'][1, -1], ylim=(1e-3, 1e2))
+
+    ax.plot(kw['tau'],              exp1(1/kw['tau']), 'r-', lw=2, label='Theis [Sy]')
+    ax.plot(kw['tau'] * S[1] /S[0], exp1(1/kw['tau']), 'r-', lw=2, label='Theis [S]')
+    
+    for rho in kw['rhos']:
+        B = kw['r_'] / rho
+        ctop = B ** 2  / kD.sum()        
+        IBOUND[0] = 1
+        GHB = None
+        c = gr.const(0.)[:-1]; c[0] = ctop
+        
+        out = fdm3t(gr=gr, t=t, kxyz=(Kr, Kr, Kz), Ss=Ss, FQ=FQ, HI=HI, IBOUND=IBOUND, c=c, GHB=GHB, epsilon=1.0)
+
+        points = (kw['tau'], np.arange(gr.nlay), gr.xm)
+        interp = RegularGridInterpolator(points=points, values=out['Phi'][:, :, 0, :], method='linear')
+        
+        xi = np.vstack((kw['tau'], np.ones(len(kw['tau'])) * gr.nlay - 1, np.ones_like(kw['tau']) *  kw['r_'])).T
+        ax.plot(kw['tau'], interp(xi), label="rho={:.4g}".format(rho))                            
+        
+        xi = np.vstack((kw['tau'], np.ones(len(kw['tau'])) * 0, np.ones_like(kw['tau']) *  kw['r_'])).T
+        ax.plot(kw['tau'], interp(xi), label="rho={:.4g}".format(rho))            
+        
+        ax.plot(kw['tau'] * S[1]/S[0], Wh(1/kw['tau'], rho)[0], '.', label=r'$Wh(1/\tau, \rho)$'.format(rho))
         
     ax.legend()
     plt.show()
+    return ax
+    
+    
+if __name__ == '__main__':
+        
+    cases = {
+        'test0':
+            {'title': 'test',
+             "comment": """This test is to verify the accuracy of the model against an analytical
+             solution of Theis or even Hantush by a regular simulation, no dimensionless parameters.
+             """,
+            't': np.logspace(-4, 9, 131),
+            'r': np.hstack((0., np.logspace(-2, 6, 81))),
+            'D': np.array([50.]),
+            'kr': np.array([10.]),
+            'kz': np.array([1e6]),
+            'Ss': np.array([0.2e-6]),
+            'r_' :30.,
+            'rhos': [0.01, 0.03, .1, .3, 1., 3.],             
+             },
+        'Theis':
+            {'title': r"""Theis numeric
+             $\tau_0$ corresponds to the smallest time for given $r$""",
+             'comment': """Theis numeric. Computes theis at dimensionloss scale tau = 1/u.
+             The numeric model computes ones the drawdown for many t and r, which results in
+             Phi[nt, nlay, ny, nr]. To get the dimensionless drawdown, Q = 4 pi kD. The dimensionless
+             time is tau = 4 kD S * t / r ** 2. Hence a single kind of reference r has to be chosen in
+             a single plot. By plotting multiple limes, each time chosing a different ref. distance,
+             we get parts of the Theis curve on a dimensionless time scale tau as if each curve was
+             drawn for a different piezometer. In fact, by fixing tau, while choosing another r for
+             each curve we show the piezometer results with different times, as if they were measured
+             at different times. For points curves with large reference r, the times start at high             
+             values (late) which causes the graphs to start seemingly wrong on early times, which is
+             an artefact that can be removed by broading the time span.
+             """,
+            'tau': np.logspace(-4, 9, 131), # tau = 1/ u
+            'r': np.hstack((0., np.logspace(-2, 6, 81))),
+            'D': np.array([50.]),
+            'kr': np.array([10.]),
+            'kz': np.array([1e6]),
+            'Ss': np.array([1e-5]),
+            'r_' :30.,
+            'rhos': [0.01, 0.03, .1, .3, 1., 3.],
+            },
+        'Hantush 1L':
+            {'title' : 'Hantush using 1 layer and GHB',
+            'comment': """Hantush is numerically simlated using a single model layer, the inflow
+            at the top is made using general head boundaries. This result should be the same
+            as the one alled Hantush 2L. It's a way to verify that the GHB has been implemented correctly.
+            """,
+            'tau': np.logspace(-4, 9, 131), # tau = 1/ u
+            'r': np.hstack((0., np.logspace(-2, 6, 81))),
+            'D': np.array([50.]),
+            'kr': np.array([10.]),
+            'kz': np.array([1e6]),
+            'Ss': np.array([0.2e-6]),
+            'r_' :30.,
+            'rhos': [0.01, 0.03, .1, .3, 1., 3.],
+            },
+        'Hantush 2L': {
+            'title': 'Hantush using 2 layers',
+            'comment': """Hantush is simulated using 2 layer. One is the top layer with fixed head and
+            given resistance between the first and second layer. The second layer is the aquifer. This
+            example also serves to verify the implementation of the interlayer resistance 'c'.
+            """,
+            'tau': np.logspace(-4, 9, 131), # tau = 1/ u
+            'r': np.hstack((0., np.logspace(-2, 6, 81))),
+            'D': np.array([  10., 50.]),
+            'kr': np.array([ 1e-6, 10.]),
+            'kz': np.array([ 1e6,  1e6]),
+            'Ss': np.array([ 0.01, 0.2e-6]),
+            'r_' :30.,
+            'rhos': [0.01, 0.03, .1, .3, 1., 3.],
+            },
+        'Boulton 1963': {
+            'title': 'Boulton 1963, delayed yield',
+            'comment': """Boulton is simulated using 2 layers. One is the top layer with given Sy and
+            given resistance between the first and second layer. The second layer is the aquifer with
+            elastic storage coefficient S. The resisance between the two layers follows from the
+            value of rho used. A single reference distance r_ is used for all curve. This has no effect
+            on the results because these are given on dimensionless graphs.
+            """,
+            'tau': np.logspace(-4, 9, 131), # tau = 1/ u
+            'r': np.hstack((0., np.logspace(-2, 6, 81))),
+            'D': np.array([  10., 50.]),
+            'kr': np.array([ 1e-6, 10.]),
+            'kz': np.array([ 1e6,  1e6]),
+            'Ss': np.array([  0.01, 0.2e-6]),
+            'r_' :30.,
+            'rhos': [0.01, 0.03, .1, .3, 1., 3.],
+            }
+        }
+    
+    #case = 'test0'
+    #case = 'Theis'
+    #case = 'Hantush 1L'
+    #case = 'Hantush 2L'    
+    #case = 'Boulton 1963'
+    
+    test0(     cases['test0'])
+    #theis(     cases['Theis'])
+    #hantush1L( cases['Hantush 1L'])
+    #hantush2L( cases['Hantush 2L'])
+    #boulton(   cases['Boulton 1963'])
+    
+    plt.show()
+ 
+                
+                
+                
+                
+                
+        
+    
+    
 
 

@@ -77,8 +77,8 @@ def newfig(title='title?', xlabel='xlabel?', ylabel='ylabel?',
     ax.set_ylabel(ylabel)
     if xscale: ax.set_xscale(xscale)
     if yscale: ax.set_yscale(yscale)
-    if xlim: ax.set_xlim(xlim)
-    if ylim: ax.set_ylim(ylim)
+    if xlim is not None: ax.set_xlim(xlim)
+    if ylim is not None: ax.set_ylim(ylim)
     if aspect: ax.set_aspect(aspect)
 
     if fontsize:    
@@ -141,8 +141,8 @@ def newfigs(titles, xlabel, ylabels, xlim=None, ylims=None, xscale=None, yscales
         ax.set_title(title)
         ax.set_ylabel(ylabel)
         ax.grid(True)
-        if xlim: ax.set_xlim(xlim)
-        if ylims: ax.set_ylim(ylims[i])
+        if xlim is not None: ax.set_xlim(xlim)
+        if ylims is not None: ax.set_ylim(ylims[i])
         if xscale: ax.set_xscale(xscale)
         if yscales: ax.set_yscale(yscales[i])
         if invert_yaxes and invert_yaxes[i]: ax.invert_yaxis()
