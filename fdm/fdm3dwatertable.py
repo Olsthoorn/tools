@@ -384,6 +384,8 @@ def fdm3wtt(gr=None, t=None, kxyz=None, Ss=None, Sy=None,
     IB = gr.NOD[ 1:,:,:]  # bottom neighbor cell numbers
     R = lambda x : x.ravel()  # generate anonymous function R(x) as shorthand for x.ravel()
 
+    steady = np.all(Ss == 0.) and np.all(Sy ==0)
+
     # reshape input arrays to vectors for use in system equation
     Phi[0, :]= HI[t[0]].flatten()
     for it, dt in enumerate(np.diff(t)):
@@ -392,34 +394,38 @@ def fdm3wtt(gr=None, t=None, kxyz=None, Ss=None, Sy=None,
         inact  = (ibound==0).reshape(gr.nod,)  # boolean vector denoting inacive cells
         fxhd   = (ibound <0).reshape(gr.nod,)  # boolean vector denoting fixed-head cells
 
+        if steady and np.all(fxhd == False):
+            raise ValueError(
+                "Any Ss must be > 0 for transient); some IBOUND < 0 for steady flow")
+
         Phi[it + 1, :] = HI[t[it]].flatten() if it == 0 else Phi[it, :]
         for iouter in range(Nouter):
             D = DZtol(Z=gr.Z, Phi=Phi[it + 1].reshape(gr.shape), eps=eps)
             # half cell flow resistances
             if not gr.axial:
-                Rx1 = 0.5 *    dx / (dy * D ) / kx
-                Rx2 = Rx1
+                RxE = 0.5 *    dx / (dy * D ) / kx
+                RxW = RxE
                 Ry1 = 0.5 *    dy / (D  * dx) / ky
                 Rz1 = 0.5 * gr.DZ / (dx * dy) / kz
             else:
                 # prevent div by zero warning in next line; has no effect because x[0] is not used
                 x = gr.x.copy();  x[0] = x[0] if x[0]>0 else 0.001* x[1]
 
-                Rx1 = 1 / (2 * np.pi * kx * D) * np.log(x[1:] /  gr.xm).reshape((1, 1, gr.nx))
-                Rx2 = 1 / (2 * np.pi * kx * D) * np.log(gr.xm / x[:-1]).reshape((1, 1, gr.nx))
+                RxE = 1 / (2 * np.pi * kx * D) * np.log(x[1:] /  gr.xm).reshape((1, 1, gr.nx))
+                RxW = 1 / (2 * np.pi * kx * D) * np.log(gr.xm / x[:-1]).reshape((1, 1, gr.nx))
                 Ry1 = np.inf * np.ones(gr.shape)
                 Rz1 = 0.5 * gr.DZ / (np.pi * (gr.x[1:]**2 - gr.x[:-1]**2).reshape((1, 1, gr.nx)) * kz)
 
             # set flow resistance in inactive cells to infinite
-            Rx1[inact.reshape(gr.shape)] = np.inf
-            Rx2[inact.reshape(gr.shape)] = np.inf
+            RxE[inact.reshape(gr.shape)] = np.inf
+            RxW[inact.reshape(gr.shape)] = np.inf
             Ry1[inact.reshape(gr.shape)] = np.inf
             Ry2 = Ry1
             Rz1[inact.reshape(gr.shape)] = np.inf
             Rz2 = Rz1
 
             # conductances between adjacent cells
-            Cx = 1 / (Rx1[: , :,1:] + Rx2[:  ,:  ,:-1])
+            Cx = 1 / (RxW[: , :,1:] + RxE[:  ,:  ,:-1])
             Cy = 1 / (Ry1[: ,1:, :] + Ry2[:  ,:-1,:  ])
             Cz = 1 / (Rz1[1:, :, :] + Rz2[:-1,:  ,:  ])
 

@@ -34,7 +34,7 @@ def stehfest_coefs(N=10):
         v[i - 1] *= (-1) ** (i + N/2)
     return v
 
-vStehfest = stehfest_coefs(N=10)
+vStehfest = stehfest_coefs(N=18)
 
 
 def sysmat(p=None, kD=None, c=None, S=None,
@@ -575,6 +575,746 @@ class Hemker1999:
         s *= np.log(2.) / t
         return s.flatten()
 
+
+def hemk99numerically(t=None, r=None, z=None, rw=None, rc=None, topclosed=True, botclosed=True, **kw):
+    """Check Hemker(1999) numerically.
+    
+    Run axially multilayer model. To deal with multiple screens, and uniform
+    head inside the well, rPVC and rOut are included in the distance array.
+    Then rW < r < rPVC is considered PVC in the unscreend layers. And
+    rPVC < r < rOut is considered just out of the well representing the
+    head just outside the well casing both where the well is screend and where
+    it is unscreend. Just in plotting for all r, only the heads for r > r[2] == rPVC
+    are shown by showPhi.
+    
+    
+    Parameter
+    ----------
+    t: simulation times
+        times
+    z: None, sequence of array
+       elevation of layer planes (tops and bottoms in one array)
+    rw: float
+        well radius; must be same as r[1]
+    rc: float
+        radius of well bore storage, used to calculation Ss in top well cell.
+    topclosed, botclosed: bool
+        if False then IBOUND becomes -1 instead of 1
+    """
+    AND, NOT = np.logical_and, np.logical_not
+    t, r, kw = assert_input(t=t, r=r, **kw)
+        
+    # Make sure rw is r[1] and we include rw + dr
+    dr = 0.05 * rw
+    r = np.hstack((r[0], rw, rw + dr, r[r > rw + dr]))
+    
+    gr = Grid(r, None, kw['z'], axial=True)
+
+    # Well screen array
+    e = kw['e'][:, np.newaxis, np.newaxis] #  * np.ones((1, gr.nx))
+    E = e * np.ones((1, gr.nx), dtype=int)
+    
+    screen = AND(gr.XM < rw,     E)
+    casing = AND(gr.XM < rw, NOT(E))
+    
+    # No fixed heads
+    IBOUND = gr.const(1, dtype=int)
+    if not topclosed:
+        IBOUND[0,  :, 1:] = -1
+    if not botclosed:
+        IBOUND[-1, :, 1:] = -1
+    
+    # No horizontal flow in casing, vertical flow in screen and casing
+    kr = gr.const(kw['kr']); kr[screen] = 1e+6; kr[casing]=1e-6 # inside well
+    kz = gr.const(kw['kz']); kz[screen] = 1e+6; kz[casing]=1e+6 # inside well
+    
+    c  = gr.const(kw['c'][:, np.newaxis, np.newaxis])
+    c[:, :, gr.xm < rw] = 0. # No resistance in well
+    
+    Ss = gr.const(kw['Ss'][:, np.newaxis, np.newaxis])
+    Ss[0, 0, 0] = (rc / rw) ** 2 / gr.DZ[0, 0, 0] # Well bore storage (top well cell)
+    
+    HI = gr.const(0.)
+    FQ = gr.const(0.)
+    
+    # Boundary conditions, extraction from screens proportional to kDscreen / kDwell
+    assert np.isscalar(kw['Q']), "Q must be a scalar see kw['Q']"
+    kDscreen = kw['e'] * kw['kr'] * kw['D']
+    kDwell   = np.sum(kDscreen)
+    FQ[:, 0, 0] = kw['Q'] * kDscreen / kDwell
+           
+    return fdm3t(gr=gr, t=t, kxyz=(kr, kr, kz), Ss=Ss, c=c,
+                FQ=FQ, HI=HI, IBOUND=IBOUND)
+    
+def showPhi(t=None, r=None, z=None, IL=None, method=None, fdm3t=None,
+              xlim=None, ylim=None, xscale=None, yscale=None, show=True, **kw):
+    """Return head for given times, distances and layers.
+    
+    Parameters
+    ----------
+    t: sequence or scalar or None
+        times at which output is desired or None for all times
+    r: sequence
+        distances at which output is desired or None for all distances
+    z: sequence of scalar or None
+        z-values for which output is desired or None for specified IL
+    Il: sequence if ints or scalar or None
+        layers for which output is desired of none for specified (interpolated) zs is use
+    method: 'linear', 'cubic' or 'spline'
+        interpolation method
+    fdm3t: dictionary
+        output of fdm.fdrm3t.fdm3t
+    show: bool
+        Weather to plot or only return PhiI
+    
+    Options:
+    if t is None and z is not None:
+        (z, r) combinations for all t
+        option = 1
+    elif t is None and IL is not None
+        (il, r) combinations for all t
+        option = 2
+    elif r is None and z is not None:
+        (t, z) combinations for all r
+        option = 3
+    elif r is None and IL is not None:
+        (t, il) combinations for all r
+        option = 4
+    else:
+        raise ValueError illegal combination
+    """
+    assert (IL is None or z is None) and not (
+                (IL is not None) and (z is not None)
+            ), 'Either `IL` or `z` must be none !'
+    assert (not (t is None and r is None)
+            and not (
+                (t is not None and r is not None))
+            ), 'Either `t` or `r` must be none!'
+
+    # Option 1: if time is not specified, all times is implied
+    if t is None:
+        t =fdm3t['t']
+        if z is not None:
+            option = 1 # Zs
+        else:
+            option = 2 # IL
+            if IL is None:
+                IL = np.arange(fdm3t['gr'].nlay, dtype=int)
+    else: # t not None --> r None)
+        r = fdm3t['gr'].xm
+        if z is not None:
+            option = 3
+        else:
+            option = 4
+                    
+    t = np.array([t]) if np.isscalar(t) else np.array(t)
+    r = np.array([r]) if np.isscalar(r) else np.array(r)
+    z = np.array([z]) if np.isscalar(z) else np.array(z)
+
+    Phi = fdm3t['Phi'][:, :, 0, :] # sqeeze y
+
+    if option in [1, 3]:
+        points = fdm3t['t'], -fdm3t['gr'].zm, fdm3t['gr'].xm
+        interp = scipy.interpolate.RegularGridInterpolator(
+            points, Phi, method=method,
+            bounds_error=True, fill_value=np.nan)
+        Z, T, R = np.meshgrid(-z, t, r)
+        PhiI = interp(np.vstack((T.ravel(), Z.ravel(), R.ravel())).T).reshape(T.shape)
+    else:
+        points = fdm3t['t'], np.arange(fdm3t['gr'].nz), fdm3t['gr'].xm
+        interp = scipy.interpolate.RegularGridInterpolator(
+            points, Phi, method=method,
+            bounds_error=True, fill_value=np.nan)
+        L, T, R = np.meshgrid(IL, t, r)
+        PhiI = interp(np.vstack((T.ravel(), L.ravel(), R.ravel())).T).reshape(T.shape)
+
+    if show == False:
+        return PhiI
+
+    graphOpts = {
+        1: {'title': '(z, r) comb. for all t',   'xlabel': 'time [d]', 'ylabel': 'h [m]',
+            'label': 'z={:.4g} m, r={:4g} m'},
+        2: {'title': '(lay, r) comb. for all t', 'xlabel': 'time [d]', 'ylabel': 'h [m]',
+            'label': 'layer={}, r={:4g} m'},
+        3: {'title': '(z, t) comb. for all r',   'xlabel': 'r [m]', 'ylabel': 'h [m]',
+            'label': 't={:.4g} d, z={:4g} m'},
+        4: {'title': '(lay, t) comb. for all r', 'xlabel': 'r [m]', 'ylabel': 'h [m]',
+            'label': 't={:4g} d, layer={}'},
+    }
+    
+    o = graphOpts[option]
+    ax = newfig(o['title'], o['xlabel'], o['ylabel'], xlim=xlim, ylim=ylim,
+                xscale=xscale, yscale=yscale)
+
+    if option == 1:
+        for iz, z_ in enumerate(z):
+            for ir, r_ in enumerate(r):
+                ax.plot(t[1:], PhiI[1:, iz, ir], label=o['label']
+                        .format(z_, r_))
+    if option == 2:
+        for il, iL_ in enumerate(IL):
+            for ir, r_ in enumerate(r):
+                ax.plot(t[1:], PhiI[1:, il, ir], label=o['label']
+                        .format(iL_,r_))                    
+    if option == 3:
+        for it, t_ in enumerate(t):
+            for iz, z_ in enumerate(z):
+                ax.plot(r[1:], PhiI[it, iz, 1:], label=o['label']
+                        .format(t_, z_))
+    if option == 4:
+        for it, t_ in enumerate(t):
+            for il, iL_ in enumerate(IL):
+                ax.plot(r[1:], PhiI[it, iL_, 1:], label=o['label']
+                        .format(t_, iL_))                    
+
+    ax.legend(loc='best')
+    return PhiI, ax
+
+
+def test0(kw):
+    """Simulate test0."""
+    
+    # Numerical (model has 4 layers)
+    out = hemk99numerically(**kw)
+    
+    t = out['t']
+    
+    # Analytic for r values of r but all times
+    rs = [5, 50, 500]
+    
+    # Show numerical results and return the axis for all times, three rs values and two z-values
+    PhiI, ax = showPhi(t=None, r=rs, z=[-5, -35], IL=None,
+                    method='linear', fdm3t=out,
+                    xlim=None, ylim=None, xscale=None, yscale=None)
+    
+    # Same but now for all 3 layers
+    IL = [0, 1, 2, 3]
+    PhiI, ax = showPhi(t=None, r=rs, z=None, IL=IL,
+                        method='linear', fdm3t=out,
+                        xlim=None, ylim=None, xscale=None, yscale=None)
+    
+    kw['r'] = rs
+    sa  = solution(**kw)
+    for il in IL:
+        for ir, r_ in enumerate(rs):
+            label='layer={}, r={:0.4g} m'.format(il, r_)
+            ax.plot(out['t'], sa[:, il, ir], '--', label=label)
+    ax.legend(loc='lower right')
+    
+    # Get the data for only three times and all r
+    PhiI, ax = showPhi(t=[1, 3, 10], r=None, z=[-5, -15, -25, -35], IL=None,
+                    method='linear', fdm3t=out,
+                    xlim=None, ylim=None, xscale='log', yscale=None)
+    
+    # Choose a set of times and layers for output
+    ts = [1., 3., 10.]
+    IL = [0, 1, 2, 3]
+    
+    # Select the numerical data for these times and layers
+    PhiI, ax = showPhi(t=ts, r=None, z=None, IL=IL,
+                    method='linear', fdm3t=out,
+                    xlim=None, ylim=None, xscale='log', yscale=None)
+    
+    # Run analytical model
+    kw['t'] = ts
+    sa  = solution(**kw)
+    
+    for it, t_ in enumerate(ts):
+        for il in IL:                
+            label='layer={}, t={:0.4g} d'.format(il, t_)
+            ax.plot(out['gr'].xm, sa[it, il, :], '--', label=label)
+    ax.legend(loc='lower right')
+
+def test1(kw):
+    """Simultate using analytic class Hemker1999"""
+    
+    # TODO needs testing
+
+    test1 = Hemker1999(**kw)
+    sa  = test1.simulate(kw['t'], kw['r'], kw['Q'])
+    # Using the function
+    sb  = solution(**kw)
+    
+    assert np.all(sa == sb), "Test failed: not all sa == sb !"
+    print("Done, test succeeded, all sa == sb !")
+
+def test2(kw):
+    """Return plot comparing analytic implentation as function and as class."""
+    
+    r_ = 500
+    kw['r'] = r_
+            
+    kD = (kw['kr'] * kw['D']).sum()
+    Q  = 4 * np.pi * kD
+    kw['Q'] = Q
+    S  = kw['Ss'] * kw['D']
+    Sy, SA = S[0], S[1]
+    tauA = kw['tau']
+    tauB = tauA * SA / (Sy + SA)
+    kw['t'] = r_  ** 2 * SA * tauA / (4 * kD) 
+    
+    # rho = r_ over B values used by Hemker (1999)
+    r_B = np.array([0.01, 0.1, 0.2, 0.4, 0.6,
+                         0.8, 1.0, 1.5, 2.0, 2.5, 3.0])
+    xlim, ylim = None, None
+    # xlim, ylim = (1e-1, 1e9), (1e-3, 1e2)
+    
+    ax = newfig("Test 2 analytic for Boulton case",
+                r"$\tau = r^2 S / (4 kD t)$",
+                r"$(4 \pi kD) / Q s$",
+                xscale='log', yscale='log',
+                xlim=xlim, ylim=ylim)
+    ax.plot(tauA, scipy.special.exp1(1/tauA), 'r-',
+            label='Theis for S=SA')
+    ax.plot(tauA, scipy.special.exp1(1/tauB), 'b-',
+            label='Theis for S=(Sy + SA)')
+    
+    cc = color_cycler()
+    for rho in r_B:
+        color = next(cc)
+        c  = (r_ / rho) ** 2 / kD
+        kw['c'] = np.array([c])
+            
+        # Using the function
+        sb  = solution(**kw)
+        # Using the class
+        h99obj = Hemker1999(**kw)        
+        t = kw['t']
+        t = h99obj.tau2t(r=r_, tau=kw['tau'])
+    
+        sa  = h99obj.simulate(t, r_, Q)
+    
+        assert np.all(np.isclose(sa.ravel() / sb.ravel(), 1, atol = 0.0001)), "Test failed: not all sa == sb !"
+        
+        if rho in [0.01, 1.0, 1.5, 3.]:
+            lbl = 'r/B = {:.4g}'.format(rho)
+            lw = 2.
+        else:
+            lbl = ''
+            color = 'k'
+            lw = 0.25                
+        for il in range(h99obj.nlay):
+            marker = 'x' if il == 0 else '+'
+            if lbl:
+                label = lbl + ', layer={}'.format(il)
+            else:
+                label = ''
+            ax.plot(kw['tau'], sa[:, il, 0], 
+                    marker=marker, color=color, lw=0.5,
+                    label=label)
+            ax.plot(kw['tau'], sb[:, il, 0], '-',
+                    color=color, lw=0.5)
+        
+    ax.legend(loc='lower right')
+    print("Done, test succeeded !")
+    return ax
+
+def h99_F07_Szeleky(kw):
+    """Simulate figure 07 in Hemker (1999), case Sceleky."""
+    # TODO: Not yet right
+    rs = [0.1, 1., 10.]
+    tau = np.logspace(-3, 6, 91)
+    kD = np.sum(kw['kr'] * kw['D'])
+    S  = np.sum(kw['Ss'] * kw['D'])
+    
+    ax = newfig(kw['name'], r'$t_D$', r'$s [m]$',
+        xlim=(1e-2, 1e6), ylim=(1e-3, 1e1), xscale='log', yscale='log')
+    for ir, r_ in enumerate(rs):
+        kw['t'] = tau * r_ ** 2 * S / (4 * kD)
+        out = hemk99numerically(**kw)
+        kw['r'] = rs
+        sa = solution(r=kw['r'], **kw)
+        PhiI = showPhi(t=kw['t'], r=rs, z=None, IL=None,
+                    method='linear', fdm3t=out, show=False)
+        ax.plot(tau, kw['Q'] / (4 * np.pi * kD) * scipy.special.exp1(1/tau), '--',
+            label='Theis')
+    
+        for il in [0, 3]:
+            ax.plot(tau, PhiI[:, il, 0], label='r = {:.4g} m, layer = {}'.format(r_, il))
+    
+    ax.legend(loc='lower right')
+    return ax
+  
+def h99_F08(kw):
+    """Simulate fig 8 in Hemker (1999):"""
+    k = 1.0
+    ax = newfig("Hemker 99 (fig 8)", r's_D', 'z', xlim=(10, 0), ylim=(-24, 0))
+    for kkacc in [1e0, 1e1, 1e2, 1e3, 1e4, 1e5, 1.e6]:
+        kw['kr'][:8]  = k / kkacc
+        kw['kr'][8:16]= k
+        kw['kr'][16:] = k / kkacc
+        kw['kz'] = kw['kr']
+        D  = np.sum(kw['D'])
+        kD = np.sum(kw['kr'] * kw['D'])
+        S  = np.sum(kw['Ss'] * np.sum(kw['D']))
+        
+        kDscreens = kw['kr'] * kw['D'] * kw['e']
+        kw['Q'] = kw['kr'] * kw['D'] * kw['e']
+        r_ = 0.5 * (kw['r'][1] + kw['r'][2])  # 0.2 * D
+        
+        tauA = np.logspace(-3, 5, 81) # A is aquifer (layer 1)
+        kw['t'] = r_  ** 2 * S * tauA / (4 * kD)
+        out = hemk99numerically(**kw)
+        PhiI = showPhi(t=None, r=[r_], z=None, IL=None,
+                method='linear', fdm3t=out,
+                xlim=None, ylim=None, xscale=None, yscale=None, show=False)
+        
+        ax.plot(PhiI[-1, :, 0], out['gr'].zm, label='k/k\' = {:.4g}'.format(kkacc))
+    ax.legend(loc='lower right')
+    return ax
+
+def h99_F11(kw):
+    """Simulate and return figure 11 in Hemker(1999)."""        
+    etop, ebot = kw['e']
+    kw['e'] = etop
+    D  = np.sum(kw['D'])
+    kD = np.sum(kw['kr'] * kw['D'])
+    S  = np.sum(kw['D'] * kw['Ss'])
+    kw['Q'] = 4 * np.pi * kD
+    r_ = 0.2 * D
+    tauA = np.logspace(-3, 5, 81) # A is aquifer (layer 1)
+    
+    kw['t'] = r_  ** 2 * S * tauA / (4 * kD)
+    kw['e'] = etop
+    out = hemk99numerically(**kw)
+    PhiItop = showPhi(t=None, r=[r_], z=None, IL=[0, 1, 2, 3, 4],
+            method='linear', fdm3t=out,
+            xlim=None, ylim=None, xscale=None, yscale=None, show=False)
+    kw['e'] = ebot
+    out = hemk99numerically(**kw)
+    PhiIbot = showPhi(t=None, r=[r_], z=None, IL=[0, 1, 2, 3, 4],
+            method='linear', fdm3t=out,
+            xlim=None, ylim=None, xscale=None, yscale=None, show=False)
+    
+    title = ('Drawdown responses to a partially penetrating well\n' +
+             'in the lowest part (solid) or the uppermost part (dashed)\n' +
+             'of a five-layer Ss- heterogeneous aquifer.')
+    ax = newfig(title=title, xlabel=r'$t_D$', ylabel=r'$S_D$',
+                xscale='log', yscale='log', xlim=(1e-2, 1e4), ylim=(1e-3, 1e2))
+    
+    cc = color_cycler()
+    for il in [0, 1, 2, 3, 4]:
+        sigmaTop = 4 * np.pi * kD / kw['Q'] * PhiItop[:, il]
+        sigmaBot = 4 * np.pi * kD / kw['Q'] * PhiIbot[:, il]
+        color = next(cc)                  
+        ax.plot(tauA[1:], sigmaTop[1:], '-' , color=color, marker='x', label='top, layer {}'.format(il + 1))
+        ax.plot(tauA[1:], sigmaBot[1:], '--', color=color, marker='+', label='bot, layer {}'.format(il + 1))
+    
+    ax.legend(loc='lower right')
+    return ax
+
+def h99_f11(kw):
+    """Simulate and return figure 11 in Hemker(1999)."""
+    
+    # TODO: Still the model is too late compared to fig 11. in Hemker 99
+    etop, ebot = kw['e']
+    kw['e'] = etop
+    D  = np.sum(kw['D'])
+    kD = np.sum(kw['kr'] * kw['D'])
+    S  = np.sum(kw['D'] * kw['Ss'])
+    kw['Q'] = 4 * np.pi * kD
+    r_ = 0.2 * D
+    tauA = np.logspace(-3, 5, 81) # A is aquifer (layer 1)
+    
+    kw['t'] = r_  ** 2 * S * tauA / (4 * kD)
+    kw['e'] = etop
+    out = hemk99numerically(**kw)
+    PhiItop = showPhi(t=None, r=[r_], z=None, IL=[0, 1, 2, 3, 4],
+            method='linear', fdm3t=out,
+            xlim=None, ylim=None, xscale=None, yscale=None, show=False)
+    kw['e'] = ebot
+    out = hemk99numerically(**kw)
+    PhiIbot = showPhi(t=None, r=[r_], z=None, IL=[0, 1, 2, 3, 4],
+            method='linear', fdm3t=out,
+            xlim=None, ylim=None, xscale=None, yscale=None, show=False)
+    
+    title = ('Drawdown responses to a partially penetrating well\n' +
+             'in the lowest part (solid) or the uppermost part (dashed)\n' +
+             'of a five-layer Ss- heterogeneous aquifer.')
+    ax = newfig(title=title, xlabel=r'$t_D$', ylabel=r'$S_D$',
+                xscale='log', yscale='log', xlim=(1e-2, 1e4), ylim=(1e-3, 1e2))
+    
+    cc = color_cycler()
+    for il in [0, 1, 2, 3, 4]:
+        sigmaTop = 4 * np.pi * kD / kw['Q'] * PhiItop[:, il]
+        sigmaBot = 4 * np.pi * kD / kw['Q'] * PhiIbot[:, il]
+        color = next(cc)                  
+        ax.plot(tauA[1:], sigmaTop[1:], '-' , color=color, marker='x', label='top, layer {}'.format(il + 1))
+        ax.plot(tauA[1:], sigmaBot[1:], '--', color=color, marker='+', label='bot, layer {}'.format(il + 1))
+    
+    ax.legend(loc='lower right')
+    return ax
+
+def h99_F2_Boulton_or_Hantush(kw):
+    """Simulalte boulton (1963) delayed yield or just Hantush
+    
+    The only difference being that with Hantush, the head in layer 0 is fixed.
+    
+    """
+    # Hantush = Boulton with topclosed == False
+    kw = cases[case]
+    
+    r_ = 500.
+    
+    hem = Hemker1999(**kw)
+    Q = 4 * np.pi * hem.kD.sum()
+    t = hem.tau2t(r=r_, tau=kw['tau'])
+    
+    
+    r = kw['r'][kw['r'] > hem.rw] 
+    sa = hem.simulate(t=t, r=r, Q=Q)
+    
+    # Using a fixed r_ makes that we use the same times
+    # for each r_ over B, but requires adapting B and, hence,
+    # adapting c, so that we have the desirede values of r_ over B
+    
+    
+    # r_ over B values used by Hemker (1999)
+    r_B = np.array([0.01, 0.1, 0.2, 0.4, 0.6,
+                         0.8, 1.0, 1.5, 2.0, 2.5, 3.0])
+    kD = np.sum(kw['kr'][1:] * kw['D'][1:])        
+    Sy = kw['D'][0] * kw['Ss'][0]
+    SA = np.sum(kw['D'][1:] * kw['Ss'][1:])
+    kw['c'] = np.zeros(len(kw['D']) - 1) # adapted in loop below
+    kw['Q'] = 4 * np.pi * kD
+    # tau used by Hemker, tauA is tau for the aquifer
+    tauA = kw['tau'] # A is aquifer (layer 1)
+           
+    kw['t'] = r_  ** 2 * SA * tauA / (4 * kD) 
+    # tau values for the aquifer with Sy instead of SA
+    tauB = tauA * SA / Sy  # =  4 * kD * kw['t'] / (r_ ** 2 * Sy)
+    title ='{}, type curves for r/B from 0.01 to 3'\
+                .format(kw['name'])
+    xlabel = r'$\tau = 4 kD t /(r^2 S_2)$'
+    ylabel = r'$\sigma = 4 \pi kD s / Q$' 
+    ax = newfig(title, xlabel, ylabel,
+                ylim=(1e-3, 1e2), xlim=(1e-1, 1e9),
+                xscale='log', yscale='log')
+    # The two Theis curves (note both for tauA)
+    ax.plot(tauA, scipy.special.exp1(1/tauA), 'r', lw=3, label='Theis for SA')
+    
+    # TauA on x-axis and exp1(1/tauB) on y-axis
+    ax.plot(tauA, scipy.special.exp1(1/tauB), 'b', lw=3, label='Theis for Sy + SA')
+            
+    cc = color_cycler()
+    rNum = kw['r']
+    for rho in r_B:
+        color = next(cc)
+        
+        # Adapt c to to get the right r/B            
+        B = r_ / rho
+        kw['c'][0] = np.array([B ** 2 / kD])
+        kw['r'] = rNum
+        out = hemk99numerically(**kw) # using correct c
+        
+        # Analytisch:
+        kw['r'] = rho * B
+        sa = solution(**kw)
+        
+        hem = Hemker1999(**kw)
+        Q = 4 * np.pi * hem.kD.sum()
+        t = hem.tau2t(r=r_, tau=kw['tau'])
+        r = rNum[rNum > hem.rw] 
+        sh = hem.simulate(t=t, r=r, Q=Q)
+    
+        # Interpolate numerical to set of times layers and distances:
+        PhiI = showPhi(t=None, r= rho * B, z=None, IL=[0, 1],
+                        method='linear', fdm3t=out,
+                        xlim=None, ylim=None, xscale='log', yscale='log', show=False)
+        if case == 'Hantush':
+            assert kw['topclosed'] == False, 'topclosed must be False for numerical Hantush!'
+            ax.plot(tauA, hantush_conv.Wh(1/tauA, rho)[0], color=color, marker='x',
+                    label='Wh(tau, {:.4g})'.format(rho))
+        else:
+            assert kw['topclosed'] == True, 'topclosed must be true for Boulton'
+        # Plot Theis for S = Sy (specific yield)Show the drawdown in the top and first layer for this r/B
+        for il in [0, 1]:
+            sigma = 4 * np.pi * kD / kw['Q'] * PhiI[:, il, 0]
+            if rho in [0.01, 1.0, 1.5, 3.]:
+                labelN = 'num: r/B = {:.4g}'.format(rho)
+                labelA = 'ana: r/B = {:.4g}'.format(rho)
+                lw = 2.
+            else:
+                labelN = '_'
+                labelA = '_'
+                color = 'k'
+                lw = 0.5
+            ax.plot(tauA[1:], sigma[1:], '-', color=color, lw=lw, label=labelN)
+            ax.plot(tauA[1:], sa[1:,il], 'x', color=color, lw=lw, label=labelA)
+    
+    ax.legend(loc='lower right') 
+    return ax   
+        
+def h99_F3(kw):
+    """Simulate case of Moench with vertical resistance within aquifer and on top."""
+    # The problem is essentially the same as Boulton's, however
+    # the delayed yield is due to vertical anisotropy.
+    kw = cases[case]
+    
+    tauA = np.logspace(-2, 5, 71) # A is aquifer (layer 1)
+    D  = np.sum(kw['D'][1:])
+    C  = np.sum(kw['D'][1:] / kw['kz'][1:])
+    kD = np.sum(kw['D'][1:] * kw['kr'][1:])
+    Sy = kw['D'][0] * kw['Ss'][0]
+    SA = 1e-3 * Sy
+    kw['Ss'][1:] = SA / D
+    
+    r_ = D * np.sqrt(kw['kr'][1] / kw['k'][1])
+    
+    sigma = SA / Sy
+    beta = kw['kz'][1] * r_ ** 2  / (kw['kr'][1] * D ** 2)
+    
+    kw['Q'] = 4 * np.pi * kD
+    kw['t'] = r_  ** 2 * SA * tauA / (kD)   # / (4 kD)
+    tauB = kD * kw['t'] / (r_ ** 2 * Sy)
+    title =r'{}, type curves for values of gamma. $\sigma$ = {:.4g}, $\beta$={:.4g}'\
+                .format(kw['name'], sigma, beta)
+    xlabel = r'$\tau = 4 kD t /(r^2 S_2)$'
+    ylabel = r'$\sigma = 4 \pi kD s / Q$' 
+    ax = newfig(title, xlabel, ylabel,
+                ylim=(1e-2, 1e1), xlim=(1e-1, 1e5),
+                xscale='log', yscale='log')
+    ax.plot(tauA / 4, scipy.special.exp1(1/tauA), 'r', lw=3, label='Theis for SA')
+    ax.plot(tauA / 4, scipy.special.exp1(1/tauB), 'b', lw=3, label='Theis for Sy + SA')
+    
+    # Gamma is (D/k)/c
+    gammas = np.array([1.0, 10., 100.])
+    
+    cc = color_cycler()        
+    for gamma in gammas:
+        color = next(cc)
+        
+        # D/k = C
+        # gamma = (C * Sy) / (c[0] * SA)
+        c = np.zeros(len(kw['D']) - 1)
+        c[0] = C * Sy / SA / gamma
+        
+        kw['c'] = c
+        
+        B = np.sqrt(kD * (c[0] + C))
+        out = hemk99numerically(**kw)
+    
+        PhiI = showPhi(t=None, r= r_, z=None, IL=None,
+                        method='linear', fdm3t=out,
+                        xlim=None, ylim=None, xscale='log', yscale='log', show=False)
+        assert kw['topclosed'] == True, 'topclosed must be true for Boulton'
+        ll = line_cycler()
+        for il in [0, 1, -1]: # top and bottom layer of the aquifer
+            ls = next(ll)
+            s = 4 * np.pi * kD / kw['Q'] * PhiI[:, il, 0]
+            label = r'$\gamma$={:.4g}, layer={}'.format(gamma, il)
+            ax.plot(tauA[1:], s[1:], color=color, ls=ls, label=label)
+    
+    ax.legend(loc='lower right')
+    return ax   
+    
+def h99_F6(kw):
+    """Simlate fig 6 in Hemker (1999) well storage with partially penetrating aquifer."""
+    # Papadopoulos and Cooper (1967)
+    kw = cases[case]
+    assert kw['topclosed'] == False, 'topclosed must be False for {}'\
+        .format(case)
+    
+    RcRw = [1., 5., 20., 100., 1000.]
+    RRD = [0.001, 0.1, 0.5] 
+    
+    tau = np.logspace(-2, 6, 81) # A is aquifer (layer 1)
+    D  = np.sum(kw['D'][1:])
+    kD = np.sum(kw['kr'][1:] * kw['D'][1:])
+    S  = np.sum(kw['Ss'][1:] * kw['D'][1:])
+    Sy = kw['Ss'][0] * kw['D'][0]
+    Q  = 4 * np.pi * kD
+    
+    kw['Q'] = Q
+    
+    title =kw['name']
+    xlabel = r'$\tau = 4 kD t /(r^2 S)$'
+    ylabel = r'$\sigma = 4 \pi kD s / Q$' 
+    ax = newfig(title, xlabel, ylabel,
+                ylim=(1e-3, 1e2), xlim=(1e-1, 1e6),
+                xscale='log', yscale='log')
+    cc = color_cycler()
+    
+    for rcrw in RcRw:
+        kw['rc'] = kw['rw'] * rcrw
+        
+        color = next(cc)
+        for rrd in RRD:
+            color = next(cc)
+            
+            r_ = rrd * D
+            kw['t'] = r_  ** 2 * S * tau / (4 * kD) 
+            out = hemk99numerically(**kw)
+    
+            PhiI = showPhi(t=None, r= [r_], z=None, IL=None,
+                            method='linear', fdm3t=out,
+                            show=False)
+            sigma = 4 * np.pi * kD / kw['Q'] * PhiI[:, 2, 0]                
+            ax.plot(tau[1:], sigma[1:], color=color,
+                    label='rc/rw={:.4g}, r/D = {:.4g}, r={:.4g} m'
+                    .format(rcrw, rrd, r_))
+    
+    ax.legend(loc='lower right')
+    return ax
+        
+def boulton_well_storage(kw):
+    """Simulate Boulton's solution for well storage."""
+    kw = cases[case]
+    
+    r_ = 500.
+    tauA = np.logspace(-2, 6, 81) # A is aquifer (layer 1)
+    kD = kw['kr'][1] * kw['D'][1]        
+    Sy = kw['D'][0] * kw['Ss'][0]
+    SA = kw['D'][1] * kw['Ss'][1]
+    
+    kw['t'] = r_  ** 2 * SA * tauA / (4 * kD) 
+    tauB = 4 * kD * kw['t'] / (r_ ** 2 * Sy)
+    title ='{}, type curves and time-dependent drainage for r/B from 0.01 to 3'\
+                .format(kw['name'])
+    xlabel = r'$\tau = 4 kD t /(r^2 S_2)$'
+    ylabel = r'$\sigma = 4 \pi kD s / Q$' 
+    ax = newfig(title, xlabel, ylabel,
+                ylim=(1e-3, 1e2), xlim=(1e-1, 1e6),
+                xscale='log', yscale='log')
+    ax.plot(tauA, scipy.special.exp1(1/tauA), 'r', lw=3, label='Theis for SA')
+    
+    r_B = np.array([0.02, 0.05, 0.1, 0.2, 0.4, 0.6, 0.8, 1.0, 1.5, 2.0, 2.5, 3.0])
+    
+    cc = color_cycler()
+    
+    for rho in r_B:
+        
+        color = next(cc)
+        
+        B = 10.; r_ = B * rho
+        kw['c'][0] = np.array([B ** 2 / kD])
+        
+        out = hemk99numerically(**kw)
+    
+        PhiI = showPhi(t=None, r= rho * B, z=None, IL=[0, 1],
+                        method='linear', fdm3t=out,
+                        xlim=None, ylim=None, xscale='log', yscale='log', show=False)
+        if case == 'Hantush':
+            assert kw['topclosed'] == False, 'topclosed must be False for Hantush!'
+            ax.plot(tauA, hantush_conv.Wh(1/tauA, rho)[0], color=color, marker='x',
+                    label='Wh(tau, {:.4g})'.format(rho))
+        else:
+            assert kw['topclosed'] == True, 'topclosed must be true for Boulton'
+        for il in [0, 1]:
+            sigma = 4 * np.pi * kD / kw['Q'] * PhiI[:, il, 0]
+            if rho in [0.01, 1.0, 1.5, 3.]:
+                label = 'r/B = {}'.format(rho)
+                lw = 2.
+            else:
+                label = '_'
+                color = 'k'
+                lw = 0.5
+            ax.plot(tauA[1:], sigma[1:], color=color, lw=lw, label=label)
+    
+    ax.legend(loc='lower right')
+    return ax
+
+
 cases ={ # Numbers refer to Hemker Maas (1987 figs 2 and 3)
     'test0': {
         'name': 'Test input and plotting', # (4 pi kD / Q) t
@@ -913,856 +1653,17 @@ cases ={ # Numbers refer to Hemker Maas (1987 figs 2 and 3)
         },
 }
     
-def hemk99numerically(t=None, r=None, z=None, rw=None, rc=None, topclosed=True, botclosed=True, **kw):
-    """Check Hemker(1999) numerically.
-    
-    Run axially multilayer model. To deal with multiple screens, and uniform
-    head inside the well, rPVC and rOut are included in the distance array.
-    Then rW < r < rPVC is considered PVC in the unscreend layers. And
-    rPVC < r < rOut is considered just out of the well representing the
-    head just outside the well casing both where the well is screend and where
-    it is unscreend. Just in plotting for all r, only the heads for r > r[2] == rPVC
-    are shown by showPhi.
-    
-    
-    Parameter
-    ----------
-    t: simulation times
-        times
-    z: None, sequence of array
-       elevation of layer planes (tops and bottoms in one array)
-    rw: float
-        well radius; must be same as r[1]
-    rc: float
-        radius of well bore storage, used to calculation Ss in top well cell.
-    topclosed, botclosed: bool
-        if False then IBOUND becomes -1 instead of 1
-    """
-    AND, NOT = np.logical_and, np.logical_not
-    t, r, kw = assert_input(t=t, r=r, **kw)
-        
-    # Make sure rw is r[1] and we include rw + dr
-    dr = 0.05 * rw
-    r = np.hstack((r[0], rw, rw + dr, r[r > rw + dr]))
-    
-    gr = Grid(r, None, kw['z'], axial=True)
-
-    # Well screen array
-    e = kw['e'][:, np.newaxis, np.newaxis] #  * np.ones((1, gr.nx))
-    E = e * np.ones((1, gr.nx), dtype=int)
-    
-    screen = AND(gr.XM < rw,     E)
-    casing = AND(gr.XM < rw, NOT(E))
-    
-    # No fixed heads
-    IBOUND = gr.const(1, dtype=int)
-    if not topclosed:
-        IBOUND[0,  :, 1:] = -1
-    if not botclosed:
-        IBOUND[-1, :, 1:] = -1
-    
-    # No horizontal flow in casing, vertical flow in screen and casing
-    kr = gr.const(kw['kr']); kr[screen] = 1e+6; kr[casing]=1e-6 # inside well
-    kz = gr.const(kw['kz']); kz[screen] = 1e+6; kz[casing]=1e+6 # inside well
-    
-    c  = gr.const(kw['c'][:, np.newaxis, np.newaxis])
-    c[:, :, gr.xm < rw] = 0. # No resistance in well
-    
-    Ss = gr.const(kw['Ss'][:, np.newaxis, np.newaxis])
-    Ss[0, 0, 0] = (rc / rw) ** 2 / gr.DZ[0, 0, 0] # Well bore storage (top well cell)
-    
-    HI = gr.const(0.)
-    FQ = gr.const(0.)
-    
-    # Boundary conditions, extraction from screens proportional to kDscreen / kDwell
-    assert np.isscalar(kw['Q']), "Q must be a scalar see kw['Q']"
-    kDscreen = kw['e'] * kw['kr'] * kw['D']
-    kDwell   = np.sum(kDscreen)
-    FQ[:, 0, 0] = kw['Q'] * kDscreen / kDwell
-           
-    return fdm3t(gr=gr, t=t, kxyz=(kr, kr, kz), Ss=Ss, c=c,
-                FQ=FQ, HI=HI, IBOUND=IBOUND)
-    
-def showPhi(t=None, r=None, z=None, IL=None, method=None, fdm3t=None,
-              xlim=None, ylim=None, xscale=None, yscale=None, show=True, **kw):
-    """Return head for given times, distances and layers.
-    
-    Parameters
-    ----------
-    t: sequence or scalar or None
-        times at which output is desired or None for all times
-    r: sequence
-        distances at which output is desired or None for all distances
-    z: sequence of scalar or None
-        z-values for which output is desired or None for specified IL
-    Il: sequence if ints or scalar or None
-        layers for which output is desired of none for specified (interpolated) zs is use
-    method: 'linear', 'cubic' or 'spline'
-        interpolation method
-    fdm3t: dictionary
-        output of fdm.fdrm3t.fdm3t
-    show: bool
-        Weather to plot or only return PhiI
-    
-    Options:
-    if t is None and z is not None:
-        (z, r) combinations for all t
-        option = 1
-    elif t is None and IL is not None
-        (il, r) combinations for all t
-        option = 2
-    elif r is None and z is not None:
-        (t, z) combinations for all r
-        option = 3
-    elif r is None and IL is not None:
-        (t, il) combinations for all r
-        option = 4
-    else:
-        raise ValueError illegal combination
-    """
-
-    assert (IL is None or z is None) and not (
-                (IL is not None) and (z is not None)
-            ), 'Either `IL` or `z` must be none !'
-    
-    assert (not (t is None and r is None)
-            and not (
-                (t is not None and r is not None))
-            ), 'Either `t` or `r` must be none!'
-
-    # Option 1: if time is not specified, all times is implied
-    if t is None:
-        t =fdm3t['t']
-        if z is not None:
-            option = 1 # Zs
-        else:
-            option = 2 # IL
-            if IL is None:
-                IL = np.arange(fdm3t['gr'].nlay, dtype=int)
-    else: # t not None --> r None)
-        r = fdm3t['gr'].xm
-        if z is not None:
-            option = 3
-        else:
-            option = 4
-                    
-    t = np.array([t]) if np.isscalar(t) else np.array(t)
-    r = np.array([r]) if np.isscalar(r) else np.array(r)
-    z = np.array([z]) if np.isscalar(z) else np.array(z)
-
-    Phi = fdm3t['Phi'][:, :, 0, :] # sqeeze y
-
-    if option in [1, 3]:
-        points = fdm3t['t'], -fdm3t['gr'].zm, fdm3t['gr'].xm
-        interp = scipy.interpolate.RegularGridInterpolator(
-            points, Phi, method=method,
-            bounds_error=True, fill_value=np.nan)
-        Z, T, R = np.meshgrid(-z, t, r)
-        PhiI = interp(np.vstack((T.ravel(), Z.ravel(), R.ravel())).T).reshape(T.shape)
-    else:
-        points = fdm3t['t'], np.arange(fdm3t['gr'].nz), fdm3t['gr'].xm
-        interp = scipy.interpolate.RegularGridInterpolator(
-            points, Phi, method=method,
-            bounds_error=True, fill_value=np.nan)
-        L, T, R = np.meshgrid(IL, t, r)
-        PhiI = interp(np.vstack((T.ravel(), L.ravel(), R.ravel())).T).reshape(T.shape)
-
-    if show == False:
-        return PhiI
-
-    graphOpts = {
-        1: {'title': '(z, r) comb. for all t',   'xlabel': 'time [d]', 'ylabel': 'h [m]',
-            'label': 'z={:.4g} m, r={:4g} m'},
-        2: {'title': '(lay, r) comb. for all t', 'xlabel': 'time [d]', 'ylabel': 'h [m]',
-            'label': 'layer={}, r={:4g} m'},
-        3: {'title': '(z, t) comb. for all r',   'xlabel': 'r [m]', 'ylabel': 'h [m]',
-            'label': 't={:.4g} d, z={:4g} m'},
-        4: {'title': '(lay, t) comb. for all r', 'xlabel': 'r [m]', 'ylabel': 'h [m]',
-            'label': 't={:4g} d, layer={}'},
-    }
-    
-    o = graphOpts[option]
-    ax = newfig(o['title'], o['xlabel'], o['ylabel'], xlim=xlim, ylim=ylim,
-                xscale=xscale, yscale=yscale)
-
-    if option == 1:
-        for iz, z_ in enumerate(z):
-            for ir, r_ in enumerate(r):
-                ax.plot(t[1:], PhiI[1:, iz, ir], label=o['label']
-                        .format(z_, r_))
-    if option == 2:
-        for il, iL_ in enumerate(IL):
-            for ir, r_ in enumerate(r):
-                ax.plot(t[1:], PhiI[1:, il, ir], label=o['label']
-                        .format(iL_,r_))                    
-    if option == 3:
-        for it, t_ in enumerate(t):
-            for iz, z_ in enumerate(z):
-                ax.plot(r[1:], PhiI[it, iz, 1:], label=o['label']
-                        .format(t_, z_))
-    if option == 4:
-        for it, t_ in enumerate(t):
-            for il, iL_ in enumerate(IL):
-                ax.plot(r[1:], PhiI[it, iL_, 1:], label=o['label']
-                        .format(t_, iL_))                    
-
-    ax.legend(loc='best')
-    return PhiI, ax
     
 if __name__ == "__main__":
       
-    # case = 'test0'
-    # case = 'test1'
-    case = 'test2'
-    # case = 'Boulton Well Bore Storage'
-    # case = 'H99_F08'
-    # case = 'H99_F07 Szeleky'
-    # case = 'H99 F6 well bore storage ppw'
-    # case = 'H99 F2 Boulton'
-    # case = 'H99 F3 Moench'
-    
-    # TODO: not yet right
-    kw = cases[case]
-    
-    D  = kw['D'] # Vector
-    kD = np.sum(kw['kr'][1:] * D[1:]) # Vector
-    
-    
-    if case == 'H99_F07 Szeleky':
-        # TODO: Not yet right
-        rs = [0.1, 1., 10.]
-        tau = np.logspace(-3, 6, 91)
-        kD = np.sum(kw['kr'] * kw['D'])
-        S  = np.sum(kw['Ss'] * kw['D'])
-        
-        ax = newfig(kw['name'], r'$t_D$', r'$s [m]$',
-            xlim=(1e-2, 1e6), ylim=(1e-3, 1e1), xscale='log', yscale='log')
+    test0(cases['test0'])
+    #test1(cases['test1'])
+    #test2(cases['test2'])
+    #boulton_well_storage(cases['Boulton Well Bore Storage'])
+    #h99_F08(cases['H99_F08'])
+    #h99_F07_Szeleky(cases['H99_F07 Szeleky'])
+    #h99_F6(cases['H99 F6 well bore storage ppw'])
+    #h99_F2_Boulton_or_Hantush(cases['H99 F2 Boulton'])
+    #h99_F3(cases['H99 F3 Moench'])
 
-        for ir, r_ in enumerate(rs):
-            kw['t'] = tau * r_ ** 2 * S / (4 * kD)
-            out = hemk99numerically(**kw)
-            kw['r'] = rs
-            sa = solution(r=kw['r'], **kw)
-
-            PhiI = showPhi(t=kw['t'], r=rs, z=None, IL=None,
-                        method='linear', fdm3t=out, show=False)
-
-
-            ax.plot(tau, kw['Q'] / (4 * np.pi * kD) * scipy.special.exp1(1/tau), '--',
-                label='Theis')
-        
-            for il in [0, 3]:
-                ax.plot(tau, PhiI[:, il, 0], label='r = {:.4g} m, layer = {}'.format(r_, il))
-        
-        ax.legend(loc='lower right')
-      
-    if case == 'H99_F08':
-        k = 1.0
-        ax = newfig("Hemker 99 (fig 8)", r's_D', 'z', xlim=(10, 0), ylim=(-24, 0))
-        for kkacc in [1e0, 1e1, 1e2, 1e3, 1e4, 1e5, 1.e6]:
-            kw['kr'][:8]  = k / kkacc
-            kw['kr'][8:16]= k
-            kw['kr'][16:] = k / kkacc
-            kw['kz'] = kw['kr']
-            D  = np.sum(kw['D'])
-            kD = np.sum(kw['kr'] * kw['D'])
-            S  = np.sum(kw['Ss'] * np.sum(kw['D']))
-            
-            kDscreens = kw['kr'] * kw['D'] * kw['e']
-            kw['Q'] = kw['kr'] * kw['D'] * kw['e']
-            r_ = 0.5 * (kw['r'][1] + kw['r'][2])  # 0.2 * D
-            
-            tauA = np.logspace(-3, 5, 81) # A is aquifer (layer 1)
-            kw['t'] = r_  ** 2 * S * tauA / (4 * kD)
-
-            out = hemk99numerically(**kw)
-            PhiI = showPhi(t=None, r=[r_], z=None, IL=None,
-                    method='linear', fdm3t=out,
-                    xlim=None, ylim=None, xscale=None, yscale=None, show=False)
-            
-            ax.plot(PhiI[-1, :, 0], out['gr'].zm, label='k/k\' = {:.4g}'.format(kkacc))
-        ax.legend(loc='lower right')
-
-    if case == 'H99_F11':        
-        etop, ebot = kw['e']
-        kw['e'] = etop
-
-        D  = np.sum(kw['D'])
-        kD = np.sum(kw['kr'] * kw['D'])
-        S  = np.sum(kw['D'] * kw['Ss'])
-        kw['Q'] = 4 * np.pi * kD
-        r_ = 0.2 * D
-
-        tauA = np.logspace(-3, 5, 81) # A is aquifer (layer 1)
-        
-        kw['t'] = r_  ** 2 * S * tauA / (4 * kD)
-
-        kw['e'] = etop
-        out = hemk99numerically(**kw)
-        PhiItop = showPhi(t=None, r=[r_], z=None, IL=[0, 1, 2, 3, 4],
-                method='linear', fdm3t=out,
-                xlim=None, ylim=None, xscale=None, yscale=None, show=False)
-
-        kw['e'] = ebot
-        out = hemk99numerically(**kw)
-        PhiIbot = showPhi(t=None, r=[r_], z=None, IL=[0, 1, 2, 3, 4],
-                method='linear', fdm3t=out,
-                xlim=None, ylim=None, xscale=None, yscale=None, show=False)
-        
-        title = ('Drawdown responses to a partially penetrating well\n' +
-                 'in the lowest part (solid) or the uppermost part (dashed)\n' +
-                 'of a five-layer Ss- heterogeneous aquifer.')
-        ax = newfig(title=title, xlabel=r'$t_D$', ylabel=r'$S_D$',
-                    xscale='log', yscale='log', xlim=(1e-2, 1e4), ylim=(1e-3, 1e2))
-        
-        cc = color_cycler()
-        for il in [0, 1, 2, 3, 4]:
-            sigmaTop = 4 * np.pi * kD / kw['Q'] * PhiItop[:, il]
-            sigmaBot = 4 * np.pi * kD / kw['Q'] * PhiIbot[:, il]
-            color = next(cc)                  
-            ax.plot(tauA[1:], sigmaTop[1:], '-' , color=color, marker='x', label='top, layer {}'.format(il + 1))
-            ax.plot(tauA[1:], sigmaBot[1:], '--', color=color, marker='+', label='bot, layer {}'.format(il + 1))
-        
-        ax.legend(loc='lower right')
-
-    if case == 'H99_F11':
-        # TODO: Still the model is too late compared to fig 11. in Hemker 99
-        etop, ebot = kw['e']
-        kw['e'] = etop
-
-        D  = np.sum(kw['D'])
-        kD = np.sum(kw['kr'] * kw['D'])
-        S  = np.sum(kw['D'] * kw['Ss'])
-        kw['Q'] = 4 * np.pi * kD
-        r_ = 0.2 * D
-
-        tauA = np.logspace(-3, 5, 81) # A is aquifer (layer 1)
-        
-        kw['t'] = r_  ** 2 * S * tauA / (4 * kD)
-
-        kw['e'] = etop
-        out = hemk99numerically(**kw)
-        PhiItop = showPhi(t=None, r=[r_], z=None, IL=[0, 1, 2, 3, 4],
-                method='linear', fdm3t=out,
-                xlim=None, ylim=None, xscale=None, yscale=None, show=False)
-
-        kw['e'] = ebot
-        out = hemk99numerically(**kw)
-        PhiIbot = showPhi(t=None, r=[r_], z=None, IL=[0, 1, 2, 3, 4],
-                method='linear', fdm3t=out,
-                xlim=None, ylim=None, xscale=None, yscale=None, show=False)
-        
-        title = ('Drawdown responses to a partially penetrating well\n' +
-                 'in the lowest part (solid) or the uppermost part (dashed)\n' +
-                 'of a five-layer Ss- heterogeneous aquifer.')
-        ax = newfig(title=title, xlabel=r'$t_D$', ylabel=r'$S_D$',
-                    xscale='log', yscale='log', xlim=(1e-2, 1e4), ylim=(1e-3, 1e2))
-        
-        cc = color_cycler()
-        for il in [0, 1, 2, 3, 4]:
-            sigmaTop = 4 * np.pi * kD / kw['Q'] * PhiItop[:, il]
-            sigmaBot = 4 * np.pi * kD / kw['Q'] * PhiIbot[:, il]
-            color = next(cc)                  
-            ax.plot(tauA[1:], sigmaTop[1:], '-' , color=color, marker='x', label='top, layer {}'.format(il + 1))
-            ax.plot(tauA[1:], sigmaBot[1:], '--', color=color, marker='+', label='bot, layer {}'.format(il + 1))
-        
-        ax.legend(loc='lower right')
-
-    if case == 'test0':
-
-        rs = [5, 50, 500]
-        out = hemk99numerically(**kw)
-        kw['r'] = rs
-        sa  = solution(**kw)
-        
-        PhiI, ax = showPhi(t=None, r=rs, z=[-5, -35], IL=None,
-                        method='linear', fdm3t=out,
-                        xlim=None, ylim=None, xscale=None, yscale=None)
-
-        IL = [0, 1, 2]
-        PhiI, ax = showPhi(t=None, r=rs, z=None, IL=IL,
-                            method='linear', fdm3t=out,
-                            xlim=None, ylim=None, xscale=None, yscale=None)
-        for il in IL:
-            for ir, r_ in enumerate(rs):
-                label='layer={}, r={:0.4g} m'.format(il, r_)
-                ax.plot(kw['t'], sa[:, il, ir], label=label)
-        ax.legend(loc='lower right')
-
-        PhiI, ax = showPhi(t=[1, 3, 10], r=None, z=[-5, -20, -35], IL=None,
-                        method='linear', fdm3t=out,
-                        xlim=None, ylim=None, xscale='log', yscale=None)
-
-        ts = [1., 3., 10.]
-        kw['t'] = ts
-        sa  = solution(**kw)
-        PhiI, ax = showPhi(t=ts, r=None, z=None, IL=IL,
-                        method='linear', fdm3t=out,
-                        xlim=None, ylim=None, xscale='log', yscale=None)
-        for it, t_ in enumerate(ts):
-            for il in IL:                
-                label='layer={}, t={:0.4g} d'.format(il, t_)
-                ax.plot(rs, sa[it, il, :], label=label)
-        ax.legend(loc='lower right')
-
-    if case == 'test1':
-
-        # Using the class
-        test1 = Hemker1999(**kw)
-        sa  = test1.simulate(kw['t'], kw['r'], kw['Q'])
-
-        # Using the function
-        sb  = solution(**kw)
-        
-        assert np.all(sa == sb), "Test failed: not all sa == sb !"
-        print("Done, test succeeded, all sa == sb !")
-        
-    if case == 'test2':
-        kw = cases[case]
-        
-        r_ = 500
-        kw['r'] = r_
-                
-        kD = (kw['kr'] * kw['D']).sum()
-        Q  = 4 * np.pi * kD
-        kw['Q'] = Q
-        S  = kw['Ss'] * kw['D']
-        Sy, SA = S[0], S[1]
-        tauA = kw['tau']
-        tauB = tauA * SA / (Sy + SA)
-        kw['t'] = r_  ** 2 * SA * tauA / (4 * kD) 
-        
-        # rho = r_ over B values used by Hemker (1999)
-        r_B = np.array([0.01, 0.1, 0.2, 0.4, 0.6,
-                             0.8, 1.0, 1.5, 2.0, 2.5, 3.0])
-        xlim, ylim = None, None
-        # xlim, ylim = (1e-1, 1e9), (1e-3, 1e2)
-        
-        ax = newfig("Test 2 analytic for Boulton case",
-                    r"$\tau = r^2 S / (4 kD t)$",
-                    r"$(4 \pi kD) / Q s$",
-                    xscale='log', yscale='log',
-                    xlim=xlim, ylim=ylim)
-        ax.plot(tauA, scipy.special.exp1(1/tauA), 'r-',
-                label='Theis for S=SA')
-        ax.plot(tauA, scipy.special.exp1(1/tauB), 'b-',
-                label='Theis for S=(Sy + SA)')
-        
-        cc = color_cycler()
-        for rho in r_B:
-            color = next(cc)
-            c  = (r_ / rho) ** 2 / kD
-            kw['c'] = np.array([c])
-                
-            # Using the function
-            sb  = solution(**kw)
-
-            # Using the class
-            h99obj = Hemker1999(**kw)        
-            t = kw['t']
-            t = h99obj.tau2t(r=r_, tau=kw['tau'])
-        
-            sa  = h99obj.simulate(t, r_, Q)
-        
-            assert np.all(np.isclose(sa, sb)), "Test failed: not all sa == sb !"
-            
-            if rho in [0.01, 1.0, 1.5, 3.]:
-                lbl = 'r/B = {:.4g}'.format(rho)
-                lw = 2.
-            else:
-                lbl = ''
-                color = 'k'
-                lw = 0.25                
-
-            for il in range(h99obj.nlay):
-                marker = 'x' if il == 0 else '+'
-                if lbl:
-                    label = lbl + ', layer={}'.format(il)
-                else:
-                    label = ''
-                ax.plot(kw['tau'], sa[:, il, 0], 
-                        marker=marker, color=color, lw=0.5,
-                        label=label)
-                ax.plot(kw['tau'], sb[:, il, 0], '-',
-                        color=color, lw=0.5)
-            
-        ax.legend(loc='lower right')
-        print("Done, test succeeded !")
-
-                
-    if case == 'H99 F2 Boulton' or case=='Hantush':
-        # Hantush = Boulton with topclosed == False
-        kw = cases[case]
-        
-        r_ = 500.
-        
-        hem = Hemker1999(**kw)
-        Q = 4 * np.pi * hem.kD.sum()
-        t = hem.tau2t(r=r_, tau=kw['tau'])
-        
-        
-        r = kw['r'][kw['r'] > hem.rw] 
-        sa = hem.simulate(t=t, r=r, Q=Q)
-        
-        # Using a fixed r_ makes that we use the same times
-        # for each r_ over B, but requires adapting B and, hence,
-        # adapting c, so that we have the desirede values of r_ over B
-        
-        
-        # r_ over B values used by Hemker (1999)
-        r_B = np.array([0.01, 0.1, 0.2, 0.4, 0.6,
-                             0.8, 1.0, 1.5, 2.0, 2.5, 3.0])
-
-        kD = np.sum(kw['kr'][1:] * kw['D'][1:])        
-        Sy = kw['D'][0] * kw['Ss'][0]
-        SA = np.sum(kw['D'][1:] * kw['Ss'][1:])
-        kw['c'] = np.zeros(len(kw['D']) - 1) # adapted in loop below
-        kw['Q'] = 4 * np.pi * kD
-
-        # tau used by Hemker, tauA is tau for the aquifer
-        tauA = kw['tau'] # A is aquifer (layer 1)
-               
-        kw['t'] = r_  ** 2 * SA * tauA / (4 * kD) 
-
-        # tau values for the aquifer with Sy instead of SA
-        tauB = tauA * SA / Sy  # =  4 * kD * kw['t'] / (r_ ** 2 * Sy)
-
-        title ='{}, type curves for r/B from 0.01 to 3'\
-                    .format(kw['name'])
-        xlabel = r'$\tau = 4 kD t /(r^2 S_2)$'
-        ylabel = r'$\sigma = 4 \pi kD s / Q$' 
-        ax = newfig(title, xlabel, ylabel,
-                    ylim=(1e-3, 1e2), xlim=(1e-1, 1e9),
-                    xscale='log', yscale='log')
-
-        # The two Theis curves (note both for tauA)
-        ax.plot(tauA, scipy.special.exp1(1/tauA), 'r', lw=3, label='Theis for SA')
-        
-        # TauA on x-axis and exp1(1/tauB) on y-axis
-        ax.plot(tauA, scipy.special.exp1(1/tauB), 'b', lw=3, label='Theis for Sy + SA')
-                
-        cc = color_cycler()
-        rNum = kw['r']
-        for rho in r_B:
-            color = next(cc)
-            
-            # Adapt c to to get the right r/B            
-            B = r_ / rho
-            kw['c'][0] = np.array([B ** 2 / kD])
-            kw['r'] = rNum
-            out = hemk99numerically(**kw) # using correct c
-            
-            # Analytisch:
-            kw['r'] = rho * B
-            sa = solution(**kw)
-            
-            hem = Hemker1999(**kw)
-            Q = 4 * np.pi * hem.kD.sum()
-            t = hem.tau2t(r=r_, tau=kw['tau'])
-            r = rNum[rNum > hem.rw] 
-            sh = hem.simulate(t=t, r=r, Q=Q)
-
-        
-            # Interpolate numerical to set of times layers and distances:
-            PhiI = showPhi(t=None, r= rho * B, z=None, IL=[0, 1],
-                            method='linear', fdm3t=out,
-                            xlim=None, ylim=None, xscale='log', yscale='log', show=False)
-
-            if case == 'Hantush':
-                assert kw['topclosed'] == False, 'topclosed must be False for numerical Hantush!'
-                ax.plot(tauA, hantush_conv.Wh(1/tauA, rho)[0], color=color, marker='x',
-                        label='Wh(tau, {:.4g})'.format(rho))
-            else:
-                assert kw['topclosed'] == True, 'topclosed must be true for Boulton'
-
-            # Plot Theis for S = Sy (specific yield)Show the drawdown in the top and first layer for this r/B
-            for il in [0, 1]:
-                sigma = 4 * np.pi * kD / kw['Q'] * PhiI[:, il, 0]
-                if rho in [0.01, 1.0, 1.5, 3.]:
-                    labelN = 'num: r/B = {:.4g}'.format(rho)
-                    labelA = 'ana: r/B = {:.4g}'.format(rho)
-                    lw = 2.
-                else:
-                    labelN = '_'
-                    labelA = '_'
-                    color = 'k'
-                    lw = 0.5
-                ax.plot(tauA[1:], sigma[1:], '-', color=color, lw=lw, label=labelN)
-                ax.plot(tauA[1:], sa[1:,il], 'x', color=color, lw=lw, label=labelA)
-        
-        ax.legend(loc='lower right')    
-        
-    if case == 'H99 F3 Moench':
-        # The problem is essentially the same as Boulton's, however
-        # the delayed yield is due to vertical anisotropy.
-        kw = cases[case]
-        
-
-        tauA = np.logspace(-2, 5, 71) # A is aquifer (layer 1)
-
-        D  = np.sum(kw['D'][1:])
-        C  = np.sum(kw['D'][1:] / kw['kz'][1:])
-        kD = np.sum(kw['D'][1:] * kw['kr'][1:])
-        Sy = kw['D'][0] * kw['Ss'][0]
-        SA = 1e-3 * Sy
-        kw['Ss'][1:] = SA / D
-        
-        r_ = D * np.sqrt(kw['kr'][1] / kw['k'][1])
-        
-        sigma = SA / Sy
-        beta = kw['kz'][1] * r_ ** 2  / (kw['kr'][1] * D ** 2)
-        
-        kw['Q'] = 4 * np.pi * kD
-        kw['t'] = r_  ** 2 * SA * tauA / (kD)   # / (4 kD)
-
-        tauB = kD * kw['t'] / (r_ ** 2 * Sy)
-
-        title =r'{}, type curves for values of gamma. $\sigma$ = {:.4g}, $\beta$={:.4g}'\
-                    .format(kw['name'], sigma, beta)
-        xlabel = r'$\tau = 4 kD t /(r^2 S_2)$'
-        ylabel = r'$\sigma = 4 \pi kD s / Q$' 
-        ax = newfig(title, xlabel, ylabel,
-                    ylim=(1e-2, 1e1), xlim=(1e-1, 1e5),
-                    xscale='log', yscale='log')
-
-        ax.plot(tauA / 4, scipy.special.exp1(1/tauA), 'r', lw=3, label='Theis for SA')
-        ax.plot(tauA / 4, scipy.special.exp1(1/tauB), 'b', lw=3, label='Theis for Sy + SA')
-        
-        # Gamma is (D/k)/c
-        gammas = np.array([1.0, 10., 100.])
-        
-        cc = color_cycler()        
-        for gamma in gammas:
-            color = next(cc)
-            
-            # D/k = C
-            # gamma = (C * Sy) / (c[0] * SA)
-            c = np.zeros(len(kw['D']) - 1)
-            c[0] = C * Sy / SA / gamma
-            
-            kw['c'] = c
-            
-            B = np.sqrt(kD * (c[0] + C))
-
-            out = hemk99numerically(**kw)
-        
-            PhiI = showPhi(t=None, r= r_, z=None, IL=None,
-                            method='linear', fdm3t=out,
-                            xlim=None, ylim=None, xscale='log', yscale='log', show=False)
-
-            assert kw['topclosed'] == True, 'topclosed must be true for Boulton'
-
-            ll = line_cycler()
-            for il in [0, 1, -1]: # top and bottom layer of the aquifer
-                ls = next(ll)
-                s = 4 * np.pi * kD / kw['Q'] * PhiI[:, il, 0]
-                label = r'$\gamma$={:.4g}, layer={}'.format(gamma, il)
-                ax.plot(tauA[1:], s[1:], color=color, ls=ls, label=label)
-        
-        ax.legend(loc='lower right')     
-    
-    if case == 'H99 F6 well bore storage ppw':
-        # Papadopoulos and Cooper (1967)
-        kw = cases[case]
-        assert kw['topclosed'] == False, 'topclosed must be False for {}'\
-            .format(case)
-        
-        RcRw = [1., 5., 20., 100., 1000.]
-        RRD = [0.001, 0.1, 0.5] 
-        
-        tau = np.logspace(-2, 6, 81) # A is aquifer (layer 1)
-
-        D  = np.sum(kw['D'][1:])
-        kD = np.sum(kw['kr'][1:] * kw['D'][1:])
-        S  = np.sum(kw['Ss'][1:] * kw['D'][1:])
-        Sy = kw['Ss'][0] * kw['D'][0]
-        Q  = 4 * np.pi * kD
-        
-        kw['Q'] = Q
-        
-        title =kw['name']
-        xlabel = r'$\tau = 4 kD t /(r^2 S)$'
-        ylabel = r'$\sigma = 4 \pi kD s / Q$' 
-        ax = newfig(title, xlabel, ylabel,
-                    ylim=(1e-3, 1e2), xlim=(1e-1, 1e6),
-                    xscale='log', yscale='log')
-
-        cc = color_cycler()
-        
-        for rcrw in RcRw:
-            kw['rc'] = kw['rw'] * rcrw
-            
-            color = next(cc)
-            for rrd in RRD:
-                color = next(cc)
-                
-                r_ = rrd * D
-                kw['t'] = r_  ** 2 * S * tau / (4 * kD) 
-                out = hemk99numerically(**kw)
-        
-                PhiI = showPhi(t=None, r= [r_], z=None, IL=None,
-                                method='linear', fdm3t=out,
-                                show=False)
-
-                sigma = 4 * np.pi * kD / kw['Q'] * PhiI[:, 2, 0]                
-                ax.plot(tau[1:], sigma[1:], color=color,
-                        label='rc/rw={:.4g}, r/D = {:.4g}, r={:.4g} m'
-                        .format(rcrw, rrd, r_))
-        
-        ax.legend(loc='lower right')
-        
-    if case == 'Boulton Well Bore Storage':
-        kw = cases[case]
-        
-        r_ = 500.
-
-        tauA = np.logspace(-2, 6, 81) # A is aquifer (layer 1)
-
-        kD = kw['kr'][1] * kw['D'][1]        
-        Sy = kw['D'][0] * kw['Ss'][0]
-        SA = kw['D'][1] * kw['Ss'][1]
-        
-        kw['t'] = r_  ** 2 * SA * tauA / (4 * kD) 
-
-        tauB = 4 * kD * kw['t'] / (r_ ** 2 * Sy)
-
-        title ='{}, type curves and time-dependent drainage for r/B from 0.01 to 3'\
-                    .format(kw['name'])
-        xlabel = r'$\tau = 4 kD t /(r^2 S_2)$'
-        ylabel = r'$\sigma = 4 \pi kD s / Q$' 
-        ax = newfig(title, xlabel, ylabel,
-                    ylim=(1e-3, 1e2), xlim=(1e-1, 1e6),
-                    xscale='log', yscale='log')
-
-        ax.plot(tauA, scipy.special.exp1(1/tauA), 'r', lw=3, label='Theis for SA')
-        
-        r_B = np.array([0.02, 0.05, 0.1, 0.2, 0.4, 0.6, 0.8, 1.0, 1.5, 2.0, 2.5, 3.0])
-        
-        cc = color_cycler()
-        
-        for rho in r_B:
-            
-            color = next(cc)
-            
-            B = 10.; r_ = B * rho
-            kw['c'][0] = np.array([B ** 2 / kD])
-            
-            out = hemk99numerically(**kw)
-        
-            PhiI = showPhi(t=None, r= rho * B, z=None, IL=[0, 1],
-                            method='linear', fdm3t=out,
-                            xlim=None, ylim=None, xscale='log', yscale='log', show=False)
-
-            if case == 'Hantush':
-                assert kw['topclosed'] == False, 'topclosed must be False for Hantush!'
-                ax.plot(tauA, hantush_conv.Wh(1/tauA, rho)[0], color=color, marker='x',
-                        label='Wh(tau, {:.4g})'.format(rho))
-            else:
-                assert kw['topclosed'] == True, 'topclosed must be true for Boulton'
-
-            for il in [0, 1]:
-                sigma = 4 * np.pi * kD / kw['Q'] * PhiI[:, il, 0]
-                if rho in [0.01, 1.0, 1.5, 3.]:
-                    label = 'r/B = {}'.format(rho)
-                    lw = 2.
-                else:
-                    label = '_'
-                    color = 'k'
-                    lw = 0.5
-                ax.plot(tauA[1:], sigma[1:], color=color, lw=lw, label=label)
-        
-        ax.legend(loc='lower right')
-
-    if case == 'Vennebulten':
-        kw = cases[case]
-
-        out = hemk99numerically(**kw)
-
-        kD = kw['kr'][1] * kw['D'][1]
-        B = np.sqrt(kD * kw['c'][0])
-        c = kw['c'][0]
-        
-        PhiI, ax = showPhi(t=None, r=[90.], z=None, IL=[0, 1],
-                        method='linear', fdm3t=out,
-                        xlim=None, ylim=None, xscale='log', yscale='log')
-        
-        ax.set_title('{}, kD={:.4g} m2/d, kz={}, Sa = {}, Sy = {}'\
-            .format(kw['name'], kD, kw['kz'][0],
-                    kw['Ss'][1] * kw['D'][1],
-                    kw['Ss'][0] * kw['D'][0]))
-    
-    plt.show()
-    
-    print('Done')
-    
-    raise SystemExit
-    
-
-
-    shn = solution(t=t, r=r, **kw)
-    
-    if case == 'Hant': # Hantush
-        Q  = cases[case]['Q' ][0]
-        kD = cases[case]['kD'][0]
-        S  = cases[case]['S' ][0]
-        c  = cases[case]['c' ][0]
-        u = rs ** 2 * S / (4 * kD * t)
-        L = np.sqrt(kD * c)
-
-        sHantu = np.zeros(len(rs))
-        for ir, r in enumerate(rs):
-            u = r ** 2 * S / (4 * kD * t)
-            sHantu[ir] = Q / (4 * np.pi * kD) * Wh(u, r/L)[0]
-        sTheis = Q / (4 * np.pi * kD) * sp.exp1(rs ** 2 * S / (4 * kD * t))
-    
-        fig,ax = plt.subplots()
-        ax.set_title(kw['name'] + "drawdown at t={:.4g} d".format(t))
-        ax.set_xlabel('r [m]')
-        ax.set_ylabel('s [m]')
-        ax.set_xscale('log')
-        ax.grid()
-        for iL, s_ in enumerate(shn):
-            ax.plot(rs, s_, label='Layer {}'.format(iL))
-
-        ax.plot(rs, sHantu, 'o', label='Hantush t={:.2f} d'.format(t))
-        ax.plot(rs, sTheis, 'x', label='Theis')
-        
-        ax.set_ylim(ax.get_ylim()[::-1])
-        ax.legend()
-        print('Done transient!')
-    
-        # Steady state
-        s = multRadial(rs=rs, **kw)
-        
-        fig,ax = plt.subplots()
-        ax.set_title(kw['name'] + "drawdown steady")
-        ax.set_xlabel('r [m]')
-        ax.set_ylabel('s [m]')
-        ax.set_xscale('log')
-        ax.grid()
-        for iL, s_ in enumerate(s):
-            ax.plot(rs, s_, label='Layer {}'.format(iL))
-
-        s1 = Q / (2 * np.pi * kD) * sp.k0(rs / np.sqrt(kD * c))
-
-        ax.plot(rs, s1, 'o', label='Steady 1 layer')
-        ax.set_ylim(ax.get_ylim()[::-1])
-        ax.legend()
-        print('Done steady !')
-        
-    # As a function of time for given distance (t is ndarray, r=scalar)
-    t, r = 1.e-3, np.logspace(1, 4, 16)
-    
-    case='3'
-    kw = cases[case]
-    shn = solution(t=t, r=r, **kw)
-    for iL in range(len(kw['kD'])):
-        plt.plot(rs, shn[iL], label=f'layer {iL}')
-    #plt.xscale('log')
-    #plt.yscale('log')
-    plt.grid()
-    plt.legend()
-    
-    
-    
     plt.show()
