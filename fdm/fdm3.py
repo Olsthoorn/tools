@@ -11,19 +11,18 @@ Created on Fri Sep 30 04:26:57 2016
 """
 import sys
 
-myModules = '/Users/Theo/GRWMODELS/python/tools/fdm/'
+tools = '/Users/Theo/GRWMODELS/python/tools/'
 
-if not myModules in sys.path:
-    sys.path.insert(0, myModules)
+if not tools in sys.path:
+    sys.path.insert(0, tools)
 
 import numpy as np
 import scipy.sparse as sp
 import scipy.sparse.linalg as la
-from scipy.special import k0 as K0, k1 as K1
-from collections import namedtuple
+import scipy.special as spec
 import matplotlib.pylab as plt
+from etc import newfig
 import mfgrid
-#import pdb
 
 def quivdata(Out, x, y, iz=0):
     """Returns vector data for plotting velocity vectors.
@@ -105,7 +104,6 @@ def psi(Qx, row=0):
     return Psi
 
 
-#def fdm3(x, y, z, (kx, ky, kz), c, GHB, FQ, HI, IBOUND, axial=False):
 def fdm3(gr=None, K=None, c=None, FQ=None, HI=None, IBOUND=None, GHB=None, axial=False):
     '''Compute a 3D steady state finite diff. model
 
@@ -293,7 +291,8 @@ def fdm3(gr=None, K=None, c=None, FQ=None, HI=None, IBOUND=None, GHB=None, axial
     return out
 
 # Examples that take the function of tests
-def example_Mazure():
+
+def mazure(kw):
     """1D flow in semi-confined aquifer example
     Mazure was Dutch professor in the 1930s, concerned with leakage from
     polders that were pumped dry. His situation is a cross section perpendicular
@@ -304,124 +303,136 @@ def example_Mazure():
     To compute we use 2 model layers and define the values such that we obtain
     the Mazure result.
     """
-    x = np.hstack((0.001, np.linspace(0., 2000., 101))) # column coordinates
-    y = np.array([-0.5, 0.5]) # m, model is 1 m thick
-    d = 10. # m, thickness of confining top layer
-    D = 50. # m, thickness of regional aquifer
-    z = np.array([0, -d, -d-D]) # tops and bottoms of layers
-    gr = mfgrid.Grid(x, y, z, axial=False)
-    c = 250 # d, vertical resistance of semi-confining layer
-    k1 = d/c # m/d conductivity of the top layer
-    k2 = 10. # m/d conductivity of the regional aquifer
-    kD = k2 * D # m2/d, transmissivity of regional aquifer
-    B = np.sqrt(kD * c) # spreading length of semi-confined aquifer
-    K = gr.const([k1/2., k2]) # k1 = 0.5 d/c because conductance from layer center
-    FQ = gr.const(0) # prescribed flows
+    z = kw['z0'] - np.cumsum(np.hstack((0., kw['D'])))
+    gr = mfgrid.Grid(kw['x'], kw['y'], z, axial=False)
+    c = gr.const(kw['c'])
+    k = gr.const(kw['k'])
+    kD = (kw['k'] * kw['D'])[-1] # m2/d, transmissivity of regional aquifer
+    B = np.sqrt(kD * float(kw['c'])) # spreading length of semi-confined aquifer
+    
+    FQ = gr.const(0.) # prescribed flows
+    
     s0 = 2.0 # head in aquifer at x=0
-    IH = gr.const(0); IH[-1, :, 0] = s0 # prescribed heads
+    HI = gr.const(0); HI[-1, :, 0] = s0 # prescribed heads
+    
     IBOUND = gr.const(1); IBOUND[0, :, :] = -1; IBOUND[-1, :, 0]=-1
-    Out = fdm3(gr, K, FQ, IH, IBOUND) # compute heads, run model
-    plt.figure()
-    plt.setp(plt.gca(), 'xlabel','x [m]', 'ylabel', 'head [m]', 'title', 'Mazure 1D flow')
-    plt.plot(gr.xm, Out.Phi[-1, 0 ,:], 'ro-', label='fdm3') # numeric solution
-    plt.plot(gr.x, s0 * np.exp(-gr.x / B),'bx-', label='analytic') # analytic solution
-    plt.legend()
+    
+    out = fdm3(gr=gr, K=k, FQ=FQ, HI=HI, c=c, IBOUND=IBOUND)
+    
+    ax = newfig(kw['title'], 'x[m]', 's [m]')
+    
+    ax.plot(gr.xm, out['Phi'][-1, 0 ,:], 'r.', label='fdm3')
+    ax.plot(gr.xm, s0 * np.exp(-gr.xm / B),'b-', label='analytic')
+    ax.legend()
+    return out
 
-cases = {
-    'DeGlee': {
-        'Q': -1200., # m3/d, well extraction
-        'rw':    1.,   # m, well radius
-        'R' : 2500.,  # m, outer radius of model
-        'd' :   10.,  # m, thickness of confining top layer
-        'D' :   50.,  # m, thickness of regional aquifer
-        'c' :  500.,  # d, vertical resistance of confining top layer
-        'k' :   10.,  # m/d conductivity of regional aquifer
-        'r' : np.logspace(-2, 4, 61),  # distance to well center
-        'y' : None,   # dummy, ignored because problem is axially symmetric
-    }
-        
-}
-def example_De_Glee(Q=None, rw=None, d=None, D=None, c=None, k=None, r=None, z=None, **kw):
-    """Axial symmetric example, well in semi-confined aquifer (De Glee case)
-    De Glee was a Dutch engineer/groundwater hydrologist and later the
-    first director of the water company of the province of Groningen.
-    His PhD (1930) solved the axial symmetric steady state flow to a well
-    in a semi confined aquifer using the Besselfunctions of the second kind,
-    known as K0 and K1.
-    The example computes the heads in the regional aquifer below a semi confining
-    layer with a fixed head above. It uses two model layers a confining one in
-    which the heads are fixed and a semi-confined aquifer with a prescribed
-    extraction at r=rw. If rw>>0, both K0 and K1 Bessel functions are needed.
-    The grid is signaled to use inteprete the grid as axially symmetric.
-    """
-    k1 = d/c        # m/d conductivity of confining top layer
-    kD = k * D      # m2/d, transmissivity of regional aquifer
-    B  = np.sqrt(kD * c) # spreading length of regional aquifer
+
+def deGlee(kw):
+    """Simulate steady axial flow to fully penetrating well in semi-confined aquifer"""
+    z = kw['z0'] - np.cumsum(np.hstack((0., kw['D'])))
+    r = np.hstack((0., kw['rw'], kw['r'][kw['r'] > kw['rw']]))
+    gr = mfgrid.Grid(r, None, z, axial=True)
+    k = gr.const(kw['k'])
+    c = gr.const(kw['c'])
+    kD = (kw['k'] * kw['D'])[-1]      # m2/d, transmissivity of regional aquifer
+    B  = np.sqrt(kD * float(kw['c'])) # spreading length of regional aquifer
     
-    r  = np.hstack((0, rw, rw + 0.01, r[r > rw + 0.001])) # distance to well center
+    FQ = gr.const(0.); FQ[-1, 0, 0] = kw['Q']   # m3/d fixed flows
+    HI = gr.const(0.)                           # m, initial heads
     
-    z0 = 0.
-    z = z0 - np.array([0., d, d + D])       # m, elevation of tops and bottoms of model layers
+    IBOUND = gr.const(1); IBOUND[0, :, :] = -1  # modflow like boundary array
     
-    gr = mfgrid.Grid(r, None, z, axial=True)   # generate grid
+    out = fdm3(gr=gr, K=k, FQ=FQ, HI=HI, c=c, IBOUND=IBOUND) # run model
     
-    FQ = gr.const(0.); FQ[-1, 0, 0] = Q     # m3/d fixed flows
-    IH = gr.const(0.)                       # m, initial heads
+    ax = newfig(kw['title'], 'r [m]', 's [m]', xscale='log', xlim=[1e-3, r[-1]])
     
-    IBOUND = gr.const(1); IBOUND[0, :, :] = -1 # modflow like boundary array
+    ax.plot(gr.xm, out['Phi'][-1, 0, :], 'ro', label='fdm3')
+    ax.plot(gr.xm, kw['Q']/(2 * np.pi * kD) * spec.k0(gr.xm / B) / (kw['rw']/ B * spec.k1(kw['rw']/ B)), 'b-',label='analytic')
+    ax.legend()
+    return out
     
-    K = gr.const([d/(2 * c), k])               # full 3D array of conductivities
     
-    Out = fdm3(gr=gr, K=K, FQ=FQ, IH=IH, IBOUND=IBOUND) # run model
-    
-    plt.figure()
-    plt.setp(plt.gca(), 'xlabel', 'r [m]', 'ylabel', 'head [m]',\
-             'title', 'De Glee, well extraction, axially symmetric', 'xscale', 'log', 'xlim', [1.0, R])
-    plt.plot(gr.xm, Out.Phi[-1, 0, :], 'ro-', label='fdm3')
-    plt.plot(gr.x, Q/(2 * np.pi * kD) * K0(gr.x / B) / (rw/ B * K1(rw/ B)), 'bx-',label='analytic')
-    plt.legend()
-    return Out
-    
-def example_De_Glee_with_GHB(Q=None, rw=None, d=None, D=None, c=None, k=None, r=None, z=None, **kw):
+def deGlee_GHB(kw):
     """Run Axial symmetric example, as before, but now using GHB instead of an extra layer on top.
     """
-    kD = k * D      # m2/d, transmissivity of regional aquifer
-    B  = np.sqrt(kD * c) # spreading length of regional aquifer
+    kD = (kw['k'] * kw['D'])[-1]      # m2/d, transmissivity of regional aquifer
+    B  = np.sqrt(kD * float(kw['c'])) # spreading length of regional aquifer
     
-    r  = np.hstack((0, rw, rw + 0.01, r[r > rw + 0.001])) # distance to well center
-    
-    z0 = -d; z = z0 - np.array([0., D])              # m, elevation of tops and bottoms of model layers
+    r = np.hstack((0., kw['rw'], kw['r'][kw['r'] > kw['rw']]))
+
+    z = (kw['z0'] - np.cumsum(np.hstack((0., kw['D']))))[1:] # no top layer
     
     gr = mfgrid.Grid(r, None, z, axial=True)   # generate grid
     
-    FQ = gr.const(0.); FQ[-1, 0, 0] = Q     # m3/d fixed flows
+    FQ = gr.const(0.); FQ[-1, 0, 0] = kw['Q']     # m3/d fixed flows
     HI = gr.const(0.)                       # m, initial heads
     
     IBOUND = gr.const(1, dtype=int)         # modflow like boundary array
     
-    K = gr.const(k)                         # full 3D array of conductivities
+    k = gr.const(kw['k'][-1])                         # full 3D array of conductivities
     
-    cellid = gr.LRC(gr.NOD[0])
-    hds = np.zeros(len(cellid))
-    C   = gr.Area.ravel() / c
-    GHB = gr.GHB(cellid, hds, C)
+    cells = np.zeros(gr.shape, dtype=bool); cells.ravel()[gr.NOD[0]] = True
+    hds = HI[cells]
+    C   = gr.Area.ravel() / float(kw['c'])
+    GHB = gr.GHB(cells, hds, C)
     
-    out = fdm3(gr=gr, K=K, FQ=FQ, HI=HI, IBOUND=IBOUND, GHB=GHB) # run model
+    out = fdm3(gr=gr, K=k, FQ=FQ, HI=HI, IBOUND=IBOUND, GHB=GHB) # run model
     
-    plt.figure()
-    plt.setp(plt.gca(), 'xlabel', 'r [m]', 'ylabel', 'head [m]',\
-             'title', 'De Glee, well extraction, axially symmetric', 'xscale', 'log', 'xlim', [1e0, 1e4])
-    plt.grid(True)
-    plt.plot(gr.xm, out['Phi'][-1, 0, :], 'ro-', label='fdm3')
-    plt.plot(gr.x, Q/(2 * np.pi * kD) * K0(gr.x / B) / (rw/ B * K1(rw/ B)), 'bx-',label='analytic')
-    plt.legend()
+    ax = newfig(kw['title'] + ' (Using GHB)', 'r [m]', 's [m]', xscale='log', xlim=[1e-3, r[-1]])
+    
+    ax.plot(gr.xm, out['Phi'][-1, 0, :], 'ro', label='fdm3')
+    ax.plot(gr.xm, kw['Q']/(2 * np.pi * kD) * spec.k0(gr.xm / B) / (kw['rw']/ B * spec.k1(kw['rw']/ B)), 'b-',label='analytic')
+    ax.legend()
     return out
-        
+
+cases = {
+    'Mazure': {
+        'title': 'Mazure 1D flow',
+        'comment': """1D flow in semi-confined aquifer example
+        Mazure was Dutch professor in the 1930s, concerned with leakage from
+        polders that were pumped dry. His situation is a cross section perpendicular
+        to the dike of a regional aquifer covered by a semi-confining layer with
+        a maintained head in it. The head in the regional aquifer at the dike was
+        given as well. The head obeys the following analytical expression
+        phi(x) - hp = (phi(0)-hp) * exp(-x/B), B = sqrt(kDc)
+        To compute we use 2 model layers and define the values such that we obtain
+        the Mazure result.
+        """,
+        'z0': 0.,
+        'x': np.hstack((0.001, np.linspace(0., 2000., 101))), # column coordinates
+        'y': np.array([-0.5, 0.5]), # m, model is 1 m thick
+        'D': np.array([10., 50.]), # m, thickness of confining top layer
+        'c': np.array([[250.]]), # d, vertical resistance of semi-confining layer
+        'k': np.array([np.inf, 10.]),
+        },
+    'DeGlee': {
+        'title': 'Geglee axial symmetric flow',
+        'comment': """Axial symmetric example, well in semi-confined aquifer (De Glee case)
+            De Glee was a Dutch engineer/groundwater hydrologist and later the
+            first director of the water company of the province of Groningen.
+            His PhD (1930) solved the axial symmetric steady state flow to a well
+            in a semi confined aquifer using the Besselfunctions of the second kind,
+            known as K0 and K1.
+            The example computes the heads in the regional aquifer below a semi confining
+            layer with a fixed head above. It uses two model layers a confining one in
+            which the heads are fixed and a semi-confined aquifer with a prescribed
+            extraction at r=rw. If rw>>0, both K0 and K1 Bessel functions are needed.
+            The grid is signaled to use inteprete the grid as axially symmetric.
+            """,
+        'z0': 0.,
+        'Q': -1200.,
+        'rw':   .25,
+        'D' : np.array([10., 50.]),
+        'c' :  np.array([[250.]]),
+        'k' :  np.array([np.inf, 10]),  # m/d conductivity of regional aquifer
+        'r' : np.logspace(-2, 4, 61),  # distance to well center
+    }
+}  
 
 if __name__ == "__main__":
-    # example_Mazure()
-    # out = example_De_Glee()
-    out = example_De_Glee_with_GHB(**cases['DeGlee'])
+    out1 = mazure(cases['Mazure'])
+    out2 = deGlee(cases['DeGlee'])
+    out2 = deGlee_GHB(cases['DeGlee'])
     print('Done')
     
     
