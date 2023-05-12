@@ -14,6 +14,7 @@ import os
 import sys
 sys.path.insert(0, os.path.abspath('../')) # Start in the subdirectory of tools
 
+import warnings
 import numpy as np
 import matplotlib.pyplot as plt
 import scipy.sparse as sp
@@ -147,11 +148,10 @@ def fdm3t(gr=None, t=None, kxyz=None, c=None, Ss=None, GHB=None,
         Rz1 = 0.5 * gr.DZ / (   dx *    dy) / kz        
         Rc  = 0 if c is None else c   / (dx * dy)
     else:
-        # prevent div by zero warning in next line; has no effect because x[0] is not used
-        x = gr.x.copy() # ;  x[0] = x[0] if x[0]>0 else 1e-10 * x[1]
-
-        RxE = 1 / (2 * np.pi * kx * gr.DZ) * np.log(x[1:] /  gr.xm).reshape((1, 1, gr.nx))
-        RxW = 1 / (2 * np.pi * kx * gr.DZ) * np.log(gr.xm / x[:-1]).reshape((1, 1, gr.nx))
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", RuntimeWarning) # Division  by zero when x==0, is ok --> np.inf as resistance.
+            RxW = 1 / (2 * np.pi * kx * gr.DZ) * np.log(gr.xm / gr.x[:-1]).reshape((1, 1, gr.nx))
+            RxE = 1 / (2 * np.pi * kx * gr.DZ) * np.log(gr.x[1:] /  gr.xm).reshape((1, 1, gr.nx))
         Ry1 = np.inf * np.ones(gr.shape)
         Rz1 = 0.5 * gr.DZ / (np.pi * (gr.x[1:] ** 2 - gr.x[:-1] ** 2).reshape((1, 1, gr.nx)) * kz)
         Rc  = 0 if c is None else c   / (np.pi * (gr.x[1:] ** 2 - gr.x[:-1] ** 2).reshape((1, 1, gr.nx)))

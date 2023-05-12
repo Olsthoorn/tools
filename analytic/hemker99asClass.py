@@ -7,7 +7,6 @@
    
    TO 2023-04-10
 """
-
 import numpy as np
 import matplotlib.pyplot as plt
 import scipy.linalg as la
@@ -34,8 +33,7 @@ def stehfest_coefs(N=10):
         v[i - 1] *= (-1) ** (i + N/2)
     return v
 
-vStehfest = stehfest_coefs(N=18)
-
+vStehfest = stehfest_coefs(N=10)
 
 def sysmat(p=None, kD=None, c=None, S=None,
            topclosed=False, botclosed=True, **kw):           
@@ -78,7 +76,6 @@ def sysmat(p=None, kD=None, c=None, S=None,
         A = np.diag(1 / kD) @ (p * np.diag(S) - B)
     return A
 
-
 def sysmat_steady(**kw):
     """Return the system matrix of the multyaquifer system.
 
@@ -95,7 +92,6 @@ def sysmat_steady(**kw):
     """
     kw.update(p=0, S=None)
     return sysmat(**kw)
-
 
 def multRadial(rs=None, Q=None, kD=None, c=None, topclosed=False, botclosed=True, **kw):
     """Return steady state multiaquifer radial flow to well screens with spresribed flows.
@@ -131,7 +127,6 @@ def multRadial(rs=None, Q=None, kD=None, c=None, topclosed=False, botclosed=True
         K0r  = np.diag(sp.k0(r * np.sqrt(W.real)))
         s[:, ir] = (V @ K0r @ Vm1 @ Tm1 @ Q[:, np.newaxis] / (2 * np.pi)).flatten()
     return s
-
 
 def sLaplace(p=None, r=None, rw=None, rc=None,
         e=None, Q=None, kD=None, c=None, S=None, **kw):
@@ -194,7 +189,6 @@ def sLaplace(p=None, r=None, rw=None, rc=None,
     s_ = Q / (2 * np.pi * p * Tw) * V @ K0K1r @ V.T @ T @ E @ Um1 @ One
     
     return s_.flatten() # Laplace drawdown s(p)
-
 
 def assert_input(t=None, r=None, z0=None, D=None, kr=None, kz=None, c=None,
                  Ss=None, e=None, **kw):
@@ -308,7 +302,6 @@ def backtransform(t, r, rw=None, rc=None, Q=None, kD=None,
     s *= np.log(2.) / t
     return s.flatten()
 
-
 def solution(t=None, r=None, **kw):
     """Return the multilayer transient solution Maas Hemker 1987
     
@@ -415,7 +408,6 @@ class Hemker1999:
         """
         for name, var in zip(['kr', 'kz', 'D', 'Ss', 'e'], [kr, kz, D, Ss, e]):
             assert isinstance(var, np.ndarray), "{} not an np.ndarray".format(name)
-            kw[name] = var
         
         nlay = len(D)
         
@@ -451,6 +443,7 @@ class Hemker1999:
         assert np.all(E.T @ e[:, np.newaxis] == np.ones(len(e[e > 0]))
                       ), "E.T @ e must be all ones"
 
+        # Below variables are added to self:
         self.nlay = nlay
         self.z = np.hstack((self.z0, self.z0 -  np.cumsum(D)))
 
@@ -459,7 +452,7 @@ class Hemker1999:
         self.kD, self.c, self.S = D * kr, c, D * Ss
         self.topclosed, self.botclosed = topclosed, botclosed
         
-        # Used in method laplace()
+        # Used in analytical method laplace()
         self.T    = np.diag(self.kD)
         self.S    = np.diag(self.S)
         self.Tp05 = np.diag(np.sqrt(self.kD))
@@ -470,11 +463,12 @@ class Hemker1999:
         self.Ti = self.kD * e # vector of floats
         self.Tw = np.sum(self.Ti)
         self.One = np.ones((np.sum(e > 0), 1))
-
         return
     
     def tau2t(self, tau=None, r=None):
-        """Return t when tau is given, where tau = 1/u = 4 kD t  / (r **2 S)
+        """Return t when  dimensioinless tau is given.
+        
+        where tau = 1/u = 4 kD t  / (r **2 S)
         
         Parameters
         ----------
@@ -575,38 +569,43 @@ class Hemker1999:
         s *= np.log(2.) / t
         return s.flatten()
 
-
 def hemk99numerically(t=None, r=None, z=None, rw=None, rc=None, topclosed=True, botclosed=True, **kw):
     """Check Hemker(1999) numerically.
     
-    Run axially multilayer model. To deal with multiple screens, and uniform
-    head inside the well, rPVC and rOut are included in the distance array.
-    Then rW < r < rPVC is considered PVC in the unscreend layers. And
-    rPVC < r < rOut is considered just out of the well representing the
-    head just outside the well casing both where the well is screend and where
-    it is unscreend. Just in plotting for all r, only the heads for r > r[2] == rPVC
-    are shown by showPhi.
+    Setup and run an axially symmetric multilayer model with a multi-screen well in its center.
+    
+    The idea is to setup a model that will yield results with the same input as an analytic model.
+    
+    The well is implemented the center colum with r between 0 and rw in which all cells get kv = np.inf
+    and in which the unscreend cells get kh=0 and the screend cells also kv=np.inf. Instead of np.inf
+    we may use a high value.
+    
+    The distance array rc is adapted to make sure it is r = np.array([0, rw, r[r> rw]])
+    
+    The outpus can be interpolated to get them for specific times, r and model layers or even z.
+    
+    This is done with showPhi, which may also plot them.
     
     
-    Parameter
+    Parameters
     ----------
-    t: simulation times
-        times
-    z: None, sequence of array
+    t: np.array
+        simulation times
+    r: np.array
+        distances from center of well. It will be adapted to [0, rw, r[r>rw]]
+    z: np.array
        elevation of layer planes (tops and bottoms in one array)
     rw: float
-        well radius; must be same as r[1]
+        well radius
     rc: float
         radius of well bore storage, used to calculation Ss in top well cell.
     topclosed, botclosed: bool
         if False then IBOUND becomes -1 instead of 1
     """
-    AND, NOT = np.logical_and, np.logical_not
     t, r, kw = assert_input(t=t, r=r, **kw)
         
     # Make sure rw is r[1] and we include rw + dr
-    dr = 0.05 * rw
-    r = np.hstack((r[0], rw, rw + dr, r[r > rw + dr]))
+    r = np.hstack((0., rw, rw, r[r > rw]))
     
     gr = Grid(r, None, kw['z'], axial=True)
 
@@ -614,8 +613,9 @@ def hemk99numerically(t=None, r=None, z=None, rw=None, rc=None, topclosed=True, 
     e = kw['e'][:, np.newaxis, np.newaxis] #  * np.ones((1, gr.nx))
     E = e * np.ones((1, gr.nx), dtype=int)
     
-    screen = AND(gr.XM < rw,     E)
-    casing = AND(gr.XM < rw, NOT(E))
+    # Cells that are screen or casing cells
+    screen = np.logical_and(gr.XM < rw,     E)
+    casing = np.logical_and(gr.XM < rw, np.logical_not(E))
     
     # No fixed heads
     IBOUND = gr.const(1, dtype=int)
@@ -628,24 +628,102 @@ def hemk99numerically(t=None, r=None, z=None, rw=None, rc=None, topclosed=True, 
     kr = gr.const(kw['kr']); kr[screen] = 1e+6; kr[casing]=1e-6 # inside well
     kz = gr.const(kw['kz']); kz[screen] = 1e+6; kz[casing]=1e+6 # inside well
     
+    # Resistance between model layers
     c  = gr.const(kw['c'][:, np.newaxis, np.newaxis])
     c[:, :, gr.xm < rw] = 0. # No resistance in well
     
     Ss = gr.const(kw['Ss'][:, np.newaxis, np.newaxis])
     Ss[0, 0, 0] = (rc / rw) ** 2 / gr.DZ[0, 0, 0] # Well bore storage (top well cell)
     
-    HI = gr.const(0.)
-    FQ = gr.const(0.)
+    HI = gr.const(0.) # Initial heads
+    FQ = gr.const(0.) # Fixed flows
     
     # Boundary conditions, extraction from screens proportional to kDscreen / kDwell
     assert np.isscalar(kw['Q']), "Q must be a scalar see kw['Q']"
+    
+    # Distribute the extraction of the screended parts of the well.
+    # Note that this is strictly not necessary due to setting kv=np.inf in the entire well
+    # and kh=0 in cased portion and np.inf in screened ones
     kDscreen = kw['e'] * kw['kr'] * kw['D']
     kDwell   = np.sum(kDscreen)
     FQ[:, 0, 0] = kw['Q'] * kDscreen / kDwell
-           
-    return fdm3t(gr=gr, t=t, kxyz=(kr, kr, kz), Ss=Ss, c=c,
-                FQ=FQ, HI=HI, IBOUND=IBOUND)
     
+    # Run the finite difference model
+    out = fdm3t(gr=gr, t=t, kxyz=(kr, kr, kz), Ss=Ss, c=c,
+                FQ=FQ, HI=HI, IBOUND=IBOUND)
+    return out
+
+def interpolate(fdm3t, t=None, r=None, z=None, IL=None, method='linear'):
+    """Return head for given times, distances and layers.
+    
+    For the interpolation to work, fdm3t['gr'].shape must be (any, 1, >1)
+    
+    Most useful is to leave z and IL both None, which ensures all layers are in the result.
+    Further leave either t or r None, which yields an array with 
+    to select all times for specific r or one with all r for specific times
+    
+    Parameters
+    ----------
+    fdm3t: dictionary
+        output of fdm.fdrm3t.fdm3t
+    t: sequence or scalar or None
+        times at which output is desired or None for all times
+    r: sequence
+        distances at which output is desired or None for all distances
+    z: sequence of scalar or None
+        z-values for which output is desired or None for specified IL
+    Il: sequence if ints or scalar or None
+        layers for which output is desired of none for specified (interpolated) zs is use
+    method: 'linear', 'cubic' or 'spline'
+        interpolation method
+        
+    returns
+    -------
+    PhiI: np.ndarray
+        Interpolated heads dimension (Nt, Nz, Nr)
+        where Nt corresponds to fdm3t['t] if t is None and to t if not.
+        Where Nz correspoinds to fdm3t['gr']['nz'] if both z and IL are None
+        or to z if z z is not None or to IL if IL is not None
+    """
+    assert (IL is None or z is None) and not (
+                (IL is not None) and (z is not None)
+            ), 'Either `IL` or `z` must be none !'
+    assert (not (t is None and r is None)
+            and not (
+                (t is not None and r is not None))
+            ), 'Either `t` or `r` must be none!'
+
+    # Option 1: if time is not specified, all times is implied
+    if t is None:
+        t =fdm3t['t']
+    if r is None:
+        r = fdm3t['gr']['xm']
+    if z is None and IL is None:
+        IL = np.arange(fdm3t['gr'].nlay, dtype=int)
+                    
+    t = np.array([t]) if np.isscalar(t) else np.array(t)
+    r = np.array([r]) if np.isscalar(r) else np.array(r)
+    z = np.array([z]) if np.isscalar(z) else np.array(z)
+
+    Phi = fdm3t['Phi'][:, :, 0, :] # sqeeze y
+
+    if IL is None:
+        V = -fdm3t['gr'].zm
+        v = -z
+    else:
+        np.arange(fdm3t['gr'].nz)
+        v = IL
+        
+    points = t, V, r
+    interp = scipy.interpolate.RegularGridInterpolator(
+            points, Phi, method=method,
+            bounds_error=True, fill_value=np.nan)
+    Z, T, R = np.meshgrid(v, t, r)
+    PhiI = interp(np.vstack((T.ravel(), Z.ravel(), R.ravel())).T).reshape(T.shape)
+    
+    return PhiI
+    
+
 def showPhi(t=None, r=None, z=None, IL=None, method=None, fdm3t=None,
               xlim=None, ylim=None, xscale=None, yscale=None, show=True, **kw):
     """Return head for given times, distances and layers.
@@ -683,14 +761,9 @@ def showPhi(t=None, r=None, z=None, IL=None, method=None, fdm3t=None,
     else:
         raise ValueError illegal combination
     """
-    assert (IL is None or z is None) and not (
-                (IL is not None) and (z is not None)
-            ), 'Either `IL` or `z` must be none !'
-    assert (not (t is None and r is None)
-            and not (
-                (t is not None and r is not None))
-            ), 'Either `t` or `r` must be none!'
-
+    
+    PhiI = interpolate(fdm3t, t=t, r=r, z=z, IL=IL, method=method)
+    
     # Option 1: if time is not specified, all times is implied
     if t is None:
         t =fdm3t['t']
@@ -710,26 +783,6 @@ def showPhi(t=None, r=None, z=None, IL=None, method=None, fdm3t=None,
     t = np.array([t]) if np.isscalar(t) else np.array(t)
     r = np.array([r]) if np.isscalar(r) else np.array(r)
     z = np.array([z]) if np.isscalar(z) else np.array(z)
-
-    Phi = fdm3t['Phi'][:, :, 0, :] # sqeeze y
-
-    if option in [1, 3]:
-        points = fdm3t['t'], -fdm3t['gr'].zm, fdm3t['gr'].xm
-        interp = scipy.interpolate.RegularGridInterpolator(
-            points, Phi, method=method,
-            bounds_error=True, fill_value=np.nan)
-        Z, T, R = np.meshgrid(-z, t, r)
-        PhiI = interp(np.vstack((T.ravel(), Z.ravel(), R.ravel())).T).reshape(T.shape)
-    else:
-        points = fdm3t['t'], np.arange(fdm3t['gr'].nz), fdm3t['gr'].xm
-        interp = scipy.interpolate.RegularGridInterpolator(
-            points, Phi, method=method,
-            bounds_error=True, fill_value=np.nan)
-        L, T, R = np.meshgrid(IL, t, r)
-        PhiI = interp(np.vstack((T.ravel(), L.ravel(), R.ravel())).T).reshape(T.shape)
-
-    if show == False:
-        return PhiI
 
     graphOpts = {
         1: {'title': '(z, r) comb. for all t',   'xlabel': 'time [d]', 'ylabel': 'h [m]',
@@ -769,7 +822,6 @@ def showPhi(t=None, r=None, z=None, IL=None, method=None, fdm3t=None,
 
     ax.legend(loc='best')
     return PhiI, ax
-
 
 def test0(kw):
     """Simulate test0."""
@@ -1652,8 +1704,7 @@ cases ={ # Numbers refer to Hemker Maas (1987 figs 2 and 3)
         'label': 'Vennebulten (1966)',
         },
 }
-    
-    
+ 
 if __name__ == "__main__":
       
     test0(cases['test0'])
