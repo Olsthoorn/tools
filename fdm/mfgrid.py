@@ -943,27 +943,38 @@ class Grid:
         Parameters
         ----------
         cells: np.ndarray of bool
-            the cells with the GHB
+            Boolean array telling which cells of the grid are involved in the GHB
         hds: np.ndarray of float
-            the heads
+            the heads should be full array or an array with length equal to the number Trues in GHB
         cond: nd.array of float
-            the conductances
+            the conductances a full array or an array with lenght equal to the number Trues in GHB
             
         @TO 230505
         """
-        for A, name, tp in zip((cells, hds, cond), ('cells', 'hds', 'cond'), (bool, float, float)):
-            assert isinstance(A, np.ndarray), "{} not an ndarray of type {}".format(name, tp)
-        assert cells.shape[0] == hds.shape[0], "length of cell array ({}) != length hds array ({})"\
-                                    .format(cells.shape[0], hds.shape[0])
-        assert np.all(cells.shape[0] == cond.shape[0]), "length cell array ({}) != lenth of cond array ({})"\
-                                    .format(cells.shape[0], cond.shape[0])
-                                    
-        dtype = np.dtype([('I', int), ('h', float), ('C', float)])
+        assert isinstance(cells, np.ndarray) and cells.dtype == bool, "Array cells must be a full array of dtype bool."
+        assert isinstance(hds, np.ndarray), "hds must be a np.ndarray."
+        assert isinstance(cond, np.ndarray), "cond must be a np.ndarray."
         
-        ghb = np.zeros(len(cells), dtype=dtype)
-        ghb['I'] = self.I(cells)
-        ghb['h']    = hds
-        ghb['C']   = cond
+        dtype = np.dtype([('I', int), ('h', float), ('C', float)])
+        N = np.count_nonzero(cells == True)
+        
+        ghb = np.zeros(N, dtype=dtype)
+        ghb['I'] = self.NOD[cells]
+        
+        # ghb['I'] = self.I(cells)
+        
+        if np.all(hds.shape == self.shape):
+            ghb['h'] = hds[cells]
+        elif len(hds) == N:
+            ghb['h'] = hds
+        else:
+            raise ValueError("hds in ghb must be of shape ({}) or of lenth {} (corresponding to the boolean array cells)".format(self.shape, N))
+        if np.all(cond.shape == self.shape):
+            ghb['C'] = cond[cells]
+        elif len(cond) == N:
+            ghb['C'] = cond
+        else:
+            raise ValueError("cond in ghb must be of shape ({}) or of length {} (corresponding to the boolean array cells)".format(self.shape, N))
         
         return ghb
 
