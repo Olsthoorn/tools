@@ -1,10 +1,13 @@
 # Phreatic 3D transient groundwater flow
 # TO 2023-03-20
 
-# Works
-# Still need to deal with vertical conductance under water table conditions 2023-03-24
+# TODO Still need to deal with vertical conductance under water table conditions 2023-03-24
 import os
 import sys
+
+if not (tools_dir:='/Users/Theo/GRWMODELS/python/tools/') in sys.path:
+    sys.path.insert(0, tools_dir)
+
 import numpy as np
 import matplotlib.pyplot as plt
 import scipy.sparse as sp
@@ -12,10 +15,6 @@ from scipy.sparse.linalg import spsolve # to use its short name
 from scipy.special import erf
 from shapely.geometry import Point
 import warnings
-
-if not (tools_dir:='/Users/Theo/GRWMODELS/python/tools/') in sys.path:
-    sys.path.insert(0, tools_dir)
-
 from fdm import Grid
 
 import geopandas as gpd
@@ -223,7 +222,6 @@ class InputObj:
     If used with IBOUND interpolate must be False, because IBOUND cannot be interpolated.
     But a very similar one can be used of perhaps with an option.
     
-    @TODO need to test with IBOUND
     
     @TO 2023-03-28
     """
@@ -234,10 +232,11 @@ class InputObj:
         Parameters
         ----------
         o: np.ndarray of gr.shape or a dict with such arrays
-            input with keys that are times (sim times or real times)
+            input with keys that are times (sim times or real times).
+            For instance the array may contains HI or FQ or IBOUND values. The keys are the times after which the array is valid.
         interpolate: bool
-            if True interpolate between times
-            Must set to false if used for varying IBOUND
+            if True interpolate arrays between the times
+            Interpolate must be False if used for time-varying IBOUND as IBOUND can change but cannot not be interpolated.
         """
         self.interpolate = interpolate
         
@@ -408,11 +407,10 @@ def fdm3wtt(gr=None, t=None, kxyz=None, Ss=None, Sy=None,
                 Ry1 = 0.5 *    dy / (D  * dx) / ky
                 Rz1 = 0.5 * gr.DZ / (dx * dy) / kz
             else:
-                # prevent div by zero warning in next line; has no effect because x[0] is not used
-                x = gr.x.copy();  x[0] = x[0] if x[0]>0 else 0.001* x[1]
-
-                RxE = 1 / (2 * np.pi * kx * D) * np.log(x[1:] /  gr.xm).reshape((1, 1, gr.nx))
-                RxW = 1 / (2 * np.pi * kx * D) * np.log(gr.xm / x[:-1]).reshape((1, 1, gr.nx))
+                with warnings.catch_warnings():
+                    warnings.simplefilter("ignore", RuntimeWarning) # Division  by zero when x==0, is ok --> np.inf as resistance.
+                    RxW = 1 / (2 * np.pi * kx * D) * np.log(gr.xm / gr.x[:-1]).reshape((1, 1, gr.nx))
+                    RxE = 1 / (2 * np.pi * kx * D) * np.log(gr.x[1:] /  gr.xm).reshape((1, 1, gr.nx))
                 Ry1 = np.inf * np.ones(gr.shape)
                 Rz1 = 0.5 * gr.DZ / (np.pi * (gr.x[1:]**2 - gr.x[:-1]**2).reshape((1, 1, gr.nx)) * kz)
 

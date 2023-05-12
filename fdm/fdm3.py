@@ -16,6 +16,7 @@ tools = '/Users/Theo/GRWMODELS/python/tools/'
 if not tools in sys.path:
     sys.path.insert(0, tools)
 
+import warnings
 import numpy as np
 import scipy.sparse as sp
 import scipy.sparse.linalg as la
@@ -186,8 +187,10 @@ def fdm3(gr=None, K=None, c=None, FQ=None, HI=None, IBOUND=None, GHB=None, axial
             Rc  =        c / (dx * dy)
         #half cell resistances regular grid
     else:
-        Rx2 = 1 / (2 * np.pi * kx[:,:, 1: ] * dz) * np.log(gr.xm[ 1:]/gr.x[1:-1]).reshape((1, 1, Nx-1))
-        Rx1 = 1 / (2 * np.pi * kx[:,:, :-1] * dz) * np.log(gr.x[1:-1]/gr.xm[:-1]).reshape((1, 1, Nx-1))
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", RuntimeWarning) # Division by zero for x=0
+            Rx2 = 1 / (2 * np.pi * kx[:,:, 1: ] * dz) * np.log(gr.xm[ 1:]/gr.x[1:-1]).reshape((1, 1, Nx-1))
+            Rx1 = 1 / (2 * np.pi * kx[:,:, :-1] * dz) * np.log(gr.x[1:-1]/gr.xm[:-1]).reshape((1, 1, Nx-1))
         Rx2 = np.concatenate((np.Inf * np.ones((Nz, Ny, 1)), Rx2), axis=2)
         Rx1 = np.concatenate((Rx1, np.Inf * np.ones((Nz, Ny, 1))), axis=2)
         Ry = np.Inf * np.ones(SHP)
