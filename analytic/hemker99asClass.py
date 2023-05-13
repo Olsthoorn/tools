@@ -5,8 +5,15 @@
    This is still the implemnentation of Hemker-Maas 1087, which needs to be
    converted to Hemker(1999)
    
-   TO 2023-04-10
+   TO 2023-04-10 2023-05-13
 """
+
+import os
+import sys
+tools = os.path.abspath('..')
+if not tools in sys.path:
+    sys.path.insert(0, tools)
+
 import numpy as np
 import matplotlib.pyplot as plt
 import scipy.linalg as la
@@ -17,7 +24,6 @@ from fdm.fdm3t import fdm3t
 from analytic import hantush_conv
 from etc import newfig, color_cycler, line_cycler
 import scipy
-
 
 def stehfest_coefs(N=10):
     """Return the N Stehfest coefficients"""
@@ -586,7 +592,6 @@ def hemk99numerically(t=None, r=None, z=None, rw=None, rc=None, topclosed=True, 
     
     This is done with showPhi, which may also plot them.
     
-    
     Parameters
     ----------
     t: np.array
@@ -723,7 +728,6 @@ def interpolate(fdm3t, t=None, r=None, z=None, IL=None, method='linear'):
     
     return PhiI
     
-
 def showPhi(t=None, r=None, z=None, IL=None, method=None, fdm3t=None,
               xlim=None, ylim=None, xscale=None, yscale=None, show=True, **kw):
     """Return head for given times, distances and layers.
@@ -823,8 +827,41 @@ def showPhi(t=None, r=None, z=None, IL=None, method=None, fdm3t=None,
     ax.legend(loc='best')
     return PhiI, ax
 
+
 def test0(kw):
-    """Simulate test0."""
+    """Simultate using analytic class Hemker1999 checking the two analytic implementations
+    
+    For the parameters see the cases[case] for this example.
+    """
+    # Use class implementation
+    test1 = Hemker1999(**kw)
+    sclass  = test1.simulate(kw['t'], kw['r'], kw['Q'])
+    
+    # Using function implementation
+    sfunc  = solution(**kw)
+    
+    assert np.all(sclass == sfunc), "Test failed: not all sa == sb !"
+    
+    ax = newfig(kw['title'], 'time [d]', 's [m]', xscale='log')
+    cc = color_cycler()
+    for ir, r in enumerate(kw['r']):
+        clr = next(cc)
+        for iL in range(len(kw['D'])):
+            ax.plot(kw['t'], sclass[:, iL, ir], '-', color=clr, label='s_class, iL={}, r = {:.3g} m'.format(iL, r))
+            ax.plot(kw['t'], sfunc[ :, iL, ir], '.', color=clr, label='s_func , iL={}, r = {:.3g} m'.format(iL, r))
+    ax.legend(loc='lower right')
+    
+    print("Done, test succeeded, all sa == sb !")
+
+
+def test1(kw):
+    """Simulate test0.
+    
+    Simulates a Theis case and shows the different options to present it using showPhi.
+    
+    For the parameters see the cases dict for this example.
+    
+    """
     
     # Numerical (model has 4 layers)
     out = hemk99numerically(**kw)
@@ -876,19 +913,6 @@ def test0(kw):
             label='layer={}, t={:0.4g} d'.format(il, t_)
             ax.plot(out['gr'].xm, sa[it, il, :], '--', label=label)
     ax.legend(loc='lower right')
-
-def test1(kw):
-    """Simultate using analytic class Hemker1999"""
-    
-    # TODO needs testing
-
-    test1 = Hemker1999(**kw)
-    sa  = test1.simulate(kw['t'], kw['r'], kw['Q'])
-    # Using the function
-    sb  = solution(**kw)
-    
-    assert np.all(sa == sb), "Test failed: not all sa == sb !"
-    print("Done, test succeeded, all sa == sb !")
 
 def test2(kw):
     """Return plot comparing analytic implentation as function and as class."""
@@ -1119,7 +1143,7 @@ def h99_F2_Boulton_or_Hantush(kw):
     # Using a fixed r_ makes that we use the same times
     # for each r_ over B, but requires adapting B and, hence,
     # adapting c, so that we have the desirede values of r_ over B
-    
+
     
     # r_ over B values used by Hemker (1999)
     r_B = np.array([0.01, 0.1, 0.2, 0.4, 0.6,
@@ -1366,36 +1390,37 @@ def boulton_well_storage(kw):
     ax.legend(loc='lower right')
     return ax
 
-
 cases ={ # Numbers refer to Hemker Maas (1987 figs 2 and 3)
     'test0': {
-        'name': 'Test input and plotting', # (4 pi kD / Q) t
-        't': None,
-        'tau': np.logspace(-3, 1., 41),
-        'r': np.hstack((0., np.logspace(-1., 4., 101))), # [0, rw, rPVC ...
+        'comment': """Test to see that the analytic solution computed
+        with the implemented functions yields the same results as the
+        one implemented in a class. The test succeeds.
+        
+        r times and 3 distances are used with a 4 layer model.
+        """,
+        'title': 'Verify both analytical implementations are the same.', # (4 pi kD / Q) t
+        't':  np.logspace(-3, 4, 71),
+        'tau': None,
+        'r': np.array([1., 10., 100.]), 
         'z0': 0.,
         'rw': 0.1,
         'rc': 10.,
         'Q' : 1.0e+3,
         'D' : np.array([10., 10., 10., 10.]),
-        'kr' : np.array([10., 10., 1., 1.]),        
-        'kz': np.array([ 1., 1., 0.1, 0.1]),
-        'Ss': np.array([10., 10., 1., 1.,]) * 1e-5,
-        'c' : np.array([0., 0., 0.,]),
-        'e' : np.array([1, 1, 1, 0]),
+        'kr' : np.array([1e-6, 10., 10., 10.]),        
+        'kz': np.array([ 10., 10., 10., 10.]),
+        'Ss': np.array([1., 1., 1., 1.,]) * 1e-6,
+        'c' : np.array([1., 0., 0.,]),
+        'e' : np.array([0, 1, 1, 1]),
         'topclosed': True,
         'botclosed': True,
         'label': 'Test input',
         },
     'test1': {
-        'comment': """Test to see that the analytic solution computed
-        with the implemented functions yields the same results as the
-        one implemented in a class. The test succeeds.
-        """,
         'name': 'Test input and plotting', # (4 pi kD / Q) t
-        't':  np.array([1., 3., 10.]),
-        'tau': None,
-        'r': np.array([1., 10., 100.]), 
+        't': None,
+        'tau': np.logspace(-3, 1., 41),
+        'r': np.hstack((0., np.logspace(-1., 4., 101))), # [0, rw, rPVC ...
         'z0': 0.,
         'rw': 0.1,
         'rc': 10.,
