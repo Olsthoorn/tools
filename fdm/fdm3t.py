@@ -149,7 +149,7 @@ def fdm3t(gr=None, t=None, kxyz=None, c=None, Ss=None, GHB=None,
         Rc  = 0 if c is None else c   / (dx * dy)
     else:
         with warnings.catch_warnings():
-            warnings.simplefilter("ignore", RuntimeWarning) # Division  by zero when x==0, is ok --> np.inf as resistance.
+            warnings.simplefilter("ignore", category=RuntimeWarning) # Division  by zero when x==0, is ok --> np.inf as resistance.
             RxW = 1 / (2 * np.pi * kx * gr.DZ) * np.log(gr.xm / gr.x[:-1]).reshape((1, 1, gr.nx))
             RxE = 1 / (2 * np.pi * kx * gr.DZ) * np.log(gr.x[1:] /  gr.xm).reshape((1, 1, gr.nx))
         Ry1 = np.inf * np.ones(gr.shape)
