@@ -548,8 +548,9 @@ class Hemker1999:
         V    = self.Tm05 @ R             # depends on p
         Vm1  = la.inv(V)                 # depends on p
 
-        K0K1r = np.diag(sp.k0(r * np.sqrt(W.real))/
-                        (self.rw * np.sqrt(W.real) * sp.k1(self.rw * np.sqrt(W.real))))
+        # K0K1r = np.diag(sp.k0(r * np.sqrt(W.real)) / self.rw * np.sqrt(W.real) * sp.k1(self.rw * np.sqrt(W.real)))
+        K0K1r = np.diag(sp.k0(r * np.sqrt(W.real)))
+        
 
         U   = self.E.T @ V @ (np.eye(self.nlay) + p * C2 * K0K1r) @ Vm1 @ self.E
         Um1 = la.inv(U)
@@ -783,7 +784,8 @@ def showPhi(fdm3t=None, t=None, r=None, z=None, IL=None, method=None,
     method: 'linear', 'cubic' or 'spline'
         interpolation method
     show: bool
-        Weather to plot or only return PhiI
+        if False only return PhiI
+        if True, interpolate and show and return Phi and ax
     
     Options:
     if t is None and z is not None:
@@ -803,6 +805,9 @@ def showPhi(fdm3t=None, t=None, r=None, z=None, IL=None, method=None,
     """
     
     PhiI = interpolate(fdm3t, t=t, r=r, z=z, IL=IL, method=method)
+    
+    if showPhi == False:
+        return PhiI
     
     # Option 1: if time is not specified, all times is implied
     if t is None:
@@ -1166,44 +1171,34 @@ def h99_f11(kw):
     ax.legend(loc='lower right')
     return ax
 
-def h99_F2_Boulton_or_Hantush(kw):
-    """Simulalte boulton (1963) delayed yield or just Hantush
+
+def Hantush(kw):
+    """Simulate Hantush with the same input as for boulton (1963).
     
-    The only difference being that with Hantush, the head in layer 0 is fixed.
-    
+    The only difference being this situation and Boulton is
+    that with Hantush, the head in layer 0 is fixed and with Boulton it is not.
     """
-    # Hantush = Boulton with topclosed == False
-    kw = cases[case]
     
-    r_ = 500.
-    
-    hem = Hemker1999(**kw)
-    Q = 4 * np.pi * hem.kD.sum()
-    t = hem.tau2t(r=r_, tau=kw['tau'])
-    
-    
-    r = kw['r'][kw['r'] > hem.rw] 
-    sa = hem.simulate(t=t, r=r, Q=Q)
-    
+    r_ = 500.    
     # Using a fixed r_ makes that we use the same times
     # for each r_ over B, but requires adapting B and, hence,
     # adapting c, so that we have the desirede values of r_ over B
 
-    
     # r_ over B values used by Hemker (1999)
     r_B = np.array([0.01, 0.1, 0.2, 0.4, 0.6,
                          0.8, 1.0, 1.5, 2.0, 2.5, 3.0])
+    
     kD = np.sum(kw['kr'][1:] * kw['D'][1:])        
     Sy = kw['D'][0] * kw['Ss'][0]
     SA = np.sum(kw['D'][1:] * kw['Ss'][1:])
     kw['c'] = np.zeros(len(kw['D']) - 1) # adapted in loop below
     kw['Q'] = 4 * np.pi * kD
+    
     # tau used by Hemker, tauA is tau for the aquifer
     tauA = kw['tau'] # A is aquifer (layer 1)
-           
+    tauB = tauA * SA / Sy       
     kw['t'] = r_  ** 2 * SA * tauA / (4 * kD) 
-    # tau values for the aquifer with Sy instead of SA
-    tauB = tauA * SA / Sy  # =  4 * kD * kw['t'] / (r_ ** 2 * Sy)
+    
     title ='{}, type curves for r/B from 0.01 to 3'\
                 .format(kw['name'])
     xlabel = r'$\tau = 4 kD t /(r^2 S_2)$'
@@ -1211,10 +1206,89 @@ def h99_F2_Boulton_or_Hantush(kw):
     ax = newfig(title, xlabel, ylabel,
                 ylim=(1e-3, 1e2), xlim=(1e-1, 1e9),
                 xscale='log', yscale='log')
-    # The two Theis curves (note both for tauA)
-    ax.plot(tauA, scipy.special.exp1(1/tauA), 'r', lw=3, label='Theis for SA')
     
-    # TauA on x-axis and exp1(1/tauB) on y-axis
+    # The two Theis curves
+    ax.plot(tauA, scipy.special.exp1(1/tauA), 'r', lw=3, label='Theis for SA')
+    ax.plot(tauA, scipy.special.exp1(1/tauB), 'b', lw=3, label='Theis for Sy + SA')
+            
+    cc = color_cycler()
+    for rho in r_B:
+        color = next(cc)
+        
+        # Adapt c to to get the right r/B            
+        B = r_ / rho
+        kw['c'][0] = np.array([B ** 2 / kD])
+        
+        hem = Hemker1999(**kw)
+        sa = hem.simulate(t=kw['t'], r=rho * B, Q=kw['Q'])
+        
+        out = hemk99numerically(**kw) # using correct c
+            
+        # Interpolate numerical to set of times layers and distances:
+        PhiI = interpolate(out, t=None, r=rho * B, z=None, IL=None, method='linear')
+
+        assert kw['topclosed'] == False, 'topclosed must be False for numerical Hantush!'
+        ax.plot(tauA, hantush_conv.Wh(1/tauA, rho)[0], color=color, marker='x',
+                label='Wh(tau, {:.4g})'.format(rho))
+
+        # Plot Theis for S = Sy (specific yield)Show the drawdown in the top and first layer for this r/B
+        for il in [0, 1]:            
+            if rho in [0.01, 1.0, 1.5, 3.]:
+                labelN = 'num: r/B = {:.4g}'.format(rho)
+                labelA = 'ana: r/B = {:.4g}'.format(rho)
+                lw = 2.
+            else:
+                labelN = '_'
+                labelA = '_'
+                color = 'k'
+                lw = 0.5
+            ax.plot(tauA[:], PhiI[:, il, 0], '+', color=color, lw=lw, label=labelN)
+            ax.plot(tauA[:], sa[:,il], 'x', color=color, lw=lw, label=labelA)
+    
+    ax.legend(loc='lower right') 
+    return ax   
+
+def h99_F2_Boulton(kw):
+    """Simulalte boulton (1963) delayed yield or just Hantush
+    
+    The only difference being that with Hantush, the head in layer 0 is fixed.
+    
+    Boulton = Hantush with topclosed == True
+    """    
+    r_ = 500.
+    # Using a fixed r_ makes that we use the same times
+    # for each r_ over B, but requires adapting B and, hence,
+    # adapting c, so that we have the desirede values of r_ over B
+    
+    # r_ over B values used by Hemker (1999)
+    r_B = np.array([0.01, 0.1, 0.2, 0.4, 0.6,
+                         0.8, 1.0, 1.5, 2.0, 2.5, 3.0])
+
+    kD = np.sum(kw['kr'][1:] * kw['D'][1:])        
+    Sy = kw['D'][0] * kw['Ss'][0]
+    SA = np.sum(kw['D'][1:] * kw['Ss'][1:])
+    kw['c'] = np.zeros(len(kw['D']) - 1) # adapted in loop below
+    kw['Q'] = 4 * np.pi * kD
+
+    # tau used by Hemker, tauA is tau for the aquifer
+    tauA = kw['tau'] # A is aquifer (layer 1)
+           
+    kw['t'] = r_  ** 2 * SA * tauA / (4 * kD) 
+    
+    # tau values for the aquifer with Sy instead of SA
+    tauB = tauA * SA / Sy
+    
+    title ='{}, type curves for r/B from 0.01 to 3'\
+                .format(kw['name'])
+    xlabel = r'$\tau = 4 kD t /(r^2 S_2)$'
+    ylabel = r'$\sigma = 4 \pi kD s / Q$' 
+    
+    ax = newfig(title, xlabel, ylabel,
+                ylim=(1e-3, 1e2), xlim=(1e-1, 1e9),
+                xscale='log', yscale='log')
+    
+    # The two Theis curves (hor axis both tauA (tau for aquifer storage (elastic storage)))
+    ax.plot(tauA, scipy.special.exp1(1/tauA), 'r', lw=3, label='Theis for SA')
     ax.plot(tauA, scipy.special.exp1(1/tauB), 'b', lw=3, label='Theis for Sy + SA')
             
     cc = color_cycler()
@@ -1230,27 +1304,19 @@ def h99_F2_Boulton_or_Hantush(kw):
         
         # Analytisch:
         kw['r'] = rho * B
-        sa = solution(**kw)
         
         hem = Hemker1999(**kw)
         Q = 4 * np.pi * hem.kD.sum()
         t = hem.tau2t(r=r_, tau=kw['tau'])
-        r = rNum[rNum > hem.rw] 
-        sh = hem.simulate(t=t, r=r, Q=Q)
+        
+        sa = hem.simulate(t=kw['t'], r=rho * B, Q=kw['Q'])
     
         # Interpolate numerical to set of times layers and distances:
-        PhiI = showPhi(t=None, r= rho * B, z=None, IL=[0, 1],
-                        method='linear', fdm3t=out,
-                        xlim=None, ylim=None, xscale='log', yscale='log', show=False)
-        if case == 'Hantush':
-            assert kw['topclosed'] == False, 'topclosed must be False for numerical Hantush!'
-            ax.plot(tauA, hantush_conv.Wh(1/tauA, rho)[0], color=color, marker='x',
-                    label='Wh(tau, {:.4g})'.format(rho))
-        else:
-            assert kw['topclosed'] == True, 'topclosed must be true for Boulton'
-        # Plot Theis for S = Sy (specific yield)Show the drawdown in the top and first layer for this r/B
+        PhiI = interpolate(out, t=None, r=rho * B, z=None, IL=None, method='linear')
+
+        assert kw['topclosed'] == True, 'topclosed must be true for Boulton'
+        
         for il in [0, 1]:
-            sigma = 4 * np.pi * kD / kw['Q'] * PhiI[:, il, 0]
             if rho in [0.01, 1.0, 1.5, 3.]:
                 labelN = 'num: r/B = {:.4g}'.format(rho)
                 labelA = 'ana: r/B = {:.4g}'.format(rho)
@@ -1260,8 +1326,8 @@ def h99_F2_Boulton_or_Hantush(kw):
                 labelA = '_'
                 color = 'k'
                 lw = 0.5
-            ax.plot(tauA[1:], sigma[1:], '-', color=color, lw=lw, label=labelN)
-            ax.plot(tauA[1:], sa[1:,il], 'x', color=color, lw=lw, label=labelA)
+            ax.plot(tauA[:], PhiI[:, il, 0], '-', color=color, lw=lw, label=labelN)
+            ax.plot(tauA[:], sa[:,il], 'x', color=color, lw=lw, label=labelA)
     
     ax.legend(loc='lower right') 
     return ax   
@@ -1530,7 +1596,7 @@ cases ={ # Numbers refer to Hemker Maas (1987 figs 2 and 3)
         'botclosed': True,
         'label': 'Hantush (1955)',
     },
-    'H99 F2 Boulton': {
+    'Boulton': {
         'name': 'Bouton (1963/64) Delayed yield',
         'comment': """Boulton's delayed yield model (1963) can be
         repro- duced by a two-layer (two-aquifers-one-aquitard) confined
@@ -1784,13 +1850,15 @@ cases ={ # Numbers refer to Hemker Maas (1987 figs 2 and 3)
 if __name__ == "__main__":
       
     #test0(cases['test0']) # ok
-    #test1(cases['test1'])  # TODO works but needs further testing
-    test2(cases['test2'])
+    #test1(cases['test1']) # ok
+    #test2(cases['test2']) # ok
+    #Hantush(cases['Hantush']) # ok
+    h99_F2_Boulton(cases['Boulton']) # ok
     #boulton_well_storage(cases['Boulton Well Bore Storage'])
     #h99_F08(cases['H99_F08'])
     #h99_F07_Szeleky(cases['H99_F07 Szeleky'])
     #h99_F6(cases['H99 F6 well bore storage ppw'])
-    #h99_F2_Boulton_or_Hantush(cases['H99 F2 Boulton'])
+    
     #h99_F3(cases['H99 F3 Moench'])
 
     plt.show()
