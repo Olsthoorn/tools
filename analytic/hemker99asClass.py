@@ -253,9 +253,9 @@ def assert_input(t=None, r=None, z0=None, D=None, kr=None, kz=None, c=None,
     kw['z0'] = z0
     kw['z' ] = np.hstack((z0, z0 -  np.cumsum(D)))
     kw['kD'] = D * kr
-    kw['C']  = 0.5 * (D / kz)[:-1] + c + 0.5 * (D / kz)[1:]
+    kw['C']  = 0.5 * (D / kz)[:-1] + c + 0.5 * (D / kz)[1:] # For analytical solution
     kw['S']  = D * Ss
-    
+
     kD = np.sum(kw['kD'][1:])
     
     # Simulation time and Q
@@ -582,7 +582,7 @@ class Hemker1999:
         s *= np.log(2.) / t
         return s.flatten()
 
-def hemk99numerically(t=None, r=None, z=None, rw=None, rc=None, topclosed=True, botclosed=True, **kw):
+def hemk99numerically(t=None, r=None, z=None, rw=None, rc=None, c=None, GHB=None, topclosed=True, botclosed=True, **kw):
     """Setup and run an axially symmetric multilayer model with a multi-screen well in its center.
     
     The idea is to setup an axially symmetric finite difference model with minnimal input
@@ -616,21 +616,30 @@ def hemk99numerically(t=None, r=None, z=None, rw=None, rc=None, topclosed=True, 
         well radius
     rc: float
         radius of well bore storage, used to calculation Ss in top well cell.
+    c: np.ndaray
+        vertical resistances between the layers (nlay - 1, nrow, ncol).
+    ghb: tuple (cells, hds, cond)
+        defines general head boundaries.
+        Cells is boolean, telling which cells have general head  boundaries connected.
+        hds is a ull np.ndarray of heads, or an 1d arrays corresponding to the Trues in the cells array
+        of a sclar, if all ghb heads are the same.
+        cond is a full np.ndarray of condunctances or a 1d array corr. to the Trues in cells
+        or a scalar if all conductances are the same.
     topclosed, botclosed: bool
         if False then IBOUND becomes -1 instead of 1
     """
-    t, r, kw = assert_input(t=t, r=r, **kw)
+    t, r, kw = assert_input(t=t, r=r, c=c, **kw)
         
-    r = np.hstack((0., rw, rw, r[r > rw]))
+    r = np.hstack((0., rw, r[r > rw]))
     
     gr = Grid(r, None, kw['z'], axial=True)
     
     IBOUND = gr.const(1, dtype=int) # No fixed heads
-    if not topclosed:
-        IBOUND[0,  :, 1:] = -1  # If top has fixed heads
-    if not botclosed:
-        IBOUND[-1, :, 1:] = -1  # If bottom has fixed heads
-    
+    #if not topclosed:
+    #    IBOUND[0,  :, 1:] = -1  # If top has fixed heads
+    #if not botclosed:
+    #    IBOUND[-1, :, 1:] = -1  # If bottom has fixed heads
+        
     # Well screen array
     e = kw['e'][:, np.newaxis, np.newaxis] #  * np.ones((1, gr.nx))
     E = e * np.ones((1, gr.nx), dtype=int)
@@ -649,6 +658,23 @@ def hemk99numerically(t=None, r=None, z=None, rw=None, rc=None, topclosed=True, 
         c[:, :, gr.xm < rw] = 0. # No resistance in well
     else:
         c is None
+   
+    if not topclosed:
+        cells = gr.const(0, dtype=bool)
+        cells[0, :, 1:] = True
+        cond = 0.5 * gr.DZ / kz * gr.AREA
+        if GHB is None:
+            GHB = gr.GHB(cells, 0, cond[cells])
+        else:
+            GHB = np.vstack(GHB, gr.GHB(cells, 0, cond[cells]))
+    if not botclosed:
+        cells = gr.const(0, dtyp=bool)
+        cells[-1] = True
+        cond = 0.5 * gr.DZ / kz * gr.AREA
+        if GHB is None:
+            GHB = gr.GHB(cells, 0, cond[cells])
+        else:
+            GHB = np.vstack(GHB, gr.GHB(cells, 0, cond[cells]))
     
     # Storage and well bore storage
     Ss = gr.const(kw['Ss'][:, np.newaxis, np.newaxis])
@@ -668,10 +694,10 @@ def hemk99numerically(t=None, r=None, z=None, rw=None, rc=None, topclosed=True, 
     # kh=0 in cased parts and kh=np.inf in screened parts of the well.
     kDscreen = kw['e'] * kw['kr'] * kw['D']
     kDwell   = np.sum(kDscreen)
-    FQ[:, 0, 0] = kw['Q'] * kDscreen / kDwell
+    FQ[:, 0, 0] = kw['Q'] * kDscreen / kDwell # Distribute Q over the whole screened part of the well.
     
     # Run the finite difference model
-    out = fdm3t(gr=gr, t=t, kxyz=(kr, kr, kz), Ss=Ss, c=c,
+    out = fdm3t(gr=gr, t=t, kxyz=(kr, kr, kz), Ss=Ss, c=c, GHB=GHB,
                 FQ=FQ, HI=HI, IBOUND=IBOUND)
     return out
 
@@ -1038,135 +1064,70 @@ def test2(kw):
 def h99_F07_Szeleky(kw):
     """Simulate figure 07 in Hemker (1999), case Sceleky."""
     # TODO: Not yet right
-    rs = [0.1, 1., 10.]
-    tau = np.logspace(-3, 6, 91)
+    rs = [0.1, 10.]
     kD = np.sum(kw['kr'] * kw['D'])
     S  = np.sum(kw['Ss'] * kw['D'])
+    tau = kw['tau']
     
-    ax = newfig(kw['name'], r'$t_D$', r'$s [m]$',
+    ax = newfig(kw['name'], r'$tau = 4 kD / (r^2 S) t$', r'$s [m]$',
         xlim=(1e-2, 1e6), ylim=(1e-3, 1e1), xscale='log', yscale='log')
+    
     for ir, r_ in enumerate(rs):
         kw['t'] = tau * r_ ** 2 * S / (4 * kD)
+        kw['rc'] = kw['rw']
+        
         out = hemk99numerically(**kw)
-        kw['r'] = rs
-        sa = solution(r=kw['r'], **kw)
-        PhiI = showPhi(t=kw['t'], r=rs, z=None, IL=None,
-                    method='linear', fdm3t=out, show=False)
-        ax.plot(tau, kw['Q'] / (4 * np.pi * kD) * scipy.special.exp1(1/tau), '--',
-            label='Theis')
+        PhiI = interpolate(out, t=None, r=r_, z=None, IL=None)
+            
+        for il in [3]:
+            ax.plot(tau, PhiI[:, il, 0], '-', label='rc={:.4g} r = {:.4g} m, layer = {}'.format(kw['rc'],r_, il))
+        
+        kw['rc'] = 0.0    
+        out = hemk99numerically(**kw)
+        PhiI = interpolate(out, t=None, r=r_, z=None, IL=None)
     
-        for il in [0, 3]:
-            ax.plot(tau, PhiI[:, il, 0], label='r = {:.4g} m, layer = {}'.format(r_, il))
+        for il in [3]:
+            ax.plot(tau, PhiI[:, il, 0], '--', label='rc={:.4g} r = {:.4g} m, layer = {}'.format(kw['rc'],r_, il))
+
+
+    
+        #sa = solution(r=kw['r'], **kw)
     
     ax.legend(loc='lower right')
     return ax
   
-def h99_F08(kw):
-    """Simulate fig 8 in Hemker (1999):"""
-    k = 1.0
-    ax = newfig("Hemker 99 (fig 8)", r's_D', 'z', xlim=(10, 0), ylim=(-24, 0))
-    for kkacc in [1e0, 1e1, 1e2, 1e3, 1e4, 1e5, 1.e6]:
-        kw['kr'][:8]  = k / kkacc
-        kw['kr'][8:16]= k
-        kw['kr'][16:] = k / kkacc
-        kw['kz'] = kw['kr']
-        D  = np.sum(kw['D'])
-        kD = np.sum(kw['kr'] * kw['D'])
-        S  = np.sum(kw['Ss'] * np.sum(kw['D']))
-        
-        kDscreens = kw['kr'] * kw['D'] * kw['e']
-        kw['Q'] = kw['kr'] * kw['D'] * kw['e']
-        r_ = 0.5 * (kw['r'][1] + kw['r'][2])  # 0.2 * D
-        
-        tauA = np.logspace(-3, 5, 81) # A is aquifer (layer 1)
-        kw['t'] = r_  ** 2 * S * tauA / (4 * kD)
-        out = hemk99numerically(**kw)
-        PhiI = showPhi(t=None, r=[r_], z=None, IL=None,
-                method='linear', fdm3t=out,
-                xlim=None, ylim=None, xscale=None, yscale=None, show=False)
-        
-        ax.plot(PhiI[-1, :, 0], out['gr'].zm, label='k/k\' = {:.4g}'.format(kkacc))
-    ax.legend(loc='lower right')
-    return ax
-
-def h99_F11(kw):
-    """Simulate and return figure 11 in Hemker(1999)."""        
-    etop, ebot = kw['e']
-    kw['e'] = etop
-    D  = np.sum(kw['D'])
-    kD = np.sum(kw['kr'] * kw['D'])
-    S  = np.sum(kw['D'] * kw['Ss'])
-    kw['Q'] = 4 * np.pi * kD
-    r_ = 0.2 * D
-    tauA = np.logspace(-3, 5, 81) # A is aquifer (layer 1)
-    
-    kw['t'] = r_  ** 2 * S * tauA / (4 * kD)
-    kw['e'] = etop
-    out = hemk99numerically(**kw)
-    PhiItop = showPhi(t=None, r=[r_], z=None, IL=[0, 1, 2, 3, 4],
-            method='linear', fdm3t=out,
-            xlim=None, ylim=None, xscale=None, yscale=None, show=False)
-    kw['e'] = ebot
-    out = hemk99numerically(**kw)
-    PhiIbot = showPhi(t=None, r=[r_], z=None, IL=[0, 1, 2, 3, 4],
-            method='linear', fdm3t=out,
-            xlim=None, ylim=None, xscale=None, yscale=None, show=False)
-    
-    title = ('Drawdown responses to a partially penetrating well\n' +
-             'in the lowest part (solid) or the uppermost part (dashed)\n' +
-             'of a five-layer Ss- heterogeneous aquifer.')
-    ax = newfig(title=title, xlabel=r'$t_D$', ylabel=r'$S_D$',
-                xscale='log', yscale='log', xlim=(1e-2, 1e4), ylim=(1e-3, 1e2))
-    
-    cc = color_cycler()
-    for il in [0, 1, 2, 3, 4]:
-        sigmaTop = 4 * np.pi * kD / kw['Q'] * PhiItop[:, il]
-        sigmaBot = 4 * np.pi * kD / kw['Q'] * PhiIbot[:, il]
-        color = next(cc)                  
-        ax.plot(tauA[1:], sigmaTop[1:], '-' , color=color, marker='x', label='top, layer {}'.format(il + 1))
-        ax.plot(tauA[1:], sigmaBot[1:], '--', color=color, marker='+', label='bot, layer {}'.format(il + 1))
-    
-    ax.legend(loc='lower right')
-    return ax
-
 def h99_f11(kw):
     """Simulate and return figure 11 in Hemker(1999)."""
     
-    # TODO: Still the model is too late compared to fig 11. in Hemker 99
     etop, ebot = kw['e']
-    kw['e'] = etop
     D  = np.sum(kw['D'])
     kD = np.sum(kw['kr'] * kw['D'])
     S  = np.sum(kw['D'] * kw['Ss'])
     kw['Q'] = 4 * np.pi * kD
-    r_ = 0.2 * D
-    tauA = np.logspace(-3, 5, 81) # A is aquifer (layer 1)
     
-    kw['t'] = r_  ** 2 * S * tauA / (4 * kD)
+    r_ = 0.2 * D
+    tau = np.logspace(-3, 5, 81) # A is aquifer (layer 1)
+    
+    kw['t'] = r_  ** 2 * S * kw['tau'] / (4 * kD)
     kw['e'] = etop
     out = hemk99numerically(**kw)
-    PhiItop = showPhi(t=None, r=[r_], z=None, IL=[0, 1, 2, 3, 4],
-            method='linear', fdm3t=out,
-            xlim=None, ylim=None, xscale=None, yscale=None, show=False)
+    PhiItop = interpolate(out, t=None, r=[r_], z=None, IL=None)
+
     kw['e'] = ebot
     out = hemk99numerically(**kw)
-    PhiIbot = showPhi(t=None, r=[r_], z=None, IL=[0, 1, 2, 3, 4],
-            method='linear', fdm3t=out,
-            xlim=None, ylim=None, xscale=None, yscale=None, show=False)
+    PhiIbot = interpolate(out, t=None, r=[r_], z=None, IL=None)
     
     title = ('Drawdown responses to a partially penetrating well\n' +
              'in the lowest part (solid) or the uppermost part (dashed)\n' +
              'of a five-layer Ss- heterogeneous aquifer.')
-    ax = newfig(title=title, xlabel=r'$t_D$', ylabel=r'$S_D$',
+    ax = newfig(title=title, xlabel=r'$\tau = 4 kD t / (r^2 S)$', ylabel=r'$s 4 \pi kD / Q$',
                 xscale='log', yscale='log', xlim=(1e-2, 1e4), ylim=(1e-3, 1e2))
     
     cc = color_cycler()
-    for il in [0, 1, 2, 3, 4]:
-        sigmaTop = 4 * np.pi * kD / kw['Q'] * PhiItop[:, il]
-        sigmaBot = 4 * np.pi * kD / kw['Q'] * PhiIbot[:, il]
+    for il in range(PhiItop.shape[1]):
         color = next(cc)                  
-        ax.plot(tauA[1:], sigmaTop[1:], '-' , color=color, marker='x', label='top, layer {}'.format(il + 1))
-        ax.plot(tauA[1:], sigmaBot[1:], '--', color=color, marker='+', label='bot, layer {}'.format(il + 1))
+        ax.plot(tau[:], PhiItop[:, il, 0], '-' , color=color, marker='x', label='top, layer {}'.format(il + 1))
+        ax.plot(tau[:], PhiIbot[:, il, 0], '--', color=color, marker='+', label='bot, layer {}'.format(il + 1))
     
     ax.legend(loc='lower right')
     return ax
@@ -1398,18 +1359,17 @@ def h99_F3(kw):
 def h99_F6(kw):
     """Simlate fig 6 in Hemker (1999) well storage with partially penetrating aquifer."""
     # Papadopoulos and Cooper (1967)
-    kw = cases[case]
     assert kw['topclosed'] == False, 'topclosed must be False for {}'\
-        .format(case)
+        .format('H99_F6')
     
-    RcRw = [1., 5., 20., 100., 1000.]
-    RRD = [0.001, 0.1, 0.5] 
+    RRw = [1., 5., 20., 100., 1000.]  # R/Rw
+    RRw = [1., 1000.]
+    RD = [0.001, 0.1, 0.5]           # R/D
     
     tau = np.logspace(-2, 6, 81) # A is aquifer (layer 1)
-    D  = np.sum(kw['D'][1:])
-    kD = np.sum(kw['kr'][1:] * kw['D'][1:])
-    S  = np.sum(kw['Ss'][1:] * kw['D'][1:])
-    Sy = kw['Ss'][0] * kw['D'][0]
+    D  = np.sum(kw['D'])
+    kD = np.sum(kw['kr'] * kw['D'])
+    S  = np.sum(kw['Ss'] * kw['D'])
     Q  = 4 * np.pi * kD
     
     kw['Q'] = Q
@@ -1420,84 +1380,78 @@ def h99_F6(kw):
     ax = newfig(title, xlabel, ylabel,
                 ylim=(1e-3, 1e2), xlim=(1e-1, 1e6),
                 xscale='log', yscale='log')
-    cc = color_cycler()
     
-    for rcrw in RcRw:
-        kw['rc'] = kw['rw'] * rcrw
-        
-        color = next(cc)
-        for rrd in RRD:
-            color = next(cc)
-            
-            r_ = rrd * D
-            kw['t'] = r_  ** 2 * S * tau / (4 * kD) 
+    lc = line_cycler()
+    for rd in RD:
+        cc = color_cycler()
+        ls = next(lc)
+        r = rd * D
+        for rrw in RRw:
+            color=next(cc)        
+            rw = r / rrw    
+            kw['rw'], kw['rc'] = rw, rw
+            kw['t'] = r  ** 2 * S * tau / (4 * kD)
             out = hemk99numerically(**kw)
-    
-            PhiI = showPhi(t=None, r= [r_], z=None, IL=None,
-                            method='linear', fdm3t=out,
-                            show=False)
-            sigma = 4 * np.pi * kD / kw['Q'] * PhiI[:, 2, 0]                
-            ax.plot(tau[1:], sigma[1:], color=color,
-                    label='rc/rw={:.4g}, r/D = {:.4g}, r={:.4g} m'
-                    .format(rcrw, rrd, r_))
+            PhiI = interpolate(out, t=None, r= r, z=None, IL=None)
+            ax.plot(tau, PhiI[:, 1, 0], ls, color=color,
+                    label='numerical: r/rw={:.4g}, r/D = {:.4g}, r={:.4g} m, rw={:.4g} m'.format(rrw, rd, r, rw))
+
+            hem = Hemker1999(**kw)
+            sa = hem.simulate(t=kw['t'], r=r, Q=Q)
+            ax.plot(tau, sa[:, 1, 0], '+', color=color,
+                    label='analytic:  r/rw={:.4g}, r/D = {:.4g}, r={:.4g} m'.format(rrw, rd, r))
     
     ax.legend(loc='lower right')
     return ax
         
 def boulton_well_storage(kw):
     """Simulate Boulton's solution for well storage."""
-    kw = cases[case]
     
-    r_ = 500.
-    tauA = np.logspace(-2, 6, 81) # A is aquifer (layer 1)
+    assert kw['topclosed'] == True, 'topclosed must be true for Boulton'
+    B  = 500.
+    
     kD = kw['kr'][1] * kw['D'][1]        
-    Sy = kw['D'][0] * kw['Ss'][0]
+    Sy = (kw['D'] * kw['Ss']).sum()
     SA = kw['D'][1] * kw['Ss'][1]
+    Q  = 4 * np.pi * kD; kw['Q'] = Q
     
-    kw['t'] = r_  ** 2 * SA * tauA / (4 * kD) 
-    tauB = 4 * kD * kw['t'] / (r_ ** 2 * Sy)
-    title ='{}, type curves and time-dependent drainage for r/B from 0.01 to 3'\
-                .format(kw['name'])
-    xlabel = r'$\tau = 4 kD t /(r^2 S_2)$'
+    kw['c'] = np.array([B ** 2 / kD])
+    
+    tauA = kw['tau']   # tau = 4 kD t  / (r ** 2 * S)
+    tauB = kw['tau'] * SA / Sy
+    
+    title ='{}'.format(kw['title'])
+    xlabel = r'$\tau = 4 kD t /(r^2 S_A)$'
     ylabel = r'$\sigma = 4 \pi kD s / Q$' 
     ax = newfig(title, xlabel, ylabel,
-                ylim=(1e-3, 1e2), xlim=(1e-1, 1e6),
+                ylim=(1e-3, 1e2), xlim=(1e-2, 1e6),
                 xscale='log', yscale='log')
-    ax.plot(tauA, scipy.special.exp1(1/tauA), 'r', lw=3, label='Theis for SA')
     
-    r_B = np.array([0.02, 0.05, 0.1, 0.2, 0.4, 0.6, 0.8, 1.0, 1.5, 2.0, 2.5, 3.0])
+    ax.plot(tauA, scipy.special.exp1(1/tauA), '-', color='k', lw=2, label='Theis for SA')
+    ax.plot(tauA, scipy.special.exp1(1/tauB), '-', color='grey', lw=2, label='Theis for Sy')
     
-    cc = color_cycler()
+    #r_B = np.array([0.02, 0.05, 0.1, 0.2, 0.4, 0.6, 0.8, 1.0, 1.5, 2.0, 2.5, 3.0])
+    r_B = np.array([0.1, 0.3, 1.0, 3.0]) * 0.1
+    rrw = np.array([1, 3, 10, 30])
     
-    for rho in r_B:
+    for rc in rrw * kw['rw']:
+        kw['rc'] = rc
+        cc = color_cycler()
+        for rho in r_B:
+            color = next(cc)
+            
+            r_ = B * rho
+            
+            kw['t'] = r_  ** 2 * SA * tauA / (4 * kD) 
+            
+            out = hemk99numerically(**kw)
         
-        color = next(cc)
+            PhiI = interpolate(out, t=None, r= r_, z=None, IL=None)
+            
+            for il in [0, 1]:
+                ls = '--' if il == 0 else '-'
+                ax.plot(tauA, PhiI[:, il, 0], ls, color=color, label='il={} r_={:.4g}'.format(il, r_))
         
-        B = 10.; r_ = B * rho
-        kw['c'][0] = np.array([B ** 2 / kD])
-        
-        out = hemk99numerically(**kw)
-    
-        PhiI = showPhi(t=None, r= rho * B, z=None, IL=[0, 1],
-                        method='linear', fdm3t=out,
-                        xlim=None, ylim=None, xscale='log', yscale='log', show=False)
-        if case == 'Hantush':
-            assert kw['topclosed'] == False, 'topclosed must be False for Hantush!'
-            ax.plot(tauA, hantush_conv.Wh(1/tauA, rho)[0], color=color, marker='x',
-                    label='Wh(tau, {:.4g})'.format(rho))
-        else:
-            assert kw['topclosed'] == True, 'topclosed must be true for Boulton'
-        for il in [0, 1]:
-            sigma = 4 * np.pi * kD / kw['Q'] * PhiI[:, il, 0]
-            if rho in [0.01, 1.0, 1.5, 3.]:
-                label = 'r/B = {}'.format(rho)
-                lw = 2.
-            else:
-                label = '_'
-                color = 'k'
-                lw = 0.5
-            ax.plot(tauA[1:], sigma[1:], color=color, lw=lw, label=label)
-    
     ax.legend(loc='lower right')
     return ax
 
@@ -1666,8 +1620,8 @@ cases ={ # Numbers refer to Hemker Maas (1987 figs 2 and 3)
         'tau': np.logspace(-2, 5, 71),
         'r' : np.hstack((0., np.logspace(-1, 6, 141))),
         'z0': 1.0,
-        'rw': 0.01,
-        'rc': 0.01,
+        'rw': 0.1,
+        'rc': 0.1,
         'Q' : 4 * np.pi / 20.,  # Q = 4 pi kD
         'D' : np.ones(21),
         'kr': np.hstack((1e-6, np.ones(20))),
@@ -1680,20 +1634,20 @@ cases ={ # Numbers refer to Hemker Maas (1987 figs 2 and 3)
         'label': 'Moench (1995/95)',
         },
     'Boulton Well Bore Storage': {
-        'name': 'Boulton Well Bore Storage and Delayed Yield',
+        'title': 'Boulton Well Bore Storage with Delayed Yield',
         't' : None,
-        'tau': np.logspace(-2, 5, 71),
-        'r' : np.hstack((0., np.logspace(-1, 6, 141))),
-        'z0': 0.,
+        'tau': np.logspace(-2, 6, 81),
+        'r' : np.hstack((0., np.logspace(-2, 8, 101))),
+        'z0': 1.,
         'rw': 0.128,
         'rc': 0.128,
-        'Q' : 4 * np.pi * 10,  # Q = 4 pi kD
-        'D' : np.array([10., 10., 10., 10., 10.]),
-        'kr': np.array([10., 10., 10., 10., 10.]),
-        'kz': np.array([1.0, 1.0, 1.0, 1.0, 1.0]),
-        'Ss': np.array([7., 5., 3.5, 2.5, 2.]) * 1e-5,
-        'c' : None,
-        'e':  np.array([[1, 0, 0, 0, 0], [0, 0, 0, 0, 1]]), # Upper or Lower Layer is screened
+        'Q' :  None,
+        'D' : np.array([ 0.01, 10,]),
+        'kr': np.array([    1, 10]),
+        'kz': np.array([   10, 10]),
+        'Ss': np.array([   10, 1e-4]),
+        'c' : np.array([100]),
+        'e':  np.array([0, 1]), # Upper or Lower Layer is screened
         'topclosed': True,
         'botclosed': True,
         'label': 'Boulton (19??)',
@@ -1726,17 +1680,18 @@ cases ={ # Numbers refer to Hemker Maas (1987 figs 2 and 3)
         """,
         't' : None,
         'tau': np.logspace(-2, 5, 71),
-        'r' : np.hstack((0., np.logspace(-1, 4, 101))),
+        'r' : np.hstack((0., np.logspace(-5, 4, 91))),
         'z0': 1.0,
         'rw': 0.01,
         'rc': 0.01,
         'Q' : None,
-        'D' : np.ones(6),
-        'kr': np.hstack((1e-6, np.ones(5))),
-        'kz': np.hstack((1e+6, np.ones(5) * 1e-1)),
-        'Ss': np.hstack((1e-1, np.ones(5) * 0.2e-3)), 
+        'D' : np.ones(5),
+        'kr': np.ones(5),
+        'kz': np.ones(5) * 1e-1,
+        'Ss': np.ones(5) * 0.2e-3, 
         'c' : None, # depends on gamma
-        'e':  np.array([0, 1, 1, 1, 0, 0], dtype=int),
+        'e':  np.array([1, 1, 1, 0, 0], dtype=int),
+        'epsilon' : 1.,
         'topclosed': False,
         'botclosed': True,
         'label': 'Papadopoulos & Cooper (1967)',
@@ -1759,47 +1714,20 @@ cases ={ # Numbers refer to Hemker Maas (1987 figs 2 and 3)
         """,
         't' : None,
         'tau': np.logspace(-3, 6, 91),
-        'r' : np.hstack((0., np.logspace(-1, 6, 141))),
+        'r' : np.hstack((0., np.logspace(-0.1, 6, 71))),
         'z0': 0.,
         'rw': 0.1,
-        'rc': 0.001,
+        'rc': 0.1,
         'Q' : 1.0e3,
         'D' : np.array([10., 10., 10., 10.]),
-        'kr': np.array([10., 10., 1., 1.]),
-        'kz': np.array([10., 10., 1., 1.]) * 1e-1,
-        'Ss': np.array([10., 10., 1., 1.]) * 1e-5,            
+        'kr': np.array([10., 10.,  1.,  1.]),
+        'kz': np.array([10., 10.,  1.,  1.]) * 1e-1,
+        'Ss': np.array([10., 10.,  1.,  1.]) * 1e-5,            
         'c' : None,
         'e' : np.array([1, 0, 0, 0]),
         'topclosed': True,
         'botclosed': True,
         'label': 'Székely (95)',
-        },
-    'H99_F8': {
-        'name': 'PPW, heterogeneous conductivity (Maas 87)',
-        'comment': 
-            """Three layers of equal thickness, bounded by a no- drawdown top and a no-flow base,
-            are discharged by a well in the middle part. Steady-state drawdown profiles are computed
-            for various conductivity contrasts between the screened middle layer and the other parts
-            of the aquifer.
-            Fog 8 shows the results of a 24-sublayer model, which are very similar to the analytical
-            solution, although each profile is simply drawn by connecting the calculated drawdown
-            points in the middle of each sublayer.
-            """,
-        't' : None,
-        'r' : np.hstack((0., np.logspace(-1, 6, 141))),
-        'z0': 0.,
-        'rw': 0.1,
-        'rc': 0.001,
-        'Q' : 4 * np.pi * 10,  # Q = 4 pi kD
-        'D' : np.ones(24) * 1e0,
-        'kr': np.ones(24) * 1e0,
-        'kz': np.ones(24) * 1e0,
-        'Ss': np.ones(24) * 1e-20,
-        'c' : None,
-        'e':  np.hstack((np.zeros(8), np.ones(8), np.zeros(8))),
-        'topclosed': False,
-        'botclosed': True,
-        'label': 'Hemker (1999) fig 08',
         },
     'H99_F11': {
         'name': 'PPW, heterogeneous specific storage Ss',
@@ -1809,19 +1737,16 @@ cases ={ # Numbers refer to Hemker Maas (1987 figs 2 and 3)
             14:10:7:5:4. Ratios are based on a shallow, 50 m thick aquifer with a storativity of 0.002
             and estimated Ss-values for the sublayers of 7., 5., 3.5, 2.5 and 2. x 1e-5.
             """,
-        't' : None,
-        'tau': np.logspace(-2, 8, 81),
+        'tau': np.logspace(-3, 5, 81),
         'r' : np.hstack((0., np.logspace(-1, 6, 141))),
         'z0': 0.,
-        'rw': 0.1,
-        'rc': 0.001,
-        'Q' : 4 * np.pi * 10,  # Q = 4 pi kD
+        'rw': 0.05,
+        'rc': 0.05,
         'D' : np.array([10., 10., 10., 10., 10.]),
         'kr': np.array([10., 10., 10., 10., 10.]),
         'kz': np.array([1.0, 1.0, 1.0, 1.0, 1.0]),
-        'Ss': np.array([7., 5., 3.5, 2.5, 2.]) * 1e-5, # [/m]
-        'c' : None,
-        'e':  np.array([[1, 0, 0, 0, 0], [0, 0, 0, 0, 1]]), # Upper or Lower Layer is screened
+        'Ss': np.array([7., 5., 3.5, 2.5, 2.]) * 1e-5, # [/m]        
+        'e' :  np.array([[1, 0, 0, 0, 0], [0, 0, 0, 0, 1]]), # Upper or lower Layer is screened        
         'topclosed': True,
         'botclosed': True,
         'label': 'Hemker (1999) fig 11',
@@ -1853,12 +1778,12 @@ if __name__ == "__main__":
     #test1(cases['test1']) # ok
     #test2(cases['test2']) # ok
     #Hantush(cases['Hantush']) # ok
-    h99_F2_Boulton(cases['Boulton']) # ok
+    #h99_F2_Boulton(cases['Boulton']) # ok
+    #h99_F6(cases['H99 F6 well bore storage ppw']) # not yet ok, but looks a bit like in the paper
     #boulton_well_storage(cases['Boulton Well Bore Storage'])
-    #h99_F08(cases['H99_F08'])
-    #h99_F07_Szeleky(cases['H99_F07 Szeleky'])
+    #h99_f11(cases['H99_F11']) # ok note that tau uses 4 kD / (r^2 S) t while Hemker kD / (r^2 S) t
+    #h99_F07_Szeleky(cases['H99_F7 Szeleky']) #ok
     #h99_F6(cases['H99 F6 well bore storage ppw'])
-    
     #h99_F3(cases['H99 F3 Moench'])
 
     plt.show()

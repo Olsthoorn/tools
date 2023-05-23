@@ -511,7 +511,7 @@ class Grid:
     @TO 160930
     """
 
-    def __init__(self, x, y, z, axial=False, min_dz=0.001, tol=1e-5,
+    def __init__(self, x, y, z, axial=False, min_dz=0.001, tol=1e-10,
                  LAYCBD=None, georef=None):
         """Construct grid object.
 
@@ -944,16 +944,18 @@ class Grid:
         ----------
         cells: np.ndarray of bool
             Boolean array telling which cells of the grid are involved in the GHB
-        hds: np.ndarray of float
+        hds: float or np.ndarray of float
             the heads should be full array or an array with length equal to the number Trues in GHB
-        cond: nd.array of float
+            or a scalar for all values the same
+        cond: float or nd.array of float
             the conductances a full array or an array with lenght equal to the number Trues in GHB
+            or a scalar for all values the same.
             
         @TO 230505
         """
         assert isinstance(cells, np.ndarray) and cells.dtype == bool, "Array cells must be a full array of dtype bool."
-        assert isinstance(hds, np.ndarray), "hds must be a np.ndarray."
-        assert isinstance(cond, np.ndarray), "cond must be a np.ndarray."
+        assert isinstance(hds,   (np.float, np.int, np.ndarray)), "hds must be a float or a np.ndarray."
+        assert isinstance(cond,  (np.float, np.int, np.ndarray)), "cond must be a float or a np.ndarray."
         
         dtype = np.dtype([('I', int), ('h', float), ('C', float)])
         N = np.count_nonzero(cells == True)
@@ -963,19 +965,19 @@ class Grid:
         
         # ghb['I'] = self.I(cells)
         
-        if np.all(hds.shape == self.shape):
-            ghb['h'] = hds[cells]
-        elif len(hds) == N:
+        if np.isscalar(hds) or len(hds) == N:
             ghb['h'] = hds
+        elif np.all(hds.shape == self.shape):
+            ghb['h'] = hds[cells]
         else:
             raise ValueError("hds in ghb must be of shape ({}) or of lenth {} (corresponding to the boolean array cells)".format(self.shape, N))
-        if np.all(cond.shape == self.shape):
-            ghb['C'] = cond[cells]
-        elif len(cond) == N:
+        if np.isscalar(cond) or len(cond) == N:
             ghb['C'] = cond
+        elif np.all(cond.shape == self.shape):
+            ghb['C'] = cond[cells]
         else:
             raise ValueError("cond in ghb must be of shape ({}) or of length {} (corresponding to the boolean array cells)".format(self.shape, N))
-        
+
         return ghb
 
 
@@ -1465,13 +1467,20 @@ class Grid:
             return np.abs(np.diff(self._Z, axis=0))[self._Icbd]
 
     @property
+    def AREA(self):
+        """Return area of the cells as a 3D grid [nz, ny, nx]."""
+        if self.axial:
+            return (np.pi * (self._x[1:]**2 - self._x[:-1]**2))[np.newaxis, np.newaxis, :]
+        else:
+            return self.DX * self.DY
+
+    @property
     def Area(self):
         """Return area of the cells as a 2D grid [ny, nx]."""
         if self.axial:
-            return np.pi * (self._x[1:]**2 - self._x[:-1]**2) * \
-                np.ones((self._ny, self._nx))
+            return (np.pi * (self._x[1:]**2 - self._x[:-1]**2))[np.newaxis, :]
         else:
-            return self.dx.reshape((1, self._nx)) * self.dy.reshape((self._ny,1))
+            return self.dx[np.newaxis, :] * self.dy[: , np.newaxis]
 
     @property
     def area(self):
@@ -2803,7 +2812,7 @@ class Grid:
         TO 161007
         """
         if isinstance(u, (np.ndarray, list, tuple)):
-            u = np.asarray(u, dtype=dtype).ravel()[:, np.newaxis, np.newaxis]
+            u = u.ravel()[:, np.newaxis, np.newaxis]
             nz = len(u)
         elif lay is True:
             nz = self._nlay
@@ -2813,15 +2822,15 @@ class Grid:
             nz = self._nz
             pass
 
-        if isinstance(u, (float, int)):
-            out = u * np.ones((nz, self._ny, self._nx), dtype=dtype)
+        if np.isscalar(u):
+            out = u * np.ones((nz, self._ny, self._nx))
         elif isinstance(u, np.ndarray):
-            out = u * np.ones((1, self._ny, self._nx), dtype=dtype)
+            out = u * np.ones((1, self._ny, self._nx))
 
         if axial: # only if explicitly demanded
-            return 2 * np.pi * self.XM * out
-        else:
-            return out
+            out *= 2 * np.pi * self.XM
+        
+        return np.asarray(out, dtype=dtype)
 
 
     def ckD2k(self, c, kD):
