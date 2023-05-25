@@ -198,7 +198,7 @@ def sLaplace(p=None, r=None, rw=None, rc=None,
     
     return s_.flatten() # Laplace drawdown s(p)
 
-def assert_input(t=None, r=None, z0=None, D=None, kr=None, kz=None, c=None,
+def assert_input(t=None, r=None, z0=None, D=None, kr=None, kz=None, c=None, cT=None,
                  Ss=None, e=None, **kw):
     """Return r, t after verifying length of variables.
     
@@ -221,7 +221,7 @@ def assert_input(t=None, r=None, z0=None, D=None, kr=None, kz=None, c=None,
     kz: np.ndarray [m/d] on flength n + 1
         vertical conductivity of aquifers
     c:  np.ndarray [d] of length n-1
-        vertical hydraulic resistances 
+        vertical hydraulic resistances
     Ss:  np.ndarray [m2/d] of length n
         specific storage coefficients of aquifers
     e: np.ndarray [-] length n
@@ -242,6 +242,9 @@ def assert_input(t=None, r=None, z0=None, D=None, kr=None, kz=None, c=None,
     
     assert len(D) == len(kr),  "Len(D) {} != len(k) {}".format(len(D), len(kr))
     assert len(c) == len(D) - 1 , "Len(c)={} != len(D) - 1 = {}".format(len(c), len(D) - 1)
+    
+    if  cT is not None:
+        c = np.hstack((cT, c))
     
     for name , v in zip(['D', 'kr', 'kz', 'c', 'Ss'],
                     [D, kr, kz, c, Ss]):
@@ -1132,7 +1135,6 @@ def h99_f11(kw):
     ax.legend(loc='lower right')
     return ax
 
-
 def Hantush(kw):
     """Simulate Hantush with the same input as for boulton (1963).
     
@@ -1296,65 +1298,50 @@ def h99_F2_Boulton(kw):
 def h99_F3(kw):
     """Simulate case of Moench with vertical resistance within aquifer and on top."""
     # The problem is essentially the same as Boulton's, however
-    # the delayed yield is due to vertical anisotropy.
-    kw = cases[case]
+    # the delayed yield is also due to vertical anisotropy within the aquifer.
     
-    tauA = np.logspace(-2, 5, 71) # A is aquifer (layer 1)
+    tau = kw['tau']
     D  = np.sum(kw['D'][1:])
-    C  = np.sum(kw['D'][1:] / kw['kz'][1:])
+    cA = np.sum(kw['D'][1:] / kw['kz'][1:])
     kD = np.sum(kw['D'][1:] * kw['kr'][1:])
     Sy = kw['D'][0] * kw['Ss'][0]
     SA = 1e-3 * Sy
     kw['Ss'][1:] = SA / D
-    
-    r_ = D * np.sqrt(kw['kr'][1] / kw['k'][1])
-    
-    sigma = SA / Sy
-    beta = kw['kz'][1] * r_ ** 2  / (kw['kr'][1] * D ** 2)
-    
     kw['Q'] = 4 * np.pi * kD
-    kw['t'] = r_  ** 2 * SA * tauA / (kD)   # / (4 kD)
-    tauB = kD * kw['t'] / (r_ ** 2 * Sy)
-    title =r'{}, type curves for values of gamma. $\sigma$ = {:.4g}, $\beta$={:.4g}'\
-                .format(kw['name'], sigma, beta)
-    xlabel = r'$\tau = 4 kD t /(r^2 S_2)$'
-    ylabel = r'$\sigma = 4 \pi kD s / Q$' 
-    ax = newfig(title, xlabel, ylabel,
-                ylim=(1e-2, 1e1), xlim=(1e-1, 1e5),
-                xscale='log', yscale='log')
-    ax.plot(tauA / 4, scipy.special.exp1(1/tauA), 'r', lw=3, label='Theis for SA')
-    ax.plot(tauA / 4, scipy.special.exp1(1/tauB), 'b', lw=3, label='Theis for Sy + SA')
+
+    r_ = kw['rd'] * D # m, fixed
+
+    ax1 = newfig(kw['title'] + '\n' +r'kD={:.4g} cA={:.4g}, Sy={:.4g}, SA={:.4g}, r/D = {:.4g} m'.format(
+        kD, cA, Sy, SA, r_ / D), r'$\tau = 4 kD t /(r^2 S_2)$', r'$\sigma = 4 \pi kD s / Q$',
+         ylim=(1e-2, 1e1), xlim=(1e-1, 1e5),
+         xscale='log', yscale='log')
     
-    # Gamma is (D/k)/c
-    gammas = np.array([1.0, 10., 100.])
+    ax2 = newfig(kw['title'] + '\n' +r'kD={:.4g}, cA={:.4g}, Sy={:.4g}, SA={:.4g}, r/D = {:.4g} m'.format(
+        kD, cA, Sy, SA, r_ / D), r'$\tau = 4 kD t /(r^2 S_2)$', r'$\sigma = 4 \pi kD s / Q$',
+         ylim=(1e-2, 1e1), xlim=(1e-1, 1e5),
+         xscale='log', yscale='log')
+
+    ax1.plot(tau,         scipy.special.exp1(1/tau), 'b--', lw=1, label='Theis for SA')
+    ax1.plot(tau * Sy/SA, scipy.special.exp1(1/tau), 'r--', lw=1, label='Theis for Sy + SA')
+    ax2.plot(tau,         scipy.special.exp1(1/tau), 'b--', lw=1, label='Theis for SA')
+    ax2.plot(tau * Sy/SA, scipy.special.exp1(1/tau), 'r--', lw=1, label='Theis for Sy + SA')
     
-    cc = color_cycler()        
-    for gamma in gammas:
-        color = next(cc)
+    for gamma in [1., 10., 100.]:
+        cT = cA / gamma
+        kw['c'] = np.zeros(len(kw['D']) - 1); kw['c'][0] = cT
+        B = np.sqrt(kD * cT)
+         
+        kw['t'] = r_  ** 2 * SA * tau / (4 * kD)
         
-        # D/k = C
-        # gamma = (C * Sy) / (c[0] * SA)
-        c = np.zeros(len(kw['D']) - 1)
-        c[0] = C * Sy / SA / gamma
-        
-        kw['c'] = c
-        
-        B = np.sqrt(kD * (c[0] + C))
         out = hemk99numerically(**kw)
-    
-        PhiI = showPhi(t=None, r= r_, z=None, IL=None,
-                        method='linear', fdm3t=out,
-                        xlim=None, ylim=None, xscale='log', yscale='log', show=False)
-        assert kw['topclosed'] == True, 'topclosed must be true for Boulton'
-        ll = line_cycler()
-        for il in [0, 1, -1]: # top and bottom layer of the aquifer
-            ls = next(ll)
-            s = 4 * np.pi * kD / kw['Q'] * PhiI[:, il, 0]
-            label = r'$\gamma$={:.4g}, layer={}'.format(gamma, il)
-            ax.plot(tauA[1:], s[1:], color=color, ls=ls, label=label)
-    
-    ax.legend(loc='lower right')
-    return ax   
+        
+        PhiI = interpolate(out, t=None, r=r_, z=None, IL=None)
+        
+        ax1.plot(tau, PhiI[:,  1, 0], '-', label=r'layer  1, $\gamma$={:.4g}, r/B={:.4g}'.format(gamma, r_/B))
+        ax2.plot(tau, PhiI[:, 20, 0], '-', label=r'layer 20, $\gamma$={:.4g}, r/B={:.4g}'.format(gamma, r_/B))
+    ax1.legend(loc='lower right')
+    ax2.legend(loc='lower right')
+    return
     
 def h99_F6(kw):
     """Simlate fig 6 in Hemker (1999) well storage with partially penetrating aquifer."""
@@ -1593,7 +1580,7 @@ cases ={ # Numbers refer to Hemker Maas (1987 figs 2 and 3)
         'label': 'Boulton (1963)',
         },
     'H99 F3 Moench': {
-        'name': 'Moench 1995/96 using 1 drainage layer and 20 sublayers',
+        'title': 'Moench 1995/96 using 1 drainage layer and 20 sublayers',
         'comment': """A more realistic model of unconfined well flow is
         obtained when time-dependent drainage from above the water table
         (Boulton's 1963 model) and vertical flow within the saturated
@@ -1619,16 +1606,55 @@ cases ={ # Numbers refer to Hemker Maas (1987 figs 2 and 3)
         't' : None,
         'tau': np.logspace(-2, 5, 71),
         'r' : np.hstack((0., np.logspace(-1, 6, 141))),
+        'rd': 10, # r/D
         'z0': 1.0,
         'rw': 0.1,
-        'rc': 0.1,
-        'Q' : 4 * np.pi / 20.,  # Q = 4 pi kD
+        'rc': 0.0,
         'D' : np.ones(21),
         'kr': np.hstack((1e-6, np.ones(20))),
-        'kz': np.hstack((1e+6, np.ones(20) * 1e-1)),
+        'kz': np.hstack((1e+6, np.ones(20) * 1e-2)),
         'Ss': np.hstack((1e-1, np.ones(20) * 1e-4)), 
-        'c' : None, # depends on gamma
         'e':  np.hstack((0, np.ones(20, dtype=int))),
+        'topclosed': True,
+        'botclosed': True,
+        'label': 'Moench (1995/95)',
+        },
+    'H99 F4 Moench': {
+        'title': 'Moench 1995/96 using 1 drainage layer and 20 sublayers, partially penetrating well',
+        'comment': """A more realistic model of unconfined well flow is
+        obtained when time-dependent drainage from above the water table
+        (Boulton's 1963 model) and vertical flow within the saturated
+        zone (Neuman's 1974 model) are both considered (Narasimhan and Zhu, 1993). Fig. 3 compares the theoretical responses of an
+        analytical solution developed by Moench (1995, 1996) with the
+        multilayer results for three models with a decreasing effect of
+        delayed yield and for a water-table piezometer and another
+        piezometer located at the base of the aquifer. The dimensionless
+        parameter gamma is introduced by Moench and may be defined in
+        terms of multilayer model properties as the ratio of two
+        resistances: the vertical flow resistance in the aquifer D/k2
+        and the delayed drainage resistance (c2). The multilayer model is set up as 20 sublayers of the same thickness for the aquifer and an additional top layer for delayed drainage, as described
+        for Boulton's model.
+        The response curves at the water table coincide almost
+        perfectly, while the deep piezometer shows drawdowns that are
+        slightly too small, increase with g (by decreasing c2) and are
+        especially obvious during intermediate time. The errors of less
+        than 5% are mainly caused by the conditions in the lowest
+        sublayer: the multilayer approximation finds an average drawdown
+        for the deepest sublayer, while the analytical solution is
+        computed for the true base of the aquifer.
+        """,     
+        't' : None,
+        'tau': np.logspace(-2, 5, 71),
+        'r' : np.hstack((0., np.logspace(-1, 6, 141))),
+        'rd': 1., # r/D
+        'z0': 1.0,
+        'rw': 0.1,
+        'rc': 0.0,
+        'D' : np.ones(21),
+        'kr': np.hstack((1e-6, np.ones(20))),
+        'kz': np.hstack((1e+6, np.ones(20) * 1e-2)),
+        'Ss': np.hstack((1e-1, np.ones(20) * 1e-4)), 
+        'e':  np.hstack((0, np.ones(5, dtype=int), np.zeros(15, dtype=int))), # partially penetrating well
         'topclosed': True,
         'botclosed': True,
         'label': 'Moench (1995/95)',
@@ -1779,11 +1805,13 @@ if __name__ == "__main__":
     #test2(cases['test2']) # ok
     #Hantush(cases['Hantush']) # ok
     #h99_F2_Boulton(cases['Boulton']) # ok
+    #h99_F3(cases['H99 F3 Moench']) # ok
+    h99_F3(cases['H99 F4 Moench']) # ok
     #h99_F6(cases['H99 F6 well bore storage ppw']) # not yet ok, but looks a bit like in the paper
     #boulton_well_storage(cases['Boulton Well Bore Storage'])
     #h99_f11(cases['H99_F11']) # ok note that tau uses 4 kD / (r^2 S) t while Hemker kD / (r^2 S) t
     #h99_F07_Szeleky(cases['H99_F7 Szeleky']) #ok
     #h99_F6(cases['H99 F6 well bore storage ppw'])
-    #h99_F3(cases['H99 F3 Moench'])
+    
 
     plt.show()
