@@ -909,7 +909,7 @@ def test0(kw):
     # Using function implementation
     sfunc  = solution(**kw)
     
-    assert np.all(sclass == sfunc), "Test failed: not all sa == sb !"
+    assert np.all(np.isclose(sclass, sfunc)), "Test failed: not all sa == sb !"
     
     ax = newfig(kw['title'], 'time [d]', 's [m]', xscale='log')
     cc = color_cycler()
@@ -930,68 +930,70 @@ def test1(kw):
     For the parameters see the cases dict for this example.
     """
     # Numerical (model has 4 layers)
-    out = hemk99numerically(**kw)
     
-    kD = kw['kr'] * kw['D']
-    S  = kw['Ss'] * kw['D']
+    D  = kw['D'].sum()
+    kD = (kw['kr'] * kw['D']).sum()
+    S  = (kw['Ss'] * kw['D']).sum()
+    kw['Q'] = 4 * np.pi * kD
     
-    t = out['t']
+    ax = newfig('Theis in multilayer model', r'$\tau = 4 kD / (r^2 S) t$', r'$s_D = s 4 pi kD / Q$', xscale='log', yscale='log',
+                xlim=(1e-3, 1e3), ylim=(1e-6, 1e1))
+    
+    ax.plot(kw['tau'], sp.exp1(1/kw['tau']),  'kx', lw=1, label='Theis')
+    
+    hem = Hemker1999(**kw)
     
     # Analytic for r values of r but all times
     rs = [5, 50, 500]
-    
-    # Show numerical results and return the axis for all times, three rs values and two z-values
-    PhiI, ax = showPhi(t=None, r=rs, z=[-5, -35], IL=None,
-                    method='linear', fdm3t=out,
-                    xlim=None, ylim=None, xscale=None, yscale=None)
     lc = line_cycler()
-    for ir, r_ in enumerate(rs):
+    for r_ in rs:
         ls = next(lc)
-        cc = color_cycler()
-        u = r_ ** 2 * S.sum() / (4 * kD.sum() * t)
-        ax.plot(t, sp.exp1(u),  'k.', lw=1, label='Theis: r = {:.4g} m'.format(r_))
-        for iL in [0, out['gr'].nlay - 1]:
-            clr = next(cc)
-            ax.plot(t, PhiI[:, 0, :], ls=ls, color=clr, label='r = {} m, iL = {}'.format(r_, iL))
+        t = r_ ** 2 * S / (4 * kD) * kw['tau']
+        kw['t'] = t
         
-    # Same but now for all 3 layers
-    IL = [0, 1, 2, 3]
-    sa  = solution(**kw) # Analytical
-    PhiI, ax = showPhi(t=None, r=rs, z=None, IL=IL,
-                        method='linear', fdm3t=out,
-                        xlim=None, ylim=None, xscale=None, yscale=None)
-    cc = color_cycler()
-    for iL in range(out['gr'].nlay):
-        clr = next(cc)
-        lc = line_cycler()
-        for ir, r_ in enumerate(rs):
-            ls = next(lc)
-            ax.plot(t, PhiI[:, iL, ir], ls,  color=clr, label='numeric:  r = {:.4g} m, layer {}'.format(r_, iL))
-            ax.plot(t, sa[  :, iL, ir], '.', color=clr, label='analytic: r = {:.4g} m, layer {}'.format(r_, iL))
-    ax.legend(loc='lower right')
-    
-    # Get the data for only three times and all r
-    ts = np.array([1. , 3., 10.]); ts[ts < out['t'][0]] = out['t'][0]; ts[ts > out['t'][-1]] = out['t'][-1]
-    PhiI, ax = showPhi(t=ts, r=None, z=[-5, -15, -25, -35], IL=None,
-                    method='linear', fdm3t=out,
-                    xlim=None, ylim=None, xscale='log', yscale=None)
-    
-    # Choose a set of times and layers for output
-    IL = [0, 1, 2, 3]
-    # Select the numerical data for these times and layers
-    PhiI, ax = showPhi(t=ts, r=None, z=None, IL=IL,
-                    method='linear', fdm3t=out,
-                    xlim=None, ylim=None, xscale='log', yscale=None)
-    lc = line_cycler()
-    for it, t_ in enumerate(ts):
-        ls = next(lc)
+        sa  = hem.simulate(t=t,r=r_, Q=kw['Q'])
+        out = hemk99numerically(**kw)
+        
+        PhiI = interpolate(out, t=None, r=r_, z=None, IL=None)
+        cc = color_cycler()
+        for iL in [0, -1]:
+            clr = next(cc)
+            ax.plot(kw['tau'][1:], PhiI[1:, iL, :], ls, color=clr,
+                    label='numeric:  r = {} m, iL = {}'.format(r_, iL))
+            ax.plot(kw['tau'], sa[:, iL, :], '+', color=clr,
+                    label='analytic: r = {} m, iL = {}'.format(r_, iL))
+        
+        # Same but now for all layers
+        PhiI = interpolate(out, t=None, r=r_, z=None, IL=None)
         cc = color_cycler()
         for iL in range(out['gr'].nlay):
             clr = next(cc)
-            ax.plot(PhiI[it, iL, :], ls=ls, color=clr, label='t= {} d, iL={}'.format(t_, iL)) 
+            ax.plot(kw['tau'][1:], PhiI[1:, iL, 0], '--',  color=clr, label='numeric:  r = {:.4g} m, layer {}'.format(r_, iL))
+            ax.plot(kw['tau'], sa[  :, iL, 0], '.', color=clr, label='analytic: r = {:.4g} m, layer {}'.format(r_, iL))
+    ax.legend(loc='lower right')
+    
+    # Get the data for only three times and all r
+    ts = np.array([1. , 3., 10.])
+    ts[ts < out['t'][0]] = out['t'][0]
+    ts[ts > out['t'][-1]] = out['t'][-1]
+    zs = [-5, -15, -25, -35]
+    z = -15.
+    PhiIA = interpolate(out, t=ts, r=None, z=z,    IL=None)
+    PhiIB = interpolate(out, t=ts, r=None, z=None, IL=None)
+    
+    ax = newfig('Theis in layers versus r/D', r'$r/D$', r'$s 4 \pi kD / Q$', xscale='log')
+    for it, t in enumerate(ts):
+        r = out['gr'].xm[1:]
+        u = r ** 2 * S / (4 * kD * t)
+        ax.plot(r / D, sp.exp1(u), '.', label='Theis, t={:.4g}'.format(t))
+        ax.plot(r / D, PhiIA[it, 0, 1:], '-', label='t={:.4g} d, z={:.4g} m'.format(t, z))
+        for il in range(out['gr'].nlay):
+            ax.plot(r / D, PhiIB[it, il, 1:], '--', label='t={:.4g} d, il={} m'.format(t, il))
+    ax.legend(loc='lower right')
+            
 
-def test2(kw):
-    """Return plot comparing analytic implentation as function and as class."""
+def boulton_analytical(kw):
+    """Return plot of Boulton's problem analytic implementation as class."""
     
     TAUMIN = 0.1 # below which Stehfest breaks (tested experimentally, N Stehfest = 16, is best)
     
@@ -1191,7 +1193,7 @@ def Hantush(kw):
         PhiI = interpolate(out, t=None, r=rho * B, z=None, IL=None, method='linear')
 
         assert kw['topclosed'] == False, 'topclosed must be False for numerical Hantush!'
-        ax.plot(tauA, hantush_conv.Wh(1/tauA, rho)[0], color=color, marker='x',
+        ax.plot(tauA, hantush_conv.Wh(1/tauA, rho)[0], '-', color=color,
                 label='Wh(tau, {:.4g})'.format(rho))
 
         # Plot Theis for S = Sy (specific yield)Show the drawdown in the top and first layer for this r/B
@@ -1206,7 +1208,7 @@ def Hantush(kw):
                 color = 'k'
                 lw = 0.5
             ax.plot(tauA[:], PhiI[:, il, 0], '+', color=color, lw=lw, label=labelN)
-            ax.plot(tauA[:], sa[:,il], 'x', color=color, lw=lw, label=labelA)
+            ax.plot(tauA[:], sa[  :, il, :], 'x', color=color, lw=lw, label=labelA)
     
     ax.legend(loc='lower right') 
     return ax   
@@ -1333,12 +1335,18 @@ def h99_F3(kw):
          
         kw['t'] = r_  ** 2 * SA * tau / (4 * kD)
         
+        # Numemrical
         out = hemk99numerically(**kw)
-        
         PhiI = interpolate(out, t=None, r=r_, z=None, IL=None)
+        ax1.plot(tau, PhiI[:,  1, 0], '-', label=r'numerical: lay=  1, $\gamma$={:.4g}, r/B={:.4g}'.format(gamma, r_/B))
+        ax2.plot(tau, PhiI[:, 20, 0], '-', label=r'numerical: lay= 20, $\gamma$={:.4g}, r/B={:.4g}'.format(gamma, r_/B))
         
-        ax1.plot(tau, PhiI[:,  1, 0], '-', label=r'layer  1, $\gamma$={:.4g}, r/B={:.4g}'.format(gamma, r_/B))
-        ax2.plot(tau, PhiI[:, 20, 0], '-', label=r'layer 20, $\gamma$={:.4g}, r/B={:.4g}'.format(gamma, r_/B))
+        # Analytical
+        hem = Hemker1999(**kw)
+        sa = hem.simulate(t=kw['t'], r=r_, Q=kw['Q'])
+        ax1.plot(tau, sa[:,  1, 0], 'x', label=r'analytical: lay= 1, $\gamma$={:.4g}, r/B={:.4g}'.format(gamma, r_/B))
+        ax2.plot(tau, sa[:, 20, 0], 'x', label=r'analytical: lay 20, $\gamma$={:.4g}, r/B={:.4g}'.format(gamma, r_/B))
+        
     ax1.legend(loc='lower right')
     ax2.legend(loc='lower right')
     return
@@ -1450,7 +1458,8 @@ cases ={ # Numbers refer to Hemker Maas (1987 figs 2 and 3)
         
         r times and 3 distances are used with a 4 layer model.
         """,
-        'title': 'Verify both analytical implementations are the same.', # (4 pi kD / Q) t
+        'title': """Compare both analytical implementations.
+        They are the same, but Stehfest fails at large times.""",
         't':  np.logspace(-3, 4, 71),
         'tau': None,
         'r': np.array([1., 10., 100.]), 
@@ -1471,33 +1480,30 @@ cases ={ # Numbers refer to Hemker Maas (1987 figs 2 and 3)
     'test1': {
         'comment': """Simulate Theis in a 4L numerical model with fully penetrating well and visualize it with showPhi in different four ways.
         """,
-        'title': 'Theis numerically 4L model visualized in four different ways with showPhi', # (4 pi kD / Q) t
-        't': None, # Use tau instead of t, i.e. t = r ** 2 * S tau / (4 * kD) (tau = 4 kD t  /(2 **2 * S))
-        'r_': 50., # distance to base t on
-        'tau': np.logspace(-3, 1., 41),
-        'r': np.logspace(-3., 4., 51), # r --> [0, rw, rPVC ...
+        'title': 'Theis numerically 4L model visualized in four different ways with showPhi',
+        'tau': np.logspace(-1, 3., 41),
+        'r': np.hstack((0., np.logspace(-3., 4., 71))), # r --> [0, rw, rPVC ...
         'z0': 0.,
-        'rw': 0.1,
-        'rc': 10.,
-        'Q' : 1.0e+3,
+        'rw': 1e-3,
+        'rc': 0.,
         'D' : np.array([10., 10., 10., 10.]),
-        'kr' : np.array([10., 10., 1., 1.]),        
-        'kz': np.array([ 1., 1., 0.1, 0.1]),
-        'Ss': np.array([1., 1., 1., 1.,]) * 1e-5,
-        'c' : np.array([0., 0., 0.,]),
-        'e' : np.array([1, 1, 1, 1]),
+        'kr' :np.array([10., 10., 10., 10.]),        
+        'kz': np.array([ 1.,  1.,  1.,  1.]),
+        'Ss': np.array([ 1.,  1.,  1.,  1.,]) * 1e-5,
+        'c' : np.array([ 0.,  0.,  0.,]),
+        'e' : np.array([ 1,   1,   1,   1]),
         'topclosed': True,
         'botclosed': True,
         'label': 'Test input',
         },
-    'test2': {
+    'boulton_analytical': {
         'comment': """Test2 compares the analytic solution computed using
         functions and the analytic solution computed using the class.
         It applies both implementations on the Boulton example. The test
         reveils there's no difference in the outcomes.
         It shows that for low values of tau, Stehfest back transformation breaks down.
         """,
-        'title': 'Boulton, comoputed analyticall using a two layer model.',
+        'title': 'Boulton analytically using a two-layer model.',
         't' : None,
         'tau': np.logspace(-2, 9, 121),
         'r' : np.hstack((0., np.logspace(-1, 6, 141))),
@@ -1645,7 +1651,7 @@ cases ={ # Numbers refer to Hemker Maas (1987 figs 2 and 3)
         """,     
         't' : None,
         'tau': np.logspace(-2, 5, 71),
-        'r' : np.hstack((0., np.logspace(-1, 6, 141))),
+        'r' : np.hstack((0., np.logspace(-3, 6, 141))),
         'rd': 1., # r/D
         'z0': 1.0,
         'rw': 0.1,
@@ -1698,7 +1704,8 @@ cases ={ # Numbers refer to Hemker Maas (1987 figs 2 and 3)
         'label': 'Boulton (19??)',
         },
     'H99 F6 well bore storage ppw': {
-        'name': 'Wellbore storage: P&S (1967), B&S (1976)',
+        'name': """Wellbore storage: P&S (1967), B&S (1976).
+        Stehfest fails for small tau and small r in the top layer.""",
         'comment':"""To verify multi- layer results, a more complicated solution for flow to a
         partially penetrating well with wellbore storage, recharged by a no-drawdown top boundary
         (Boulton and Streltsova, 1976) was used. The plotted family of type curves (Fig. 6) are
@@ -1723,7 +1730,9 @@ cases ={ # Numbers refer to Hemker Maas (1987 figs 2 and 3)
         'label': 'Papadopoulos & Cooper (1967)',
     },
     'H99_F7 Szeleky': {
-        'name': 'Székely (1995) Heterogeneous aquifer, PP well',
+        'name': """Székely (1995) Heterogeneous aquifer, PP well.
+        The effect of well-bore storage is shown. It's large for rc=0.1 and
+        r=0.1 and vertually absent for r=10 m.""",
         'comment':
         """Szekely\'s (1995) example of an analytical solution for a partially penetrating well
         is used to test the hybrid analytical-numerical method under hetero- geneous conditions.
@@ -1777,41 +1786,20 @@ cases ={ # Numbers refer to Hemker Maas (1987 figs 2 and 3)
         'botclosed': True,
         'label': 'Hemker (1999) fig 11',
         },
-    'Vennebulten': {
-        'name': 'Kruse & De Ridder (1994, p105) Delayed yield',
-        't' : np.logspace(0, 5, 101) /(24 * 60), # d
-        'r' : np.hstack((0., np.logspace(-1, 4, 41))),
-        'z0': 0.,
-        'rw': 0.1,
-        'rc': 0.1,
-        'rp': [10., 30., 90., 280.],
-        'Q' : 873,  # m3/d
-        'D' : np.array([10., 11.]),
-        'kr': np.array([0.4, 135.]),
-        'kz': np.array([0.04, 13.5]),
-        'Ss': np.array([5e-3 / 10., 5e-4 / 11.]),
-        'c' : np.array([0.]),
-        'e':  np.array([0., 1]),
-        'topclosed': True,
-        'botclosed': True,
-        'label': 'Vennebulten (1966)',
-        },
 }
  
 if __name__ == "__main__":
       
     #test0(cases['test0']) # ok
     #test1(cases['test1']) # ok
-    #test2(cases['test2']) # ok
+    #boulton_analytical(cases['boulton_analytical']) # ok
     #Hantush(cases['Hantush']) # ok
     #h99_F2_Boulton(cases['Boulton']) # ok
     #h99_F3(cases['H99 F3 Moench']) # ok
-    h99_F3(cases['H99 F4 Moench']) # ok
-    #h99_F6(cases['H99 F6 well bore storage ppw']) # not yet ok, but looks a bit like in the paper
-    #boulton_well_storage(cases['Boulton Well Bore Storage'])
+    #h99_F3(cases['H99 F4 Moench']) # ok
+    h99_F6(cases['H99 F6 well bore storage ppw']) # not yet ok, but looks a bit like in the paper
+    #boulton_well_storage(cases['Boulton Well Bore Storage']) # ok
     #h99_f11(cases['H99_F11']) # ok note that tau uses 4 kD / (r^2 S) t while Hemker kD / (r^2 S) t
     #h99_F07_Szeleky(cases['H99_F7 Szeleky']) #ok
-    #h99_F6(cases['H99 F6 well bore storage ppw'])
     
-
     plt.show()
