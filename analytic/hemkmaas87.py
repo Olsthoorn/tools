@@ -13,7 +13,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import scipy.linalg as la
 import scipy.special as sp
-from hantush_conv import Wh
+from hantush_convolution import Wh
 import warnings
 
 def stehfest_coefs(N=10):
