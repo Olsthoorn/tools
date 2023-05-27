@@ -20,11 +20,12 @@ import matplotlib.pyplot as plt
 import scipy
 import scipy.linalg as la
 import scipy.special as sp
-from hantush_conv import Wh
+from hantush_convolution import Wh
 from fdm import Grid
 from fdm.fdm3t import fdm3t
 from analytic import hantush_conv
 from etc import newfig, color_cycler, line_cycler
+import ttim
 
 
 def stehfest_coefs(N=None):
