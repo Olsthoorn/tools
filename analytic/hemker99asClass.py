@@ -23,7 +23,7 @@ import scipy.special as sp
 from hantush_convolution import Wh
 from fdm import Grid
 from fdm.fdm3t import fdm3t
-from analytic import hantush_conv
+from analytic import hantush_convolution
 from etc import newfig, color_cycler, line_cycler
 import ttim
 
@@ -45,7 +45,7 @@ def stehfest_coefs(N=None):
 vStehfest = stehfest_coefs(N=16)
 
 def sysmat(p=None, kD=None, c=None, S=None,
-           topclosed=False, botclosed=True, **kw):           
+           top=None, bot=None):           
     """Return the system matrix of the multyaquifer system.
     
     Parameters
@@ -58,15 +58,15 @@ def sysmat(p=None, kD=None, c=None, S=None,
         vector of n+1 interlayer vertical hydraulic resistances.
     S:  np.ndarrray [-]
         vector of storage coefficients for the aquifers
-    topclosed: bool
-        top of system is closed (impervious)
+    top: str
+        top of system is 'conf' or 'semi'
     botclosed: bool
-        bottom of system is closed (impervious)
+        bottom of system is 'conf' or  'semi'
     """
     n = len(kD)
-    if topclosed and len(c) < n:
+    if top == 'conf' and len(c) < n:
         c = np.hstack((np.inf, c))
-    if botclosed and len(c) < n + 1:
+    if bot == 'conf' and len(c) < n + 1:
         c = np.hstack((c, np.inf))
         
     aSt = np.ones_like(c)
@@ -74,9 +74,9 @@ def sysmat(p=None, kD=None, c=None, S=None,
     B = - np.diag(aSt[ :-1] / c[ :-1] + aSt[1:] / c[1:], k=0)\
         + np.diag(bSt[1:-1] / c[1:-1], k=+1)\
         + np.diag(bSt[1:-1] / c[1:-1], k=-1)
-    if topclosed:
+    if top == 'conf':
         B[0, 0]   = -1. / c[1]
-    if botclosed:        
+    if bot == 'conf':        
         B[-1, -1] = -1. / c[-2]
     
     if S is None: # steady
@@ -85,7 +85,7 @@ def sysmat(p=None, kD=None, c=None, S=None,
         A = np.diag(1 / kD) @ (p * np.diag(S) - B)
     return A
 
-def sysmat_steady(**kw):
+def sysmat_steady(kD=None, c=None, top=None, bot=None):
     """Return the system matrix of the multyaquifer system.
 
     Parameters
@@ -94,15 +94,14 @@ def sysmat_steady(**kw):
         vector of n layer transmissivities determins number of layers.
     c:  np.ndarray [d]
         vector of n+1 interlayer vertical hydraulic resistances.
-    topclosed: bool
-        top of system is closed (impervious)
-    botclosed: bool
-        bottom of system is closed (impervious)
+    top: str
+        'conf' or 'semi'
+    bot: str
+        'conf' or 'semi'
     """
-    kw.update(p=0, S=None)
-    return sysmat(**kw)
+    return sysmat(p=0, kD=kD, c=c, S=np.zeros_like(kD), top=top, bot=bot)
 
-def multRadial(rs=None, Q=None, kD=None, c=None, topclosed=False, botclosed=True, **kw):
+def multRadial(rs=None, Q=None, kD=None, c=None, top=None, bot=None):
     """Return steady state multiaquifer radial flow to well screens with spresribed flows.
     
     Parameters
@@ -120,7 +119,10 @@ def multRadial(rs=None, Q=None, kD=None, c=None, topclosed=False, botclosed=True
     botclosed: bool
         bottom of system is closed (impervious)
     """
-    A   = sysmat_steady(kD=kD, c=c, **kw)
+    assert top in ['semi', 'conf'], "top must be 'conf' or 'semi'"
+    assert bot in ['semi', 'conf'], "bot must be 'conf' or 'semi'"
+    
+    A   = sysmat_steady(kD=kD, c=c, top=top, bot=bot)
     Tp05   = np.diag(np.sqrt(kD))
     Tm05   = np.diag(1. / np.sqrt(kD))
     
@@ -138,7 +140,7 @@ def multRadial(rs=None, Q=None, kD=None, c=None, topclosed=False, botclosed=True
     return s
 
 def sLaplace(p=None, r=None, rw=None, rc=None,
-        e=None, Q=None, kD=None, c=None, S=None, **kw):
+        screens=None, Q=None, kD=None, c=None, S=None, top=None, bot=None):
     """Return the laplace transformed drawdown for t and r scalars.
     
     The solution is the Laplace domain is
@@ -157,7 +159,7 @@ def sLaplace(p=None, r=None, rw=None, rc=None,
         radius of storage (casing at top in which water table fluctuates)
     Q: float
         total extraction from the aquifers
-    e: np.ndarray
+    screens: np.ndarray
         Vector telling which aquifers are screened
     kD: np.ndarray
         Vector of transmissivities of the aquifers [m2/d]
@@ -168,14 +170,14 @@ def sLaplace(p=None, r=None, rw=None, rc=None,
     r:  float
         Distance at which the drawdown is to be computed
     """
-    A   = sysmat(p=p, kD=kD, c=c, S=S, **kw)
+    A   = sysmat(p=p, kD=kD, c=c, S=S, top=top, bot=bot)
     Tp05   = np.diag(np.sqrt(kD))
     Tm05   = np.diag(1. / np.sqrt(kD))
     
     T = np.diag(kD)
-    Ti = kD * e # vector of floats
+    Ti = kD * screens # vector of floats
     Tw = np.sum(Ti)
-    One = np.ones((np.sum(e > 0), 1))
+    One = np.ones((np.sum(screens > 0), 1))
     
     C1 = Q / (2 * np.pi * Tw) # float, constant
     C2 = rc ** 2 / (2 * Tw)   # float, constant
@@ -188,9 +190,9 @@ def sLaplace(p=None, r=None, rw=None, rc=None,
     K0K1r = np.diag(sp.k0(r * np.sqrt(W.real))/
                     (rw * np.sqrt(W.real) * sp.k1(rw * np.sqrt(W.real))))
     
-    E = np.diag(e)[:, e != 0]
-    assert np.all(E.T @ e[:, np.newaxis] == np.ones(len(e[e > 0]))
-                  ), "E.T @ e must be all ones"
+    E = np.diag(screens)[:, screens != 0]
+    assert np.all(E.T @ screens[:, np.newaxis] == np.ones(len(screens[screens > 0]))
+                  ), "E.T @ screens must be all ones"
         
     U   = E.T @ V @ (np.eye(len(kD)) + p * C2 * K0K1r) @ Vm1 @ E
     Um1 = la.inv(U)
@@ -199,25 +201,16 @@ def sLaplace(p=None, r=None, rw=None, rc=None,
     
     return s_.flatten() # Laplace drawdown s(p)
 
-def assert_input(t=None, r=None, z0=None, D=None, kr=None, kz=None, c=None, cT=None,
-                 Ss=None, e=None, **kw):
-    """Return r, t after verifying length of variables.
+def assert_input(z0=None, D=None, kr=None, kz=None, c=None, Ss=None, top='conf', bot='conf', **kw):
+    """Verify variable except t and r and update kw.
     
-    Parameters
+    Parameters in kw
     ----------
-    t:  float or np.ndarray [d]
-        time or times, analytical solution
-    r:  float or np.ndarray [m]
-        distances to well center, analytical solution
     z0: float
         top of flow system (top of top aquitard)
-    rw: float [m]
-        well radius
-    rc: float [m]
-        radius of casing or storage part of well in which water table fluctuates
     D: np.ndarray [m] of length n
         thickness of aquifers
-    k: np.ndarray [m/d] on flength n
+    kr: np.ndarray [m/d] on flength n
         horizontal conductivity of aquifers
     kz: np.ndarray [m/d] on flength n + 1
         vertical conductivity of aquifers
@@ -225,64 +218,30 @@ def assert_input(t=None, r=None, z0=None, D=None, kr=None, kz=None, c=None, cT=N
         vertical hydraulic resistances
     Ss:  np.ndarray [m2/d] of length n
         specific storage coefficients of aquifers
-    e: np.ndarray [-] length n
-       screened aquifers indicated by 1 else 0
-    """
-    assert r is not None, "r must not be None"
+    top: str
+        'conf' or 'semi'
+    bot: 'str'
+        'conf or 'semi'
+    """           
+    for name, var in zip(['kr', 'kz', 'D', 'c', 'Ss'],
+                         [kr, kz, D, c, Ss]):
+        assert isinstance(var, np.ndarray), f"{name} not an np.ndarray"
+
+    assert top == 'semi' or top == 'conf', "top must be 'semi' or 'conf'"
+    assert bot == 'semi' or bot == 'conf', "bot must be 'semi' or 'conf'"
     
-    if np.isscalar(r): r = [r]
-    if r is not None: r = np.array(r)
-        
-    if c is None:
-        c = np.zeros_like(D)[:-1]
-    
-    for name, var in zip(['kr', 'kz', 'D', 'c', 'Ss', 'e'],
-                         [kr, kz, D, c, Ss, e]):
-        assert isinstance(var, np.ndarray), "{} not an np.ndarray".format(name)
-        kw[name] = var
-    
-    assert len(D) == len(kr),  "Len(D) {} != len(k) {}".format(len(D), len(kr))
-    assert len(c) == len(D) - 1 , "Len(c)={} != len(D) - 1 = {}".format(len(c), len(D) - 1)
-    
-    if  cT is not None:
-        c = np.hstack((cT, c))
-    
+    nlay = len(D)
+    nc   = nlay + 1 if top=='semi' and bot=='semi' else nlay if top=='semi' or bot=='semi' else nlay - 1
+    assert len(c) == nc, 'len(c) must equal {}, not {}'.format(nc, len(c))
+
     for name , v in zip(['D', 'kr', 'kz', 'c', 'Ss'],
                     [D, kr, kz, c, Ss]):
-        assert np.all(v >= 0.), "all {} must be >= 0.".format(name)
-    
-    assert np.all(np.array([ee == 0 or ee == 1 for ee in e], dtype=bool)),\
-            'All values in e must be 0 or 1'
-    
-    kw['z0'] = z0
-    kw['z' ] = np.hstack((z0, z0 -  np.cumsum(D)))
-    kw['kD'] = D * kr
-    kw['C']  = 0.5 * (D / kz)[:-1] + c + 0.5 * (D / kz)[1:] # For analytical solution
-    kw['S']  = D * Ss
-
-    kD = np.sum(kw['kD'][1:])
-    
-    # Simulation time and Q
-    if kw['Q'] is None:
-        kw['Q'] = 4 * np.pi * kD
-    
-    if t is None:
-        t = kw['Q'] / (4 * np.pi * kD) * kw['tau']
-    elif np.isscalar(t):
-        t = np.array([t])
-    else:
-        assert isinstance(t, np.ndarray), \
-            't must be np.ndarray as this point, not {}'.format(type(t))
-        
-    assert isinstance(t, np.ndarray) and isinstance(r, np.ndarray),\
-        "t and r must both be vectors, at this point."
-        
-    kw['shape'] = (len(t), len(D), len(r))
-
-    return t, r, kw
+        assert np.all(v >= 0.), f"all {name} must be >= 0."
+           
+    return
 
 def backtransform(t, r, rw=None, rc=None, Q=None, kD=None,
-                  c=None, S=None, e=None, **kwargs):
+                  c=None, S=None, screens=None, top=None, bot=None):
     """Return s(t, r) after backtransforming from Laplace solution.
 
     Parameters
@@ -303,23 +262,27 @@ def backtransform(t, r, rw=None, rc=None, Q=None, kD=None,
         vertical hydraulic resistances 
     S:  np.ndarray [m2/d] of length n
         storage coefficients
-    e: np.ndarray [-] length n
+    screens: np.ndarray [-] length n
        screened aquifers indicated by 1 else 0
+    top: str
+        'conf' or 'semi'
+    tot: str
+        'conf' or 'semi'
     """
     s = np.zeros_like(kD)
     for v, i in zip(vStehfest, range(1, len(vStehfest) + 1)):
         p = i * np.log(2.) / t
         s += v * sLaplace(p=p, r=r, rw=rw, rc=rc, Q=Q,
-                        kD=kD, c=c, S=S, e=e, **kwargs)
+                        kD=kD, c=c, S=S, screens=screens, top=top, bot=bot)
     s *= np.log(2.) / t
     return s.flatten()
 
-def solution(t=None, r=None, **kw):
+def solution(t=None, r=None, Q=None, D=None, kr=None, kz=None, c=None, Ss=None, screens=None, rw=None, rc=None, top=None, bot=None, **kw):
     """Return the multilayer transient solution Maas Hemker 1987
     
-    ts:  float or np.ndarray [d]
+    t:  float or np.ndarray [d]
         Time at which the dradown is to be computed
-    rs:  float or np.ndarray [m]
+    r:  float or np.ndarray [m]
         Vector of distances from the well center at which drawdown is computed
     kw: dict
      other required and superfluous arguments
@@ -336,26 +299,30 @@ def solution(t=None, r=None, **kw):
     or
     s[:, 0] for both r and t scalars
     """
-    if r[0] == 0.:
-        r = r[1:]
-        
-    t, r, kw = assert_input(t=t, r=r, **kw)
-    
-    n = len(kw['D'])
-    c = kw['c']
+    assert_input(D=D, kr=kr, kz=kz, Ss=Ss, c=c, screens=screens, top=top, bot=bot, **kw)
 
-    kw['c'] = np.hstack((0, c, 0))\
-        if len(c) == n - 1 else np.hstack((c, 0))\
-            if len(c) == n else c
-    
-    kw['c'][:-1] += 0.5 * (kw['D'] / kw['kz'])
-    kw['c'][1: ] += 0.5 * (kw['D'] / kw['kz'])
-    
-    
-    s = np.zeros(kw['shape'])
+    if np.isscalar(t): t = np.array([t])
+    if np.isscalar(r): r = np.array([r])
+    if r[0] == 0.: r=r[r:]
+    shape = (len(t), len(D), len(r))
+
+    # Add ctop aquitard if given separately
+    if 'cTop' in kw and kw['cTop'] is not None: # cTop
+        c[0] = kw['cTop']
+
+    # Add the vertical resistance of the layers to c
+    Ca = D / kz    
+    caq = 0.5 * (Ca[:-1] + 0.5 * Ca[1:])
+    nlay  = len(D)
+    if top == 'semi':
+        c[1:nlay + 1] += caq
+    else:
+        c[ :nlay    ] += caq
+        
+    s = np.zeros(shape)
     for it, t_ in enumerate(t):
         for ir, r_ in enumerate(r):
-            s[it, :, ir] = backtransform(t=t_, r=r_, **kw)
+            s[it, :, ir] = backtransform(t=t_, r=r_, rw=rw, rc=rc, Q=Q, kD=kr * D, c=c, S=Ss * D, screens=screens, top=top, bot=bot)
     return s # Drawdown s[it, il, ir]
 
 class Hemker1999:
@@ -366,24 +333,51 @@ class Hemker1999:
     possibily combined with solution for many points.
     """
     
-    def __init__(self, z0=0., rw=None, rc=None, D=None, kr=None, kz=None, c=None, Ss=None, e=None,
-                 topclosed=True, botclosed=True, **kw):
+    def __init__(self, z0=0., D=None, kr=None, kz=None, c=None, Ss=None,
+                 top=None, bot=None, **_):
         
         self.z0 = z0
-        self.rw = rw
-        self.rc = rc
         
-        self.assert_input(D=D, kr=kr, kz=kz, c=c, Ss=Ss, e=e, topclosed=topclosed, botclosed=botclosed)
+        self.assert_input(D=D, kr=kr, kz=kz, c=c, Ss=Ss, top=top, bot=bot)
         
         return
         
-    def simulate(self, t=None, r=None, Q=None):
+    def simulate_well(self, t=None, r=None, Q=None, rw=None, rc=None, screens=None):
         """Compute the drawdown for all t and r.
         
         The resulting array will be of size s[nt, nlay, nr]
+        
+        Parameters
+        ----------
+        t: int or np.ndarray of times
+            simulation times
+        r: float or np.ndarray of distances
+            distance from well center
+        Q: float
+            well extraction
+        rw: float
+            well radius
+        rc: float
+            equivalent caisson radius for well storage
+        screens: np.ndarray [-] length len(D)
+           screened aquifers indicated by 1 else 0
         """
-        if np.isscalar(t): t = np.array([t])
-        if np.isscalar(r): r = np.array([r])
+        self.rw, self.rc = rw, rc
+        
+        assert isinstance(screens, np.ndarray) and len(screens) == len(self.D), "screens must be np.ndarray of length self.D=={}".format(len(self.D))
+        screens[screens != 0] = 1
+        
+        E = np.diag(screens)[:, screens != 0]
+        assert np.all(E.T @ screens[:, np.newaxis] == np.ones(len(screens[screens > 0]))
+                      ), "E.T @ screens must be all ones"
+        self.screens, self.E = screens, E
+        
+        self.Ti = self.kD * screens # vector of floats
+        self.Tw = np.sum(self.Ti)
+        self.One = np.ones((np.sum(screens > 0), 1))
+        
+        t = np.array([t])
+        r = np.array([r])
         t, r = t.flatten(), r.flatten()
         assert isinstance(t, np.ndarray), "t must be a ndarray or a scalar !"
         assert isinstance(r, np.ndarray), "r must be a ndarray or a scalar !"
@@ -396,8 +390,8 @@ class Hemker1999:
                 s[it, :, ir] = self.backtransform(t=t_, r=r_, Q=Q)
         return s
 
-    def assert_input(self, D=None, kr=None, kz=None, c=None, e=None,
-                 Ss=None, topclosed=True, botclosed=False):
+    def assert_input(self, D=None, kr=None, kz=None, c=None,
+                 Ss=None, top=None, bot=None):
         """Check and set self parameters after verifying length of variables.
 
         Parameters
@@ -412,16 +406,12 @@ class Hemker1999:
             vertical hydraulic resistances 
         Ss:  np.ndarray [m2/d] of length n
             specific storage coefficients of aquifers
-        e: np.ndarray [-] length n
-           screened aquifers indicated by 1 else 0
-        topclosed: bool
-            True of aquifer system is closed on top.
-            Steady state may need topclosed = False.
-        botclosed: bool
-            True of aquifer system is closed at bottom.
-            Steady stage might need botclosed = False
+        top: str
+            'conf' or 'semi'
+        bot: str
+            'conf' or 'semi'
         """
-        for name, var in zip(['kr', 'kz', 'D', 'Ss', 'e'], [kr, kz, D, Ss, e]):
+        for name, var in zip(['kr', 'kz', 'D', 'Ss'], [kr, kz, D, Ss]):
             assert isinstance(var, np.ndarray), "{} not an np.ndarray".format(name)
         
         nlay = len(D)
@@ -445,27 +435,20 @@ class Hemker1999:
         c[:-1] += 0.5 * (D / kz)
         c[1: ] += 0.5 * (D / kz)
         
-        if topclosed: c[ 0] = np.inf
-        if botclosed: c[-1] = np.inf
+        if top == 'conf': c[ 0] = np.inf
+        if bot == 'conf': c[-1] = np.inf
 
         for name , v in zip(['D', 'kr', 'kz', 'c', 'Ss'], [D, kr, kz, c, Ss]):
             assert np.all(v >= 0.), "all {} must be >= 0.".format(name)
-
-        assert np.all(np.array([ee == 0 or ee == 1 for ee in e], dtype=bool)),\
-                   'All values in e must be 0 or 1'
                    
-        E = np.diag(e)[:, e != 0]
-        assert np.all(E.T @ e[:, np.newaxis] == np.ones(len(e[e > 0]))
-                      ), "E.T @ e must be all ones"
-
         # Below variables are added to self:
         self.nlay = nlay
         self.z = np.hstack((self.z0, self.z0 -  np.cumsum(D)))
 
         self.D, self.kr, self.kz, self.Ss = D, kr, kz, Ss
-        self.e, self.E = e, E
+        
         self.kD, self.c, self.S = D * kr, c, D * Ss
-        self.topclosed, self.botclosed = topclosed, botclosed
+        self.top, self.bot = top, bot
         
         # Used in analytical method laplace()
         self.T    = np.diag(self.kD)
@@ -476,13 +459,15 @@ class Hemker1999:
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", category=RuntimeWarning) # Division by zero ok
             self.Sm1  = np.diag(1 / self.S)
-        self.Ti = self.kD * e # vector of floats
-        self.Tw = np.sum(self.Ti)
-        self.One = np.ones((np.sum(e > 0), 1))
+            
+        # This is done in simulate because depends on e, the well
+        #self.Ti = self.kD * screens # vector of floats
+        #self.Tw = np.sum(self.Ti)
+        #self.One = np.ones((np.sum(screens > 0), 1))
         return
     
     def tau2t(self, tau=None, r=None):
-        """Return t when  dimensioinless tau is given.
+        """Return t when  dimensionless time tau is given.
         
         where tau = 1/u = 4 kD t  / (r **2 S)
         
@@ -514,9 +499,9 @@ class Hemker1999:
             B = - np.diag(aSt[ :-1] / c[ :-1] + aSt[1:] / c[1:], k=0)\
                 + np.diag(bSt[1:-1] / c[1:-1], k=+1)\
                 + np.diag(bSt[1:-1] / c[1:-1], k=-1)
-            if self.topclosed: # Don't need c[0] to be np.inf
+            if self.top == 'conf': # Don't need c[0] to be np.inf
                 B[0, 0]   = -1. / c[1]
-            if self.botclosed: # Don't need c[-1] to be np.inf
+            if self.bot == 'conf': # Don't need c[-1] to be np.inf
                 B[-1, -1] = -1. / c[-2]                
             self.B = B
 
@@ -555,7 +540,6 @@ class Hemker1999:
         # K0K1r = np.diag(sp.k0(r * np.sqrt(W.real)) / self.rw * np.sqrt(W.real) * sp.k1(self.rw * np.sqrt(W.real)))
         K0K1r = np.diag(sp.k0(r * np.sqrt(W.real)))
         
-
         U   = self.E.T @ V @ (np.eye(self.nlay) + p * C2 * K0K1r) @ Vm1 @ self.E
         Um1 = la.inv(U)
 
@@ -563,7 +547,7 @@ class Hemker1999:
 
         return s_.flatten() # Laplace drawdown s(p)
 
-    def backtransform(self, t, r, Q=None, **kwargs):
+    def backtransform(self, t, r, Q=None):
         """Return s(t, r) after backtransforming from Laplace solution.
 
         Parameters
@@ -582,11 +566,155 @@ class Hemker1999:
         s = np.zeros(self.nlay)
         for v, i in zip(vStehfest, range(1, len(vStehfest) + 1)):
             p = i * np.log(2.) / t
-            s += v * self.sLaplace(p=p, r=r, Q=Q, **kwargs)
+            s += v * self.sLaplace(p=p, r=r, Q=Q)
         s *= np.log(2.) / t
         return s.flatten()
 
-def hemk99numerically(t=None, r=None, z=None, rw=None, rc=None, c=None, GHB=None, topclosed=True, botclosed=True, **kw):
+class FdmAquifMdl:
+    """Setup a numerical axially symmetric Hemker aquifer system that
+    can simulate a well in a multi-layer aqufier system with well-bore
+    storage according to Hemker(1999) Journal of Hydrology.
+    
+    A single extraction is given, while the well can have multiple
+    screens. The head in all the screens will be the same.
+    
+    The well has a radicus rw, but there is also a caisson radius,
+    in which the water level fluctuates and causes well bore storage.
+    The area of this caisson is assumed to be circular with radius rc.
+    An adequate rc can be chosen to match the actual area.
+    
+    This class uses the finite dfiference model fdm3t in tools.fdm.fdm3t
+    module.
+    
+    The model should work with exactly the same inputs as the
+    analytical Hemker solution. This way, the numerical and analytical
+    solutions can be easily comopared.
+    
+    To achieve a central column of radius rw, the distance array r is adapted to 
+    
+    r = np.array([0, rw, r[r> rw]])
+    
+    To implement a multi screened well with a single head and single total extractiion, we set all cells of the well column to get kz = np.inf, and then kh=0 at the unscreenee parts 
+    and kh=np.inf in the screened parts.
+    
+    First set up the model, and then create a well, then simulate the model with the well
+    finally extract the data from the results.
+    """
+    def __init__(self, z0=None, d=None, D=None,
+                 c=None, kr=None, kz=None, Ss=None, top='conf', bot='conf', **kw):
+        """Return numerical axial FDM model object.
+        Parameters
+        ----------
+        zo: float
+            elevation of top of the system
+        d: None
+            all semi-confined layers including top and bottom have resistance but no thickness
+        D: np.array
+            thickness of aquifer (layers)
+        kr: np.array
+            horizontal hydraulic conductivities of the layers
+        kz: np.array
+            vertical hydraulic conductivities of the layers
+        c: np.ndaray
+            vertical resistances between the layers and the possible semi-pervious top and bottom.
+            len(c) == nlay if top == 'semi' or bot == 'semi'
+            len(c) == nlay + 1 if top == 'semi' and bot == 'semi'
+        Ss: np.ndarray
+            Specific storage of the layers
+        top, bot: str
+            top == 'conf' or 'semi', same for bot.
+        """
+        assert_input(z0=z0, D=D, kr=kr, kz=kz, c=c, Ss=Ss, top=top, bot=bot)
+        
+        assert d is None, "d must be None"
+        
+        self.top, self.bot = top, bot
+        self.z0, self.d, self.D = z0, d, D
+        self.kr, self.kz, self.c, self.Ss = kr, kz, c, Ss
+        
+        self.Nlay = len(self.D)
+        
+        self.Nc = self.Nlay - 1 + (top == 'semi') + (bot == 'semi')
+        assert self.Nc == len(self.c), f"len(c) != nc={self.Nc}"
+        assert self.Nc == len(c), f"len(c) != nc={self.Nc}, not top=='{top}' and bot='{bot}'"
+        
+        # Top and bottoms of the layers (no aquitards. Semi-perv. top and bottom have thickness zero)
+        self.z = self.z0 - np.hstack((0, np.cumsum(self.D)))
+                      
+    def simulate_well(self, t=None, r=None, Q=None, rw=None, rc=None, screens=None):
+        """Simulate a multi-screen well.
+        
+        Parameters
+        ----------
+        t: np.ndarray
+            the simulation times
+        r: np.ndarray
+            coordinates of vertical grid lines
+        Q: float
+            injection flow, negative for extraction
+        rw: float
+            well radius
+        rc: float
+            well caisson radius for well-bore storage
+        screens: ndarray of bool
+            indicates which layers are screened        
+        """
+        assert isinstance(screens, np.ndarray), "screens must be an 1D ndarray"
+        assert len(screens) == len(self.D), "len(screens) != self.gr.nlay!"
+        screens[screens != 0] == 1
+
+        r = np.hstack((0., rw, r[r > rw]))        
+        gr = Grid(r, None, self.z, axial=True)
+        E = screens[:, np.newaxis, np.newaxis] * np.ones((1, 1, gr.nx), dtype=int)
+    
+        # Cells that are screen or casing cells
+        screen = np.logical_and(gr.XM < rw, E)
+        casing = np.logical_and(gr.XM < rw, np.logical_not(E))
+        
+        kr = gr.const(self.kr)
+        kz = gr.const(self.kz)
+        Ss = gr.const(self.Ss)
+                
+        GHB = None
+        if self.top =='semi':
+            cells = self.gr.const(False); cells[0][1:] == True
+            cond = (self.gr.Area / (self.c[0] + 0.5 * self.D[0] / self.kz[0]))[1:]
+            GHB = gr.GHB(cells, h=0, cond=cond)
+            self.c = self.c[1:]
+        if self.bot == 'semi':
+            cells = gr.const(False); cells[-1][1:] == True
+            cond = (gr.Area / (self.c[-1] + 0.5 * self.D[-1] / self.kz[-1]))[1:]
+            ghb = gr.GHB(cells, h=0, cond=cond)
+            GHB = ghb if GHB is None else np.vstack((GHB, ghb))
+            self.c = self.c[:-1]
+        
+        c  = gr.const(self.c)
+        
+        kr[screen] = 1e+6
+        kr[casing] = 1e-6 
+        kz[screen] = 1e+6
+        kz[casing] = 1e+6 
+
+        Ss[:, 0, 0] = 1.0 * (rc / rw) ** 2 / self.D.sum()
+
+        kDscreen = screens * self.kr * self.D
+        kDwell   = np.sum(kDscreen)
+        
+        IBOUND = gr.const(1, dtype=int)
+
+        assert np.isscalar(Q), 'Q must be a scalar'
+
+        HI = gr.const(0.)           # Initial heads
+        FQ = gr.const(0.)      # Fixed flows
+        FQ[:, 0, 0] = Q * kDscreen / kDwell
+        # Run the finite difference model
+        out = fdm3t(gr=gr, t=t, kxyz=(kr, kr, kz), Ss=Ss, c=c, GHB=GHB,
+                FQ=FQ, HI=HI, IBOUND=IBOUND)
+        return out
+
+def hem99fdm(t=None, r=None, Q=None,
+             z0=None, D=None, kr=None, kz=None, c=None, Ss=None, screens=None, rw=None, rc=None,
+             top=None, bot=None, **_):
     """Setup and run an axially symmetric multilayer model with a multi-screen well in its center.
     
     The idea is to setup an axially symmetric finite difference model with minnimal input
@@ -602,7 +730,7 @@ def hemk99numerically(t=None, r=None, z=None, rw=None, rc=None, c=None, GHB=None
     r = np.array([0, rw, r[r> rw]])
     
     To implement a multi screened well with a single head and single total extractiion, we set
-    all cells of the well column to get kv = np.inf, and then kh=0 at the unscreenee parts 
+    all cells of the well column to get kz = np.inf, and then kh=0 at the unscreenee parts 
     and kh=np.inf in the screened parts.
 
     The outputs can be readily interpolated to get them for specific times, distances and and model layers or even z values.
@@ -614,91 +742,87 @@ def hemk99numerically(t=None, r=None, z=None, rw=None, rc=None, c=None, GHB=None
         simulation times
     r: np.array
         distances from center of well. It will be adapted to [0, rw, r[r>rw]]
-    z: np.array
-       elevation of layer planes (tops and bottoms in one array)
+    Q: float
+        well injection rate (extraction negative)
+    z0: flaot
+       elevation of top of model
+    D : np.ndarray
+        Thickness of the model layers
+    kw: np.ndarray
+        horizontal conductivity of the model layers 
+    kz: np.ndarray
+        vertical conductivity of the model layers
+    c : np.ndaray
+        vertical resistances between the layers
+        len(c) == len(D) - 1 if top='conf' and bot == 'conf'
+        len(c) == len(D) + 1 if top='semi' and bot == 'semi'
+        len(c) == len(D) if top == 'semi' or bot == 'semi' but not both
+    Ss: np.ndarray
+        Specific storage coefficients of the layers
+    Screens: np.ndarray of ones and zeros
+        Indicates by 1 which layers are screenen and by 0 unscreened
     rw: float
         well radius
     rc: float
         radius of well bore storage, used to calculation Ss in top well cell.
-    c: np.ndaray
-        vertical resistances between the layers (nlay - 1, nrow, ncol).
-    ghb: tuple (cells, hds, cond)
-        defines general head boundaries.
-        Cells is boolean, telling which cells have general head  boundaries connected.
-        hds is a ull np.ndarray of heads, or an 1d arrays corresponding to the Trues in the cells array
-        of a sclar, if all ghb heads are the same.
-        cond is a full np.ndarray of condunctances or a 1d array corr. to the Trues in cells
-        or a scalar if all conductances are the same.
-    topclosed, botclosed: bool
-        if False then IBOUND becomes -1 instead of 1
+    top: 'semi' or 'conf'
+        boundary above top layer
+    bot: 'semi' or 'conf'
+        boundary below bottom layer
     """
-    t, r, kw = assert_input(t=t, r=r, c=c, **kw)
+    assert_input(z0=z0, D=D, kr=kr, kz=kz, c=c, Ss=Ss, top=top, bot=bot)
         
     r = np.hstack((0., rw, r[r > rw]))
-    
-    gr = Grid(r, None, kw['z'], axial=True)
+    z = np.hstack((z0, z0 -  np.cumsum(D)))
+    gr = Grid(r, None, z, axial=True)
     
     IBOUND = gr.const(1, dtype=int) # No fixed heads
-    #if not topclosed:
-    #    IBOUND[0,  :, 1:] = -1  # If top has fixed heads
-    #if not botclosed:
-    #    IBOUND[-1, :, 1:] = -1  # If bottom has fixed heads
         
     # Well screen array
-    e = kw['e'][:, np.newaxis, np.newaxis] #  * np.ones((1, gr.nx))
-    E = e * np.ones((1, gr.nx), dtype=int)
+    assert isinstance(screens, np.ndarray) and len(screens) == len(D), f"screens must be ndaray of lenght {len(D)} containing only ones and zeros"
+    E = screens[:, np.newaxis, np.newaxis] * np.ones((1, gr.nx), dtype=int)
+    
+    # Distribute the extraction of the screended parts of the well (useful, but necesary) because
+    # kz=np.inf in the entire well and
+    # kh=0 in cased parts and kh=np.inf in screened parts of the well.
+    kDscreen = screens * kr * D
+    kDwell   = np.sum(kDscreen)
     
     # Cells that are screen or casing cells
     screen = np.logical_and(gr.XM < rw,     E)
     casing = np.logical_and(gr.XM < rw, np.logical_not(E))
     
     # No horizontal flow in casing, vertical flow in screen and casing
-    kr = gr.const(kw['kr']); kr[screen] = 1e+6; kr[casing]=1e-6 # inside well
-    kz = gr.const(kw['kz']); kz[screen] = 1e+6; kz[casing]=1e+6 # inside well
+    kr = gr.const(kr); kr[screen] = 1e+6; kr[casing]=1e-6 # inside well
+    kz = gr.const(kz); kz[screen] = 1e+6; kz[casing]=1e+6 # inside well
     
-    # Resistance between model layers
-    if kw['c'] is not None:
-        c  = gr.const(kw['c'][:, np.newaxis, np.newaxis])
-        c[:, :, gr.xm < rw] = 0. # No resistance in well
-    else:
-        c is None
-   
-    if not topclosed:
+    # Resistance between model layers is added in assert_input(kw)
+    GHB = None
+    if top == 'semi':
         cells = gr.const(0, dtype=bool)
         cells[0, :, 1:] = True
-        cond = 0.5 * gr.DZ / kz * gr.AREA
-        if GHB is None:
-            GHB = gr.GHB(cells, 0, cond[cells])
-        else:
-            GHB = np.vstack(GHB, gr.GHB(cells, 0, cond[cells]))
-    if not botclosed:
+        cond = gr.Area / (c[0] + 0.5 * gr.DZ[0] / kz[0])
+        GHB = gr.GHB(cells, h=0, cond=cond[1:])
+    if bot == 'semi':
         cells = gr.const(0, dtyp=bool)
-        cells[-1] = True
-        cond = 0.5 * gr.DZ / kz * gr.AREA
-        if GHB is None:
-            GHB = gr.GHB(cells, 0, cond[cells])
-        else:
-            GHB = np.vstack(GHB, gr.GHB(cells, 0, cond[cells]))
+        cells[-1, : 1:] = True
+        cond = gr.Area / (c[-1]+ 0.5 * gr.DZ[-1] / kz[-1])
+        ghb = gr.GHB(cells, h=0, cond=cond[1:])
+        GHB = ghb if GHB is None else np.vstack((ghb, GHB))
+    
+    c = gr.const(c)
     
     # Storage and well bore storage
-    Ss = gr.const(kw['Ss'][:, np.newaxis, np.newaxis])
-    Ss[0, 0, 0] = (rc / rw) ** 2 / gr.DZ[0, 0, 0] # Well bore storage (top well cell) # Well bore storage
+    Ss = gr.const(Ss[:, np.newaxis, np.newaxis])
+    Ss[:, 0, 0] = (rc / rw) ** 2 / np.sum(D) # Well bore storage divided over entire aquifer
     
     # Initial heads and fixed flows
     HI = gr.const(0.) # Initial heads
     FQ = gr.const(0.) # Fixed flows
     
     # Extraction of multi-screened well
-    assert np.isscalar(kw['Q']), "Q must be a scalar see kw['Q']"
-    
-    # Distribute the extraction of the screended parts of the well
-    # according to the local layer kD and the total well kD.
-    # Note that this is usefull in general, but strictly not necessary here due to
-    # setting kv=np.inf in the entire well and
-    # kh=0 in cased parts and kh=np.inf in screened parts of the well.
-    kDscreen = kw['e'] * kw['kr'] * kw['D']
-    kDwell   = np.sum(kDscreen)
-    FQ[:, 0, 0] = kw['Q'] * kDscreen / kDwell # Distribute Q over the whole screened part of the well.
+    assert np.isscalar(Q)
+    FQ[:, 0, 0] = Q * kDscreen / kDwell # Distribute Q over the whole screened part of the well.
     
     # Run the finite difference model
     out = fdm3t(gr=gr, t=t, kxyz=(kr, kr, kz), Ss=Ss, c=c, GHB=GHB,
@@ -898,30 +1022,188 @@ def showPhi(fdm3t=None, t=None, r=None, z=None, IL=None, method=None,
     ax.legend(loc='best')
     return PhiI, ax
 
-def test0(kw):
-    """Simultate using analytic class Hemker1999 checking the two analytic implementations
+
+def ttimz(z0=0., d=None, D=None, top='conf'):
+    """Return top and bottof of aquifers including top aquitard if topclosed==False.
     
-    For the parameters see the cases[case] for this example.
+    Parameters
+    ----------
+    z0: float, optional
+        top elevation of the layer system
+    d: sequence of floats or None
+        thicknesses of the aquitards (zeros allowed) or None instead.
+    D: sequence of floats
+        thicknesses of the aquifers (zeros not allowed)
+    top: 'conf' or 'semi'
+        boundary condition above top layer
+    'bot': 'conf' or 'semi'
+        boundary condtion below the bottom layer
+        Has no effect in ttim, 'bot' is always 'conf'.
+    Returns
+    -------
+    vector of the tops and bottoms of the aquifers.
+    In case len(d) == len(D) - 1, the top is confined (topclosed=True)
+    In case len(d) == len(D) the top is semi-confined. The top d is then
+    the thickness of the top aquitard.
     """
-    # Use class implementation
-    test1 = Hemker1999(**kw)
-    sclass  = test1.simulate(kw['t'], kw['r'], kw['Q'])
+    if d is not None:
+        if top == 'conf':
+            assert len(d) == len(D) - 1
+        elif top == 'conf':
+            assert len(d) == len(D)
+        else:
+            raise ValueError("top must be 'conf' or 'semi'")
+    else:
+        d = np.zeros(len(D))
+        
+    if len(d) == len(D) - 1:
+        d = np.hstack((0., d))
+        
+    assert np.isscalar(z0), 'z0 (top of model elevation) must be a scalar.'
     
-    # Using function implementation
-    sfunc  = solution(**kw)
+    z = z0 - np.hstack((0., np.cumsum(np.array([z for t in zip(d, D) for z in t]))))
+    if top == 'conf':
+        z = z[1:]
+    return z
+
+def ttimc(c=None, kz=None, D=None, top='conf'):        
+    """Return proper c-arrray for ttim ModelMaq.
     
-    assert np.all(np.isclose(sclass, sfunc)), "Test failed: not all sa == sb !"
+    Parameters
+    ----------
+    c: None, or scalar or sequence
+        The aquitard resistances including top semi-confined layer
+        if topclosed==False.
+    kz: np.ndarray
+        vertical aquifer conductances
+    D: np.ndarray
+        aquifer thicknesses
+    top: 'conf' or 'semi'
+        boundary type above top layer
+    """
+    assert top == 'semi' or top == 'conf', "'top' must be 'semi' or 'conf'"
     
+    if top == 'semi':
+        assert len(c) == len(D),\
+            "top' == 'semi' len(c) must equal len(D) else len(c) must equal len(D) - 1"
+      
+    caq = np.zeros(len(D)) if kz is None else D / kz
+    caq = 0.5 * (caq[:-1] + caq[1:])
+    
+    if top == 'semi':
+        c[1:] += caq
+    else:
+        c += caq
+        c += caq
+    return c
+
+
+class ttimmdl:
+    
+    def __init__(self, z0=0., d=None, D=None, kr=None, kz=None, c=None, Ss=None, top=None, bot=None,
+           tmin=1e-5, tmax=1e3, M=10, **_):
+        """Use ttim to simulate analytically.
+
+        ttim.ModelMaq(
+            kaq: Any = 1, z: Any = [1, 0],
+            c: Any = [],
+            Saq: Any = [0.001],
+            Sll: Any = [0], poraq: Any = [0.3],
+            porll: Any = [0.3],
+            topboundary: str = 'conf' | 'semi',
+            phreatictop: bool = False,
+            tmin: int = 1,
+            tmax: int = 10,
+            tstart: int = 0,
+            M: int = 10, # number of coefficiens in Laplace back transformation
+        timmlmodel: Any | None = None) -> None
+        """
+        phreatictop=False
+        self.D = D
+
+        c = ttimc(c=c, D=D, kz=kz, top=top)
+        z = ttimz(z0=z0, d=d, D=D, top=top)
+
+        self.mdl = ttim.ModelMaq(kaq=kr, z=z, Saq=Ss, c=c, 
+                        phreatictop=phreatictop, tmin=tmin, tmax=tmax, M=M)
+
+
+    def simulate_well(self, t=None, r=None, Q=None, screens=None, rw=None, rc=None):
+        """Return heads of simulated well at x,y = 0.0.
+        
+        Parameters
+        ----------
+        t: float or np.ndarray
+            simulation times
+        r: float or np.ndarray
+            distances from the well center
+        Q: float
+            total well extraction
+        screens: np.ndarray of zeros and ones
+            ones indicate which layers are screened
+        rw: float
+            well radius
+        rc: float
+            equivalent caisson radius, to compute wellbore storage
+        """
+        screens = np.arange(len(self.D), dtype=int)[screens > 0]
+        
+        _ = ttim.Well(self.mdl, xw=0., yw=0., rw=rw, rc=rc,
+                          tsandQ=[(0, -Q)], layers=screens)
+        self.mdl.solve()
+
+        if np.isscalar(r):
+            return self.mdl.head(x=r, y=0, t=t)
+        else:
+            return self.mdl.headalongline(x=r, y=0, t=t)
+
+def test0(kw):
+    """Compare numeric and analytical results
+    for parameters in cases['test0']
+    """
+    
+    for name in ['D', 'kr', 'kz', 'c', 'Ss', 'screens', 'rw', 'rc', 'top', 'bot']:
+        if name not in kw:
+            raise ValueError(f"{name} not in input (kw)")
+    
+    t = np.logspace(-1, 4, 91)
+    r = [1, 10, 100]
+    Q = 1000.
+    rw, rc, screens = kw['rw'], kw['rc'], kw['screens']
+    
+    # Use analytic class implementation =================================================
+    hem1 = Hemker1999(**kw)
+    sclass  = hem1.simulate_well(t=t, r=r, Q=Q, rw=rw, rc=rc, screens=screens)
+    
+    # Using analytic function implementation ============================================
+    sfunc  = solution(t=t, r=r, Q=Q, **kw)
+    
+    # Using ttim  =============================================================
+    tim1 = ttimmdl(M=len(vStehfest), tmin=t[0], tmax=t[-1], **kw)
+    sttim = tim1.simulate_well(t=t, r=r, Q=Q, rw=rw, rc=rc, screens=screens)
+
+    # Fdm as function implementation =========================================
+    R = np.logspace(-1, 6, 71)
+    out = hem99fdm(t=t, r=R, Q=Q, **kw)
+    PhiFdmFunc = interpolate(out, t=None, r=r)
+
+    ## Fdm as class ============================================================
+    fdmmdl = FdmAquifMdl(**kw)
+    out = fdmmdl.simulate_well(t=t, r=R, Q=Q, rw=rw, rc=rc, screens=screens)
+    PhiFdmClass  = interpolate(out, t=None, r=r)
+    #
     ax = newfig(kw['title'], 'time [d]', 's [m]', xscale='log')
     cc = color_cycler()
-    for ir, r in enumerate(kw['r']):
+    for ir, r in enumerate(r):
         clr = next(cc)
         for iL in range(len(kw['D'])):
-            ax.plot(kw['t'], sclass[:, iL, ir], '-', color=clr, label='s_class, iL={}, r = {:.3g} m'.format(iL, r))
-            ax.plot(kw['t'], sfunc[ :, iL, ir], '.', color=clr, label='s_func , iL={}, r = {:.3g} m'.format(iL, r))
+            ax.plot(t, sclass[:, iL, ir], '-', color=clr, label=f'scl, iL={iL}, r = {r:.3g} m')
+            ax.plot(t, sfunc[ :, iL, ir], '+', color=clr, label=f'sfu, iL={iL}, r = {r:.3g} m')
+            ax.plot(t, sttim[ iL, :, ir], 'x', color=clr, label=f'stt, iL={iL}, r = {r:.3g} m')            
+            ax.plot(t, PhiFdmFunc[:, iL, ir], 'o', color=clr, label=f'sfdmf, il={iL}, r = {r:.3g} m')
+            ax.plot(t, PhiFdmClass[:, iL, ir], '.', color=clr, label=f'fdmc, il={iL}, r = {r:.3g} m')
+            ax.plot(t, PhiFdmClass[:, iL, ir], '.', color='y')
     ax.legend(loc='lower right')
-    
-    print("Done, test succeeded, all sa == sb !")
 
 def test1(kw):
     """Simulate Theis in a 4L numerical model and visualize it with showPhi in different four ways.
@@ -953,7 +1235,7 @@ def test1(kw):
         kw['t'] = t
         
         sa  = hem.simulate(t=t,r=r_, Q=kw['Q'])
-        out = hemk99numerically(**kw)
+        out = hem99fdm(**kw)
         
         PhiI = interpolate(out, t=None, r=r_, z=None, IL=None)
         cc = color_cycler()
@@ -998,24 +1280,32 @@ def boulton_analytical(kw):
     
     TAUMIN = 0.1 # below which Stehfest breaks (tested experimentally, N Stehfest = 16, is best)
     
-    r_ = kw['r_']     
+    assert_input(kw)
+  
+    r_ = kw['r_']    
+  
     kD = (kw['kr'] * kw['D'])[-1]
     Q  = 4 * np.pi * kD
     kw['Q'] = Q
+    
     S  = kw['Ss'] * kw['D']
     Sy, SA = S[0], S[1]
+    
     tauA = kw['tau']
     tauB = tauA * SA / (Sy + SA)
+    
     kw['t'] = r_  ** 2 * SA * tauA / (4 * kD) 
     
     # rho = r_ over B values used by Hemker (1999)
-    r_B = np.array([0.01, 0.1, 0.2, 0.4, 0.6,
+    rhos = np.array([0.01, 0.1, 0.2, 0.4, 0.6,
                          0.8, 1.0, 1.5, 2.0, 2.5, 3.0])
+    rhos = np.array([0.01, 1.0, 1.5, 3.])
     
     # xlim, ylim = None, None # reveal Stehfest breaks down for small tau
     xlim, ylim = (0.8 * TAUMIN, 1e9), (1e-4, 1e2)
     
-    ax = newfig(kw['title'] + r', N-Stehfest={}, $T=r^2 S_A/(4 kD)={:.4g} d$'.format(len(vStehfest), r_ ** 2 * SA / (3 * kD)),
+    ax = newfig(kw['title'] + r'N-Stehfest={}, $T=r^2 S_A/(4 kD)={:.4g} d$'.
+                format(len(vStehfest), r_ ** 2 * SA / (3 * kD)),
                 r"$\tau = 4 kD t / (r^2 S)$",
                 r"$(4 \pi kD) / Q s$",
                 xscale='log', yscale='log',
@@ -1027,13 +1317,16 @@ def boulton_analytical(kw):
     
     cc = color_cycler()
     kw['r'] = np.array([r_])
-    for rho in r_B:
+    for rho in rhos:
         color = next(cc)
-        c  = (r_ / rho) ** 2 / kD
-        kw['c'] = np.array([c])
+        c = np.zeros(len(kw['D']) - 1)
+        c[0]  = (r_ / rho) ** 2 / kD
+        kw['c'] = c
+        kw['r'] = [r_]
             
         # Using the function
         sb  = solution(**kw)
+        
         # Using the class
         h99obj = Hemker1999(**kw)        
         t = kw['t']
@@ -1041,27 +1334,28 @@ def boulton_analytical(kw):
         t = h99obj.tau2t(r=r_, tau=tau)
     
         sa  = h99obj.simulate(t, r_, Q)
-    
-        # TODO assert np.all(np.isclose(sa.ravel() / sb.ravel(), 1, atol = 0.0001)), "Test failed: not all sa == sb !"
         
-        if rho in [0.01, 1.0, 1.5, 3.]:
-            lbl = 'r/B = {:.4g}'.format(rho)
-            lw = 2.
-        else:
-            lbl = ''
-            color = 'k'
-            lw = 0.25                
+        # Using fdm
+        fdmmdl = FdmAquifMdl(**kw)
+        fdmwell = FdmWell(fdmmdl, **kw)
+        out = fdmwell.simulate(t=kw['t'], Q=kw['Q'])
+        hfdm  = out['Phi'][:, 0, :]
+
+        # using ttim simulation
+        httim = ttmmdl(**kw)
+        
+        lbl = f'r/B = {rho:.4g}'
+        lc = line_cycler()
         for il in range(h99obj.nlay):
-            marker = 'x' if il == 0 else '+'
-            if lbl:
-                label = lbl + ', layer={}'.format(il)
-            else:
-                label = ''
-            ax.plot(tau[tau > TAUMIN], sa[:, il, 0][tau > TAUMIN], 
-                    marker=marker, color=color, lw=0.5,
-                    label=label)
-            ax.plot(tau[tau > TAUMIN], sb[:, il, 0][tau > TAUMIN], '-',
-                    color=color, lw=0.5)
+            ls = next(lc)
+            ax.plot(tau[tau > TAUMIN], ls, sa[:, il, 0][tau > TAUMIN], 
+                    color=color, label='sa ' + lbl)
+            ax.plot(tau[tau > TAUMIN], ls, sb[:, il, 0][tau > TAUMIN],
+                    color=color, label='sb ' + lbl)
+            ax.plot(tau[tau > TAUMIN], ls, hfdm[tau > TAUMIN, il, 0],
+                    color=color, label='fdm ' + lbl)
+            ax.plot(tau[tau > TAUMIN], ls, httim[il][tau > TAUMIN],
+                    color=color, abel='ttm ' + lbl)
         
     ax.legend(loc='lower right')
     print("Done, test succeeded !")
@@ -1082,14 +1376,14 @@ def h99_F07_Szeleky(kw):
         kw['t'] = tau * r_ ** 2 * S / (4 * kD)
         kw['rc'] = kw['rw']
         
-        out = hemk99numerically(**kw)
+        out = hem99fdm(**kw)
         PhiI = interpolate(out, t=None, r=r_, z=None, IL=None)
             
         for il in [3]:
             ax.plot(tau, PhiI[:, il, 0], '-', label='rc={:.4g} r = {:.4g} m, layer = {}'.format(kw['rc'],r_, il))
         
         kw['rc'] = 0.0    
-        out = hemk99numerically(**kw)
+        out = hem99fdm(**kw)
         PhiI = interpolate(out, t=None, r=r_, z=None, IL=None)
     
         for il in [3]:
@@ -1105,7 +1399,7 @@ def h99_F07_Szeleky(kw):
 def h99_f11(kw):
     """Simulate and return figure 11 in Hemker(1999)."""
     
-    etop, ebot = kw['e']
+    etop, ebot = kw['screens']
     D  = np.sum(kw['D'])
     kD = np.sum(kw['kr'] * kw['D'])
     S  = np.sum(kw['D'] * kw['Ss'])
@@ -1115,12 +1409,12 @@ def h99_f11(kw):
     tau = np.logspace(-3, 5, 81) # A is aquifer (layer 1)
     
     kw['t'] = r_  ** 2 * S * kw['tau'] / (4 * kD)
-    kw['e'] = etop
-    out = hemk99numerically(**kw)
+    kw['screens'] = etop
+    out = hem99fdm(**kw)
     PhiItop = interpolate(out, t=None, r=[r_], z=None, IL=None)
 
-    kw['e'] = ebot
-    out = hemk99numerically(**kw)
+    kw['screens'] = ebot
+    out = hem99fdm(**kw)
     PhiIbot = interpolate(out, t=None, r=[r_], z=None, IL=None)
     
     title = ('Drawdown responses to a partially penetrating well\n' +
@@ -1188,7 +1482,7 @@ def Hantush(kw):
         hem = Hemker1999(**kw)
         sa = hem.simulate(t=kw['t'], r=rho * B, Q=kw['Q'])
         
-        out = hemk99numerically(**kw) # using correct c
+        out = hem99fdm(**kw) # using correct c
             
         # Interpolate numerical to set of times layers and distances:
         PhiI = interpolate(out, t=None, r=rho * B, z=None, IL=None, method='linear')
@@ -1266,7 +1560,7 @@ def h99_F2_Boulton(kw):
         B = r_ / rho
         kw['c'][0] = np.array([B ** 2 / kD])
         kw['r'] = rNum
-        out = hemk99numerically(**kw) # using correct c
+        out = hem99fdm(**kw) # using correct c
         
         # Analytisch:
         kw['r'] = rho * B
@@ -1337,7 +1631,7 @@ def h99_F3(kw):
         kw['t'] = r_  ** 2 * SA * tau / (4 * kD)
         
         # Numemrical
-        out = hemk99numerically(**kw)
+        out = hem99fdm(**kw)
         PhiI = interpolate(out, t=None, r=r_, z=None, IL=None)
         ax1.plot(tau, PhiI[:,  1, 0], '-', label=r'numerical: lay=  1, $\gamma$={:.4g}, r/B={:.4g}'.format(gamma, r_/B))
         ax2.plot(tau, PhiI[:, 20, 0], '-', label=r'numerical: lay= 20, $\gamma$={:.4g}, r/B={:.4g}'.format(gamma, r_/B))
@@ -1387,7 +1681,7 @@ def h99_F6(kw):
             rw = r / rrw    
             kw['rw'], kw['rc'] = rw, rw
             kw['t'] = r  ** 2 * S * tau / (4 * kD)
-            out = hemk99numerically(**kw)
+            out = hem99fdm(**kw)
             PhiI = interpolate(out, t=None, r= r, z=None, IL=None)
             ax.plot(tau, PhiI[:, 1, 0], ls, color=color,
                     label='numerical: r/rw={:.4g}, r/D = {:.4g}, r={:.4g} m, rw={:.4g} m'.format(rrw, rd, r, rw))
@@ -1440,7 +1734,7 @@ def boulton_well_storage(kw):
             
             kw['t'] = r_  ** 2 * SA * tauA / (4 * kD) 
             
-            out = hemk99numerically(**kw)
+            out = hem99fdm(**kw)
         
             PhiI = interpolate(out, t=None, r= r_, z=None, IL=None)
             
@@ -1453,30 +1747,22 @@ def boulton_well_storage(kw):
 
 cases ={ # Numbers refer to Hemker Maas (1987 figs 2 and 3)
     'test0': {
-        'comment': """Test to see that the analytic solution computed
-        with the implemented functions yields the same results as the
-        one implemented in a class. The test succeeds.
-        
-        r times and 3 distances are used with a 4 layer model.
+        'comment': """Test comparing analytic and numeric results
         """,
         'title': """Compare both analytical implementations.
         They are the same, but Stehfest fails at large times.""",
-        't':  np.logspace(-3, 4, 71),
         'tau': None,
-        'r': np.array([1., 10., 100.]), 
         'z0': 0.,
         'rw': 0.1,
-        'rc': 10.,
-        'Q' : 1.0e+3,
+        'rc': 0.1,
         'D' : np.array([10., 10., 10., 10.]),
         'kr' : np.array([1e-6, 10., 10., 10.]),        
         'kz': np.array([ 10., 10., 10., 10.]),
         'Ss': np.array([1., 1., 1., 1.,]) * 1e-6,
         'c' : np.array([1., 0., 0.,]),
-        'e' : np.array([0, 1, 1, 1]),
-        'topclosed': True,
-        'botclosed': True,
-        'label': 'Test input',
+        'screens' : np.array([0, 1, 1, 1]),
+        'top': 'conf',
+        'bot': 'conf',
         },
     'test1': {
         'comment': """Simulate Theis in a 4L numerical model with fully penetrating well and visualize it with showPhi in different four ways.
@@ -1492,7 +1778,7 @@ cases ={ # Numbers refer to Hemker Maas (1987 figs 2 and 3)
         'kz': np.array([ 1.,  1.,  1.,  1.]),
         'Ss': np.array([ 1.,  1.,  1.,  1.,]) * 1e-5,
         'c' : np.array([ 0.,  0.,  0.,]),
-        'e' : np.array([ 1,   1,   1,   1]),
+        'screens' : np.array([ 1,   1,   1,   1]),
         'topclosed': True,
         'botclosed': True,
         'label': 'Test input',
@@ -1518,7 +1804,7 @@ cases ={ # Numbers refer to Hemker Maas (1987 figs 2 and 3)
         'kz': np.array([1e+6, 1e+6]),
         'Ss': np.array([1e-1, 1e-6]),
         'c' : None,
-        'e':  np.array([0, 1]),
+        'screens':  np.array([0, 1]),
         'topclosed': True,
         'botclosed': True,
         'label': 'Boulton (1963)',
@@ -1539,7 +1825,7 @@ cases ={ # Numbers refer to Hemker Maas (1987 figs 2 and 3)
         'kz': np.array([1e+6, 1e+6]),
         'Ss': np.array([1e-1, 1e-6]),
         'c' : np.array([9e+3]),
-        'e':  np.array([0., 1]),
+        'screens':  np.array([0., 1]),
         'topclosed': False,
         'botclosed': True,
         'label': 'Hantush (1955)',
@@ -1581,7 +1867,7 @@ cases ={ # Numbers refer to Hemker Maas (1987 figs 2 and 3)
         'kz': np.array([1e+6, 1e+6]),
         'Ss': np.array([1e-1, 1e-6]),
         'c' : None,
-        'e':  np.array([0, 1]),
+        'screens':  np.array([0, 1]),
         'topclosed': True,
         'botclosed': True,
         'label': 'Boulton (1963)',
@@ -1621,7 +1907,7 @@ cases ={ # Numbers refer to Hemker Maas (1987 figs 2 and 3)
         'kr': np.hstack((1e-6, np.ones(20))),
         'kz': np.hstack((1e+6, np.ones(20) * 1e-2)),
         'Ss': np.hstack((1e-1, np.ones(20) * 1e-4)), 
-        'e':  np.hstack((0, np.ones(20, dtype=int))),
+        'screens':  np.hstack((0, np.ones(20, dtype=int))),
         'topclosed': True,
         'botclosed': True,
         'label': 'Moench (1995/95)',
@@ -1661,7 +1947,7 @@ cases ={ # Numbers refer to Hemker Maas (1987 figs 2 and 3)
         'kr': np.hstack((1e-6, np.ones(20))),
         'kz': np.hstack((1e+6, np.ones(20) * 1e-2)),
         'Ss': np.hstack((1e-1, np.ones(20) * 1e-4)), 
-        'e':  np.hstack((0, np.ones(5, dtype=int), np.zeros(15, dtype=int))), # partially penetrating well
+        'screens':  np.hstack((0, np.ones(5, dtype=int), np.zeros(15, dtype=int))), # partially penetrating well
         'topclosed': True,
         'botclosed': True,
         'label': 'Moench (1995/95)',
@@ -1680,7 +1966,7 @@ cases ={ # Numbers refer to Hemker Maas (1987 figs 2 and 3)
         'kz': np.array([   10, 10]),
         'Ss': np.array([   10, 1e-4]),
         'c' : np.array([100]),
-        'e':  np.array([0, 1]), # Upper or Lower Layer is screened
+        'screens':  np.array([0, 1]), # Upper or Lower Layer is screened
         'topclosed': True,
         'botclosed': True,
         'label': 'Boulton (19??)',
@@ -1699,7 +1985,7 @@ cases ={ # Numbers refer to Hemker Maas (1987 figs 2 and 3)
         'kz': np.array([1.0, 1.0, 1.0, 1.0, 1.0]),
         'Ss': np.array([7., 5., 3.5, 2.5, 2.]) * 1e-5,
         'c' : None,
-        'e':  np.array([[1, 0, 0, 0, 0], [0, 0, 0, 0, 1]]), # Upper or Lower Layer is screened
+        'screens':  np.array([[1, 0, 0, 0, 0], [0, 0, 0, 0, 1]]), # Upper or Lower Layer is screened
         'topclosed': True,
         'botclosed': True,
         'label': 'Boulton (19??)',
@@ -1724,7 +2010,7 @@ cases ={ # Numbers refer to Hemker Maas (1987 figs 2 and 3)
         'kz': np.ones(5) * 1e-1,
         'Ss': np.ones(5) * 0.2e-3, 
         'c' : None, # depends on gamma
-        'e':  np.array([1, 1, 1, 0, 0], dtype=int),
+        'screens':  np.array([1, 1, 1, 0, 0], dtype=int),
         'epsilon' : 1.,
         'topclosed': False,
         'botclosed': True,
@@ -1760,7 +2046,7 @@ cases ={ # Numbers refer to Hemker Maas (1987 figs 2 and 3)
         'kz': np.array([10., 10.,  1.,  1.]) * 1e-1,
         'Ss': np.array([10., 10.,  1.,  1.]) * 1e-5,            
         'c' : None,
-        'e' : np.array([1, 0, 0, 0]),
+        'screens' : np.array([1, 0, 0, 0]),
         'topclosed': True,
         'botclosed': True,
         'label': 'Székely (95)',
@@ -1782,7 +2068,7 @@ cases ={ # Numbers refer to Hemker Maas (1987 figs 2 and 3)
         'kr': np.array([10., 10., 10., 10., 10.]),
         'kz': np.array([1.0, 1.0, 1.0, 1.0, 1.0]),
         'Ss': np.array([7., 5., 3.5, 2.5, 2.]) * 1e-5, # [/m]        
-        'e' :  np.array([[1, 0, 0, 0, 0], [0, 0, 0, 0, 1]]), # Upper or lower Layer is screened        
+        'screens' :  np.array([[1, 0, 0, 0, 0], [0, 0, 0, 0, 1]]), # Upper or lower Layer is screened        
         'topclosed': True,
         'botclosed': True,
         'label': 'Hemker (1999) fig 11',
@@ -1791,14 +2077,14 @@ cases ={ # Numbers refer to Hemker Maas (1987 figs 2 and 3)
  
 if __name__ == "__main__":
       
-    #test0(cases['test0']) # ok
+    test0(cases['test0']) # ok
     #test1(cases['test1']) # ok
     #boulton_analytical(cases['boulton_analytical']) # ok
     #Hantush(cases['Hantush']) # ok
     #h99_F2_Boulton(cases['Boulton']) # ok
     #h99_F3(cases['H99 F3 Moench']) # ok
     #h99_F3(cases['H99 F4 Moench']) # ok
-    h99_F6(cases['H99 F6 well bore storage ppw']) # not yet ok, but looks a bit like in the paper
+    #h99_F6(cases['H99 F6 well bore storage ppw']) # not yet ok, but looks a bit like in the paper
     #boulton_well_storage(cases['Boulton Well Bore Storage']) # ok
     #h99_f11(cases['H99_F11']) # ok note that tau uses 4 kD / (r^2 S) t while Hemker kD / (r^2 S) t
     #h99_F07_Szeleky(cases['H99_F7 Szeleky']) #ok

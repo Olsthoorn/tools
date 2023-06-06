@@ -22,7 +22,7 @@ from scipy.special import exp1, k0
 from scipy.interpolate import interp1d, RegularGridInterpolator
 from scipy.sparse.linalg import spsolve # to use its short name
 from matplotlib import colors
-from analytic.hantush_conv import Wh
+from analytic.hantush_convolution import Wh
 from etc import newfig, color_cycler
 
 from fdm.mfgrid import Grid
@@ -111,7 +111,7 @@ def fdm3t(gr=None, t=None, kxyz=None, c=None, Ss=None, GHB=None,
         if isinstance(c, np.ndarray):
             if not np.all(c.shape == (gr.nlay -1, gr.ny, gr.nx)):
                 raise AssertionError("shape c ({0}) should be {1}".
-                                 format(c.shape, (gr.nlay, gr.ny, gr.nx)))
+                                 format(c.shape, (gr.nlay - 1, gr.ny, gr.nx)))
 
     if kx.shape != gr.shape:
         raise AssertionError("shape of kx {0} differs from that of model {1}".format(kx.shape,gr.shape))
