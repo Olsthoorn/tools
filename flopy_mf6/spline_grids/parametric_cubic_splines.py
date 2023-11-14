@@ -2,10 +2,15 @@
 
 # https://www.vbforums.com/showthread.php?481546-Parametric-Cubic-Spline-Tutorial
 
+"""Shows the use of splines"""
+
 # @ TO 20220323
 
+#%% 
 import matplotlib.pyplot as plt
 import numpy as np
+
+print(dir(plt))
 
 # %% example 1
 s = np.linspace(0, 1, 101)
@@ -14,7 +19,7 @@ x = 26 * s ** 3 - 40 * s ** 2 + 15 * s - 1.0
 y = -4 * s ** 2 + 3 * s
 
 plt.plot(x, y)
-plt.set_aspect(1.0)
+plt.gca().set_aspect(1.0)
 plt.show
 
 # %% Define newfig for easily creating new plots
@@ -30,8 +35,10 @@ def newfig(title="", xlabel="", ylabel="", xlim=None, ylim=None, aspect=None):
     return ax
 
 # %% Getting hands dirty
+# Spline control points:
 ctr = np.array([(3 , 1), (2.5, 4), (0, 1), (-2.5, 4),(-3, 0), (-2.5, -4), (0, -1), (2.5, -4), (3, -1)])
 
+# Show the control points
 ax = newfig("controle points", "x", "y")
 ax.plot(*ctr.T)
 
@@ -133,4 +140,4 @@ plt.plot(*ctr.T, 'ro', label='control points')
 plt.plot(out[0], out[1], 'b', label='interpolated B-spline')
 plt.legend()
 plt.show()
-# %%
+

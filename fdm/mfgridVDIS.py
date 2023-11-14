@@ -668,7 +668,7 @@ def get_vertcells_from_diamond(xd=None, yd=None, nrow=None, ncol=None):
     Xc, Yc = ctr(Xv), ctr(Yv)
     # Vertex index of cell corners, clockwise
     Iverts = np.vstack((rv(Iv[:-1, :-1]), rv(Iv[1:, :-1]), rv(Iv[1:, 1:]), rv(Iv[:-1, 1:]))).T
-    cell2d = [[ic, xc, yc, 4, verts]
+    cell2d = [[ic, xc, yc, 4, np.array(verts, dtype=int)]
                  for ic, xc, yc, verts in zip(rv(Ic), rv(Xc), rv(Yc), rv(Iverts))]
     
     cell2d_ra = np.zeros(len(rv(Ic)), dtype=[
@@ -760,7 +760,7 @@ def subgrid(xd, yd, nx, ny):
     Yv = (UV @ yd).reshape((ny + 1, nx + 1))
     return Xv, Yv
 
-def quadrangle_grid(Xp, Yp, Nx, Ny):
+def quadrangle_grid(Xp, Yp, Nx, Ny, XY=False):
     """Return a structured grid defined by xc, Yc, nx and ny.
     
     Parameters
@@ -773,6 +773,9 @@ def quadrangle_grid(Xp, Yp, Nx, Ny):
         the number of cells along x-direction for each quadrangle.
     Ny: sed of len(Yp.dims[1]) of ints
         the number of cells along y-direction for each quadrangle.
+    XY: bool
+        if True return X, Y node  vertices arrays
+        if True return vertices, cell2d, vertices_ra, cell2d_ra
     
     Returns
     -------
@@ -831,6 +834,9 @@ def quadrangle_grid(Xp, Yp, Nx, Ny):
             X[j1:j2 + 1, i1:i2 + 1] = xv
             Y[j1:j2 + 1, i1:i2 + 1] = yv
             
+    if XY:
+        return X, Y
+
     Xc, Yc = ctr(X), ctr(Y)
     Ic = np.arange(nrow * ncol, dtype=int).reshape((nrow, ncol))
     Iv = np.arange((nrow + 1) * (ncol + 1), dtype=int).reshape((nrow + 1, ncol + 1))
@@ -1134,13 +1140,23 @@ class GridVdis:
         self._tol = tol
         self._digits = int(abs(np.log10(tol)))
         
+        if len(Xp.shape) == 1 and len(Yp.shape) == 1:
+            nx = len(Xp) - 1
+            ny = len(Yp) - 1
+            Xp = Xp[np.newaxis, :] * np.ones((ny + 1, 1))
+            Yp = Yp[:, np.newaxis] * np.ones((1, nx + 1))
+        if ncellsx is None:
+            ncellsx = np.ones(Xp.shape[1] - 1)
+        if ncellsy is None:
+            ncellsy = np.ones(Yp.shape[0] - 1)
+            
         assert check_clockwise(Xp, Yp), ("Xp, Yp cells must be clockwise," +
                     "i.e. like when Xp to the right and Yp downward (or rotated)")
-
+            
         if spline:
             self._Xv,  self._Yv = get_spline_grid(Xp, Yp, ncellsx, ncellsy)
         else:
-            self._Xv, self._Yv = quadrangle_grid(Xp, Yp, ncellsx, ncellsy)
+            self._Xv, self._Yv = quadrangle_grid(Xp, Yp, ncellsx, ncellsy, XY=True)
             
         self._Xc, self._Yc = get_centers(self._Xv, self._Yv)
         self._Area = get_areas(self._Xv, self._Yv, all=False)
@@ -1207,14 +1223,14 @@ class GridVdis:
                           format(z.shape, self.ny, self.nx)
             raise ValueError(s)
 
-        self._shape = (self.nz, self.ny, self.nx)
-
         # Cells per layer
-        self.ncpl = (self._Xv.shape[0] - 1) * (self._Xv.shape[1] - 1)
+        self.ncpl = self.nx * self.ny
         # Verti es per layer
         self.nvert = np.prod(self._Xv.shape)
         self.ncol, self.nrow, self.nlay = self.nx, self.ny, self.nz
 
+        self._shape = (self.nz, self.ny, self.nx)
+        self._shape_LIc = (self.nz, self.ncpl)
 
         # Check if input wass consistent
         assert self.nz > 0, "nlay = {} must be >1".format(self.nz)
@@ -1300,6 +1316,10 @@ class GridVdis:
     def shape(self):
         """Return shape of the grid."""
         return self._shape
+    @property
+    def shape_LIc(self):
+        """Return shape of div grid (Layer, layerNd)"""
+        return self._shape_LIc
 
     @property
     def nod(self):
@@ -1328,21 +1348,22 @@ class GridVdis:
             return A.reshape((self.nlay, self.nrow, self.ncol))
 
 
-    def LIcell(self, Imask, astuple=None, aslist=None):
+    def I2LIc(self, Imask, astuples=None, aslist=None):
         """Return ndarray [L, Icell] indices generated from global indices or boolean array I.
 
         Parameters
         ----------
         Imask : ndarray of int or bool
-            if dtype is int, then I is global index
+            if dtype is int, then I is the global cell index
 
             if dtype is bool, then I is a zone array of shape
             [ny, nx] or [nz, ny, nx]
 
-        astuple: bool or None
+        astuples: bool or None
             return as ((l, icell), (l, icell), ...)
         aslist: bool or None:
             return as [[l, icell], [l, icell], ...]
+            where l is layer number and icell the cell number within the layer.
         """
         if Imask.dtype == bool:
             if Imask.ndim == 1:
@@ -1355,14 +1376,23 @@ class GridVdis:
             I = Imask
 
         I = np.array(I, dtype=int)
-        L = np.array(I / self.ncpl, dtype=int)
+        L = I // self.ncpl
         Ic = np.array(I - L * self.ncpl)
-        if astuple:
-            return tuple((l, ic) for l, ic in zip(L, Ic))
+        if astuples:
+            return tuple((l, ic) for l, ic in zip(L.ravel(), Ic.ravel()))
         elif aslist:
-            return [[l, ic] for l, ic, in zip(L, Ic)]
+            return [[l, ic] for l, ic, in zip(L.ravel(), Ic.ravel())]
         else:
-            return np.vstack((L, Ic)).T
+            return np.vstack((L.ravel(), Ic.ravel())).T # ok, an array np.array([[L, Ic], [L, Ic]])
+        
+    def LIcell(self, Imask, astuples=None, aslist=None):
+        """Return LIc from global index of Imask.
+        
+        The name was used in several files, but illogic.
+        It is replaced by I2Ic see definition above.
+        """
+        return self.I2LIc(Imask, astuples=astuples, aslist=aslist)
+        
         
     def LRC2LIcell(self, LRC):
         """Return LIcell instead of LRC, keeping type of LRC."""
@@ -1373,7 +1403,7 @@ class GridVdis:
             return LIcell
         
 
-    def LRC(self, Imask, astuple=None, aslist=None):
+    def LRC(self, Imask, astuples=None, aslist=None):
         """Return ndarray [L R C] indices generated from global indices or boolean array I.
 
         Parameters
@@ -1384,7 +1414,7 @@ class GridVdis:
             if dtype is bool, then I is a zone array of shape
             [ny, nx] or [nz, ny, nx]
 
-        astuple: bool or None
+        astuples: bool or None
             return as ((l, r, c), (l, r, c), ...)
         aslist: bool or None:
             return as [[l, r, c], [l, r, c], ...]
@@ -1403,7 +1433,7 @@ class GridVdis:
         L = np.array(I / self.ncpl, dtype=int)
         R = np.array((I - L * self.ncpl) / self.ncol, dtype=int)
         C = I - L * self.ncpl - R * self.ncol
-        if astuple:
+        if astuples:
             return tuple((l, r, c) for l, r, c in zip(L, R, C))
         elif aslist:
             return [[l, r, c] for l, r, c, in zip(L, R, C)]
@@ -1649,24 +1679,24 @@ class GridVdis:
         return [(*lrc1rc2, r) for lrc1rc2, r in zip(np.hstack((LRC1, LRC2[:, 1:])), R)]
 
 
-    def I2Icell(self, I, astuple=True):
+    def I2Icell(self, I, astuples=True):
         """Return L, CellId from global Index. 
         
         Parameters
         ----------
         I: array of ints (n)
             global cell indices
-        astuple: bool
+        astuples: bool
             if True return the resulting [L, CellId] as tuples
             else return them as an array of ints
         """
-        LRC = self.I2LRC(I, astuple=astuple)
+        LRC = self.I2LRC(I, astuples=astuples)
         
         Icell = np.arange(self.nrow * self.col, dtype=int).reshape((
                                     self.row, self.nrow))
         
         out = [(l, Icell[r, c]) for l, r, c in LRC]
-        if astuple:
+        if astuples:
             return out
         else:
             return np.array(out, dtype=int)
@@ -1962,7 +1992,7 @@ class GridVdis:
         """Return 2D array [ny, nx] of row widths."""
         X = 0.5 * (self._Xv[:, :-1] + self._Xv[:, 1:])
         Y = 0.5 * (self._Yv[:, :-1] + self._Yv[:, 1:])
-        Dx = np.sqrt((X[1:, :] - X[:-1, :]) ** 2 + (Y[1:, :] - Y[:-1, :]) ** 2)
+        Dy = np.sqrt((X[1:, :] - X[:-1, :]) ** 2 + (Y[1:, :] - Y[:-1, :]) ** 2)
         return Dy
 
     @property

@@ -8,17 +8,15 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 import flopy
-from importlib import reload
 from types import SimpleNamespace
 from inspect import signature as sig
-from scipy.interpolate import splprep, splev
 
-tools = '/Users/Theo/GRWMODELS/python/tools/'
+tools = '/Users/Theo/GRWMODELS/python/tools/' # or put this in PYTHONPATH see ~/.zshrc
 sys.path.append(tools)
 
-from etc import newfig, newfigs, attr
+from fdm.mfgridVDIS import GridVdis
 
-reload(grv)
+from etc import newfig, newfigs, attr
 
 # %% Using supports to generate the grid 
 rv = lambda Z: Z.ravel()
@@ -52,7 +50,7 @@ def get_params_from_excel(wbk):
         elif type == 'str': pass
         elif type == 'float': value = float(value)
         elif type == 'int': value = int(value)
-        elif type == 'bool': value = True if value == 'True' else False
+        elif type == 'bool': value = True if value in ('True', 'true', 1) else False
         elif type == 'list': value = exec(value)
         else: raise ValueError("Unknown parameter type pkg={}, {}, {}, {}".format(
                             pkg, parameter, value, type))
@@ -133,9 +131,12 @@ def build_mf6model(config=None, params=None):
     if config.build_model:
         packages = {}
         packages['sim']  = flopy.mf6.MFSimulation(**params['sim'])
+        # Children of sim
         packages['tdis'] = flopy.mf6.ModflowTdis(    packages['sim'], **params['tdis'])
         packages['ims']  = flopy.mf6.ModflowIms(     packages['sim'], **params['ims'])
         packages['gwf']  = flopy.mf6.ModflowGwf(     packages['sim'], **params['gwf'])
+        
+        # Children of gwf
         packages['disv'] = flopy.mf6.ModflowGwfdisv( packages['gwf'], **params['disv'])
         packages['npf']  = flopy.mf6.ModflowGwfnpf(  packages['gwf'], **params['npf'])
         packages['sto'] = flopy.mf6.ModflowGwfsto(   packages['gwf'], **params['sto'])
@@ -145,16 +146,19 @@ def build_mf6model(config=None, params=None):
         packages['wel']  = flopy.mf6.ModflowGwfwel(  packages['gwf'], **params['wel'])
         packages['rcha'] = flopy.mf6.ModflowGwfrcha( packages['gwf'], **params['rcha'])
         packages['oc']   = flopy.mf6.ModflowGwfoc(   packages['gwf'], **params['oc'])
+        # Possibly add more packages as needed
         return packages
     return None
     
 # %%
 def write_model(config=None, packages=None, silent=True):
+    """Write out the input files of the simulation and model."""
     if config.write_model:
         packages['sim'].write_simulation(silent=silent)
     
 # %%
 def run_model(config=None, packages=None, silent=True):
+    """Run the model by invoking the simulation package method."""
     success = True
     if config.run_model:
         success, buff = packages['sim'].run_simulation(silent=silent)
@@ -220,7 +224,7 @@ def plot_results(config=None, packages=None, kstpkper=None, gr=None, nlevels=25)
             
 # %%
 def simulation(config=None, params=None, kstpkper=None, gr=None, nlevels=25, silent=True):
-    """Build, write, run model and plot results.
+    """Build, write, and run the model and then plot its results.
     
     Parameters
     ----------
@@ -242,6 +246,11 @@ def simulation(config=None, params=None, kstpkper=None, gr=None, nlevels=25, sil
 
 # === RUNNING the file ===
 if __name__ == '__main__':
+    """Illustrate the use of mf6 with the parameters obatained from Excel workbook.
+    The grid is disv, keeping the layer, row, column structure of the ordinary
+    sturctured grid of old Modflow versions, while bending rows and columns
+    using a few anchor points and spatial spline interpolation.
+    """
     
     last_kstpkper = lambda cbc: (np.array(cbc.kstpkper) - 1)[-1] # also works for head
     
@@ -255,8 +264,12 @@ if __name__ == '__main__':
     # === parameter workbook, sheet_name = 'MF6' ===
     params_wbk = os.path.join(tools, 'flopy_mf6/mf_parameters.xlsx')
 
-    # === confi for what to do ===
-    config = SimpleNamespace(build_model=True, write_model=True, run_model=True, plot_model=True, plot_grid=False)
+    # === config setting what to do in this simulation (could be a dictionary) ===
+    config = SimpleNamespace(build_model=True,
+                             write_model=True,
+                             run_model=True,
+                             plot_model=True,
+                             plot_grid=False)
 
     # === MODFLOW GRID ===
     Xp = np.array([ [  0., 15., 30., 40., 65],
@@ -270,7 +283,7 @@ if __name__ == '__main__':
 
     z = [0, -25., -35., -50., -60., -100.]
     
-    gr = grv.GridVdis(Xp, Yp, z, ncellsx=50, ncellsy=50, min_dz=0.001, spline=True)
+    gr = GridVdis(Xp, Yp, z, ncellsx=50, ncellsy=50, min_dz=0.001, spline=True)
 
     if config.plot_grid:
         ax = plt.gca()
@@ -318,18 +331,18 @@ if __name__ == '__main__':
                         saverecord=[("HEAD", "ALL"), ("BUDGET", "ALL")])
 
     # === CHD ===
-    LIc_CHD = gr.LIcell(gr.NOD[0, :, [0, -1]].ravel(), astuple=True)
+    LIc_CHD = gr.LIcell(gr.NOD[0, :, [0, -1]].ravel(), astuples=True)
     chd_spd = [[cellid, 0.0] for cellid in LIc_CHD]
     params['chd'].update(stress_period_data={0: chd_spd}, maxbound=len(chd_spd))
 
     # === WEL ===
-    LIc_WEL = gr.LIcell(gr.NOD[2][[15, 30]][:, [15, 30]].ravel(), astuple=True) \
-            + gr.LIcell(gr.NOD[4][[10, 35]][:, [10, 35]].ravel(), astuple=True)
+    LIc_WEL = gr.LIcell(gr.NOD[2][[15, 30]][:, [15, 30]].ravel(), astuples=True) \
+            + gr.LIcell(gr.NOD[4][[10, 35]][:, [10, 35]].ravel(), astuples=True)
     wel_spd = [[cellid, -25.0] for cellid in LIc_WEL]
     params['wel'].update(stress_period_data={0: wel_spd}, maxbound=len(wel_spd))
 
     # === DRN ===
-    LIc_DRN = gr.LIcell(gr.NOD[0, [0, -1], 1:-1].ravel(), astuple=True)
+    LIc_DRN = gr.LIcell(gr.NOD[0, [0, -1], 1:-1].ravel(), astuples=True)
     drn_spd = [[cellid, 100, -1.0] for cellid in LIc_DRN]    
     params['drn'].update(stress_period_data={0: drn_spd}, maxbound=len(drn_spd))
     
