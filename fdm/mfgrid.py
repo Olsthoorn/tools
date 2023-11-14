@@ -820,7 +820,7 @@ class Grid:
         """Return cell numbers in the grid."""
         return np.arange(self.nod).reshape((self._nlay, self._ny, self._nx))
 
-    def LRC(self, Imask, astuple=None, aslist=None):
+    def LRC(self, Imask, astuples=None, aslist=None):
         """Return ndarray [L R C] indices generated from global indices or boolean array I.
 
         Parameters
@@ -831,7 +831,7 @@ class Grid:
             if dtype is bool, then I is a zone array of shape
             [ny, nx] or [nz, ny, nx]
 
-        astuple: bool or None
+        astuples: bool or None
             return as ((l, r, c), (l, r, c), ...)
         aslist: bool or None:
             return as [[l, r, c], [l, r, c], ...]
@@ -852,7 +852,7 @@ class Grid:
         L = np.array(I / nlay, dtype=int)
         R = np.array((I - L * nlay) / ncol, dtype=int)
         C = I - L * nlay - R * ncol
-        if astuple:
+        if astuples:
             return tuple((l, r, c) for l, r, c in zip(L, R, C))
         elif aslist:
             return [[l, r, c] for l, r, c, in zip(L, R, C)]
