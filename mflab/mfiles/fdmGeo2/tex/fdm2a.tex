@@ -1,0 +1,63 @@
+\begin{alltt}
+\textcolor{keyword}{function} [Phi,Q,Qx,Qy,Psi]=fdm2a(gr,Tx,Ty,IBOUND,Phi,Q)
+\textcolor{comment}{%FDM2 a 2D block-centred steady-state finite difference model}
+\textcolor{comment}{% USAGE:}
+\textcolor{comment}{%    [Phi,Q,Qx,Qy,Psi]=fdm2(gr,Tx,Ty,IBOUND,FH,FQ)}
+\textcolor{comment}{% Inputs:}
+\textcolor{comment}{%    gr    = grid2DObj (see grid2DObj)}
+\textcolor{comment}{%    Tx,Ty = transmissivities, either scalar or full 2D arrays}
+\textcolor{comment}{%    IBOUND= boudary array as in MODFLOW (<0 fixed head, 0 inactive, >0 active)}
+\textcolor{comment}{%    IH    = initial heads (STRTHD in MODFLOW)}
+\textcolor{comment}{%    FQ    = fixed (prescribed) Q for each cell.}
+\textcolor{comment}{% Outputs:}
+\textcolor{comment}{%    Phi,Q computed heads and cell balances}
+\textcolor{comment}{%    Qx(Ny,Nx-1) horizontal cell face flow positive in positive xGr direction}
+\textcolor{comment}{%    Qy(Ny-1,Nx) vertial    cell face flow, postive in positive yGr direction}
+\textcolor{comment}{%    Psi(Ny+1,Nx-2)  stream function (only useful if flow is divergence free)}
+\textcolor{comment}{% TO 991017  TO 000530 001026 070414 090314 101130 140410}
+
+Nodes = reshape(1:gr.Nod,gr.size);               \textcolor{comment}{% Node numbering}
+IE=Nodes(:,2:end);   IW=Nodes(:,1:end-1);
+IS=Nodes(2:\textcolor{keyword}{end},:);   IN=Nodes(1:end-1,:);
+
+Iact  = IBOUND(:) >0;
+Inact = IBOUND(:)==0; Tx(Inact)=0; Ty(Inact)=0;
+Ifh   = IBOUND(:) <0;
+
+[Cx,Cy] = conductances(gr,Tx,Ty);
+
+C     = sparse([IW(:); IN(:)], [IE(:); IS(:)], [-Cx(:); -Cy(:)], gr.Nod, gr.Nod, 5*gr.Nod);
+C     = C + C';
+diagC = -sum(C,2);  \textcolor{comment}{% Main diagonal}
+
+Phi(Inact)=NaN; Q(Inact)=NaN;
+
+Phi(Iact) = spdiags(diagC(  Iact),0,C( Iact , Iact ))\(\backslash\)(Q(Iact)-C(Iact,Ifh)*Phi(Ifh)); \textcolor{comment}{% solve}
+Q(\~{}Inact) = spdiags(diagC(\~{}Inact),0,C(\~{}Inact,\~{}Inact))* Phi(\~{}Inact);        \textcolor{comment}{% reshape}
+
+Phi = reshape(Phi,gr.size);
+Q   = reshape(Q  ,gr.size);
+
+Qx = -Cx.*diff(Phi,1,2);   \textcolor{comment}{% Flow across vertical   cell faces}
+Qy = +Cy.*diff(Phi,1,1);   \textcolor{comment}{% Flow across horizontal cell faces}
+
+Psi= [flipud(cumsum(flipud(Qx)));zeros(size(Qx(1,:)))];
+
+\textcolor{keyword}{function} [Cx,Cy] = conductances(gr,Tx,Ty,c)
+    \textcolor{comment}{%CONDUCTANCE --- compute conductances}
+    \textcolor{comment}{% USAGE: [Cx,Cy] = contuctance(gr,Tx,Ty)}
+    
+    \textcolor{comment}{% resistances and conducctances}
+    \textcolor{keyword}{if} \~{}gr.AXIAL
+        RX = 0.5*bsxfun(@rdivide,gr.dx,gr.dy)./Tx;
+        RY = 0.5*bsxfun(@rdivide,gr.dy,gr.dx)./Ty;
+        Cx = 1./(RX(:,1:end-1)+RX(:,2:end));
+    \textcolor{keyword}{else}
+        RX = bsxfun(@rdivide,log(gr.xGr(2:end-1)./gr.xm( 1:end-1)),2*pi*Tx(:,1:end-1).*gr.dY(:,1:end-1))+ \textcolor{keyword}{\underline{...}}
+             bsxfun(@rdivide,log(gr.xm( 2:end  )./gr.xGr(2:end-1)),2*pi*Tx(:,2:end  ).*gr.dY(:,2:end  ));
+        RY = 0.5*bsxfun(@rdivide,gr.dY./Ty, pi*(gr.xGr(2:end).\^{}2 - gr.xGr(1:end-1).\^{}2));
+        Cx = 1./RX;
+    \textcolor{keyword}{end}
+    Cy = 1./(RY(1:end-1,:)+RY(2:\textcolor{keyword}{end},:));
+
+\end{alltt}

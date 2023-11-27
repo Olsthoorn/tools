@@ -1,0 +1,95 @@
+\begin{alltt}
+\textcolor{comment}{%\%\% ModelScript -- Example 3 sets up 2D FDM with massive particle tracking}
+\textcolor{comment}{% uses fdm2 and Moc}
+
+\textcolor{comment}{%\% Consants used with IBOUND}
+FXHD     = -1;
+INACTIVE =  0;
+ACTIVE   =  1;
+
+\textcolor{comment}{%\% Grid}
+xGr   = 0:100:5000;
+yGr   = 0:100:5000;
+gr    =  grid2DObj(xGr,yGr);
+
+\textcolor{comment}{%\% Transmissivities}
+Tx = gr.const(600);
+Ty = gr.const(600);
+
+\textcolor{comment}{%\% Recharge}
+rch   = 0.005; \textcolor{comment}{% net recharge rate}
+FQ    = gr.Area * rch;
+
+\textcolor{comment}{%\% IBOUND}
+IBOUND = gr.const(ACTIVE);
+IBOUND (13,17) = FXHD;    \textcolor{comment}{% well}
+
+IH = gr.const(0);
+
+close all;
+
+\textcolor{comment}{%\% Run model}
+[Phi,Q,Qx,Qy] = fdm2(gr,Tx,Ty,IBOUND,IH,FQ);
+
+t    = 0:10:1000;
+Peff = gr.const(0.35);
+R    = 1;
+n    = 6;
+aL = 10;
+P = Moc(gr,Qx,Qy,Peff,R,t,n);
+\textcolor{comment}{%P = Moc(gr,Qx,Qy,Peff,R,t,n,'aL',aL);}
+\textcolor{comment}{%\% visualize results}
+defaults = \{\textcolor{string}{'nextplot'},\textcolor{string}{'add'},\textcolor{string}{'xlim'},gr.xGr([1 end]),\textcolor{string}{'ylim'},gr.yGr([end 1])\};
+
+\textcolor{comment}{% set up figure}
+figure; axes(defaults\{:\}); \textcolor{comment}{%\#ok}
+xlabel(\textcolor{string}{'x [m]'}); ylabel(\textcolor{string}{'y [m]'});
+title(\textcolor{string}{'example2: MOC, flow from left to right'});
+
+set(gca,\textcolor{string}{'xlim'},[1000 2000],\textcolor{string}{'ylim'},[3000 4000]);
+\textcolor{comment}{% contour heads}
+phiMax = max(Phi(:)); phiMin = min(Phi(:));
+hRange = phiMin:(phiMax-phiMin)/25:phiMax;
+contourf(gr.xm,gr.ym,Phi,hRange,\textcolor{string}{'edgeColor'},\textcolor{string}{'none'});
+
+\textcolor{comment}{% show particles}
+time = [P.time];
+\textcolor{keyword}{for} it=1:numel(time)
+    ttl = sprintf(\textcolor{string}{'particles time = \%.0f d'},time(it));
+    \textcolor{keyword}{if} it==1
+        ht = title(ttl);
+        h = plot(P(it).x,P(it).y,\textcolor{string}{'b.'},\textcolor{string}{'markersize'},5);
+    \textcolor{keyword}{else}
+        set(ht,\textcolor{string}{'string'},ttl);
+        set(h,\textcolor{string}{'xData'},P(it).x,\textcolor{string}{'yData'},P(it).y);
+        drawnow();
+        pause(0.2);
+    \textcolor{keyword}{end}
+\textcolor{keyword}{end}
+      
+\textcolor{comment}{%\% Visualize results}
+
+figure; hold on;
+xlabel(\textcolor{string}{'x [m]'}); ylabel(\textcolor{string}{'y [m]'});
+title(\textcolor{string}{'Head with  Quiver'});
+
+\textcolor{comment}{% contour heads}
+phiMax = max(Phi(:)); phiMin = min(Phi(:));
+hRange = phiMin:(phiMax-phiMin)/25:phiMax;
+contourf(gr.xm,gr.ym,Phi,hRange,\textcolor{string}{'edgeColor'},\textcolor{string}{'none'});
+
+
+\textcolor{comment}{%Show arrows of flow direction and magnitude}
+qx = [Qx(:,1), Qx, Qx(:,end)]; qx = 0.5*(qx(:,1:end-1) + qx(:,2:end));
+qy = [Qy(1,:); Qy; Qy(\textcolor{keyword}{end},:)]; qy = 0.5*(qy(1:end-1,:) + qy(2:\textcolor{keyword}{end},:));
+quiver(gr.Xm,gr.Ym,qx,qy);
+
+hb = colorbar; set(get(hb,\textcolor{string}{'title'}),\textcolor{string}{'string'},\textcolor{string}{'head [m]'})  \textcolor{comment}{% Colorbar}
+
+\textcolor{comment}{%\% Check water balance}
+fprintf(\textcolor{string}{'Water balances:\(\backslash\)n'});
+fprintf(\textcolor{string}{'Total water balance = \%10g (should be zero)\(\backslash\)n'},sum(Q(IBOUND\~{}=0)));
+fprintf(\textcolor{string}{'Total recharge (active  cells) = \%10.0f m3/d\(\backslash\)n'},sum(Q(IBOUND>0)));
+fprintf(\textcolor{string}{'Total discharge(fixhd + wells) = \%10.0f m3/d\(\backslash\)n'},sum(Q(IBOUND<0)));
+
+\end{alltt}

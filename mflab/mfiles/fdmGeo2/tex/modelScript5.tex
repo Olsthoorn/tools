@@ -1,0 +1,82 @@
+\begin{alltt}
+\textcolor{comment}{%\% modelScript 5 Simple calibration}
+\textcolor{comment}{%  Demo of a simple calibration using lsqnonlin in Matlab}
+\textcolor{comment}{%}
+\textcolor{comment}{% We simulate an artificial pumping test to be analyzes using the Theis}
+\textcolor{comment}{% drawdown formula. Drawdowns are generated using some unknown values}
+\textcolor{comment}{% transmissivity T and storativity S in the eMeasNew function and adding}
+\textcolor{comment}{% some random measurment errors.}
+\textcolor{comment}{% Then the calibration starts with iniital values T0 and S0. The}
+\textcolor{comment}{% calibration optimizes the multiplyers p. When done the data are plotted}
+\textcolor{comment}{% with markers and the theis formulat is plotted using the original values}
+\textcolor{comment}{% for the transmissivity (green line) and the final ones (thick black).}
+\textcolor{comment}{%}
+\textcolor{comment}{% TO 140419}
+
+\textcolor{keyword}{global} eMeas Q T0 S0 r
+
+\textcolor{comment}{%\% Fixed data}
+Q  = 1200;  \textcolor{comment}{% [m3/d] }
+r = 30;     \textcolor{comment}{% [ m  ]}
+
+\textcolor{comment}{%\% Initial trial parameters}
+T0 = 350;   \textcolor{comment}{% [m2/d]}
+S0 = 0.001; \textcolor{comment}{% [ -  ]}
+
+\textcolor{comment}{%\% New data for this example}
+eMeasNew(Q,r,T0,S0);
+
+\textcolor{comment}{%\% Load data}
+load eMeas; \textcolor{comment}{% eMeas(:,1) is time and eMeas(:,2) are drawdowns}
+
+\textcolor{comment}{%\% Initial parameter mutiplyers, first for T, second for S}
+p = ones(2,1);  
+
+\textcolor{comment}{%\% Final parameter multiplyers after calibration}
+[p,resnorm,e,exitFlag,OUTPUT,LAMBDA,J] = lsqnonlin(@FUN,p);
+
+\textcolor{comment}{%\% Final parameters:}
+T = exp(p(1))*T0;
+S = exp(p(2))*S0;
+
+\textcolor{comment}{%\% Suitable time vector to simulate model}
+t =logspace(log10(eMeas(1)),log10(eMeas(end)),30);
+
+\textcolor{comment}{%\% Model in shape of anonymous function forTheis drawdown}
+Theis = @(t,T,S) Q/(4*pi*T) * expint(r\^{}2*S./(4*T*t));
+
+\textcolor{comment}{%\% Visualize output}
+
+\textcolor{comment}{%\% Default axis parameters}
+defaults=\{\textcolor{string}{'xScale'},\textcolor{string}{'log'},\textcolor{string}{'yScale'},\textcolor{string}{'lin'},\textcolor{string}{'xGrid'},\textcolor{string}{'on'},\textcolor{string}{'yGrid'},\textcolor{string}{'on'},\textcolor{string}{'xLim'},[t(1)/2 2*t(end)]\};
+
+\textcolor{comment}{%\% Figure setup}
+figure;  axes(\textcolor{string}{'nextplot'},\textcolor{string}{'add'},defaults\{:\});
+xlabel(\textcolor{string}{'time [min]'}); ylabel(\textcolor{string}{'drawdown [m]'});
+title(\textcolor{string}{'Theis pumping test calibrated'});
+
+\textcolor{comment}{% Plot}
+plot(eMeas(:,1),eMeas(:,2),\textcolor{string}{'ro'});  \textcolor{comment}{% measurements}
+
+plot(t, Theis(t,T0,S0),\textcolor{string}{'g'},\textcolor{string}{'lineWidth'},1); \textcolor{comment}{% model with initial paramters}
+plot(t, Theis(t,T, S ),\textcolor{string}{'k'},\textcolor{string}{'lineWidth'},2); \textcolor{comment}{% model with final parameters}
+
+legend(\textcolor{string}{'measured'},\textcolor{string}{'model begin'},\textcolor{string}{'model optimized'});
+
+\textcolor{comment}{%\% Statistical analysis}
+
+\textcolor{comment}{% Analysis using the ouputs of lsqnonlin}
+\textcolor{comment}{% the outputs are}
+\textcolor{comment}{% p (pameters), var (error variance), e (errors) ... J (jacobian, parameter}
+\textcolor{comment}{% senitivities).}
+
+J = full(J); \textcolor{comment}{% Jacobian is sparse, make it full}
+
+\textcolor{comment}{% Show statistical results}
+varE   = resnorm/(size(eMeas,1)-size(p,1)) \textcolor{comment}{% error variance (from lsqnonlin) = e'*e}
+stdE   = sqrt(varE)                 \textcolor{comment}{% error std deviation}
+covP   = varE * [J'*J]\^{}(-1)         \textcolor{comment}{% parameter covariance matrix}
+sigmaP = sqrt(diag(covP));          \textcolor{comment}{% parameter stddev (approximate, linear)}
+corP   = covP ./ (sigmaP * sigmaP') \textcolor{comment}{% parameter correlation matrix}
+[EVec,EVal]  = eig(covP)            \textcolor{comment}{% EVec (eigen vectors) Eval (eigen values)}
+\end{alltt}

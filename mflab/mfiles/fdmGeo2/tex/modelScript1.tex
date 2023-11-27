@@ -1,0 +1,65 @@
+\begin{alltt}
+\textcolor{comment}{%\%\% modelScript -- sets up 2D FDM, runs it and shows results}
+
+FIXED = -1;   \textcolor{comment}{% indicatre fixed head node in IBOUND}
+
+\textcolor{comment}{%\% Grid}
+d   = 25; \textcolor{comment}{% cell width, also try 5 m}
+xGr = [-1000:d:-d -d/2 d/2 d:d:1000];
+yGr = [-1000:d:-d -d/2 d/2 d:d:1000];
+gr  =  grid2DObj(xGr,yGr);
+
+\textcolor{comment}{%\% Island}
+R0     =  800; \textcolor{comment}{% +d/2;}
+R      = sqrt(gr.Xm.\^{}2 + gr.Ym.\^{}2);
+IBOUND = ones(gr.size);
+IBOUND(R>=R0) = FIXED;
+
+\textcolor{comment}{%\% Transmissivities}
+Tx = 600; Ty = 600;
+
+\textcolor{comment}{%\% Start heads, initial heads}
+IH = gr.const(0);
+
+\textcolor{comment}{%\% Fixed inflows of cells}
+rch = 0.001; \textcolor{comment}{% net recharge rate}
+FQ  = gr.Area * rch;
+
+\textcolor{comment}{%\% Run model}
+[Phi,Q,Qx,Qy] = fdm2(gr,Tx,Ty,IBOUND,IH,FQ);
+
+\textcolor{comment}{%\% Visualize results}
+figure; hold on;
+xlabel(\textcolor{string}{'x [m]'}); ylabel(\textcolor{string}{'y [m]'});
+title(\textcolor{string}{'Heads in island'});
+
+phiMax = max(Phi(:));  hRange = phiMax*(0:25)/25;
+contourf(gr.xm,gr.ym,Phi,hRange,\textcolor{string}{'edgeColor'},\textcolor{string}{'none'});
+
+hb=colorbar; set(get(hb,\textcolor{string}{'title'}),\textcolor{string}{'string'},\textcolor{string}{'head [m]'});
+
+\textcolor{comment}{%\% Analytical comparison}
+
+\textcolor{comment}{% Analytical solution for head in island}
+PhiA = rch/4./Tx .* (R0.\^{}2 - R.\^{}2);
+
+\textcolor{comment}{% black contours over the colored contours}
+contour(gr.xm,gr.ym,PhiA,hRange,\textcolor{string}{'k'})
+
+\textcolor{comment}{%\% Plot X-section to compare with analytical results}
+figure; hold on;
+xlabel(\textcolor{string}{'x [m]'}); ylabel(\textcolor{string}{'head [m]'});
+title(\textcolor{string}{'head through center of island'});
+
+Iy = find(gr.ym==0);
+
+plot(gr.xm,Phi (Iy,:),\textcolor{string}{'b'});
+plot(gr.xm,PhiA(Iy,:),\textcolor{string}{'r.'});
+
+\textcolor{comment}{%\% Check water balance}
+fprintf(\textcolor{string}{'Water balances:\(\backslash\)n'});
+fprintf(\textcolor{string}{'Total water balance = \%10g (should be zero)\(\backslash\)n'},sum(Q(:)));
+fprintf(\textcolor{string}{'Total recharge      = \%10.0f m3/d (should be pi*R0\^{}2*rch = \%6.0f m3/d)\(\backslash\)n'},sum(Q(Q>0)),pi*R0\^{}2*rch);
+fprintf(\textcolor{string}{'Total dicharge      = \%10.0f m3/d (should match with total recharge.\(\backslash\)n'},sum(Q(Q<0)));
+
+\end{alltt}

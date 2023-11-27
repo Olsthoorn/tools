@@ -1,0 +1,366 @@
+\begin{alltt}
+\textcolor{keyword}{function} P = Moc(gr,Qx,Qy,Peff,R,t,varargin)
+\textcolor{comment}{% MOC (massive particle tracking, steady state) with random walk and decay}
+\textcolor{comment}{%}
+\textcolor{comment}{% USAGE P = Moc(gr,Qx,Qy,Peff,R,t,n    ,  'aL',aL,'aT',aT,'Diff',Diff,'lambda',lambda);}
+\textcolor{comment}{%       P = Moc(gr,Qx,Qy,Peff,R,t,xP,yP,  'aL',aL,'aT',aT,'Diff',Diff,'lambda',lambda);}
+\textcolor{comment}{%}
+\textcolor{comment}{%  gr = grid2DObj}
+\textcolor{comment}{%  Qx,Qy from [Phi,Q,Qx,Qy] = Fdm2(...)}
+\textcolor{comment}{%  Peff = effective porosity}
+\textcolor{comment}{%  R    = [ - ] retardation, default 1}
+\textcolor{comment}{%  t    = [ T ] times to compute particle position at}
+\textcolor{comment}{%  n    = [   ] number of equally distributed particles per cell}
+\textcolor{comment}{%  xP,yP= [ L ]swarm of particles (real world coordinates)}
+\textcolor{comment}{%  rest of the input parameters is optional}
+\textcolor{comment}{%  aL   = [ L ] longitudinal dispersivity, default []}
+\textcolor{comment}{%  aT   = [ L ] transversal  dispersivity, default []}
+\textcolor{comment}{%  Diff = [L2/T] diffusion coefficient,     default []}
+\textcolor{comment}{%  aL, aT and Diff may be scalar or full cell arrays}
+\textcolor{comment}{%  lambda = decay parameter [1/T], default [];}
+\textcolor{comment}{%  randWalk is only initialize diff all aL, aT and Diff are given.}
+\textcolor{comment}{%  P struct contains P.time, P.x and P.y for all times}
+\textcolor{comment}{%}
+\textcolor{comment}{% TO 140418}
+
+\textcolor{comment}{% Values necessary to update cell when particle moves into adjacent cell}
+RWALL= [  -0.5,  +0.5, -0.5,+0.5]; \textcolor{comment}{% cell boundaries in relative coordinates}
+DIDX = [-gr.Ny, gr.Ny, -1  , 1  ]; \textcolor{comment}{% Idx to change if moving to neighbor cell}
+XRNW  = [  0.5,  -0.5,  0  , 0  ]; \textcolor{comment}{% Add to create new relative x coordinate}
+YRNW  = [  0  ,   0  ,  0.5,-0.5]; \textcolor{comment}{% Add to create new relative y coordinate}
+
+\textcolor{comment}{%\% Get data for dispersion and diffusion}
+[aT  ,varargin]   = getProp(varargin,\textcolor{string}{'aT'},[]);
+[aL  ,varargin]   = getProp(varargin,\textcolor{string}{'aL'},[]);
+[Diff,varargin]   = getProp(varargin,\textcolor{string}{'Diff'},[]);
+[lambda,varargin] = getProp(varargin,\textcolor{string}{'lambda'},[]);
+
+\textcolor{keyword}{if} isscalar(R), R = gr.const(R); \textcolor{keyword}{end}
+
+decay        = \~{}isempty(lambda);
+
+\textcolor{keyword}{if} decay
+    \textcolor{keyword}{if} isscalar(lambda), lambda = gr.const(lambda); \textcolor{keyword}{end}
+\textcolor{keyword}{end}
+
+mustRandWalk = \~{}isempty(aT) || \~{}isempty(Diff);
+\textcolor{keyword}{if} mustRandWalk
+    \textcolor{keyword}{if} isempty(aL),    aL   = 0;     \textcolor{keyword}{end}
+    \textcolor{keyword}{if} isempty(aT),    aT   = aL/10; \textcolor{keyword}{end}
+    \textcolor{keyword}{if} isscalar(aL),   aL   = gr.const(abs(aL)  ); \textcolor{keyword}{end}
+    \textcolor{keyword}{if} isscalar(aT),   aT   = gr.const(abs(aT)  ); \textcolor{keyword}{end}
+    \textcolor{keyword}{if} isscalar(Diff), Diff = gr.const(abs(Diff)); \textcolor{keyword}{end}
+\textcolor{keyword}{end}
+
+\textcolor{comment}{%\% Initials, constant when steady state}
+dt     = diff(unique([0; t(:)]));
+epsVR  = gr.Vol.*Peff.*R;
+
+\textcolor{comment}{% Zero flow at extends of model (always) [L3/T]}
+Qx = [zeros(gr.Ny,1), Qx, zeros(gr.Ny,1)];  
+Qy = [zeros(1,gr.Nx); Qy; zeros(1,gr.Nx)];
+
+activeCells = \~{}reshape( Qx(:,1:end-1)>=0 \& Qx(:,2:end)<=0 \& Qy(1:end-1,:)<=0 \& Qy(2:\textcolor{keyword}{end},:)>=0, [gr.Nod,1]);
+
+\textcolor{comment}{% Accelleration [1/T]}
+ax  =  diff(Qx,1,2)./epsVR;
+ay  = -diff(Qy,1,1)./epsVR;
+
+\textcolor{comment}{% Velocity in cell centers [1/T]}
+vx =  0.5*(Qx(:,1:end-1)+Qx(:,2:end))./epsVR;
+vy = -0.5*(Qy(1:end-1,:)+Qy(2:\textcolor{keyword}{end},:))./epsVR;
+
+
+\textcolor{comment}{%\% Initialize particles}
+\textcolor{keyword}{if} numel(varargin)<2
+    n = varargin\{1\};
+    [xr0,yr0,Icells,Np] = distrParticles(gr,n);
+\textcolor{keyword}{else}    
+    [xr0,yr0,Icells,Np] = prepSwarm(gr,varargin\{1\},varargin\{2\});
+\textcolor{keyword}{end}
+
+xr = xr0;
+yr = yr0;
+
+x  = reshape(gr.Xm(Icells),size(Icells)) + reshape(gr.dX(Icells),size(Icells)).*xr0;
+y  = reshape(gr.Ym(Icells),size(Icells)) - reshape(gr.dY(Icells),size(Icells)).*yr0;
+
+active = activeCells(Icells);
+
+\textcolor{comment}{%\% Initialyze time steps}
+DtRemaining = zeros(Np,4); \textcolor{comment}{% DtRemaining computed for each of the 4 directions}
+DtRest      = zeros(Np,1); \textcolor{comment}{% Remaining time in current time step dt(it-1)}
+tStep       = zeros(Np,1); \textcolor{comment}{% Intermediate time step (within step)}
+
+\textcolor{comment}{%\% Initialize output struct}
+\textcolor{keyword}{for} it=numel(t):-1:1
+    P(it).x      = zeros(size(x));
+    P(it).y      = zeros(size(x));
+    P(it).active = true( size(x));
+    P(it).Icells = zeros(size(x));
+    \textcolor{keyword}{if} decay
+        P(it).mass = zeros(size(x));
+    \textcolor{keyword}{end}
+\textcolor{keyword}{end}
+P(1).time   = t(1);
+P(1).x(:)      = x;
+P(1).y(:)      = y;
+\textcolor{keyword}{if} decay
+    P(1).mass(:) = 1;
+\textcolor{keyword}{end}
+P(1).active(:) = active;
+P(1).Icells(:) = Icells;
+
+fprintf(\textcolor{string}{'Simulating tracking of \%d particles over \%d time steps\(\backslash\)n.'},Np,numel(dt));
+
+\textcolor{comment}{%\% Loop over times, starting at time 2}
+\textcolor{keyword}{for} it=2:numel(t)
+    
+    fprintf(\textcolor{string}{'.'});  \textcolor{keyword}{if} rem(it,50)==0, fprintf(\textcolor{string}{'\%d\(\backslash\)n'},it); \textcolor{keyword}{end}
+
+    \textcolor{comment}{% initialize next time step}
+    DtRest(:) = dt(it-1);
+        
+    Ip = find(DtRest>0 \& active);  \textcolor{comment}{% Indices of remaining points        }
+    
+    \textcolor{keyword}{while} \~{}isempty(Ip) \textcolor{comment}{% loop until DtRest == 0 for all particles}
+        
+        K  = zeros(size(Ip));
+        Ic = Icells(    Ip);
+        
+        \textcolor{comment}{% Forward computation of particles position}
+        xr(Ip) = estimate(Ip,Ic,ax(:),vx(:),DtRest,xr0);
+        yr(Ip) = estimate(Ip,Ic,ay(:),vy(:),DtRest,yr0);
+        
+        \textcolor{comment}{% particles that passed one or more cell faces}
+        L\{1\}  = xr(Ip)<=RWALL(1);
+        L\{2\}  = xr(Ip)>=RWALL(2);
+        L\{3\}  = yr(Ip)<=RWALL(3);
+        L\{4\}  = yr(Ip)>=RWALL(4);
+
+        \textcolor{comment}{% particles that are still within their original cell}
+        L0    = \~{}(L\{1\} | L\{2\} | L\{3\} | L\{4\});
+        
+        \textcolor{comment}{% all points that not hitting a cell face are done in this loop}
+        xr0(   Ip(L0)) = xr(Ip(L0));
+        yr0(   Ip(L0)) = yr(Ip(L0));
+        DtRest(Ip(L0)) = 0;
+
+        \textcolor{comment}{% ===== All points that hit any cell face (\~{}L0) =====================}
+
+        \textcolor{comment}{% Compute time till particle hits a cell face}
+        DtRemaining(Ip,:) = 0;
+        
+        \textcolor{keyword}{for} i=1:2  \textcolor{comment}{% West and East}
+            \textcolor{keyword}{if} any(L\{i\})
+                Ipp = Ip(L\{i\});
+                Icc = Icells(Ipp);            
+                DtRemaining(Ipp,i) = estimateTrest(Ipp,Icc,ax(:),vx(:),DtRest,xr0,RWALL(i));
+            \textcolor{keyword}{end}
+        \textcolor{keyword}{end}
+
+        \textcolor{keyword}{for} i=3:4 \textcolor{comment}{% North and South}
+            \textcolor{keyword}{if} any(L\{i\})
+                Ipp = Ip(L\{i\});
+                Icc = Icells(Ipp);
+                DtRemaining(Ipp,i) = estimateTrest(Ipp,Icc,ay(:),vy(:),DtRest,yr0,RWALL(i));
+            \textcolor{keyword}{end}
+        \textcolor{keyword}{end}
+
+        [dt\_remaining,kk] = max(DtRemaining(Ip(\~{}L0),:),[],2);
+
+        kk(dt\_remaining==0)=0;
+        
+        K(\~{}L0) = kk;
+        
+        \textcolor{keyword}{if} \~{}isempty(Ip(\~{}L0))
+             tStep(Ip(\~{}L0)) = DtRest(Ip(\~{}L0)) - dt\_remaining;
+            DtRest(Ip(\~{}L0)) = dt\_remaining;
+        \textcolor{keyword}{end}
+        
+        \textcolor{comment}{% if K==0, i.e. point at cell face,but dt\_remaining = 0}
+        \textcolor{comment}{% then move point to adjacent cell}
+        
+        \textcolor{keyword}{for} i=4:-1:1
+            Ipp = Ip(L\{i\} \& (K==0));
+            \textcolor{keyword}{if} any(Ipp)
+                Icells(Ipp) = Icells(Ipp) + DIDX(i);
+                \textcolor{keyword}{if} i <=2,  xr(Ipp)= XRNW(i); xr0(Ipp) = XRNW(i); \textcolor{keyword}{end}
+                \textcolor{keyword}{if} i >=3,  yr(Ipp)= YRNW(i); yr0(Ipp) = YRNW(i); \textcolor{keyword}{end}
+            \textcolor{keyword}{end}
+            Ipp = Ip(L\{i\} \& K==i);
+            \textcolor{keyword}{if} any(Ipp)
+                Icc= Icells(Ipp);
+                xr(Ipp) = estimate(Ipp,Icc,ax(:),vx(:),tStep,xr0);
+                yr(Ipp) = estimate(Ipp,Icc,ay(:),vy(:),tStep,yr0);
+                
+                Icells(Ipp) = Icells(Ipp) + DIDX(i);
+                \textcolor{keyword}{if} i <=2,  xr(Ipp)= XRNW(i); xr0(Ipp) = XRNW(i); \textcolor{keyword}{end}
+                \textcolor{keyword}{if} i >=3,  yr(Ipp)= YRNW(i); yr0(Ipp) = YRNW(i); \textcolor{keyword}{end}
+            \textcolor{keyword}{end}
+        \textcolor{keyword}{end}
+        
+        Ip = Ip(DtRest(Ip)>0);
+    \textcolor{keyword}{end}
+    
+    active = activeCells(Icells);
+    
+    xr(\~{}active) = 0;       \textcolor{comment}{% put particles in sinks in}
+    yr(\~{}active) = 0;       \textcolor{comment}{% center of sink}
+
+    x  = reshape(gr.Xm(Icells),size(Icells)) + xr.*reshape(gr.dX(Icells),size(Icells));
+    y  = reshape(gr.Ym(Icells),size(Icells)) - yr.*reshape(gr.dY(Icells),size(Icells));
+
+    Ip = active;
+    Ic = Icells(active);
+
+    \textcolor{keyword}{if} mustRandWalk \&\& \~{}isempty(Ic)
+        \textcolor{comment}{% dx and dy are based solely on the velocity at the end points}
+        [dxRW,dyRW] = \textcolor{keyword}{\underline{...}}
+            randWalk(gr,Ip,Ic,xr,yr,ax(:),ay(:),vx(:),vy(:),aL(:),aT(:),Diff(:),R(:),dt(it-1));
+          x(Ip) = x(Ip) + dxRW;
+          y(Ip) = y(Ip) - dyRW;
+
+          \textcolor{comment}{% mirror particles that jumped over the model boundary}
+          I = x<gr.xGr(  1); x(I) = 2*gr.xGr(  1)-x(I);
+          I = x>gr.xGr(end); x(I) = 2*gr.xGr(end)-x(I);
+          I = y>gr.yGr(  1); y(I) = 2*gr.yGr(  1)-y(I);
+          I = y<gr.yGr(end); y(I) = 2*gr.yGr(end)-y(I);
+
+          \textcolor{keyword}{if} any(isnan(Icells)), error(\textcolor{string}{'stop'}); \textcolor{keyword}{end}
+         [Icells(Ip),\~{},\~{},\~{},\~{},xr(Ip),yr(Ip)] = gr.Idx(x(Ip),y(Ip));        
+         active(Ip) = activeCells(Icells(Ip));
+    \textcolor{keyword}{end}
+    
+    \textcolor{comment}{% store output in struct}
+    P(it).time   = t(it);     \textcolor{comment}{%\#ok}
+    P(it).x(:)      = x;      \textcolor{comment}{%\#ok}
+    P(it).y(:)      = y;      \textcolor{comment}{%\#ok}
+    P(it).active(:) = active; \textcolor{comment}{%\#ok}
+    P(it).Icells(:) = Icells; \textcolor{comment}{%\#ok}
+    
+    \textcolor{keyword}{if} decay
+        P(it).mass      = P(it-1).mass .* exp(-reshape(lambda(Icells),size(Icells)).*dt(it-1)); \textcolor{comment}{%\#ok}
+    \textcolor{keyword}{end}
+    
+    \textcolor{comment}{% update which particles are active}
+    xr0(active) = xr(active);
+    yr0(active) = yr(active);
+
+\textcolor{keyword}{end}
+fprintf(\textcolor{string}{'\%d done\(\backslash\)n'},it);
+
+\textcolor{comment}{%\% Functions used above}
+
+\textcolor{keyword}{function} [xr0,yr0,Icells,Np] = distrParticles(gr,n)
+    \textcolor{comment}{%distrParticles -- generate n by n particles in all cells}
+    \textcolor{comment}{% USAGE: [xr0,yr0,Icells,Np] = distrParticles(gr,n)}
+    \textcolor{comment}{%  if n<0, particles are randomized by adding a random number between}
+    \textcolor{comment}{%  0 and 1 ot their relative cell coordinate and mirroring it at their}
+    \textcolor{comment}{%  cell face to keep the particles in their origial cells.}
+    \textcolor{comment}{%  TO 140418}
+    randomize = n<0;
+    n = abs(n);
+    u = (1/(2*n):1/n:1-1/(2*n))-0.5;
+    \textcolor{keyword}{for} i=n:-1:1
+        uu = u(i);
+        \textcolor{keyword}{for} j=n:-1:1
+            IPnt =  (gr.Nod*(n*(i-1)+j-1) +1):gr.Nod*(n*(i-1)+j);
+            vv = u(j);
+            xr0(IPnt,1)  = uu;
+            yr0(IPnt,1)  = vv;
+            Icells(IPnt,1)  = 1:gr.Nod;  \textcolor{comment}{% ix of these points}
+           \textcolor{comment}{% active(IPnt,1)  = activeCells;}
+        \textcolor{keyword}{end}
+    \textcolor{keyword}{end}
+    Np = gr.Nod * n*n;     \textcolor{comment}{% Total number of particles}
+    
+    \textcolor{keyword}{if} randomize
+        xr0 = xr0 + rand(size(xr0))-0.5;
+        yr0 = yr0 + rand(size(yr0))-0.5;
+        
+        \textcolor{comment}{%mirrors at cell faces to keep particles in their original cells}
+        xr0(xr0<-0.5) = -1 - xr0(xr0<-0.5);
+        xr0(xr0> 0.5) =  1 - xr0(xr0> 0.5);
+        yr0(yr0<-0.5) = -1 - yr0(yr0<-0.5);
+        yr0(yr0> 0.5) =  1 - yr0(yr0> 0.5);
+    \textcolor{keyword}{end}
+
+\textcolor{keyword}{function} [xr0,yr0,Icells,Np] = prepSwarm(gr,xP,yP)
+    \textcolor{comment}{%prepSwarm -- prepares a swarm of particles}
+    \textcolor{comment}{% USAGE: [xr0,yr0,Icells,Np] = prepareSwarm(gr,xP,yP)  }
+   [Icells,\~{},\~{},\~{},\~{},xr0,yr0] = gr.Idx(xP(:),yP(:));
+    L      = \~{}isnan(Icells);
+    xr0    = xr0(L);
+    yr0    = yr0(L);
+    Icells = Icells(L);
+    Np     = numel(Icells); 
+
+\textcolor{keyword}{function} r = estimate(Ip,Ic,a,v,Dt,r0)
+    \textcolor{comment}{%ESTIMATE -- compute new relative coordinate (x or y direction)}
+    \textcolor{comment}{%USAGE: xr = estimate(Ip,Ic,ax,vx,Dt,xr0)}
+    \textcolor{comment}{% r, r0 = relative coordinate}
+    
+    T\_MAX = 1e-6;
+    
+    r = zeros(size(Ip));
+
+    L = abs(a(Ic))>1/T\_MAX;
+    
+    \textcolor{keyword}{if} any(\~{}L)
+        r(\~{}L) =  v(Ic(\~{}L)).*Dt(Ip(\~{}L)) +r0(Ip(\~{}L));
+    \textcolor{keyword}{end}
+    r( L) = (v(Ic( L)) + a(Ic( L)).*r0(Ip( L))).*(exp(a(Ic(L)).*Dt(Ip(L))) - 1)./a(Ic(L)) + r0(Ip(L));
+
+\textcolor{keyword}{function} tRemaining = estimateTrest(Ip,Ic,a,v,DtRest,r0,RWALL)
+    \textcolor{comment}{%ESTIMATETREST -- compute remaining time given RWALL and DtRest}
+    \textcolor{comment}{%USAGE: tRemaining = estimateTrest(Ip,Ic,a,v,DtRest,r0,RWALL)}
+    T\_MIN = 1e-3; \textcolor{comment}{% about a minute;}
+    T\_MAX = 1e6;  \textcolor{comment}{% about 1000 days}
+    tRemaining = zeros(size(Ip));
+
+    \textcolor{comment}{% Note that dt = log(v1/v0)/a) and that v1/v0 >0 is required to yield a}
+    \textcolor{comment}{% positive dt. In the limit this log becomes}
+    \textcolor{comment}{% dt = log(dV/V0-1)/a = dV/(aV0)}
+    \textcolor{comment}{% which equals dt =(r-r0)/(V0+r0a)}
+    \textcolor{comment}{% so this is the correct time check to judge whether the log gives a}
+    \textcolor{comment}{% postive time and when r0a matters, it does when T\_MAX>1/a, i.e.}
+    \textcolor{comment}{% then a>1/T\_MAX}
+    
+    La   = a(Ic)>1/T\_MAX \& (RWALL-r0(Ip))./(v(Ic)+r0(Ip).*a(Ic)) > T\_MIN;
+    Lv   = \~{}La           \& (RWALL-r0(Ip))./ v(Ic)                > T\_MIN;
+
+    \textcolor{comment}{% Handle points in cells with abs(a)>EPS first, i.e. use log}
+    arg = (v(Ic(La)) + a(Ic(La)) .* RWALL)./ \textcolor{keyword}{\underline{...}}
+          (v(Ic(La)) + a(Ic(La)) .* r0(Ip(La)));
+    tRemaining(La) = DtRest(Ip(La)) - log(arg)./a(Ic(La));
+
+    \textcolor{comment}{% Handle point in cells with abs(a)<EPS second, i.e. constant velocity}
+    tRemaining(Lv) = DtRest(Ip(Lv)) - (RWALL - r0(Ip(Lv)))./v(Ic(Lv));
+    
+    \textcolor{comment}{% assembling}
+    tRemaining(tRemaining <             T\_MIN) = 0;
+    tRemaining(tRemaining > DtRest(Ip)- T\_MIN) = 0;
+    
+\textcolor{keyword}{function} [dx,dy] = randWalk(gr,Ip,Ic,xr,yr,ax,ay,vx,vy,aL,aT,Diff,R,dt)
+    \textcolor{comment}{%randWalk -- take a random walk stap}
+    \textcolor{comment}{% USAGE [xr,yr] = randomWalk(xr,yr,ax,ay,vx,vy,aL,aT,Diff,dt)}
+    VX     = (vx(Ic) + ax(Ic) .* xr(Ip)).*reshape(gr.dX(Ic),size(Ic)); \textcolor{comment}{% true VX}
+    VY     = (vy(Ic) + ay(Ic) .* yr(Ip)).*reshape(gr.dY(Ic),size(Ic)); \textcolor{comment}{% true VY}
+    
+    V      = sqrt(VX.\^{}2 + VY.\^{}2); \textcolor{comment}{% absolute velocity}
+    
+    sigmaL = sqrt(2 * (aL(Ic).*V+Diff(Ic))./R(Ic) * dt); \textcolor{comment}{% logitudinal}
+    sigmaT = sqrt(2 * (aT(Ic).*V+Diff(Ic))./R(Ic) * dt); \textcolor{comment}{% transverse}
+    
+    dsLong = randn(numel(xr(Ip)),1).*sigmaL; \textcolor{comment}{% random longitudinal displacement}
+    
+    L          = dsLong < -V*dt./R(Ic);
+    dsLong (L) = -V(L)*dt./R(Ic(L));    \textcolor{comment}{% upstream dispersion is physically 0}
+    
+    dsTrans= randn(numel(xr(Ip)),1).*sigmaT; \textcolor{comment}{% transverse displacement}
+    dx     = (VX.*dsLong -VY.*dsTrans)./V;   \textcolor{comment}{% total in x-direction}
+    dy     = (VY.*dsLong +VX.*dsTrans)./V;   \textcolor{comment}{% total in y-direction}
+    
+
+\end{alltt}
