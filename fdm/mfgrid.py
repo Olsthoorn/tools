@@ -22,7 +22,7 @@ from datetime import datetime
 import pandas as pd
 from collections import OrderedDict
 import scipy.interpolate as ip
-import pdb
+import warnings
 
 def AND(*args):
     """Return results of multiple and's on array."""
@@ -462,6 +462,69 @@ def lrc(xyz, xyzGr):
     for x, xGr in zip(xyz, xyzGr):
         LRC.insert(0, index(x, xGr))
     return LRC
+
+def psi_row(frf, row=-1):
+    """Return stream function in row (x-section along x-axis).
+    
+    Parameters
+    ----------
+    frf: flow right face (nd_array)
+        3D array of flow right face.
+    row: int
+        zero based row number for which the stream function is desired.
+        
+    Returns
+    -------
+    Psi (zx +1, ny - 1) array for for (x, z) coordinates except for first and last row.
+    
+    """
+    warnings.warn("psi_row only works when there is no flow along columns.")
+    fr = frf[:, row, :-1]
+    fr = np.vstack((np.zeros_like(fr[0:1]), fr))
+    psi = fr[::-1].cumsum(axis=0)[::-1]
+    return psi
+    
+   
+def psi_col(fff, col=0):
+    """Return stream function in column (cross section along y axis).
+    
+    Parameters
+    ----------
+    fff: flow front face (nd_array)
+        3D array of flow right face.
+    row: int
+        zero based row number for which the stream function is desired.
+        
+    Returns
+    -------
+    Psi (nz, ny - 1) array for all (y, z) coordinates except the first and last column. (See Yp)
+    """
+    warnings.warn("psi_col only works when there is no flow along rows.")
+    ff = fff[:, :-1, col]
+    ff = np.vstack((np.zeros_like(ff[0:1]), ff))
+    psi = ff[::-1].cumsum(axis=0)[::-1]
+    return psi
+
+
+def psi_lay(Q, lay=0):
+    """Return stream function in layer.
+    
+    Parameters
+    ----------
+    Q: net flow into layer (nd_array)
+        3D array of Q
+    lay: int
+        zero based layer number for which the stream function is desired.
+        
+    Return stream function at the conrner points of the layer (ny +1, nx + 1)
+    
+    """
+    warnings.warn("psi_lay only works when there is no flow between layers.")
+    Q2 = Q[lay, :, :]
+    Q2 = np.hstack((np.zeros_like(Q2[:, 0]), Q2, np.zeros_like(Q2[:, -1])))
+    Q2 = np.vstack((np.zeros_like(Q2[0]), Q2, np.zeros_like(Q2[-1])))
+    psi = -Q2[::-1].cummsum(axis=0)[::-1]
+    return psi
 
 
 class Grid:
@@ -1591,6 +1654,7 @@ class Grid:
         else:
             return (0.5 * (self._Z[:-1, :, :] + self._Z[1:, :, :]))[self._Icbd]
 
+    # Convenience functions for contouring heads and concentrations
     @property
     def xc(self):
         """Return xc cell centers except first and last, they are grid coordinates.
@@ -1658,24 +1722,70 @@ class Grid:
         Zc[-1, :, :] = self._Z[-1, :, :]
         return Zc
 
+    # Convenience functions for plotting stream lines
+    def psi_row(self, frf, row=-1):
+        """Return stream function for row.
+        
+        Parameters
+        ----------
+        frf: np.ndarray (self.shape)
+            flow right face.
+        row: int, default zero
+            row number for which the stream function is desired.
+        """        
+        return psi_row(frf, row=row)
+        
+    def psi_col(self, fff, col=0):
+        """Return stream function for column.
+        
+        Parameters
+        ----------
+        fff: np.ndarray (self.shape)
+            flow front face.
+        row: int
+            col number for which the stream function is desired.
+        """
+        return psi_col(fff, col=col)
+    
+    def psi_lay(self, Q, col=None):
+        """Return stream function for layer.
+        
+        Parameters
+        ----------
+        Q: np.ndarray (self.shape)
+            total net injection into layer
+        layer: int
+            layer number for which the stream function is desired.
+        """
+        return psi(Q, row=row)
+
+        
     @property
     def xp(self):
-        """Return xp grid coords vector except first and last [nx-1].
+        """Return xp (nx - 1) grid coords vector except first and last column.
 
         Convenience property for plotting stream lines
         """
         return self._x[1:-1]
 
     @property
+    def yp(self):
+        """Return yp (ny - 1) grid coords vector except first and last row.
+
+        Convenience property for plotting stream lines
+        """
+        return self._y[1:-1]
+    
+    @property
     def zp(self):
         """Return zp grid coords, convenience for plotting stream lines [nz+1].
 
         Rather use Xp with Zp as vertical 2D grid.
         """
-        if self._full == False:
+        if not(self._full):
             return self._Z.ravel()
         else:
-            # Average over teh two adjacent columns
+            # Average over the two adjacent columns
             return (0.5 * (self._Z[:, :, :-1] + self._Z[:, :, 1:])).\
                         mean(axis=1).mean(axis=1)
 
@@ -1688,20 +1798,66 @@ class Grid:
         return self.X[:, 0, 1:-1]
 
     @property
-    def Zp(self, row=0):
-        """Return Zp grid coords in z-x cross section [nz+1, nx-1].
-
-        Except first and last as 2D vertical grid.
-
-        Averaging over adjacent columns.
+    def Yp(self):
+        """Return Yp grid coords except first and last row as 2D vertical grid (nz+1, ny-1).
 
         Convenience property for plotting stream lines.
         """
-        _Zp = self._Z[:, row, :]
-        if _Zp.shape[-1] > 1:
-            return  0.5 * (_Zp[:, :-1] + _Zp[:, 1:])
+        return self.Y[:, 0, 1:-1]
+
+    @property
+    def Zpx(self, row=-1):
+        """Return Zp grid coords in z-x cross section (nz+1, nx-1).
+
+        Except first and last volumn (matches Xp)
+
+        Averaging over adjacent columns.
+
+        Convenience property for plotting stream lines in zx cross sections.
+        """
+        _Zpx = self._Z[:, row, :]
+        if _Zpx.shape[-1] > 1:
+            return  0.5 * (_Zpx[:, :-1] + _Zpx[:, 1:])
         else:
-            return  _Zp * np.ones((1, self.nx - 1))
+            return  _Zpx * np.ones((1, self.nx - 1))
+
+    @property
+    def Zpy(self, col=0):
+        """Return Zp grid coords in z-y cross section (nz+1, ny-1).
+
+        Except first and last volumn (matches Yp)
+
+        Averaging over adjacent rows.
+
+        Convenience property for plotting stream lines in zy cross sections.
+        """
+        _Zpy = self._Z[:, :, col]
+        if _Zpy.shape[-1] > 1:
+            return  0.5 * (_Zpy[:, :-1] + _Zpy[:, 1:])
+        else:
+            return  _Zpy * np.ones((1, self.ny - 1))
+
+    @property
+    def Zp(self):
+        """Return Zp grid coords [nz+1, ny-1, nx-1].
+
+        Except first and last cols and rows.
+
+        Averaging over adjacent columns and rows.
+
+        Convenience property for plotting stream lines.
+        
+        Returns z-grid coordinates (nz + 1, ny -1, nx -1) except for the
+        last and first columns and rows.
+        Note that Zp[:, row, :] matches Zxp(row) and
+             that Zp[:, :, col] matches Zyp(col)
+        TODO: Verify @TO 231116
+        """
+        _Zp = self._Z
+        if _Zp.shape[-1] > 1:
+            0.25 * (_Zp[:, :-1, :-1] + _Zp[:, 1:, :-1] + _Zp[:, 1:, 1:] + _Zp[:, :-1, 1:])
+        else:
+            return  _Zp * np.ones((1, self.ny-1, self.nx - 1))
 
     @property
     def ztop(self):
@@ -3073,18 +3229,18 @@ class Grid:
                     np.hstack((zT, self.z, zB)))
 
     def inpoly(self, pgcoords, row=None, world=False):
-        """Return bool array [ny, nx] or [nz, nx].
-
-        Depending on row with true if cell centers are inside horizontal
-        or vertical polygon
+        """Return bolean array [ny, nx] or [nz, nx] telling which cells are within a horizontal or vertical polygon.
 
         Parameters
         ----------
         pgcoords: like [(0, 1),(2, 3), ...] or an (n, 2) np.ndarray
             polygon coordinates
-        row: if None, polygon is assumed xy coordinates and grid is in the xy plane
-             if row is int, then grid is cross section at given row
-             and pgcoords are interpreted as x,z
+        row: row number of None
+            If None, polygon is horizontal and pgcoords are assumed xy coordinates.
+            A boolean xy grid is returned.
+            If row is int, then pgcoordinates are assumed vertical (x, z) and are
+            in the cross section (iy) of the center of a given row.
+            A boolean (z, x) array is then returned.
         """
         if world:
             if row is None:

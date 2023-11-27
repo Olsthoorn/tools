@@ -1,0 +1,295 @@
+\begin{alltt}
+\textcolor{keyword}{function} [XP YP TP]=fdm2path(gr,Q,Qx,Qy,por,T,markers,XStart,YStart)
+\textcolor{comment}{%FDM2PATH 2D particle tracking.}
+\textcolor{comment}{%}
+\textcolor{comment}{% Example:}
+\textcolor{comment}{%    [XP YP TP]=fdm2path(gr,Q,Qx,Qy,por,T,markers [,XStart,YStart])}
+\textcolor{comment}{%}
+\textcolor{comment}{% To use this function:}
+\textcolor{comment}{%    generate a 2D steady-state model, launch this function using its produced}
+\textcolor{comment}{%    matrixes Q,Qx,Qy and other necessary parameters DX and por}
+\textcolor{comment}{%    if no starting values are used you must click on an existing picture and}
+\textcolor{comment}{%    the flow path will be immedidately drawn with markers at the given time points in T}
+\textcolor{comment}{%    Repeat this for more lines. Click te right hand button to stop}
+\textcolor{comment}{%    Type fdm2path for selftest and demo}
+\textcolor{comment}{%}
+\textcolor{comment}{% INPUT:}
+\textcolor{comment}{%    gr is a grid2DObj with the information about the mesh}
+\textcolor{comment}{%    So use 'radial' mode, specify gr = grid2DObj(xGr,yGr,'AXIAL'true);}
+\textcolor{comment}{%    Q Qx Qy [L3/T] output of fdm2 (steady state only)}
+\textcolor{comment}{%    por     [ -  ] matrix of porosities (scalar is enough)}
+\textcolor{comment}{%    T       [ T  ] time points where markers are desired, A marker at t=0 will always be placed}
+\textcolor{comment}{%                   Use negative times vor backward tracing}
+\textcolor{comment}{%    markers [  - ] is a series of markers for the consecutive times}
+\textcolor{comment}{%           e.g.   '>+o*.xsdph\^{}v<'. The series will be repeated if necessary.}
+\textcolor{comment}{%    XP YP TP [ L ] coordintates of flow paths, there is a [NaN NaN NaN] between}
+\textcolor{comment}{%    consecutive tracks if muliple starting points or clicks are used.}
+\textcolor{comment}{%}
+\textcolor{comment}{% See also: fmd2t fdm2c fdm2ct fdm3 fdm3t}
+\textcolor{comment}{%}
+\textcolor{comment}{% TO 070424 070501 140420}
+
+\textcolor{comment}{% Copyright 2009-2014 Theo Olsthoorn, TU-Delft and Waternet, without any warranty}
+\textcolor{comment}{% under free software foundation GNU license version 3 or later}
+
+\textcolor{keyword}{if} nargin==0; selftest; \textcolor{keyword}{return}; \textcolor{keyword}{end}
+
+\textcolor{keyword}{if} nargin<9
+    markers=\textcolor{string}{'+o*.xsdph\^{}v<>'};
+\textcolor{keyword}{end}
+Lm=numel(markers);
+
+\textcolor{keyword}{if} isscalar(por), por=gr.const(por);   \textcolor{keyword}{end}
+
+x = gr.xGr;
+y = gr.yGr;
+DZ = gr.dZ;
+
+\textcolor{comment}{%first make sure the positive direction of the grid is aligned with the positive gr.xGr and y directions}
+\textcolor{keyword}{if} sign(x(end)-x(1))<0, x=fliplr(x); Q=fliplr(Q); Qx=fliplr(Qx); Qy=fliplr(Qy); DZ=fliplr(DZ); por=fliplr(por); \textcolor{keyword}{end}
+\textcolor{keyword}{if} sign(y(end)-y(1))<0, y=flipud(y); Q=flipud(Q); Qx=flipud(Qx); Qy=flipud(Qy); DZ=flipud(DZ); por=flipud(por); \textcolor{keyword}{end}
+
+dx= diff(x);
+dy= diff(y);
+
+\textcolor{comment}{% then check which cell are sinks}
+
+\textcolor{keyword}{if} T(end)<T(1)  \textcolor{comment}{% if times negative then track particles backward in tme}
+    Qx=-Qx;
+    Qy=-Qy;
+    T=-T;
+\textcolor{keyword}{end}
+
+sinkfrac=0.25;
+
+Qy(isnan(Qy))=0;
+Qx(isnan(Qx))=0;
+Q(isnan( Q ))=0;
+
+Qthrough=zeros(size(Q));
+\textcolor{keyword}{if} \~{}isempty(Qx)
+    Qthrough=Qthrough+[zeros(size(Qx(:,1))),abs(Qx)]+[abs(Qx),zeros(size(Qx(:,1)))];
+\textcolor{keyword}{end}
+\textcolor{keyword}{if} \~{}isempty(Qy)
+    Qthrough=Qthrough+[zeros(size(Qy(1,:)));abs(Qy)]+[abs(Qy);zeros(size(Qy(1,:)))];
+\textcolor{keyword}{end}
+sink= Q < -sinkfrac*Qthrough;
+\textcolor{comment}{%figure; spy(sink)}
+\textcolor{keyword}{if} gr.AXIAL \textcolor{comment}{% then the flow is axially symmetric}
+    fprintf(\textcolor{string}{'Fdmpath in radial mode.\(\backslash\)n'})
+    \textcolor{keyword}{if} \~{}isempty(Qx)
+        A=dy*2*pi*x;
+        vx2=[Qx, zeros(size(Qx(:,1)))]./(A(:,2:end)  .*por);
+        vx1=[zeros(size(Qx(:,1))), Qx]./(A(:,1:end-1).*por);
+        ax=(vx2-vx1)./(ones(size(Qx(:,1)))*diff(x));
+    \textcolor{keyword}{end}
+    \textcolor{keyword}{if} \~{}isempty(Qy)
+        A=ones(size(dy))*(pi*(x(2:end).\^{}2-x(1:end-1).\^{}2));
+        vy2=[Qy; zeros(size(Qy(1,:)))]./(A.*por);
+        vy1=[zeros(size(Qy(1,:))); Qy]./(A.*por);
+        ay=(vy2-vy1)./(diff(y)*ones(size(Qy(1,:))));
+    \textcolor{keyword}{end}
+\textcolor{keyword}{else}
+    fprintf(\textcolor{string}{'Fdmpath in flat mode.\(\backslash\)n'})
+    \textcolor{keyword}{if} \~{}isempty(Qx)
+        vx2=[Qx, zeros(size(Qx(:,1)))]./((dy*ones(size(dx))).*por.*DZ);
+        vx1=[zeros(size(Qx(:,1))), Qx]./((dy*ones(size(dx))).*por.*DZ);
+        ax=(vx2-vx1)./(ones(size(Qx(:,1)))*diff(x));
+    \textcolor{keyword}{end}
+    \textcolor{keyword}{if} \~{}isempty(Qy)
+        vy2=[Qy; zeros(size(Qy(1,:)))]./((ones(size(dy))*dx).*por.*DZ);
+        vy1=[zeros(size(Qy(1,:))); Qy]./((ones(size(dy))*dx).*por.*DZ);
+        ay=(vy2-vy1)./(diff(y)*ones(size(Qy(1,:))));
+    \textcolor{keyword}{end}
+\textcolor{keyword}{end}
+
+XP=([]); YP=([]); TP=([]); j=1;
+
+\textcolor{comment}{% startpoints must be inside model}
+\textcolor{comment}{%Iout=find( XStart<min(x) | XStart>max(x) | YStart<min(y) | YStart>max(y) );}
+\textcolor{comment}{%XStart(Iout)=[];}
+\textcolor{comment}{%YStart(Iout)=[];}
+
+\textcolor{keyword}{while} 1
+    \textcolor{keyword}{if} exist(\textcolor{string}{'XStart'},\textcolor{string}{'var'}) \&\& exist(\textcolor{string}{'YStart'},\textcolor{string}{'var'})
+        \textcolor{keyword}{if} j>length(XStart), \textcolor{keyword}{break}; \textcolor{keyword}{end}
+        Xp=XStart(j); Yp=YStart(j);  \textcolor{comment}{% get starting points for stream lines}
+        j=j+1;
+    \textcolor{keyword}{else}
+        [Xp, Yp, button]=ginput(1);  \textcolor{keyword}{if} button\~{}=1; \textcolor{keyword}{break}; end \textcolor{comment}{% get starting points for stream lines}
+    \textcolor{keyword}{end}
+    DT=diff(T(:)); \textcolor{keyword}{if} T(1)\~{}=0, DT=[T(1);DT]; end \textcolor{comment}{%\#ok}
+
+    \textcolor{keyword}{for} ip=1:length(Xp);
+        xp=Xp(ip); yp=Yp(ip); t=T(1);
+        XP=[XP;NaN;xp]; \textcolor{comment}{%\#ok}
+        YP=[YP;NaN;yp]; \textcolor{comment}{%\#ok}
+        TP=[TP;NaN; t]; \textcolor{comment}{%\#ok}
+        iLast=length(TP); \textcolor{comment}{% to later plot only this  line}
+
+        ic=find(x<xp,1,\textcolor{string}{'last'}); \textcolor{keyword}{if} isempty(ic) || ic==length(x), \textcolor{keyword}{break}; \textcolor{keyword}{end}
+        jc=find(y<yp,1,\textcolor{string}{'last'}); \textcolor{keyword}{if} isempty(jc) || jc==length(y), \textcolor{keyword}{break}; \textcolor{keyword}{end}
+
+        line(xp,yp,\textcolor{string}{'marker'},markers(1)); hold on;  \textcolor{comment}{% initial marker}
+        
+        \textcolor{keyword}{for} idt=1:length(DT);
+            dt=DT(idt);
+            \textcolor{keyword}{while} dt>0
+                \textcolor{keyword}{if} isempty(Qx)
+                    dic=0; dtx=dt;
+                \textcolor{keyword}{else}
+                    [xpN,dic,dtx]=postime(xp,x(ic),x(ic+1),vx1(jc,ic),vx2(jc,ic),ax(jc,ic),dt);
+                \textcolor{keyword}{end}
+                \textcolor{keyword}{if} isempty(Qy)
+                    djc=0; dty=dt;
+                \textcolor{keyword}{else}
+                    [ypN,djc,dty]=postime(yp,y(jc),y(jc+1),vy1(jc,ic),vy2(jc,ic),ay(jc,ic),dt);
+                \textcolor{keyword}{end}
+
+                [ddt,i]=min([dtx,dty]);
+
+                \textcolor{keyword}{switch} i
+                    \textcolor{keyword}{case} 1
+                        \textcolor{keyword}{if} \~{}isempty(Qy)
+                            xp=xpN;
+                            yp=pos(yp,y(jc),vy1(jc,ic),ay(jc,ic),ddt);
+                        \textcolor{keyword}{end}
+                        ic=ic+dic;
+                    \textcolor{keyword}{case} 2
+                        \textcolor{keyword}{if} \~{}isempty(Qx)
+                            xp=pos(xp,x(ic),vx1(jc,ic),ax(jc,ic),ddt);
+                            yp=ypN;
+                        \textcolor{keyword}{end}
+                        jc=jc+djc;
+                \textcolor{keyword}{end}
+
+                dt=dt-ddt; t=t+ddt;
+                XP=[XP;xp]; YP=[YP;yp]; TP=[TP;t]; \textcolor{comment}{%\#ok}
+                \textcolor{keyword}{if} length(XP)>20000; \textcolor{keyword}{break}; \textcolor{keyword}{end}
+              
+              \textcolor{keyword}{if} dt==0
+                  m=mod(idt+1,Lm); \textcolor{keyword}{if} m==0, m=Lm; end   \textcolor{comment}{% the +1 because the first marker is the initial one}
+                  line(xp,yp,\textcolor{string}{'marker'},markers(m)); hold on;
+              \textcolor{keyword}{end}
+
+              \textcolor{keyword}{if} sink(jc,ic);
+                  \textcolor{keyword}{break};  \textcolor{comment}{% from while}
+              \textcolor{keyword}{end}
+
+            \textcolor{keyword}{end}
+
+            \textcolor{keyword}{if} sink(jc,ic);
+              \textcolor{keyword}{break}; \textcolor{comment}{% from for }
+            \textcolor{keyword}{end}
+        \textcolor{keyword}{end}
+        line(XP(iLast:end),YP(iLast:end),\textcolor{string}{'color'},\textcolor{string}{'g'});
+    \textcolor{keyword}{end}
+\textcolor{keyword}{end}
+XP=[XP;NaN]; YP=[YP;NaN]; TP=[TP;NaN];
+\textcolor{keyword}{end}
+
+\textcolor{keyword}{function} [xp,dic,dt]=postime(xp,x1,x2,v1,v2,ax,Dt)
+EPS=1e-6;
+
+v=v1+ax*(xp-x1);
+\textcolor{keyword}{if} abs(v)<EPS
+    \textcolor{comment}{% ic=ic}
+    dt=Dt;  \textcolor{comment}{% immediately jumpt to end of time step}
+    dic=0;
+    \textcolor{keyword}{return}; \textcolor{comment}{% x remains same location}
+\textcolor{keyword}{end}
+
+\textcolor{keyword}{if} v<0  \textcolor{comment}{% point moves to face at left side}
+    \textcolor{keyword}{if} abs(ax)<EPS  \textcolor{comment}{% v will be constant}
+        dt=(x1-xp)/v;
+        \textcolor{keyword}{if} dt>Dt
+            dt=Dt;
+            xp=xp+v*dt;
+            dic=0;
+        \textcolor{keyword}{else}
+            xp=x1;
+            dic=-1;
+        \textcolor{keyword}{end}
+    \textcolor{keyword}{elseif} v1>=0           \textcolor{comment}{% point will never reach left face}
+        dt=Dt;         \textcolor{comment}{% immediately jump to end of time step}
+        xp=pos(xp,x1,v1,ax,dt); \textcolor{comment}{% compute position at Dt}
+        dic=0; \textcolor{comment}{% ic=ic}
+    \textcolor{keyword}{else}
+        dt=tim(xp,x1,x1,v1,ax);
+        \textcolor{keyword}{if} dt>Dt
+            dt=Dt;
+            xp=pos(xp,x1,v1,ax,dt);
+            dic=0;
+        \textcolor{keyword}{else}
+            xp=x1;
+            dic=-1;
+        \textcolor{keyword}{end}
+    \textcolor{keyword}{end}
+\textcolor{keyword}{end}
+
+\textcolor{keyword}{if} v>0
+    \textcolor{keyword}{if} abs(ax)<EPS
+        dt=(x2-xp)/v;
+        \textcolor{keyword}{if} dt>Dt
+            dt=Dt;
+            dic=0;
+            xp=xp+dt*v;
+        \textcolor{keyword}{else}
+            xp=x2;
+            dic=+1;
+        \textcolor{keyword}{end}
+    \textcolor{keyword}{elseif} v2<=0
+        dt=Dt;
+        xp=pos(xp,x1,v1,ax,dt);
+        dic=0;
+    \textcolor{keyword}{else}
+        dt=tim(xp,x2,x1,v1,ax);  \textcolor{comment}{% CHECK}
+        \textcolor{keyword}{if} dt>Dt
+            dt=Dt;
+            xp=pos(xp,x1,v1,ax,dt);
+            dic=0;
+        \textcolor{keyword}{else}
+            xp=x2;
+            dic=+1;
+        \textcolor{keyword}{end}
+    \textcolor{keyword}{end}
+\textcolor{keyword}{end}
+\textcolor{keyword}{end}
+
+\textcolor{keyword}{function} xp=pos(xstart,x1,v1,ax,dt)
+EPS=1e-6;
+\textcolor{keyword}{if} abs(ax)<EPS
+    vx=v1+ax*(xstart-x1);
+    xp=xstart+vx*dt;
+\textcolor{keyword}{else}         
+    xp=x1+(v1/ax+(xstart-x1))*exp(ax*dt)-v1/ax;
+\textcolor{keyword}{end}
+\textcolor{keyword}{end}
+    
+\textcolor{keyword}{function} dt=tim(xstart,xtarget,x1,v1,ax)
+    dt=1/ax*log((v1+ax*(xtarget-x1))/(v1+ax*(xstart-x1)));
+\textcolor{keyword}{end}
+
+\textcolor{keyword}{function} selftest
+    eval(\textcolor{string}{'help fdm2path'})
+    clear all; close all
+
+    xGr = linspace(-2500,2500,22);
+    yGr = linspace(-2500,2500,22);
+    gr  = grid2DObj(xGr,yGr,50);
+    
+    IBOUND = gr.const(1); IBOUND(:,[1 end])=-1; IBOUND([1 end],:)=-1;
+    k  = gr.const(10);
+    FH = gr.const(0);
+    FQ = gr.const(0.001*gr.Area);
+    
+    [Phi,Q,Qx,Qy]=fdm2(gr,kx,ky,IBOUND,FH,FQ);
+    
+    contour(gr.xm,gr.ym,Phi); hold on
+
+    \textcolor{comment}{%Track particles}
+    por = 0.35;
+    t=[60 365 3650 25*365 100*365];
+    fdm2path(gr,Q,Qx,Qy,por,t,\textcolor{string}{'...p...p...p'});
+\textcolor{keyword}{end}
+\end{alltt}

@@ -1,0 +1,56 @@
+\begin{alltt}
+\textcolor{keyword}{function} p = rbline(ax)
+    \textcolor{comment}{%RBLINE -- draw a rubberband line and return the start and end points}
+    \textcolor{comment}{% USAGE: [p1,p2]=rbline([ax]);     uses current axes}
+    \textcolor{comment}{% Sandra Martinka 2002}
+    Nmax = 500; udata=[];
+
+    \textcolor{keyword}{if} nargin<1, ax = gca; \textcolor{keyword}{end}
+
+    set(ax,\textcolor{string}{'nextPlot'},\textcolor{string}{'add'});
+
+    
+    p(Nmax,2) = 0;
+
+    \textcolor{comment}{% Get first point}
+    i=1;
+    set(gcf,\textcolor{string}{'WindowButtonMotionFcn'},\textcolor{string}{''},\textcolor{string}{'DoubleBuffer'},\textcolor{string}{'on'});
+
+    k=waitforbuttonpress; \textcolor{keyword}{if} k>0, \textcolor{keyword}{return}; \textcolor{keyword}{end}
+
+    udata.ax     = ax;
+    pnt          = get(ax,\textcolor{string}{'CurrentPoint'});
+    p(i,1:2)     = pnt(1,1:2);
+    udata.p      = p(1:i,:);
+    udata.h      = plot(p(1:i,1),p(1:i,2),\textcolor{string}{'+:'});
+    set(gcf,\textcolor{string}{'UserData'},udata);
+    
+    set(gcf,\textcolor{string}{'WindowButtonMotionFcn'},\textcolor{string}{''},\textcolor{string}{'DoubleBuffer'},\textcolor{string}{'on'});
+    
+    \textcolor{comment}{% Loop until keypress}
+    \textcolor{keyword}{for} i=2:Nmax
+        udata.p = p(1:i,:);
+        set(gcf,\textcolor{string}{'UserData'},udata);
+        k=waitforbuttonpress;
+        \textcolor{keyword}{if} k>0  \textcolor{comment}{% keypress else mousepress}
+            p = p(1:i-1,:);
+            \textcolor{keyword}{return}
+        \textcolor{keyword}{end}
+
+        pnt = get(ax,\textcolor{string}{'CurrentPoint'});
+        p(i,1:2) = pnt(1,1:2);
+        udata.p  = p(1:i,:);
+        set(udata.h,\textcolor{string}{'xData'},udata.p(:,1),\textcolor{string}{'yData'},udata.p(:,2));      \textcolor{comment}{%plot starting point}
+    \textcolor{keyword}{end}
+    
+    p=p(1:i,:);
+\textcolor{keyword}{end}
+
+\textcolor{keyword}{function} wbmf
+\textcolor{comment}{%WBMF -- window motion callback function}
+    udata = get(gcf,\textcolor{string}{'UserData'});
+    pnt   = get(udata.ax,\textcolor{string}{'CurrentPoint'});
+    udata.p(\textcolor{keyword}{end},:) = pnt(1,1:2);
+    set(udata.h,\textcolor{string}{'XData'},udata.p(:,1),\textcolor{string}{'YData'},udata.p(:,2));
+\textcolor{keyword}{end}
+\end{alltt}

@@ -1,0 +1,83 @@
+\begin{alltt}
+\textcolor{comment}{%\% Example of a cross section with streamlines}
+
+\textcolor{comment}{%\% Define a set of layers, }
+layers=\{ 
+  \textcolor{comment}{% material, top, bottom     k}
+  \textcolor{string}{'clay'}        0       -5  0.02           
+  \textcolor{string}{'sand'}       -5      -50  20.0
+  \textcolor{string}{'clay'}      -50      -60   0.01
+  \textcolor{string}{'sand'}      -60      -200 30.0
+\};
+
+\textcolor{comment}{% get k values from specified layers}
+top = [layers\{:,2\}];
+bot = [layers\{:,3\}]; L = [top bot(end)];
+kLay= [layers\{:,4\}];
+
+
+\textcolor{comment}{%\% Grid}
+\textcolor{comment}{% The column and row coordinates are refined where needed to have}
+\textcolor{comment}{% a very detailed result (top and bottom of wells and sheet piling}
+\textcolor{comment}{% just add coordinates then apply unique to sort out}
+xGr = [0:2:18, 18:0.2:22 19:0.1:21, 22:2:40, 40:10:100, \textcolor{keyword}{\underline{...}}
+       100:25:250, 250:50:500, 500:100:1000];
+yGr = [L L(1:end-1)-0.01 L(end)+0.01, -5:-0.1:-7, -7:-0.5:-14, -15:-0.1:-16, \textcolor{keyword}{\underline{...}}
+      -16:-0.5:-19.5, -19.5:-0.1:-20.5, -20.5:-0.5:-25, -25:-5:-50];
+
+gr = grid2DObj(xGr,yGr,\textcolor{string}{'axial'},0);
+
+\textcolor{comment}{%\% Special domains in section}
+xW     = [19.9 20  ]; yW    =[ 0 -15]; kW=0.0001;
+xWells = [19.8 19.9]; yWells=[-6 -11]; FHWells=-5;
+
+inWells = gr.Ym<yWells(1) \& gr.Ym>yWells(2) \& gr.Xm>xWells(1) \& gr.Xm<xWells(2);
+inSheet = gr.Ym<yW(1)     \& gr.Ym>yW(2)     \& gr.Xm>xW(1)     \& gr.Xm<xW(2);
+
+\textcolor{comment}{% Geological layer numbers for all model layers}
+iL= floor(interp1([top bot(end)],1:numel(kLay)+1,gr.ym));
+
+\textcolor{comment}{%\% Arrays}
+IBOUND = gr.const(1); IBOUND(1,:) = -1;
+IBOUND(inSheet) = -1;
+IBOUND(inWells) = -1;
+
+\textcolor{comment}{% Conductivities}
+k = gr.const(kLay(iL)');
+k(inSheet)=kW;   \textcolor{comment}{% set k in sheet piling to kW}
+
+\textcolor{comment}{% Fixed heads in wells}
+FH = gr.const(0);
+FHwells = -6;
+FH(inWells)=FHwells;
+
+\textcolor{comment}{% Fixed flows}
+FQ = gr.const(0);
+
+\textcolor{comment}{%\% Run model}
+[Phi,Q,Qx,Qy,Psi]=fdm2a(gr,k,k,IBOUND,FH,FQ);
+
+\textcolor{comment}{%\% Visualize}
+
+figure; axes(\textcolor{string}{'nextplot'},\textcolor{string}{'add'},\textcolor{string}{'xGrid'},\textcolor{string}{'on'},\textcolor{string}{'yGrid'},\textcolor{string}{'on'});
+title(\textcolor{string}{'Half cross section through building pit with sheet pilings'});
+xlabel(\textcolor{string}{'x [m]'}); ylabel(\textcolor{string}{'z [m]'});
+
+contour(gr.xm,gr.ym,Phi,-6:0.2:0,\textcolor{string}{'b'});
+
+contour(gr.xp,gr.yp,Psi,20,\textcolor{string}{'r'});
+
+\textcolor{keyword}{for} i=1:size(layers,1)
+    plot(gr.xGr([1 end]),L([i i]));
+\textcolor{keyword}{end}
+
+por = 0.35;
+t   = 365 * (0:10:100);
+fdm2path(gr,Q,Qx,Qy,por,t,\textcolor{string}{'...p...p...p'});
+
+\textcolor{comment}{%\% Water balance and computed head below pit}
+sum(sum(Q(inWells)))
+sum(sum(Q(1,:)))       \textcolor{comment}{% infiltration through top of model}
+sum(sum(Q))            \textcolor{comment}{% overall water balance}
+Phi(gr.ym<-5 \& gr.ym>-6,1)   \textcolor{comment}{% head below building pit}
+\end{alltt}

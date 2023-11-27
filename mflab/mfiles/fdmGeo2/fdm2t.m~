@@ -1,0 +1,97 @@
+function [Phi,Qin,Qs,Qx,Qy,Psi]=fdm2t(gr,t,Tx,Ty,Ss,IBOUND,HI,QI)
+%FDM2 a 2D block-centred transient finite difference model
+% USAGE:
+%    [Phi,Qin,Qs,Qx,Qy,Psi]=fdm2(gr,t,Tx,Ty,Ss,IBOUND,HI,FQ)
+% Inputs:
+%    gr    = grid2DObj (see grid2DObj)
+%    Tx,Ty = transmissivities, either scalar or full 2D arrays
+%    IBOUND= boudary array as in MODFLOW (<0 fixed head, 0 inactive, >0 active)
+%    HI    = initial heads (STRTHD in MODFLOW)
+%    QI    = prescribed inflow for each cell.
+%    t     = times, dt = diff(t) will be the time steps
+% Outputs:
+%    Phi(Ny  ,Nx  ,Nt ) [ L  ]  Nt=numel(diff(t)); Ndt=numel(dt);
+%    Qin(Ny  ,Nx  ,Ndt) [L3/T]  flow into cells during time step
+%    Qx( Ny  ,Nx-1,Ndt) [L3/T]  horizontal cell face flow positive in positive xGr direction
+%    Qy( Ny-1,Nx  ,Ndt) [L3/T]  vertial    cell face flow, postive in positive yGr direction
+%    Psi(Ny+1,Nx-2,Ndt) [L3/T]  stream function (only useful if flow is divergence free)
+%    Qs( Ny  ,Nx  ,Ndt) [L3/T]  flow released from storage during the time step Dphi*S*V/Dt
+% TO 991017  TO 000530 001026 070414 090314 101130 140410
+
+theta = 0.67; % degree of implicitness  
+t     = permute(unique(t(:)),[3,2,1]); dt = diff(t,1,3); Ndt=numel(dt);
+Nodes = reshape(1:gr.Nod,gr.size);               % Node numbering
+IE=Nodes(:,2:end);   IW=Nodes(:,1:end-1);
+IS=Nodes(2:end,:);   IN=Nodes(1:end-1,:);
+
+Iact  = IBOUND(:) >0;
+Inact = IBOUND(:)==0; Tx(Inact)=0; Ty(Inact)=0;
+Ifh   = IBOUND(:) <0;
+
+[Cx,Cy,Cs] = conductances(gr,Tx,Ty,Ss,theta);
+
+C     = sparse([IW(:); IN(:)], [IE(:); IS(:)], [-Cx(:); -Cy(:)], gr.Nod, gr.Nod, 5*gr.Nod);
+C     = C + C';
+diagC = -sum(C,2);  % Main diagonal
+
+HI(Inact)=NaN;   Phi = bsxfun(@times, t,HI);   HI = HI(:); HT=HI;
+QI(Inact)=  0;   Qin = bsxfun(@times,dt,QI);   QI = QI(:);
+
+for idt = 1:Ndt
+    HT(Iact) = spdiags(diagC(Iact)+Cs(Iact)/dt(idt),0,C( Iact , Iact )) ...
+            \(QI(Iact) - C(Iact,Ifh)*HI(Ifh) + Cs(Iact)/dt(idt).*HI(Iact)); % solve
+    HI(Iact) = HT(Iact)/theta + (1-theta)/theta * HI(Iact);
+
+    Phi(:,:,idt+1)= reshape(HI,gr.size);
+    if nargout>1
+        Qin(:,:,idt)= reshape(spdiags(diagC(~Inact),0,C(~Inact,~Inact))* HI(~Inact),gr.size);    
+    end
+end
+
+
+if nargout>2
+    Cs =  reshape(Cs,gr.size);
+    Qs =  bsxfun(@times,     dt, Cs) .* diff(Phi,1,3); % Release rate from storage
+    
+    if nargout>3
+
+        PhiTheta = @(theta) theta * Phi(:,:,2:end) + (1-theta) * Phi(:,:,1:end-1);
+
+        onesDt = ones(size(dt));
+        Qx = -bsxfun(@times, onesDt, Cx) .*diff(PhiTheta,1,2); % Flow across vertical   cell faces
+        
+        if nargout>4
+            Qy = +bsxfun(@times, onesDt, Cy) .*diff(PhiTheta,1,1); % Flow across horizontal cell faces
+
+            if narout>5
+                Psi = zeros(Ny+1,Nx-2,Ndt);
+                Psi(2:end,:,:) = cumsum(Qx,1);
+                Psi(:,:,:) = Psi(end:-1:1,:,:);
+            end
+        end
+    end
+end
+
+function [Cx,Cy,Cs] = conductances(gr,Tx,Ty,Ss,theta)
+    %CONDUCTANCE --- compute conductances
+    % USAGE: [Cx,Cy] = contuctance(gr,Tx,Ty)
+    
+    if isscalar(Tx), Tx= gr.const(Tx); end
+    if isscalar(Ty), Ty= gr.const(Ty); end
+    if isscalar(Ss), Ss= gr.const(Ss); end
+    
+    % resistances and conducctances
+    if ~gr.AXIAL
+        RX = 0.5*bsxfun(@rdivide,gr.dx,gr.dy)./Tx;
+        RY = 0.5*bsxfun(@rdivide,gr.dy,gr.dx)./Ty;
+        Cx = 1./(RX(:,1:end-1)+RX(:,2:end));
+        Cs = gr.Vol.*Ss/theta; Cs = Cs(:);
+    else
+        RX = bsxfun(@rdivide,log(gr.xGr(2:end-1)./gr.xm( 1:end-1)),2*pi*Tx(:,1:end-1).*gr.dY(:,1:end-1))+ ...
+             bsxfun(@rdivide,log(gr.xm( 2:end  )./gr.xGr(2:end-1)),2*pi*Tx(:,2:end  ).*gr.dY(:,2:end  ));
+        RY = 0.5*bsxfun(@rdivide,gr.dY./Ty, pi*(gr.xGr(2:end).^2 - gr.xGr(1:end-1).^2));
+        Cs = gr.Vol.*Ss/theta; Cs = Cs(:);
+        Cx = 1./RX;
+    end
+    Cy = 1./(RY(1:end-1,:)+RY(2:end,:));
+

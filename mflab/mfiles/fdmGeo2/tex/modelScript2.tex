@@ -1,0 +1,83 @@
+\begin{alltt}
+\textcolor{comment}{%\%\% ModelScript -- Example 2 sets up 2D FDM, runs it and shows results}
+
+\textcolor{comment}{%\% Arbitrary island, with an internal lake, an impervious area and wells}
+
+FXHD     = -1;
+INACTIVE =  0;
+ACTIVE   =  1;
+
+\textcolor{comment}{%\% Grid}
+d     = 25; \textcolor{comment}{% 5   \% cell width}
+xGr   = [-1000:d:-d -d/2 d/2 d:d:1000];
+yGr   = [-1000:d:-d -d/2 d/2 d:d:1000];
+gr    =  grid2DObj(xGr,yGr);
+
+\textcolor{comment}{%\% Reads island, lake and rock contours and wells and termine cells within}
+example2Data;
+inIsland = inpolygon(gr.Xm,gr.Ym,Island(:,1),Island(:,2));
+inLake   = inpolygon(gr.Xm,gr.Ym,  Lake(:,1),  Lake(:,2));
+inRock   = inpolygon(gr.Xm,gr.Ym,  Rock(:,1),  Rock(:,2));
+
+\textcolor{comment}{%\% Transmissivities}
+Tx = gr.const(600);
+Ty = gr.const(600);
+
+\textcolor{comment}{%\% Recharge}
+rch   = 0.001; \textcolor{comment}{% net recharge rate}
+FQ    = gr.Area * rch;
+
+\textcolor{comment}{%\% Wells}
+\textcolor{keyword}{for} iw=1:size(well,1)
+    ix = find(gr.xm>=well(iw,1),1,\textcolor{string}{'first'});
+    iy = find(gr.ym<=well(iw,2),1,\textcolor{string}{'first'});
+    FQ(iy,ix) = FQ(iy,iw) +well(iw,3);
+\textcolor{keyword}{end}
+
+\textcolor{comment}{%\% IBOUND}
+IBOUND = zeros(gr.size);
+IBOUND( inIsland) = ACTIVE;
+IBOUND(\~{}inIsland) = FXHD;
+IBOUND( inLake)   = FXHD;
+IBOUND( inRock)   = INACTIVE;
+
+\textcolor{comment}{%\% Initial and fixed heads}
+hLake = 0.2;
+hSea  = 0;
+
+IH    = gr.const(0);
+IH(\~{}inIsland) = hSea;
+IH( inLake)   = hLake;
+
+\textcolor{comment}{%\% Run model}
+[Phi,Q,Qx,Qy] = fdm2(gr,Tx,Ty,IBOUND,IH,FQ);
+
+\textcolor{comment}{%\% Visualize results}
+
+figure; hold on;
+xlabel(\textcolor{string}{'x [m]'}); ylabel(\textcolor{string}{'y [m]'});
+title(\textcolor{string}{'example2: Island with lake and impervious rock'});
+
+\textcolor{comment}{% Contours of head}
+phiMax = max(Phi(:)); phiMin = min(Phi(:));  hRange = phiMin:(phiMax-phiMin)/25:phiMax;
+contourf(gr.xm,gr.ym,Phi,hRange,\textcolor{string}{'edgeColor'},\textcolor{string}{'none'});
+
+\textcolor{comment}{% Draw line around island and lake}
+plot(Island(:,1),Island(:,2),\textcolor{string}{'b'});
+plot(  Lake(:,1),  Lake(:,2),\textcolor{string}{'b'});
+plot(  Rock(:,1),  Rock(:,2),\textcolor{string}{'b'});
+
+\textcolor{comment}{% Show arrows of flow direction and magnitude}
+qx = [Qx(:,1), Qx, Qx(:,end)]; qx = 0.5*(qx(:,1:end-1) + qx(:,2:end));
+qy = [Qy(1,:); Qy; Qy(\textcolor{keyword}{end},:)]; qy = 0.5*(qy(1:end-1,:) + qy(2:\textcolor{keyword}{end},:));
+quiver(gr.Xm,gr.Ym,qx,qy);
+
+hb = colorbar; set(get(hb,\textcolor{string}{'title'}),\textcolor{string}{'string'},\textcolor{string}{'head [m]'})  \textcolor{comment}{% Colorbar}
+
+\textcolor{comment}{%\% Check water balance}
+fprintf(\textcolor{string}{'Water balances:\(\backslash\)n'});
+fprintf(\textcolor{string}{'Total water balance = \%10g (should be zero)\(\backslash\)n'},sum(Q(IBOUND\~{}=0)));
+fprintf(\textcolor{string}{'Total recharge (active  cells) = \%10.0f m3/d\(\backslash\)n'},sum(Q(IBOUND>0)));
+fprintf(\textcolor{string}{'Total discharge(fixhd + wells) = \%10.0f m3/d\(\backslash\)n'},sum(Q(IBOUND<0)));
+
+\end{alltt}
