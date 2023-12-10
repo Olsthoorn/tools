@@ -319,6 +319,8 @@ def get_struct_flows(flowjas, grb_file=None, verbose=False):
     
     """
     ja_ptr, grb = get_indices_to_pick_fxf(grb_file=grb_file)
+
+    flowjas = [flowja.flatten() for flowja in flowjas[0]]
     
     dtype = np.dtype([('frf', (float, grb.shape)),
                       ('fff', (float, grb.shape)),

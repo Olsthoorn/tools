@@ -21,8 +21,14 @@ class Dirs():
             ..      # Other runnable code like Zonebudget
         cases   # folder collecting all cases for this projec
             <case_name1>  # First case <..> denote dedicated name.
-                mf6_files
+                flow
                     mfsim.lst
+                    ..
+                    <case_name1>.lst
+                    <case_name1>.dis
+                    ..
+                transport
+                     mfsim.lst
                     ..
                     <case_name1>.lst
                     <case_name1>.dis
@@ -137,7 +143,7 @@ class Dirs():
             
         # Add subdirs 'mf6_files, Photos, Images'
         
-        for subd in ['mf6_files', 'Photos', 'Images']:
+        for subd in ['SIM', 'GWF', 'GWT', 'Photos', 'Images']:
             subdir =  os.path.join(self.case, subd)           
             exec("self.{} = '{}'".format(subd, subdir))
             if not os.path.isdir(subdir):
