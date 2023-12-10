@@ -88,36 +88,39 @@ def mf_setup():
 
 ### sim =====================
     logging.info("sim")
-    model_dict['Simsim'].update(sim_name=mf_adapt.sim_name, sim_ws=mf_adapt.dirs.mf6_files)
+    model_dict['Simsim'].update(sim_name=mf_adapt.sim_name, sim_ws=mf_adapt.dirs.SIM)
     sim = flopy.mf6.MFSimulation(**model_dict['Simsim'])
     fp_packages['Simsim'] = sim
 
 ### tdis ====================
     logging.info("Simtdis")
     model_dict['Simtdis'].update(nper=mf_adapt.nper, perioddata=mf_adapt.period_data,
-                      start_date_time=mf_adapt.start_date_time)
+                      start_date_time=mf_adapt.start_date_time,
+                      time_units=mf_adapt.TIME_UNITS)
     
     fp_packages['Simtdis'] = flopy.mf6.ModflowTdis(sim, **model_dict['Simtdis'])
-
-### ims =====================
-    if True: # Solver, geneally use defaults from workbook.
-        model_dict['Simims'].update()
-        logging.info("Simims")
-        fp_packages['Simims'] = flopy.mf6.ModflowIms(sim, **model_dict['Simims'])
-   
-
+            
 ### ======== F L O W ================================================
 
     if 'Gwf' in use_models:
     ### Gwf =====================
         if True: # Groundwater flow model, use name from 'sim').
             logging.info("Gwf")
-            model_dict['Gwfgwf'].update(modelname=sim.name,
-                                    model_rel_path=mf_adapt.dirs.mf6_files,
+            Gwf_model_name = sim.name + 'Gwf'
+            model_dict['Gwfgwf'].update(modelname=Gwf_model_name,
+                                    model_rel_path=mf_adapt.dirs.GWF,
                                     exe_name=sim.exe_name,
                                     )
             gwf = flopy.mf6.ModflowGwf(sim, **model_dict['Gwfgwf'])
             fp_packages['Gwfgwf'] = gwf
+            
+            ### Ims =====================
+            model_dict['Gwfims'].update()
+            logging.info("Gwfims")
+            Gwfims = flopy.mf6.ModflowIms(sim, **model_dict['Gwfims'])
+            fp_packages['Gwfims'] = Gwfims
+            sim.register_ims_package(Gwfims, [Gwf_model_name])    
+    
 
     ### Gwfdis ==================
         if 'Gwfdis' in use_packages:
@@ -125,6 +128,7 @@ def mf_setup():
             model_dict['Gwfdis'].update(nlay=gr.nlay, nrow=gr.nrow, ncol=gr.ncol,
                                     delr=gr.dx, delc=gr.dy,
                                     top=gr.Z[0], botm=gr.Z[1:],
+                                    length_units = mf_adapt.LENGTH_UNITS,
                                     idomain=mf_adapt.IDOMAIN,                                 
             )
             fp_packages['Gwfdis'] = flopy.mf6.ModflowGwfdis(gwf, **model_dict['Gwfdis'])
@@ -233,9 +237,7 @@ def mf_setup():
     ### Gwfoc ==================
         if 'Gwfoc' in use_packages:
             logging.info('Gwfoc')
-            model_dict['Gwfoc'].update(head_filerecord="{}.hds".format(sim.name),
-                    budget_filerecord="{}.cbc".format(sim.name),
-                    saverecord=[("HEAD", "ALL"), ("BUDGET", "ALL")])
+            model_dict['Gwfoc'].update(**mf_adapt.Gwfoc)
             fp_packages['Gwfoc'] = flopy.mf6.ModflowGwfoc(gwf, **model_dict['Gwfoc'])
     
     ### Gwfrch ==================
@@ -286,18 +288,31 @@ def mf_setup():
     if 'Gwt' in use_models:
     ### Gwt ===============================
         if True: # Groundwater transport model, use name from 'sim').
-            logging.info("Gwt")
-            model_dict['Gwt'].update(modelname=sim.name,
-                                    model_rel_path=mf_adapt.dirs.mf6,
+            logging.info("Gwtgwt")
+            Gwt_model_name = sim.name + 'Gwt'
+            model_dict['Gwtgwt'].update(modelname=Gwt_model_name,
+                                    model_rel_path=mf_adapt.dirs.GWT,
                                     exe_name=sim.exe_name,
                                     )
             gwt = flopy.mf6.ModflowGwt(sim, **model_dict['Gwtgwt'])
             fp_packages['Gwtgwt'] = gwt
             
+            ### ims =====================
+            model_dict['Gwtims'].update(complexity='MODERATE')  # SIMPLE | MODERATE | COMPLEX
+            logging.info("Gwtims")
+            Gwtims = flopy.mf6.ModflowIms(sim, **model_dict['Gwtims'])
+            fp_packages['Gwtims'] = Gwtims
+            sim.register_ims_package(Gwtims, [Gwt_model_name])
+            
     ### Gwtdis ==================
         if 'Gwtdis' in use_packages:
             logging.info('Gwtdis')
-            model_dict['Gwtdis'].update()
+            model_dict['Gwtdis'].update(nlay=gr.nlay, nrow=gr.nrow, ncol=gr.ncol,
+                        delr=gr.dx, delc=gr.dy,
+                        top=gr.Z[0], botm=gr.Z[1:],
+                        length_units=mf_adapt.LENGTH_UNITS,
+                        idomain=mf_adapt.IDOMAIN,                                 
+            )
             fp_packages['Gwtdis'] = flopy.mf6.ModflowGwtdis(gwt, **model_dict['Gwtdis'])
     
     ### Gwtdisu ==================
@@ -311,37 +326,36 @@ def mf_setup():
             logging.info('Gwtdisv')
             model_dict['Gwtdisv'].update()
             fp_packages['Gwtdisv'] = flopy.mf6.ModflowGwtdisv(gwt, **model_dict['Gwtdisv'])
-    
-
-
+            
     ### Gwtadv ==================
         if 'Gwtadv' in use_packages:
             logging.info('Gwtadv')
-            model_dict['Gwtadv'].update()
+            model_dict['Gwtadv'].update(scheme=mf_adapt.SCHEME)
             fp_packages['Gwtadv'] = flopy.mf6.ModflowGwtadv(gwt, **model_dict['Gwtadv'])
     
     ### Gwtcnc ==================
         if 'Gwtcnc' in use_packages:
             logging.info('Gwtcnc')
-            model_dict['Gwtcnc'].update()
+            model_dict['Gwtcnc'].update(stress_period_data=mf_adapt.CONSTCONC,
+                                        maxbound = len(mf_adapt.CONSTCONC))
             fp_packages['Gwtcnc'] = flopy.mf6.ModflowGwtcnc(gwt, **model_dict['Gwtcnc'])
     
     ### Gwtdsp ==================
         if 'Gwtdsp' in use_packages:
             logging.info('Gwtdsp')
-            model_dict['Gwtdsp'].update()
+            model_dict['Gwtdsp'].update(**mf_adapt.DISPERSIVITIES)
             fp_packages['Gwtdsp'] = flopy.mf6.ModflowGwtdsp(gwt, **model_dict['Gwtdsp'])
     
     ### Gwtfmi ==================
         if 'Gwtfmi' in use_packages:
             logging.info('Gwtfmi')
-            model_dict['Gwtfmi'].update()
+            model_dict['Gwtfmi'].update(**mf_adapt.Gwtfmi)
             fp_packages['Gwtfmi'] = flopy.mf6.ModflowGwtfmi(gwt, **model_dict['Gwtfmi'])
     
     ### Gwtic ==================
         if 'Gwtic' in use_packages:
             logging.info('Gwtic')
-            model_dict['Gwtic'].update()
+            model_dict['Gwtic'].update(strt=mf_adapt.STRTC)
             fp_packages['Gwtic'] = flopy.mf6.ModflowGwtic(gwt, **model_dict['Gwtic'])
     
     ### Gwtist ==================
@@ -359,7 +373,7 @@ def mf_setup():
     ### Gwtmst ==================
         if 'Gwtmst' in use_packages:
             logging.info('Gwtmst')
-            model_dict['Gwtmst'].update()
+            model_dict['Gwtmst'].update(**mf_adapt.Gwtmst)
             fp_packages['Gwtmst'] = flopy.mf6.ModflowGwtmst(gwt, **model_dict['Gwtmst'])
     
     ### Gwtmvt ==================
@@ -383,7 +397,7 @@ def mf_setup():
     ### Gwtoc ==================
         if 'Gwtoc' in use_packages:
             logging.info('Gwtoc')
-            model_dict['Gwtoc'].update()
+            model_dict['Gwtoc'].update(**mf_adapt.GWTOC)
             fp_packages['Gwtoc'] = flopy.mf6.ModflowGwtoc(gwt, **model_dict['Gwtoc'])
     
     ### Gwtsft ==================
@@ -409,6 +423,19 @@ def mf_setup():
             logging.info('Gwtuzt')
             model_dict['Gwtuzt'].update()
             fp_packages['Gwtuzt'] = flopy.mf6.ModflowGwtuzt(gwt, **model_dict['Gwtuzt'])
+
+
+
+### ==== Dynamic exchange ===========================================
+        
+    if 'Gwf' in use_models and 'Gwt' in use_models:
+        logging.info("Dynamic exchange GWF-GWT active")
+        model_dict['Gwfexc'].update(exgtype='GWF6-GWT6',
+                                    exgmnamea=model_dict['Gwfgwf']['modelname'],
+                                    exgmnameb=model_dict['Gwtgwt']['modelname'])
+        exchange = flopy.mf6.ModflowGwfgwt(sim, **model_dict['Gwfexc'])
+        fp_packages['Gwfexc'] = exchange
+
 
     return fp_packages, model_dict, use_models, use_packages
 
