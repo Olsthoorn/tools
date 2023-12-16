@@ -995,6 +995,14 @@ class Grid:
                           np.asarray(Irow, dtype=int),
                           np.asarray(Icol, dtype=int))).T
 
+    def Ix(self, x):
+        """Return column index for points x."""
+        return index(x, self.x)
+    
+    def Iy(self, y):
+        """Return row index for points y"""
+        return index(y, self.y)
+
     def I(self, LRC):
         """Return global index given LRC (zero based)."""
         LRC = np.array(LRC)

@@ -54,7 +54,7 @@ import numpy as np
 import flopy
 import logging
 import mf_adapt
-from mflab import mf_paramtools
+from mf6lab import mf6tools
 logging.basicConfig(level=logging.WARNING, format=' %(asctime)s - %(levelname)s - %(message)s')
 
 NOT = np.logical_not
@@ -69,17 +69,17 @@ def mf_setup():
 
     #params_wbk = os.path.join(mf_adapt.HOME, mf_adapt.sim_name + '.xlsx')
 
-    use_models, use_packages  = mf_paramtools.get_models_and_packages_from_excel(
+    use_models, use_packages  = mf6tools.get_models_and_packages_from_excel(
                                                 mf_adapt.params_wbk, sheet_name='NAM')
     
-    model_dict = mf_paramtools.get_mf6_params_from_excel(
+    model_dict = mf6tools.get_mf6_params_from_excel(
                                     mf_adapt.params_wbk, sheet_name='SIM6')
 
     if 'Gwf' in use_models:
-        model_dict.update(mf_paramtools.get_mf6_params_from_excel(
+        model_dict.update(mf6tools.get_mf6_params_from_excel(
                                     mf_adapt.params_wbk, sheet_name='GWF6'))
     if 'Gwt' in use_models:
-        model_dict.update(mf_paramtools.get_mf6_params_from_excel(
+        model_dict.update(mf6tools.get_mf6_params_from_excel(
                                     mf_adapt.params_wbk, sheet_name='GWT6'))
 
     fp_packages=dict()
@@ -94,10 +94,7 @@ def mf_setup():
 
 ### tdis ====================
     logging.info("Simtdis")
-    model_dict['Simtdis'].update(nper=mf_adapt.nper, perioddata=mf_adapt.period_data,
-                      start_date_time=mf_adapt.start_date_time,
-                      time_units=mf_adapt.TIME_UNITS)
-    
+    model_dict['Simtdis'].update(**mf_adapt.Simtdis)
     fp_packages['Simtdis'] = flopy.mf6.ModflowTdis(sim, **model_dict['Simtdis'])
             
 ### ======== F L O W ================================================
@@ -125,113 +122,115 @@ def mf_setup():
     ### Gwfdis ==================
         if 'Gwfdis' in use_packages:
             logging.info('Gwfdis')
+            model_dict['Gwfdis'].update(**mf_adapt.Gwfdis)
+            gr = model_dict['Gwfdis'].pop('gr')
             model_dict['Gwfdis'].update(nlay=gr.nlay, nrow=gr.nrow, ncol=gr.ncol,
-                                    delr=gr.dx, delc=gr.dy,
-                                    top=gr.Z[0], botm=gr.Z[1:],
-                                    length_units = mf_adapt.LENGTH_UNITS,
-                                    idomain=mf_adapt.IDOMAIN,                                 
+                                        delr=gr.dx, delc=gr.dy,
+                                        top=gr.Z[0], botm=gr.Z[1:]                              
             )
             fp_packages['Gwfdis'] = flopy.mf6.ModflowGwfdis(gwf, **model_dict['Gwfdis'])
 
     ### Gwfdisu ==================
         if 'Gwfdisu' in use_packages:
             logging.info('Gwfdisu')
-            model_dict['Gwfdisu'].update()
+            model_dict['Gwfdisu'].update(**mf_adapt.Gwfdisu)
             fp_packages['Gwfdisu'] = flopy.mf6.ModflowGwfdisu(gwf, **model_dict['Gwfdisu'])
     
     ### Gwfdisv ==================
         if 'Gwfdisv' in use_packages:
             logging.info('Gwfdisv')
-            model_dict['Gwfdisv'].update()
+            model_dict['Gwfdisv'].update(**mf_adapt.Gwfdisv)
             fp_packages['Gwfdisv'] = flopy.mf6.ModflowGwfdisv(gwf, **model_dict['Gwfdisv'])
     
     
     ### Gwfbuy ==================
         if 'Gwfbuy' in use_packages:
             logging.info('Gwfbuy')
-            model_dict['Gwfbuy'].update()
+            model_dict['Gwfbuy'].update(**mf_adapt.Gwfbuy)
             fp_packages['Gwfbuy'] = flopy.mf6.ModflowGwfbuy(gwf, **model_dict['Gwfbuy'])
     
     ### Gwfchd ==================
         if 'Gwfchd' in use_packages:
             logging.info('Gwfchd')
-            model_dict['Gwfchd'].update(stress_period_data=mf_adapt.CHD,
-                            maxbound=len(mf_adapt.CHD[0]))
+            timeseries = mf_adapt.Gwfchd.pop('timeseries', None)
+            model_dict['Gwfchd'].update(**mf_adapt.Gwfchd)
             fp_packages['Gwfchd'] = flopy.mf6.ModflowGwfchd(gwf, **model_dict['Gwfchd'])
+            Gwfchd = fp_packages['Gwfchd']
+            if timeseries:
+                Gwfchd.ts.initialize(**timeseries.pop(0))
+                while timeseries:
+                    Gwfchd.ts.append_package(**timeseries.pop(0))
     
     ### Gwfcsub ==================
         if 'Gwfcsub' in use_packages:
             logging.info('Gwfcsub')
-            model_dict['Gwfcsub'].update()
+            model_dict['Gwfcsub'].update(**mf_adapt.Gwfcsub)
             fp_packages['Gwfcsub'] = flopy.mf6.ModflowGwfcsub(gwf, **model_dict['Gwfcsub'])
     
     ### Gwfdrn ==================
         if 'Gwfdrn' in use_packages:
             logging.info('Gwfdrn')
-            model_dict['Gwfdrn'].update()
+            model_dict['Gwfdrn'].update(**mf_adapt.Gwfdrn)
             fp_packages['Gwfdrn'] = flopy.mf6.ModflowGwfdrn(gwf, **model_dict['Gwfdrn'])
     
     ### Gwfevt ==================
         if 'Gwfevt' in use_packages:
             logging.info('Gwfevt')
-            model_dict['Gwfevt'].update()
+            model_dict['Gwfevt'].update(**mf_adapt.Gwfevt)
             fp_packages['Gwfevt'] = flopy.mf6.ModflowGwfevt(gwf, **model_dict['Gwfevt'])
     
     ### Gwfghb ==================
         if 'Gwfghb' in use_packages:
             logging.info('Gwfghb')
-            model_dict['Gwfghb'].update()
+            model_dict['Gwfghb'].update(**mf_adapt.Gwfghb)
             fp_packages['Gwfghb'] = flopy.mf6.ModflowGwfghb(gwf, **model_dict['Gwfghb'])
     
     ### Gwfgnc ==================
         if 'Gwfgnc' in use_packages:
             logging.info('Gwfgnc')
-            model_dict['Gwfgnc'].update()
+            model_dict['Gwfgnc'].update(**mf_adapt.Gwfgnc)
             fp_packages['Gwfgnc'] = flopy.mf6.ModflowGwfgnc(gwf, **model_dict['Gwfgnc'])
     
     ### Gwfhfb ==================
         if 'Gwfhfb' in use_packages:
             logging.info('Gwfhfb')
-            model_dict['Gwfhfb'].update()
+            model_dict['Gwfhfb'].update(**mf_adapt.Gwfhfb)
             fp_packages['Gwfhfb'] = flopy.mf6.ModflowGwfhfb(gwf, **model_dict['Gwfhfb'])
     
     ### Gwfic ==================
         if 'Gwfic' in use_packages:
             logging.info('Gwfic')
-            model_dict['Gwfic'].update(strt=mf_adapt.STRTHD)
+            model_dict['Gwfic'].update(**mf_adapt.Gwfic)
             fp_packages['Gwfic'] = flopy.mf6.ModflowGwfic(gwf, **model_dict['Gwfic'])
     
     ### Gwflak ==================
         if 'Gwflak' in use_packages:
             logging.info('Gwflak')
-            model_dict['Gwflak'].update()
+            model_dict['Gwflak'].update(**mf_adapt.Gwflak)
             fp_packages['Gwflak'] = flopy.mf6.ModflowGwflak(gwf, **model_dict['Gwflak'])
     
     ### Gwfmaw ==================
         if 'Gwfmaw' in use_packages:
             logging.info('Gwfmaw')
-            model_dict['Gwfmaw'].update()
+            model_dict['Gwfmaw'].update(**mf_adapt.Gwfmaw)
             fp_packages['Gwfmaw'] = flopy.mf6.ModflowGwfmaw(gwf, **model_dict['Gwfmaw'])
     
     ### Gwfmvr ==================
         if 'Gwfmvr' in use_packages:
             logging.info('Gwfmvr')
-            model_dict['Gwfmvr'].update()
+            model_dict['Gwfmvr'].update(mf_adapt.Gwfmvr)
             fp_packages['Gwfmvr'] = flopy.mf6.ModflowGwfmvr(gwf, **model_dict['Gwfmvr'])
     
     ### Gwfnpf ==================
         if 'Gwfnpf' in use_packages:
             logging.info('Gwfnpf')
-            model_dict['Gwfnpf'].update(
-                k=mf_adapt.HK,
-                k22=mf_adapt.HK, # no flow along y=axis
-                k33 =mf_adapt.VK)
+            model_dict['Gwfnpf'].update(**mf_adapt.Gwfnpf)
             fp_packages['Gwfnpf'] = flopy.mf6.ModflowGwfnpf(gwf, **model_dict['Gwfnpf'])
     
     ### Gwfobs ==================
         if 'Gwfobs' in use_packages:
             logging.info('Gwfobs')
-            model_dict['Gwfobs'].update()
+            model_dict['Gwfobs'].update(**mf_adapt.Gwfobs)
             fp_packages['Gwfobs'] = flopy.mf6.ModflowGwfobs(gwf, **model_dict['Gwfobs'])
     
     ### Gwfoc ==================
@@ -243,43 +242,43 @@ def mf_setup():
     ### Gwfrch ==================
         if 'Gwfrch' in use_packages:
             logging.info('Gwfrch')
-            model_dict['Gwfrch'].update()
+            model_dict['Gwfrch'].update(**mf_adapt.Gwfrch)
             fp_packages['Gwfrch'] = flopy.mf6.ModflowGwfrch(gwf, **model_dict['Gwfrch'])
     
     ### Gwfriv ==================
         if 'Gwfriv' in use_packages:
             logging.info('Gwfriv')
-            model_dict['Gwfriv'].update()
+            model_dict['Gwfriv'].update(**mf_adapt.Gwfriv)
             fp_packages['Gwfriv'] = flopy.mf6.ModflowGwfriv(gwf, **model_dict['Gwfriv'])
     
     ### Gwfsfr ==================
         if 'Gwfsfr' in use_packages:
             logging.info('Gwfsfr')
-            model_dict['Gwfsfr'].update()
+            model_dict['Gwfsfr'].update(mf_adapt.Gwfsfr)
             fp_packages['Gwfsfr'] = flopy.mf6.ModflowGwfsfr(gwf, **model_dict['Gwfsfr'])
     
     ### Gwfsto ==================
         if 'Gwfsto' in use_packages:
             logging.info('Gwfsto')
-            model_dict['Gwfsto'].update()
+            model_dict['Gwfsto'].update(**mf_adapt.Gwfsto)
             fp_packages['Gwfsto'] = flopy.mf6.ModflowGwfsto(gwf, **model_dict['Gwfsto'])
     
     ### Gwfuzf ==================
         if 'Gwfuzf' in use_packages:
             logging.info('Gwfuzf')
-            model_dict['Gwfuzf'].update()
+            model_dict['Gwfuzf'].update(**mf_adapt.Gwfuzf)
             fp_packages['Gwfuzf'] = flopy.mf6.ModflowGwfuzf(gwf, **model_dict['Gwfuzf'])
     
     ### Gwfvsc ==================
         if 'Gwfvsc' in use_packages:
             logging.info('Gwfvsc')
-            model_dict['Gwfvsc'].update()
+            model_dict['Gwfvsc'].update(**mf_adapt.Gwfvsc)
             fp_packages['Gwfvsc'] = flopy.mf6.ModflowGwfvsc(gwf, **model_dict['Gwfvsc'])
     
     ### Gwfwel ==================
         if 'Gwfwel' in use_packages:
             logging.info('Gwfwel')
-            model_dict['Gwfwel'].update()
+            model_dict['Gwfwel'].update(**mf_adapt.Gwfwel)
             fp_packages['Gwfwel'] = flopy.mf6.ModflowGwfwel(gwf, **model_dict['Gwfwel'])
 
 
