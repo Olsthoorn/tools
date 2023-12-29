@@ -1,0 +1,578 @@
+#LyX 2.3 created this file. For more info see http://www.lyx.org/
+\lyxformat 544
+\begin_document
+\begin_header
+\save_transient_properties true
+\origin unavailable
+\textclass scrreprt
+\begin_preamble
+%\usepackage{epstopdf} % to include .eps graphics files with pdfLaTeX
+\usepackage{flafter}   % Don't place floats before their definition
+%\usepackage{topcapt}  % Define \topcation for placing captions above tables (not in gwTeX)
+
+\usepackage{xurl}      % better URL setting, uses old url package
+
+\usepackage{xcolor}
+\definecolor{darkblue}{rgb}{0,0,0.4}
+\usepackage[]{hyperref} % Generates all cross references
+\hypersetup{            % Setting options for hyperref package
+	breaklinks=true,    % break line with long hyperlinks
+	colorlinks=true,    % coloured links
+	linkcolor=blue,
+	filecolor=magenta,
+	urlcolor=darkblue,
+	citecolor=blue,
+	backref=page
+} 
+
+\usepackage{memhfixc}  % remove conflict between the memoir class & hyperref
+\usepackage{pdfsync}   % enable tex source and pdf output syncronicity
+
+\usepackage{memhfixc}  % remove conflict between the memoir class & hyperref
+\usepackage{pdfsync}   % enable tex source and pdf output syncronicity
+
+\usepackage{alltt}
+\end_preamble
+\use_default_options true
+\maintain_unincluded_children false
+\language english
+\language_package default
+\inputencoding utf8
+\fontencoding global
+\font_roman "default" "default"
+\font_sans "default" "default"
+\font_typewriter "default" "default"
+\font_math "auto" "auto"
+\font_default_family default
+\use_non_tex_fonts false
+\font_sc false
+\font_osf false
+\font_sf_scale 100 100
+\font_tt_scale 100 100
+\use_microtype false
+\use_dash_ligatures true
+\graphics default
+\default_output_format default
+\output_sync 0
+\bibtex_command biber
+\index_command default
+\paperfontsize default
+\spacing single
+\use_hyperref false
+\papersize default
+\use_geometry false
+\use_package amsmath 1
+\use_package amssymb 1
+\use_package cancel 1
+\use_package esint 1
+\use_package mathdots 1
+\use_package mathtools 1
+\use_package mhchem 1
+\use_package stackrel 1
+\use_package stmaryrd 1
+\use_package undertilde 1
+\cite_engine biblatex
+\cite_engine_type authoryear
+\biblio_options hyperref=true, backref=true, backrefstyle=three,backreffloats=true,indexing=bib,date=year
+\biblatex_bibstyle authoryear
+\biblatex_citestyle authoryear
+\use_bibtopic false
+\use_indices false
+\paperorientation portrait
+\suppress_date false
+\justification true
+\use_refstyle 1
+\use_minted 0
+\index Index
+\shortcut idx
+\color #008000
+\end_index
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation indent
+\paragraph_indentation default
+\is_math_indent 0
+\math_numbering_side default
+\quotes_style english
+\dynamic_quotes 0
+\papercolumns 1
+\papersides 1
+\paperpagestyle default
+\listings_params "language=Python,extendedchars=false,frameround=fttt,numbers=none,% left,line numbers use none,numberstyle={\tiny},stepnumber=2,% line numbers only every so many,numbersep=9pt,% how far line numbers from text?,showspaces=false,showstringspaces=false,showtabs=false,tab={\rightarrowfill},basicstyle={\small},keywordstyle={\color{blue}},commentstyle={\color{green}},%,stringstyle={\ttfamily \color{magenta}},identifierstyle={\color{black}}"
+\tracking_changes false
+\output_changes false
+\html_math_output 0
+\html_css_as_file 0
+\html_be_strict false
+\end_header
+
+\begin_body
+
+\begin_layout Title
+Converint pixels to coordinates using the plotdigitier .xml output
+\end_layout
+
+\begin_layout Author
+T.N.Olsthoorn
+\end_layout
+
+\begin_layout Date
+23-12-2023
+\end_layout
+
+\begin_layout Section*
+Intro
+\end_layout
+
+\begin_layout Standard
+Lines in an image of drawing can be converted to coordinartes by tracking
+ these lines in an app like the popular 
+\emph on
+plotdigitizer
+\emph default
+.
+ The app is free, but the free app only allows exporting the digitized coordinat
+es to an xml file.
+ (The webversion also free and the payed version do allow exporting to other
+ formats, though).
+ The returned xml file contains the digitized pixels and the data allowing
+ conversion to real world coordinates.
+ These conversion data, i.e.
+ points on the coordinate axis have been digitized as well during the initial
+ calibration of the image, which is done by pointing to points on the axes
+ and telling which x or y coordinate belong to each of mostly 4 points.
+\end_layout
+
+\begin_layout Standard
+Given this situation, we obtained the pixel coordinates with meta data and
+ do have to convert them to the real-world coordinates ourself.
+ The calibrated points defining the pixels of the two calibrated points
+ on the xaxis are named 
+\begin_inset Formula $minXaxisX$
+\end_inset
+
+, 
+\begin_inset Formula $minXaxisY$
+\end_inset
+
+, 
+\begin_inset Formula $maxXaxisX$
+\end_inset
+
+, 
+\begin_inset Formula $maxXaxisY$
+\end_inset
+
+ and the pixels of the two calbrated points of the yaxis are named 
+\begin_inset Formula $minYaxisX$
+\end_inset
+
+, 
+\begin_inset Formula $minYaxisY$
+\end_inset
+
+, 
+\begin_inset Formula $maxYaxisX$
+\end_inset
+
+, 
+\begin_inset Formula $maxYaxisY$
+\end_inset
+
+, while the corresponding two real-world x-values of xaxis are named 
+\begin_inset Formula $aX1$
+\end_inset
+
+, 
+\begin_inset Formula $aX2$
+\end_inset
+
+ and the two y-values for the yaxis are named 
+\begin_inset Formula $aY1$
+\end_inset
+
+ and 
+\begin_inset Formula $aY2$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Section*
+Conversion from pixels to real world coordinates
+\end_layout
+
+\begin_layout Standard
+The x and y axis are just two vectors in the 2D space.
+ To from an axes system, we need to find their intersection first.
+ This can be done from the following equation
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\left(\begin{array}{c}
+x_{x1}\\
+y_{x1}
+\end{array}\right)+\lambda\left[\left(\begin{array}{c}
+x_{x2}\\
+y_{x2}
+\end{array}\right)-\left(\begin{array}{c}
+x_{x1}\\
+y_{x1}
+\end{array}\right)\right]=\left(\begin{array}{c}
+x_{y1}\\
+y_{y1}
+\end{array}\right)+\mu\left[\left(\begin{array}{c}
+x_{y2}\\
+y_{y2}
+\end{array}\right)-\left(\begin{array}{c}
+x_{y1}\\
+y_{y1}
+\end{array}\right)\right]
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+From this 
+\begin_inset Formula $\lambda$
+\end_inset
+
+ and 
+\begin_inset Formula $\mu$
+\end_inset
+
+ can be readily determined.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\lambda\left[\left(\begin{array}{c}
+x_{x2}\\
+y_{x2}
+\end{array}\right)-\left(\begin{array}{c}
+x_{x1}\\
+y_{x1}
+\end{array}\right)\right]-\mu\left[\left(\begin{array}{c}
+x_{y2}\\
+y_{y2}
+\end{array}\right)-\left(\begin{array}{c}
+x_{y1}\\
+y_{y1}
+\end{array}\right)\right]=\left(\begin{array}{c}
+x_{y1}-x_{x1}\\
+y_{y1}-y_{x1}
+\end{array}\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\left(\begin{array}{c}
+x_{x2}-x_{x1}\\
+y_{x2}-y_{x1}
+\end{array}\right)\lambda-\left(\begin{array}{c}
+x_{y2}-x_{y1}\\
+y_{y2}-y_{y1}
+\end{array}\right)\mu=\left(\begin{array}{c}
+x_{y1}-x_{x1}\\
+y_{y1}-y_{x1}
+\end{array}\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\left(\begin{array}{cc}
+\left(x_{x2}-x_{x1}\right), & \left(-x_{y2}+x_{y1}\right)\\
+\left(y_{x2}-y_{x1}\right), & \left(-y_{y2}+y_{y1}\right)
+\end{array}\right)\left(\begin{array}{c}
+\lambda\\
+\mu
+\end{array}\right)=\left(\begin{array}{c}
+x_{y1}-x_{x1}\\
+y_{y1}-y_{x1}
+\end{array}\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Solution for 
+\begin_inset Formula $\lambda$
+\end_inset
+
+ and 
+\begin_inset Formula $\mu$
+\end_inset
+
+:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\left(\begin{array}{c}
+\lambda\\
+\mu
+\end{array}\right)=\left(\begin{array}{cc}
+\left(x_{x2}-x_{x1}\right), & \left(-x_{y2}+x_{y1}\right)\\
+\left(y_{x2}-y_{x1}\right), & \left(-y_{y2}+y_{y1}\right)
+\end{array}\right)^{-1}\left(\begin{array}{c}
+x_{y1}-x_{x1}\\
+y_{y1}-y_{x1}
+\end{array}\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The pixel values 
+\begin_inset Formula $x_{0},y_{0}$
+\end_inset
+
+ for the axes crossing of the parameters follows from
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+x_{0} & =x_{x1}+\lambda\left(x_{x2}-x_{x1}\right)\\
+y_{0} & =y_{x1}+\lambda\left(y_{x2}-y_{x1}\right)
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+which must now be the same as, and should be used as a check:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+x_{0} & =x_{y1}+\mu\left(x_{y2}-x_{y1}\right)\\
+y_{0} & =y_{y1}+\mu\left(y_{y2}-y_{y1}\right)
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The world values 
+\begin_inset Formula $x_{w0},y_{w_{0}}$
+\end_inset
+
+follow from
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+x_{w0}=x_{w1}+\lambda\left(x_{w2}-x_{w1}\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+y_{w0}=y_{w1}+\mu\left(y_{w2}-y_{w1}\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section*
+The coordinates of the pixel 
+\begin_inset Formula $x,y$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The world coordinates 
+\begin_inset Formula $x_{w},y_{w}$
+\end_inset
+
+ now follow from extension of the vectors from the axes center through the
+ farthest point of the axes
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\begin{array}{c}
+x\\
+y
+\end{array}=\begin{array}{c}
+x_{0}\\
+y_{0}
+\end{array}+\lambda_{w}\left(\begin{array}{c}
+x_{x2}-x_{0}\\
+y_{x2}-y_{0}
+\end{array}\right)+\mu_{w}\left(\begin{array}{c}
+x_{y2}-x_{0}\\
+y_{y2}-y_{0}
+\end{array}\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\left(\begin{array}{cc}
+\left(x_{x2}-x_{0}\right), & \left(x_{y2}-x_{0}\right)\\
+\left(y_{x2}-y_{0}\right), & \left(y_{y2}-y_{0}\right)
+\end{array}\right)\left(\begin{array}{c}
+\lambda\\
+\mu
+\end{array}\right)=\left(\begin{array}{c}
+x-x_{0}\\
+y-y_{0}
+\end{array}\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\left(\begin{array}{c}
+\lambda\\
+\mu
+\end{array}\right)=\left(\begin{array}{cc}
+\left(x_{x2}-x_{0}\right), & \left(x_{y2}-x_{0}\right)\\
+\left(y_{x2}-y_{0}\right), & \left(y_{y2}-y_{0}\right)
+\end{array}\right)^{-1}\left(\begin{array}{c}
+x-x_{0}\\
+y-y_{0}
+\end{array}\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+
+\backslash
+lamb
+\end_layout
+
+\begin_layout Standard
+Form which 
+\begin_inset Formula $\lambda$
+\end_inset
+
+ and 
+\begin_inset Formula $\mu$
+\end_inset
+
+ can be determined.
+\end_layout
+
+\begin_layout Standard
+So
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+x_{x1}+\left(x_{x2}-x_{x1}\right)\lambda & =x_{y1}+\left(x_{y2}-x_{t1}\right)\mu\\
+y_{x1}+\left(y_{x2}-y_{x1}\right)\lambda & =y_{y1}+\left(y_{y2}-y_{y1}\right)\mu
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+\left(\begin{array}{c}
+x_{x1}\\
+y_{x1}
+\end{array}\right)+\left(\begin{array}{c}
+x_{x2}\\
+x_{y2}
+\end{array}-\begin{array}{c}
+x_{11}\\
+x_{y1}
+\end{array}\right)\left(\begin{array}{c}
+\lambda\\
+\mu
+\end{array}\right) & =\left(\begin{array}{c}
+x_{y1}\\
+y_{y2}
+\end{array}\right)+\left(x_{y2}-x_{t1}\right)\mu\\
+y_{x1}+\left(y_{x2}-y_{x1}\right)\lambda & =y_{y1}+\left(y_{y2}-y_{y1}\right)\mu
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section*
+Facit
+\end_layout
+
+\begin_layout Standard
+The formulas have been implemented in 
+\emph on
+plotdigitizerXML.py
+\emph default
+ and applied in the modeling of cross sections in the 
+\begin_inset Quotes eld
+\end_inset
+
+VoortoetsAGT
+\begin_inset Quotes erd
+\end_inset
+
+ project (Dec 2023)
+\end_layout
+
+\end_body
+\end_document

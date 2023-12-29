@@ -31,20 +31,28 @@ def week(yr, wk):
     return week_start, week_end
 
 
-attr = lambda obj: [o for o in dir(obj) if not o.startswith('_')]
+def attr(obj):
+    """Return the attributes of an object that do not start with '_'."""
+    return [o for o in dir(obj) if not o.startswith('_')]
     
 
 linestyles_ = ['-', '--', '-.', ':']
 colors_ = ['b', 'r', 'g', 'k', 'm', 'c', 'brown', 'orange', 'gold', 'beige']
 
-def color_cycler():
-    for c in itertools.cycle(colors_):
+def color_cycler(colors=None):
+    if not colors:
+        colors = colors_
+    for c in itertools.cycle(colors):
         yield c
     
 
-def linestyle_cycler():
-    for l in itertools.cycle(linestyles_):
-        for c in itertools.cycle(colors_):
+def linestyle_cycler(linestyles=None, colors=None):
+    if not linestyles:
+        linestyles = linestyles_
+    if not colors:
+        colors = colors_
+    for l in itertools.cycle(linestyles):
+        for c in itertools.cycle(colors):
             yield {'ls': l, 'color': c}
 
 def line_cycler():

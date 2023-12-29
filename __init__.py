@@ -3,7 +3,3 @@
 tools by Theo Olsthoon
 
 @author: Theo
-"""
-
-
-from etc import *

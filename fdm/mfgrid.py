@@ -15,7 +15,8 @@ Created on Fri Sep 30 04:26:57 2016
 
 import numpy as np
 import matplotlib.pyplot as plt
-from matplotlib.path import Path as Polygon
+from matplotlib.path import Path
+import matplotlib.patches as patches
 from mpl_toolkits.mplot3d import Axes3D
 from matplotlib.axes import Axes
 from datetime import datetime
@@ -480,7 +481,7 @@ def psi_row(frf, row=-1):
     """
     warnings.warn("psi_row only works when there is no flow along columns.")
     fr = frf[:, row, :-1]
-    fr = np.vstack((np.zeros_like(fr[0:1]), fr))
+    fr = np.vstack((fr, np.zeros_like(fr[0:1])))
     psi = fr[::-1].cumsum(axis=0)[::-1]
     return psi
     
@@ -501,7 +502,7 @@ def psi_col(fff, col=0):
     """
     warnings.warn("psi_col only works when there is no flow along rows.")
     ff = fff[:, :-1, col]
-    ff = np.vstack((np.zeros_like(ff[0:1]), ff))
+    ff = np.vstack((ff, np.zeros_like(ff[0:1])))
     psi = ff[::-1].cumsum(axis=0)[::-1]
     return psi
 
@@ -1813,7 +1814,7 @@ class Grid:
         """
         return self.Y[:, 0, 1:-1]
 
-    @property
+
     def Zpx(self, row=-1):
         """Return Zp grid coords in z-x cross section (nz+1, nx-1).
 
@@ -1829,8 +1830,8 @@ class Grid:
         else:
             return  _Zpx * np.ones((1, self.nx - 1))
 
-    @property
-    def Zpy(self, col=0):
+
+    def Zpy(self,  col=0):
         """Return Zp grid coords in z-y cross section (nz+1, ny-1).
 
         Except first and last volumn (matches Yp)
@@ -1847,7 +1848,7 @@ class Grid:
 
     @property
     def Zp(self):
-        """Return Zp grid coords [nz+1, ny-1, nx-1].
+        """Return Zp grid point elevations [nz+1, ny-1, nx-1].
 
         Except first and last cols and rows.
 
@@ -1866,6 +1867,81 @@ class Grid:
             0.25 * (_Zp[:, :-1, :-1] + _Zp[:, 1:, :-1] + _Zp[:, 1:, 1:] + _Zp[:, :-1, 1:])
         else:
             return  _Zp * np.ones((1, self.ny-1, self.nx - 1))
+
+    def Zpx_limited_to_water_table(self, hwt=None, row=-1):
+        """Return grid point elevations Zpx [nz + 1, nx - 1] but limited to the water table.
+        
+        This makes sure that when contouring Psi, the stream lines
+        will start at the water table. A simple adaptation to
+        the fact that stream lines are vertical above the water  table.
+
+        Parameters
+        ----------
+        hwt: watar table (shape (nx))
+            head in the top layer or in the highest layer where
+            cells are wet.
+        row: int     (default = -1)
+            row number
+        """
+        hwt = 0.5 * (hwt[:-1] + hwt[1:])
+        Zpx = self.Zpx(row=row).copy()
+        for i in range(self.nz):
+            Zpx[i][Zpx[i] > hwt] = hwt[Zpx[i] > hwt]
+        return Zpx
+
+    def Zpy_limited_to_water_table(self, hwt=None, col=0):
+        """Return grid point elevations Zpy [nz + 1, ny - 1] but limited to the water table.
+        
+        This makes sure that when contouring Psi, the stream lines
+        will start at the water table. A simple adaptation to
+        the fact that stream lines are vertical above the water  table.
+
+        Parameters
+        ----------
+        hwt: watar table (shape (ny))
+            head in the top layer or in the highest layer where
+            cells are wet.
+        col: int (deault = 0)
+            the column number    
+        """
+        hwt = 0.5 * (hwt[:-1] + hwt[1:])
+        Zpy = gr.Zpy(col=col).copy()
+        for i in range(gr.nz):
+            Zpy[i][Zpy[i] > hwt] = hwt[Zpy[i] > hwt]
+        return Zpy
+    
+
+    def layer_patches_x(self, alpha=None,  row=-1):
+        """Return a list of patches for the layers along row."""
+        # Build patches
+        ptchs = []
+        x = np.hstack((self.Xp[0], self.Xp[0][::-1], self.Xp[0][0]))
+        for z1, z2 in zip(self.Zpx(row=row)[:-1], self.Zpx(row=row)[1:]):        
+            z = np.hstack((z1, z2[::-1], z1[0]))
+            xy = np.vstack((x, z)).T
+            codes = np.zeros(len(xy), dtype=int) + Path.LINETO
+            codes[0] = Path.MOVETO
+            codes[-1] = Path.CLOSEPOLY
+            pth = Path(xy, codes)
+            ptchs.append(patches.PathPatch(pth, alpha=alpha))
+        return ptchs
+    
+    def layer_patches_y(self, alpha=None,  col=-1):
+        """Return a list of patches for the layers along row."""
+        # Build patches
+        ptchs = []
+        y = np.hstack((self.Yp[:,0], self.Yp[:, 0][::-1]), self.Yp[0][0])
+        for z1, z2 in zip(self.Zpy(col=col)[:-1], self.Zpy(col=col)[1:]):        
+            z = np.hstack((z1, z2[::-1], z1[0]))
+            yz = np.vstack((y, z)).T
+            codes = np.zeros(len(yz), dtype=int) + Path.LINETO
+            codes[0] = Path.MOVETO
+            codes[-1] = Path.CLOSEPOLY
+            pth = Path(yz, codes)
+            ptchs.append(patches.PathPatch(pth, alpha=alpha))
+        return ptchs
+
+
 
     @property
     def ztop(self):
@@ -3406,7 +3482,7 @@ def inpoly(x, y, pgcoords):
 
     assert pgcoords.shape[1]==2 and pgcoords.ndim==2,\
         "coordinates must be an array of [n, 2]"
-    pgon = Polygon(pgcoords)
+    pgon = Path(pgcoords)
 
     try:
         x = np.array(x, dtype=float)
