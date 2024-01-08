@@ -24,6 +24,7 @@ import pandas as pd
 from collections import OrderedDict
 import scipy.interpolate as ip
 import warnings
+import unittest
 
 def AND(*args):
     """Return results of multiple and's on array."""
@@ -623,6 +624,10 @@ class Grid:
             (x0, x0, xw, yw, angle) relating world and model coordinates
 
         """
+        assert (axial is True) or (axial is False), "axial must be True or False."
+        assert tol > 0, "tol must be > 0."
+        assert min_dz > 0, "min_dz must be > 0."
+        
         self.AND = np.logical_and
         self.NOT = np.logical_not
 
@@ -674,7 +679,7 @@ class Grid:
                      2. If so, then check the same for the y coordinates.\n\
                      3. If also correct, verify the size of your Z array.\n\
                         It must have (ny=nrows={3}, nx=ncol={4}).".
-                        format(z.shape[0],z.shape[1],self._tol,
+                        format(z.shape[0],z.shape[1],self.tol,
                                self._ny, self._nx))
                 raise ValueError("See printed message for details")
             else:
@@ -763,6 +768,10 @@ class Grid:
                 Remedy:
                 Use min_dz=value explicitly when calling mfgrid.Grid.
                 """)
+
+    @property
+    def tol(self):
+        return self._tol
 
     @property
     def georef(self):
@@ -884,12 +893,12 @@ class Grid:
         """Return cell numbers in the grid."""
         return np.arange(self.nod).reshape((self._nlay, self._ny, self._nx))
 
-    def LRC(self, Imask, astuples=None, aslist=None):
+    def LRC(self, I, astuples=None, aslist=None):
         """Return ndarray [L R C] indices generated from global indices or boolean array I.
 
         Parameters
         ----------
-        Imask : ndarray of int or bool
+        I : ndarray of int or bool
             if dtype is int, then I is global index
 
             if dtype is bool, then I is a zone array of shape
@@ -900,17 +909,14 @@ class Grid:
         aslist: bool or None:
             return as [[l, r, c], [l, r, c], ...]
         """
-        if Imask.dtype == bool:
-            if Imask.ndim == 1:
-                I = self.NOD.ravel()[Imask]
-            elif Imask.ndim == 2:
-                I = self.NOD[0][Imask]
-            else:
-                I = self.NOD[Imask]
-        else:
-            I = Imask
-
-        I = np.array(I, dtype=int)
+        assert isinstance(I, np.ndarray), "I must be a np.ndarray of booleans or ints."
+        assert isinstance(I.dtype, (bool, int)), "I.dtype must be bool or int."
+        if I.dtype == bool:
+            assert np.all(self.shape == I.shape), "If I.dtype == bool, then I.shape must be equal to gr.shape"
+            I = self.NOD[I]
+        
+        I = I.flatten()
+        
         ncol = self._nx
         nlay = self._ny * ncol
         L = np.array(I / nlay, dtype=int)
@@ -1756,18 +1762,23 @@ class Grid:
         """
         return psi_col(fff, col=col)
     
-    def psi_lay(self, Q, col=None):
+    def psi_lay(self, Q):
         """Return stream function for layer.
         
         Parameters
         ----------
         Q: np.ndarray (self.shape)
-            total net injection into layer
+            total net injection into cells
         layer: int
             layer number for which the stream function is desired.
         """
-        return psi(Q, row=row)
-
+        if len(Q.shape) == 2:
+            assert np.all(Q.shape == self.shape[1:]), "Shapef of Q must be {}".format(self.shape[1:])
+        elif len(Q.shape) == 3:
+            assert np.all(Q.shape == self.shape), "Shape of Q must be {}".format(self.shape)
+            Q = Q.sum(axis=0)
+            warnings.warn("Stream function of total Q over full depth of model. Should be steady without recharge.")
+        return np.cumsum(np.vstack((Q, np.zeros(Q.shape[1])))[::-1], axis=0)[::-1]
         
     @property
     def xp(self):
@@ -1824,7 +1835,7 @@ class Grid:
 
         Convenience property for plotting stream lines in zx cross sections.
         """
-        _Zpx = self._Z[:, row, :]
+        _Zpx = self.Z[:, row, :]
         if _Zpx.shape[-1] > 1:
             return  0.5 * (_Zpx[:, :-1] + _Zpx[:, 1:])
         else:
@@ -1840,7 +1851,7 @@ class Grid:
 
         Convenience property for plotting stream lines in zy cross sections.
         """
-        _Zpy = self._Z[:, :, col]
+        _Zpy = self.Z[:, :, col]
         if _Zpy.shape[-1] > 1:
             return  0.5 * (_Zpy[:, :-1] + _Zpy[:, 1:])
         else:
@@ -1868,6 +1879,43 @@ class Grid:
         else:
             return  _Zp * np.ones((1, self.ny-1, self.nx - 1))
 
+    def Zmx_limited_to_water_table(self, hwt=None, row=-1):
+        """Return cell centers point elevations Zmx [nz, nx] but limited to the water table.
+        
+        This makes sure that when contouring the contour lines do not extend above the water table
+
+        Parameters
+        ----------
+        hwt: water table (shape (nx))
+            head in the top layer or in the highest layer where
+            cells are wet.
+        row: int     (default = -1)
+            row number
+        """
+        Zmx = self.ZM[:, row, :].copy()
+        for i in range(self.nz):
+            Zmx[i][Zmx[i] > hwt] = hwt[Zmx[i] > hwt]
+        return Zmx
+
+    def Zmy_limited_to_water_table(self, hwt=None, col=0):
+        """Return cell centers point elevations Zmx [nz, ny] but limited to the water table.
+        
+        This makes sure that when contouring the contour lines do not extend above the water table
+
+        Parameters
+        ----------
+        hwt: water table (shape (nx))
+            head in the top layer or in the highest layer where
+            cells are wet.
+        col: int     (default = 0)
+            column number
+        """        
+        Zmy = self.ZM[:, :, col].copy()
+        for i in range(self.nz):
+            Zmy[i][Zmy[i] > hwt] = hwt[Zmy[i] > hwt]
+        return Zmy
+
+
     def Zpx_limited_to_water_table(self, hwt=None, row=-1):
         """Return grid point elevations Zpx [nz + 1, nx - 1] but limited to the water table.
         
@@ -1877,7 +1925,7 @@ class Grid:
 
         Parameters
         ----------
-        hwt: watar table (shape (nx))
+        hwt: water table (shape (nx))
             head in the top layer or in the highest layer where
             cells are wet.
         row: int     (default = -1)
@@ -1898,7 +1946,7 @@ class Grid:
 
         Parameters
         ----------
-        hwt: watar table (shape (ny))
+        hwt: water table (shape (ny))
             head in the top layer or in the highest layer where
             cells are wet.
         col: int (deault = 0)
@@ -2708,7 +2756,7 @@ class Grid:
         else:
             pass
 
-        if not row is None:
+        if row is not None:
             if world:
                 X = self.Xw[ :, row, :]
             else:
@@ -2726,7 +2774,7 @@ class Grid:
             z[1::2, :] = z[1::2, ::-1]
             ax.plot(x.ravel(), z.ravel(), **kwargs)
 
-        elif not col is None:
+        elif col is not None:
             if world:
                 Y = self.Yw[:, :, col]
             else:
@@ -3197,15 +3245,15 @@ class Grid:
 
     def inblock(self, xx=None, yy=None, zz=None):
         """Return logical array denoting cells in given block."""
-        if xx == None:
+        if xx is None:
             Lx = self.const(0) > -np.inf # alsways false
         else:
             Lx = np.logical_and(self.XM >= min(xx), self.XM <= max(xx))
-        if yy== None:
+        if yy is None:
             Ly = self.const(0) > -np.inf  # always false
         else:
             Ly = np.logical_and(self.YM >= min(yy), self.YM <= max(yy))
-        if zz == None:
+        if zz is None:
             Lz = self.const(0) > -np.inf  # always false
         else:
             Lz = np.logical_and(self.ZM >= min(zz), self.ZM <= max(zz))
@@ -3312,6 +3360,7 @@ class Grid:
                     np.hstack((yF, self.y, yB)),
                     np.hstack((zT, self.z, zB)))
 
+
     def inpoly(self, pgcoords, row=None, world=False):
         """Return bolean array [ny, nx] or [nz, nx] telling which cells are within a horizontal or vertical polygon.
 
@@ -3336,13 +3385,78 @@ class Grid:
                 return inpoly(self.Xm, self.Ym, pgcoords)
             else:
                 return inpoly(self.XM[:, row, :], self.ZM[:, row, :], pgcoords)
+            
+    def refine_vertically(self, layers=[(0, 3), (1, 4)], params_dict=None, verbose=False):
+        """Return new grid object with layers subdivided.
+        
+        Transport modeling often required vertical grid refinement.
+        
+        Parameters
+        ----------
+        layers: list of 2-tuples [(0, 3), (1, 4), ...]
+            each tuple is a layer number and the number of sublayers to generate for it.
+        params: dictionary {'Sy': Sy, 'Ss': Ss, 'k': k, 'k22': k22, 'k33': k33, etc}
+            the arrays to be extend according to the defined subdivision.
+            The values in the sbudivided layers are the same as in the original layer.
+        verbose: bool
+            If True, the old and the new layers are shown graphically.
+            
+        @TO 20240108
+        """
+        Layers = np.array([(iz, 1) for iz in range(self.nz)], dtype=int)
+        # Use given layers
+        for (ilay, n) in layers:
+            Layers[ilay] = ilay, n
+        
+        if verbose:
+            fig, ax = plt.subplots()
+            ax.set_title("Test mfgrid.refine_vertically.")
+            ax.grid(True)
+            ax.set_xlabel('x [m]')
+            ax.set_ylabel('z [m]')
+            for ilay, z in enumerate(self.Z):
+                ax.plot(self.xm, z[0], '.', lw=0.25, label='old Z[{}]'.format(ilay))
+         
+        clrs = 'rbgkmc'
+        ilayNew = 0        
+        Znew = np.zeros((np.sum(Layers[:, 1]) + 1, self.ny, self.nx))
+        Znew[ilayNew] = self.Z[0]
+        for (ilay, N), clr in zip(Layers, clrs):
+            DZ = self.DZ[ilay] / N
+            for n in range(N):
+                Znew[ilayNew + 1] = Znew[ilayNew] - DZ
+                ilayNew += 1
+                if verbose:
+                    ax.plot(self.xm, Znew[ilayNew, 0], color=clr)
+                
+        # dz_min is left out. It disturbs when subdivided layers are thinner than self.dz_min
+        grNew = Grid(self.x, self.y, Znew,
+                     axial=self.axial, LAYCBD=self.LAYCBD, tol=self.tol, georef=self.georef)
+        
+        if verbose:
+            for z in grNew.Z:
+                ax.plot(grNew.xm, z[0], '--', lw=1)
+            ax.legend()
+        
+        if params_dict is None:
+            return grNew
+        
+        # Further refine the cell parameters accordingly.
+        new_params = dict()
+        for pname, pvalues in params_dict.items():
+            new_values = []
+            for ilay, N in Layers:
+                for n in range(N):
+                    new_values.append(pvalues[ilay])
+            new_params[pname] = np.array(new_values)
+
+        return grNew, new_params
+
 
 def array2tuples(A):
     """Return array as a list of tuples."""
-    try:
-        return [tuple(a) for a in A]
-    except:
-        raise "Can't convert array to list of tuples"
+    return [tuple(a) for a in A]
+
 
 def extend_array(A, nx, ny, nz):
     """Return extended array specified by  nx, ny nz.
@@ -3431,7 +3545,8 @@ def gridspace(X, W):
     assert np.all(np.diff(X) > 0), "X must be monotonously increasing or decreasing"
     assert np.all(W > 0), "W must all by > 0 (cell widths)"
 
-    dx = lambda xi: np.interp(xi, X, W)
+    def dx(xi):
+        return np.interp(xi, X, W)
 
     XGR = [X[0]]
     x   = X[0]
@@ -3452,9 +3567,11 @@ def gridspace(X, W):
 
     return XGR
 
+
 def sinespace(x1, x2, N=25, a1=0, a2=np.pi/2):
     """Return coordinates with distances according to the sine function."""
     return sinspace(x1, x2, N=N, a1=a1, a2=a2)
+
 
 def sinspace(x1, x2, N=25, a1=0, a2=np.pi/2):
     """Return N points between x1 and x2, spaced according to sin betwwn a1 and a2.
@@ -3484,19 +3601,14 @@ def inpoly(x, y, pgcoords):
         "coordinates must be an array of [n, 2]"
     pgon = Path(pgcoords)
 
-    try:
-        x = np.array(x, dtype=float)
-        y = np.array(y, dtype=float)
-        shape = x.shape
-        x.shape == y.shape
-    except:
-        raise TypeError("x and y are not np.ndarrays with same shape.")
+    x = np.array(x, dtype=float)
+    y = np.array(y, dtype=float)
+    shape = x.shape
+    assert  x.shape == y.shape, "x and y are not np.ndarrays with same shape."
 
     xy = np.vstack((x.ravel(), y.ravel())).T
     return pgon.contains_points(xy).reshape(shape)
 
-
-import unittest
 
 class TestGridMethods(unittest.TestCase):
     """Tes the methods of teh grid class."""
@@ -3607,6 +3719,7 @@ def plot_shapes(rdr, ax=None, title='Shapes from shapefile'):
         ax.plot(p[:, 0], p[:, 1], label="shape {}".format(id))
     ax.legend(loc='best')
     return ax
+
 
 def sub_grid(rdr, dx=0.1, dz=0.1, dy=1.):
     """Return the coordinates of a subgrid."""
