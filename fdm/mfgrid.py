@@ -910,7 +910,7 @@ class Grid:
             return as [[l, r, c], [l, r, c], ...]
         """
         assert isinstance(I, np.ndarray), "I must be a np.ndarray of booleans or ints."
-        assert isinstance(I.dtype, (bool, int)), "I.dtype must be bool or int."
+        assert I.dtype == int or I.dtype == bool, "I.dtype must be bool or int."
         if I.dtype == bool:
             assert np.all(self.shape == I.shape), "If I.dtype == bool, then I.shape must be equal to gr.shape"
             I = self.NOD[I]
