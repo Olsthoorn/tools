@@ -58,7 +58,7 @@ def get_structured_faceflows(
 
     """
     if grb_file is not None:
-        grb = MfGrdFile(grb_file, verbose=verbose)
+        grb = fpb.MfGrdFile(grb_file, verbose=verbose)
         if grb.grid_type != "DIS":
             raise ValueError(
                 "get_structured_faceflows method "
@@ -185,7 +185,7 @@ def get_residuals(
 
     """
     if grb_file is not None:
-        grb = MfGrdFile(grb_file, verbose=verbose)
+        grb = fpb.MfGrdFile(grb_file, verbose=verbose)
         shape = grb.shape
         ia, ja = grb.ia, grb.ja
     else:
@@ -331,7 +331,7 @@ def get_struct_flows(flowjas, grb_file=None, verbose=False):
     for i, flowja in enumerate(flowjas):
         fxfs[i]['frf'].ravel()[ja_ptr['frf']['node']] = -flowja[ja_ptr['frf']['ja']]
         fxfs[i]['fff'].ravel()[ja_ptr['fff']['node']] = -flowja[ja_ptr['fff']['ja']]
-        fxfs[i]['flf'].ravel()[ja_ptr['flf']['node']] = -flowja[ja_ptr['flf']['ja']]
+        fxfs[i]['flf'].ravel()[ja_ptr['flf']['node']] = -flowja[ja_ptr['flf']['ja']] # + or -? @TO 20240110
     return fxfs
 
 if __name__ == '__main__':
