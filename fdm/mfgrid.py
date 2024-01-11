@@ -465,7 +465,7 @@ def lrc(xyz, xyzGr):
         LRC.insert(0, index(x, xGr))
     return LRC
 
-def psi_row(frf, row=-1):
+def psi_row(frf, row=-1, warning=True):
     """Return stream function in row (x-section along x-axis).
     
     Parameters
@@ -480,14 +480,15 @@ def psi_row(frf, row=-1):
     Psi (zx +1, ny - 1) array for for (x, z) coordinates except for first and last row.
     
     """
-    warnings.warn("psi_row only works when there is no flow along columns.")
+    if warning:
+        warnings.warn("psi_row only works when there is no flow along columns.")
     fr = frf[:, row, :-1]
     fr = np.vstack((fr, np.zeros_like(fr[0:1])))
     psi = fr[::-1].cumsum(axis=0)[::-1]
     return psi
     
    
-def psi_col(fff, col=0):
+def psi_col(fff, col=0, warning=True):
     """Return stream function in column (cross section along y axis).
     
     Parameters
@@ -501,14 +502,15 @@ def psi_col(fff, col=0):
     -------
     Psi (nz, ny - 1) array for all (y, z) coordinates except the first and last column. (See Yp)
     """
-    warnings.warn("psi_col only works when there is no flow along rows.")
+    if warning:
+        warnings.warn("psi_col only works when there is no flow along rows.")
     ff = fff[:, :-1, col]
     ff = np.vstack((ff, np.zeros_like(ff[0:1])))
     psi = ff[::-1].cumsum(axis=0)[::-1]
     return psi
 
 
-def psi_lay(Q, lay=0):
+def psi_lay(Q, lay=0, warning=True):
     """Return stream function in layer.
     
     Parameters
@@ -521,7 +523,8 @@ def psi_lay(Q, lay=0):
     Return stream function at the conrner points of the layer (ny +1, nx + 1)
     
     """
-    warnings.warn("psi_lay only works when there is no flow between layers.")
+    if warning:
+        warnings.warn("psi_lay only works when there is no flow between layers.")
     Q2 = Q[lay, :, :]
     Q2 = np.hstack((np.zeros_like(Q2[:, 0]), Q2, np.zeros_like(Q2[:, -1])))
     Q2 = np.vstack((np.zeros_like(Q2[0]), Q2, np.zeros_like(Q2[-1])))
@@ -893,15 +896,15 @@ class Grid:
         """Return cell numbers in the grid."""
         return np.arange(self.nod).reshape((self._nlay, self._ny, self._nx))
 
-    def LRC(self, I, astuples=None, aslist=None):
+    def LRC(self, Idx, astuples=None, aslist=None):
         """Return ndarray [L R C] indices generated from global indices or boolean array I.
 
         Parameters
         ----------
-        I : ndarray of int or bool
-            if dtype is int, then I is global index
+        Idx : ndarray of int or bool
+            if dtype is int, then Idx is global index
 
-            if dtype is bool, then I is a zone array of shape
+            if dtype is bool, then Idx is a zone array of shape
             [ny, nx] or [nz, ny, nx]
 
         astuples: bool or None
@@ -909,23 +912,25 @@ class Grid:
         aslist: bool or None:
             return as [[l, r, c], [l, r, c], ...]
         """
-        assert isinstance(I, np.ndarray), "I must be a np.ndarray of booleans or ints."
-        assert I.dtype == int or I.dtype == bool, "I.dtype must be bool or int."
-        if I.dtype == bool:
-            assert np.all(self.shape == I.shape), "If I.dtype == bool, then I.shape must be equal to gr.shape"
-            I = self.NOD[I]
+        assert isinstance(Idx, np.ndarray), "I must be a np.ndarray of booleans or ints."
+        if len(Idx) == 0:
+            return Idx
+        assert Idx.dtype == int or Idx.dtype == bool, "I.dtype must be bool or int."
+        if Idx.dtype == bool:
+            assert np.all(self.shape == Idx.shape), "If Idx.dtype == bool, then I.shape must be equal to gr.shape"
+            Idx = self.NOD[Idx]
         
-        I = I.flatten()
+        Idx = Idx.flatten()
         
         ncol = self._nx
         nlay = self._ny * ncol
-        L = np.array(I / nlay, dtype=int)
-        R = np.array((I - L * nlay) / ncol, dtype=int)
-        C = I - L * nlay - R * ncol
+        L = np.array(Idx / nlay, dtype=int)
+        R = np.array((Idx - L * nlay) / ncol, dtype=int)
+        C = Idx - L * nlay - R * ncol
         if astuples:
-            return tuple((l, r, c) for l, r, c in zip(L, R, C))
+            return tuple((lay, row, col) for lay, row, col in zip(L, R, C))
         elif aslist:
-            return [[l, r, c] for l, r, c, in zip(L, R, C)]
+            return [[lay, row, col] for lay, row, col, in zip(L, R, C)]
         else:
             return np.vstack((L, R, C)).T
 
