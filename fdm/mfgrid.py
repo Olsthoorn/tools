@@ -465,7 +465,7 @@ def lrc(xyz, xyzGr):
         LRC.insert(0, index(x, xGr))
     return LRC
 
-def psi_row(frf, row=-1, warning=True):
+def psi_row(frf, row=-1, verbose=True):
     """Return stream function in row (x-section along x-axis).
     
     Parameters
@@ -474,13 +474,15 @@ def psi_row(frf, row=-1, warning=True):
         3D array of flow right face.
     row: int
         zero based row number for which the stream function is desired.
+    verbose: bool
+        warn user with disclaimer about stream function.
         
     Returns
     -------
     Psi (zx +1, ny - 1) array for for (x, z) coordinates except for first and last row.
     
     """
-    if warning:
+    if verbose:
         warnings.warn("psi_row only works when there is no flow along columns.")
     fr = frf[:, row, :-1]
     fr = np.vstack((fr, np.zeros_like(fr[0:1])))
@@ -488,7 +490,7 @@ def psi_row(frf, row=-1, warning=True):
     return psi
     
    
-def psi_col(fff, col=0, warning=True):
+def psi_col(fff, col=0, verbose=True):
     """Return stream function in column (cross section along y axis).
     
     Parameters
@@ -502,7 +504,7 @@ def psi_col(fff, col=0, warning=True):
     -------
     Psi (nz, ny - 1) array for all (y, z) coordinates except the first and last column. (See Yp)
     """
-    if warning:
+    if verbose:
         warnings.warn("psi_col only works when there is no flow along rows.")
     ff = fff[:, :-1, col]
     ff = np.vstack((ff, np.zeros_like(ff[0:1])))
@@ -510,7 +512,7 @@ def psi_col(fff, col=0, warning=True):
     return psi
 
 
-def psi_lay(Q, lay=0, warning=True):
+def psi_lay(Q, lay=0, verbose=True):
     """Return stream function in layer.
     
     Parameters
@@ -523,7 +525,7 @@ def psi_lay(Q, lay=0, warning=True):
     Return stream function at the conrner points of the layer (ny +1, nx + 1)
     
     """
-    if warning:
+    if verbose:
         warnings.warn("psi_lay only works when there is no flow between layers.")
     Q2 = Q[lay, :, :]
     Q2 = np.hstack((np.zeros_like(Q2[:, 0]), Q2, np.zeros_like(Q2[:, -1])))
