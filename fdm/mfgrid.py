@@ -417,35 +417,39 @@ def cleanU(U, iu):
     return U, iu
 
 
-def index(xp, x, left=-999, right=-999):
+def index(xp, xGr, left=-1, right=-1):
     """Return index for points xp in grid x.
 
     Parameters
     ----------
     xp : arraylike
         points to be interpolated
-    x : arraylike
+    xGr : arraylike
         grid points
     left : float
-        value for values left of left-most x
+        y-value for values left of left-most x
     right : float
-        value for values right of right-most x
+        y-value for values right of right-most x
 
     Returns
     -------
-    I : arraylike
-     index of cells of xp
+    IdxSeries : pd.series of indices
+        The indices of points xp in the grid defined by grid points xGr.
+        IdSeries.index contains the indices of points xp in the grid.
+        Points corresponding to missing values in the index are outside the grid.        
     """
-    xp = np.array(xp)
-    x  = np.array(x)
-    if np.any(np.diff(x)<0):
-        x  = -x
-        xp = - xp
-    assert np.all(np.diff(x) > 0), "x is not fully increasing or decreasing"
+    xp   = np.array(xp)
+    xGr  = np.array(xGr)
+    if np.any(np.diff(xGr)<0):
+        xGr  = -xGr
+        xp   = - xp
+    assert np.all(np.diff(xGr) > 0), "x is not monotonously increasing or decreasing"
 
-    I = np.array(np.interp(xp, x, np.arange(len(x)), left, right),
-                 dtype=int)
-    return np.fmin(I, len(x))
+    IdxSeries = pd.Series(np.array(
+            np.interp(xp, xGr, np.arange(len(xGr)), left, right),
+            dtype=int))
+    
+    return IdxSeries.loc[IdxSeries >= 0]
 
 
 def lrc(xyz, xyzGr):
@@ -951,12 +955,15 @@ class Grid:
 
 
     def lrc(self, x, y, z=None, Ilay=None):
-        """Return zero-based LRC indices (iL,iR, iC) of points x, y, z.
+        """Return pd.Series with zero-based index and values the lrc tuples.
+        
+        The index can be used to find the points that were outside the grid.
 
         Points must be given as x, y, z or as x, y, iLay.
         The shape of x, y, and z or iLay must be the same.
         If z is None then iLay is used.
         If iLay is also None, then iLay is all zeros.
+                
 
         Parameters
         ----------
@@ -966,7 +973,7 @@ class Grid:
             y-coordinates
         z : ndarray | None
             z-coordinates
-        iLay : ndarray | None
+        Ilay : ndarray | None
             layer indices
 
         Returns
@@ -976,16 +983,22 @@ class Grid:
 
         @TO 171105
         """
-        if np.isscalar(x): x = [x]
-        if np.isscalar(y): y = [y]
-        if np.isscalar(z): z = [z]
-        if np.isscalar(Ilay): Ilay = [Ilay]
+        if np.isscalar(x):
+            x = [x]
+        if np.isscalar(y):
+            y = [y]
+        if np.isscalar(z):
+            z = [z]
+        if np.isscalar(Ilay):
+            Ilay = [Ilay]
 
         x = np.array(x)
         y = np.array(y)
 
-        if z    is not None: z    = np.array(z)
-        if Ilay is not None: Ilay = np.array(Ilay, dtype=int)
+        if z    is not None:
+            z    = np.array(z)
+        if Ilay is not None:
+            Ilay = np.array(Ilay, dtype=int)
 
         assert np.all(x.shape == y.shape), "x.shape must equal y.shape"
 
@@ -997,30 +1010,72 @@ class Grid:
             else:
                 Ilay = np.zeros_like(x, dtype=int)
 
-        Icol = index(x, self.x)
-        Irow = index(y, self.y)
+        IcolSeries = index(x, self.x)
+        IrowSeries = index(y, self.y)
+        
+        NewIndex = sorted(set(IcolSeries.index).intersection(IrowSeries.index))
+        
+        IcolSeries = IcolSeries.loc[NewIndex]
+        IrowSeries = IrowSeries.loc[NewIndex]
 
         if z is not None:
-            Ilay = np.zeros_like(x, dtype=int)
-            for i, (_z, ix, iy) in enumerate(zip(z, Icol, Irow)):
-                Ilay[i] = index(_z, self.Z[:, iy, ix])
-
-        return np.vstack((np.asarray(Ilay, dtype=int),
-                          np.asarray(Irow, dtype=int),
-                          np.asarray(Icol, dtype=int))).T
+            IlaySeries = pd.Series(-1, index=NewIndex, dtype=int)
+            z = z[NewIndex]
+            for i, (_z, ix, iy) in enumerate(zip(z, IcolSeries, IrowSeries)):
+                ilay = index(_z, self.Z[:, iy, ix])
+                if len(ilay) == 0:
+                    raise ValueError("value not in grid.")
+                else:
+                    IlaySeries[i] = float(ilay[0])
+            IlaySeries = IlaySeries.loc[IlaySeries >= 0]
+        else:
+            IlaySeries = pd.Series(Ilay, index=np.arange(len(Ilay), dtype=int))
+            
+        NewIndex = sorted(set(   IcolSeries.index)\
+                            .intersection(IrowSeries.index)\
+                            .intersection(IlaySeries.index))
+        
+        
+        lrcSeries = pd.Series([(iz, iy, ix) for iz, iy, ix
+                          in zip(IlaySeries[NewIndex],
+                                IrowSeries[NewIndex],
+                                IcolSeries[NewIndex])],                 index=NewIndex)
+        return lrcSeries
 
     def Ix(self, x):
         """Return column index for points x."""
-        return index(x, self.x)
+        IdxSeries = index(x, self.x)
+        return IdxSeries
     
     def Iy(self, y):
         """Return row index for points y"""
-        return index(y, self.y)
+        IdySeries = index(y, self.y)
+        return IdySeries
 
     def I(self, LRC):
         """Return global index given LRC (zero based)."""
-        LRC = np.array(LRC)
+        if isinstance(LRC, pd.Series):
+            LRC = np.array(list(LRC))
+        else:
+            LRC = np.array(LRC)
         return LRC[:,0] * self._ny * self._nx + LRC[:, 1] * self._nx + LRC[:, 2]
+    
+    
+    def top_active_cells(self, IDOMAIN):
+        """Return the iz of top active cells.
+        IDOMAIN: np.ndarray of int
+            as defined in MODFLOW 6, inactive is IDOMAIN <= 0
+        """
+        Ix, Iz = self.NOD[0, 0], np.zeros_like(self.NOD[0, 0])
+        while(len(Ix) > 0):
+            IxNew = []
+            for ix in Ix:
+                if IDOMAIN[Iz[ix], 0, ix] <= 0:
+                    Iz[ix] += 1
+                    IxNew.append(ix)
+            Ix = np.array(IxNew)
+        return Iz
+
 
     def GHB(self, cells, hds, cond):
         """Return recarray for GHB from 3 arrays: cells, hds, cond.
