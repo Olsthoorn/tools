@@ -22,7 +22,7 @@ from matplotlib.axes import Axes
 from datetime import datetime
 import pandas as pd
 from collections import OrderedDict
-import scipy.interpolate as ip
+import scipy.interpolate as sci_ip
 import warnings
 import unittest
 
@@ -70,8 +70,10 @@ def show_lines(self, ax=None, co_dict=None,**kwargs):
         ax.set_xlabel(kwargs.pop('xlabel', 'x [m]'))
         ax.set_ylabel(kwargs.pop('ylabel', 'y [m]'))
         ax.grid()
-    if 'xlim' in kwargs: ax.set('xlim', kwargs.pop('xlim'))
-    if 'ylim' in kwargs: ax.set('ylim', kwargs.pop('ylim'))
+    if 'xlim' in kwargs:
+        ax.set('xlim', kwargs.pop('xlim'))
+    if 'ylim' in kwargs:
+        ax.set('ylim', kwargs.pop('ylim'))
 
     for k in co_dict:
         ax.plot(co_dict[k][:,0], co_dict[k][:,1], label=k)
@@ -294,14 +296,19 @@ class StressPeriod:
         labels=[]
         for w in [w.lower() for w in what]:
 
-            if   w.startswith('save'):  s1 = 'save'
-            elif w.startswith('print'): s1 = 'print'
+            if   w.startswith('save'):
+                s1 = 'save'
+            elif w.startswith('print'):
+                s1 = 'print'
             else:
                 raise ValueError("key must start with 'save' or 'print'")
 
-            if   w.endswith('head'):     s2 = 'head'
-            elif w.endswith('drawdown'): s2 = 'drawdown'
-            elif w.endswith('budget'):   s2 = 'budget'
+            if   w.endswith('head'):
+                s2 = 'head'
+            elif w.endswith('drawdown'):
+                s2 = 'drawdown'
+            elif w.endswith('budget'):
+                s2 = 'budget'
             else:
                 raise ValueError("key must end with 'head', 'drawdown' or 'budget'" )
 
@@ -387,8 +394,10 @@ class StressPeriod:
             ax.set_title(kwargs.pop('title', 'Title'))
             ax.set_xlabel(kwargs.pop('xlabel', 'x [m]'))
             ax.set_ylabel(kwargs.pop('ylabel', 'y [m]'))
-        if 'xlim' in kwargs: ax.set_xlim('xlim')
-        if 'ylim' in kwargs: ax.set_ylim('ylim')
+        if 'xlim' in kwargs:
+            ax.set_xlim('xlim')
+        if 'ylim' in kwargs:
+            ax.set_ylim('ylim')
 
         for i in self.events.index:
             se = self.events.loc[i]
@@ -418,7 +427,7 @@ def cleanU(U, iu):
 
 
 def index(xp, xGr, left=-1, right=-1):
-    """Return index for points xp in grid x.
+    """Return recarray with the index for points xp in grid x.
 
     Parameters
     ----------
@@ -426,30 +435,31 @@ def index(xp, xGr, left=-1, right=-1):
         points to be interpolated
     xGr : arraylike
         grid points
-    left : float
-        y-value for values left of left-most x
-    right : float
-        y-value for values right of right-most x
+    left, right : int (prefarably -1)
+        index return for values left of xGr[0] or right of xGr[-1] respectively
 
     Returns
     -------
-    IdxSeries : pd.series of indices
-        The indices of points xp in the grid defined by grid points xGr.
-        IdSeries.index contains the indices of points xp in the grid.
-        Points corresponding to missing values in the index are outside the grid.        
+    recarray with dtype [('ip', int), ('idx', int)]
+        ip is the index of pint xp in the input
+        idx is the cell index of xp in grid xGr.
+        Points outsize the range of xGr are missing.
+        This can be verified from the index in 'ip'.
     """
+    dtype = np.dtype([('ip', int), ('idx', int)])
+    
     xp   = np.array(xp)
     xGr  = np.array(xGr)
-    if np.any(np.diff(xGr)<0):
+    if np.any(np.diff(xGr) < 0):
         xGr  = -xGr
         xp   = - xp
     assert np.all(np.diff(xGr) > 0), "x is not monotonously increasing or decreasing"
 
-    IdxSeries = pd.Series(np.array(
-            np.interp(xp, xGr, np.arange(len(xGr)), left, right),
-            dtype=int))
+    Idx = np.zeros(xp.size, dtype=dtype)
+    Idx['ip']  = np.arange(Idx.size)
+    Idx['idx'] = np.interp(xp.ravel(), xGr, np.arange(len(xGr)), left, right)
     
-    return IdxSeries.loc[IdxSeries >= 0]
+    return Idx[Idx['idx'] >= 0]
 
 
 def lrc(xyz, xyzGr):
@@ -743,10 +753,13 @@ class Grid:
 
         # Store which z pertain to model layers
         self._Ilay = ICBD[:,0]
+        
         # and which pertain to confining beds
         self._Icbd = ICBD[ICBD[:,0]!=ICBD[:,1], 1]
+        
         # The grid layer number if it's an CBD
-        self._ICBD = ICBD[:,1]; self._ICBD[ICBD[:,0] == ICBD[:, 1]] = 0
+        self._ICBD = ICBD[:,1]
+        self._ICBD[ICBD[:,0] == ICBD[:, 1]] = 0
 
         if georef is None:
             georef = np.array([0., 0., 0., 0., 0.])
@@ -806,7 +819,7 @@ class Grid:
     @property
     def x(self):
         """Return vector of x-grid coordinates."""
-        return self._x.copy() # prevent ref. to self._x
+        return self._x[:] # prevent ref. to self._x
 
     @property
     def X(self):
@@ -844,7 +857,7 @@ class Grid:
     @property
     def Z(self):
         """Return cell top and bottom elevation [nz+1, ny, nx]."""
-        if self._full == False:
+        if self._full is False:
             return self._Z * np.ones((1, self._ny, self._nx))
         else:
             return self._Z.copy()# prevent ref. to original
@@ -852,7 +865,7 @@ class Grid:
     @property
     def shape(self, cbd=False):
         """Return shape of the grid."""
-        if cbd == False:
+        if cbd is False:
             return self._nlay, self._ny, self._nx # prevent ref. to original
         else:
             return self._ncbd, self._ny, self._nx
@@ -1042,6 +1055,88 @@ class Grid:
                                 IcolSeries[NewIndex])],                 index=NewIndex)
         return lrcSeries
 
+    def lrc_recarray(self, x, y, z=None, Ilay=None):
+        """Return pd.Series with zero-based index and values the lrc tuples.
+        
+        The index can be used to find the points that were outside the grid.
+
+        Points must be given as x, y, z or as x, y, iLay.
+        The shape of x, y, and z or iLay must be the same.
+        If z is None then iLay is used.
+        If iLay is also None, then iLay is all zeros.
+                
+
+        Parameters
+        ----------
+        x : ndarray
+            x-coordinates
+        y : ndarray
+            y-coordinates
+        z : ndarray | None
+            z-coordinates
+        Ilay : ndarray | None
+            layer indices
+
+        Returns
+        -------
+        [iL, iR, iC]
+        indices outside the extents of the model are < 0 (-999)
+
+        @TO 171105
+        """
+        dtype = np.dtype([('ip', int), ('ic', (int, 3))])
+        
+        if np.isscalar(x):
+            x = [x]
+        if np.isscalar(y):
+            y = [y]
+        if np.isscalar(z):
+            z = [z]
+        if np.isscalar(Ilay):
+            Ilay = [Ilay]
+                        
+        x = np.array(x)
+        y = np.array(y)
+
+        if z    is not None:
+            z    = np.array(z)
+        if Ilay is not None:
+            Ilay = np.array(Ilay, dtype=int)
+
+        assert np.all(x.shape == y.shape), "x.shape must equal y.shape"
+
+        if z is not None:
+            assert np.all(x.shape == z.shape), "x.shape must equal z.shape"
+        else:
+            if Ilay is not None:
+                assert np.all(x.shape == Ilay.shape), "x.shape must equal iLay.shape"
+            else:
+                Ilay = np.zeros_like(x, dtype=int)
+
+        lrc = np.ones(x.size, dtype=dtype)    # initialize not valid indices
+        lrc['ip'] = np.arange(len(lrc), dtype=int) # input point array indices
+        lrc['ic'] = -1
+        
+        Ix = index(x.ravel(), self.x)  # recarray dtype = [('ip', int), ('idx', int)]
+        Iy = index(y.ravel(), self.y)  # recarray dtype = [('ip', int), ('idx', int)]
+        
+        lrc['ic'][Ix['ip'], 2] = Ix['idx']
+        lrc['ic'][Iy['ip'], 1] = Iy['idx']
+
+        if z is None:
+            lrc['ic'][:, 0] = Ilay
+        else: # handle z-values one by one
+            for z_, (ip, ic) in zip(z, lrc):
+                _, iy, ix = ic
+                if ix >= 0 and iy >=0:
+                    iz = index(z_, self.Z[:, iy, ix])[0]['idx']
+                    lrc['ic'][ip, 0] = iz
+                
+        valid = AND(lrc['ic'][:, 0] >=0, lrc['ic'][:, 1] >=0, lrc['ic'][:, 2] >= 0)
+        
+        return lrc[valid]
+
+
     def Ix(self, x):
         """Return column index for points x."""
         IdxSeries = index(x, self.x)
@@ -1054,12 +1149,31 @@ class Grid:
 
     def I(self, LRC):
         """Return global index given LRC (zero based)."""
-        if isinstance(LRC, pd.Series):
-            LRC = np.array(list(LRC))
-        else:
-            LRC = np.array(LRC)
+        warnings.warn("gr.I(LRC) is deprecated, please use gr.Iglob(LRC) instead.")
+        
+        assert isinstance(LRC, np.ndarray), "LRC must be a ndarray of ints of shape (n, 3)"
+        assert LRC.shape[1] == 3, "LRC must be an array of ints of shape (n, 3)"
+        assert LRC.dtype == np.int, "LRC must be an array of shape (n, 3)of ints."
+        
         return LRC[:,0] * self._ny * self._nx + LRC[:, 1] * self._nx + LRC[:, 2]
-    
+
+
+    def Iglob(self, LRC):
+        """Return global index given LRC (zero based).
+        
+        Parameters
+        ----------
+        LRC: array of dtype [('ip', int), ('ic', (int, 3))] or ndarray of ints of shape (n, 3)
+            The array with layer row col indices.
+        """
+        assert isinstance(LRC, np.ndarray), "LRC must be a ndarray of ints of shape (n, 3)"
+        if LRC.dtype == np.dtype([('ip', int), ('ic', (int, 3))]):
+            LRC = LRC['ic']
+        else:
+            assert LRC.dtype == np.int, "LRC must be a ndarray of ints of shape (n, 3)"
+        
+        return LRC[:,0] * self._ny * self._nx + LRC[:, 1] * self._nx + LRC[:, 2]
+
     
     def top_active_cells(self, IDOMAIN):
         """Return the iz of top active cells.
@@ -1098,7 +1212,7 @@ class Grid:
         assert isinstance(cond,  (np.float, np.int, np.ndarray)), "cond must be a float or a np.ndarray."
         
         dtype = np.dtype([('I', int), ('h', float), ('C', float)])
-        N = np.count_nonzero(cells == True)
+        N = np.count_nonzero(cells is True)
         
         ghb = np.zeros(N, dtype=dtype)
         ghb['I'] = self.NOD[cells]
@@ -1160,7 +1274,7 @@ class Grid:
         """
         A = 1e8 # np.Inf does not work
 
-        if open==True:
+        if open is True:
             polygon_west = np.vstack(( np.array([-A, polyline[0][1]]),
                                        polyline,
                                        np.array([-A, polyline[-1][1]])))
@@ -1276,12 +1390,12 @@ class Grid:
         return [(*lrc1rc2, r) for lrc1rc2, r in zip(np.hstack((LRC1, LRC2[:, 1:])), R)]
 
 
-    def I2LRC(self, I, astuples=True):
+    def I2LRC(self, L, astuples=True):
         """Return (IL, IR, IC) from array of nodes I.
 
         Parameters
         ----------
-        I : list of global node numbers
+        L : list of global node numbers
             The node numbers to be converted to LRC
         astuples: bool
             if True --> lrc are tuples else LRC is array of int
@@ -1291,16 +1405,16 @@ class Grid:
         list of tuples or np.array[n, 3] of ints
 
         """
-        I = np.asarray(I, dtype=int).ravel()
+        L = np.asarray(L, dtype=int).ravel()
 
         Nlay = self._ny * self._nx
 
-        IL = I // Nlay
-        IR = (I - IL * Nlay) // self._nx
-        IC = I - IL * Nlay - IR * self._nx
+        IL = L // Nlay
+        IR = (L - IL * Nlay) // self._nx
+        IC = L - IL * Nlay - IR * self._nx
 
         if astuples:
-            return [(i, l, c) for i, l, c in zip(IL, IR, IC)]
+            return [(iz, ir, ic) for iz, ir, ic in zip(IL, IR, IC)]
         else:
             return np.vstack((IL, IR, IC)).T
 
@@ -1337,8 +1451,10 @@ class Grid:
         C2 = C1 + 1 if x > self.xm[C1] else C1 - 1
         R2 = R1 + 1 if y < self.ym[R1] else R1 - 1
 
-        if C2 < C1: C1, C2 = C2, C1
-        if R2 < R1: R1, R2 = R2, R1
+        if C2 < C1:
+            C1, C2 = C2, C1
+        if R2 < R1:
+            R1, R2 = R2, R1
 
         C2 = C2 if C2 < self._nx else C1
         C1 = C1 if C1 >= 0    else C2
@@ -1397,8 +1513,10 @@ class Grid:
             dx, dy = x2 - x1, y2 - y1
             L = np.sqrt(dx ** 2 + dy ** 2)
 
-            if len(SP) == 0: SP = np.array([[0, x0, y0]]) # initialize
-            if len(S)  == 0: S  = np.array([[0, x0, y0]])
+            if len(SP) == 0:
+                SP = np.array([[0, x0, y0]]) # initialize
+            if len(S)  == 0: 
+                S  = np.array([[0, x0, y0]])
 
             SP = np.vstack((SP, np.array([[SP[-1][0] + L, x2, y2]])))
 
@@ -1423,23 +1541,24 @@ class Grid:
             s[:, 0] += S[-1][0]
             S = np.vstack((S, s))
 
-        if Z is None: Z = self.Z
+        if Z is None:
+            Z = self.Z
 
         if Z.ndim != 3:
             raise ValueError('Z must be a 3D array')
 
         z = np.zeros((len(S), len(Z)))
         for i, zeta in enumerate(Z):
-            #f1 = ip.interp2d(self.Xm, self.Ym[::-1], Z[i, ::-1,  :].T)
+            #f1 = sci_ip.interp2d(self.Xm, self.Ym[::-1], Z[i, ::-1,  :].T)
             #A = f1(self.xm, self.ym)
-            f = ip.RectBivariateSpline(self.xm, self.ym[::-1],
+            f = sci_ip.RectBivariateSpline(self.xm, self.ym[::-1],
                     Z[i, ::-1,  :].T, kx=1, ky=1, s=0)
             x, y = S[:, 1], S[:, 2]
             z[:, i] = f(x, y, grid=False)
 
-        I = np.unique(S.T[0], return_index=True)
+        L = np.unique(S.T[0], return_index=True)
 
-        return S[I[1]], z[I[1]], SP
+        return S[L[1]], z[L[1]], SP
 
 
     def interpxy(self, Z, points, iz=0, **kwargs):
@@ -1585,7 +1704,7 @@ class Grid:
     @property
     def DZ(self):
         """Return 3D grid [ny, nx, nz] of Layer thicnesses."""
-        if self._full == False:
+        if self._full is False:
             return np.abs(np.diff(self._Z, axis=0) * np.ones(self._shape))
         else:
             return np.abs(np.diff(self._Z, axis=0))
@@ -1593,7 +1712,7 @@ class Grid:
     @property
     def Dlay(self):
         """Return 3D grid [nlay, ny, nx] of Layer thicnesses."""
-        if self._full == False:
+        if self._full is False:
             return np.abs(np.diff(self._Z, axis=0)) * np.ones((self._nlay, self._ny, self._nx))
         else:
             return np.abs(np.diff(self._Z, axis=0))[self._Ilay]
@@ -1601,7 +1720,7 @@ class Grid:
     @property
     def Dcbd(self):
         """Return 3D grid [ncbd, ny, nx] of Layer thicnesses."""
-        if self._full == False:
+        if self._full is False:
             return np.abs(np.diff(self._Z, axis=0)) * np.ones((self._ncbd, self._ny, self._nx))
         else:
             return np.abs(np.diff(self._Z, axis=0))[self._Icbd]
@@ -1708,7 +1827,7 @@ class Grid:
     @property
     def ZM(self):
         """Cell center coordinates as a 3D grid [nz, ny, nx]."""
-        if self._full == False:
+        if self._full is False:
             return self.zm.reshape(self._nz, 1, 1) * np.ones(self._shape)
         else:
             return 0.5 * (self._Z[:-1, :, :] + self._Z[1:, :, :])
@@ -1716,7 +1835,7 @@ class Grid:
     @property
     def ZM_lay(self):
         """Return model layer cell center elevation as a 3D grid [nlay, ny, nx]."""
-        if self._full == False:
+        if self._full is False:
             return self.zlay.reshape((self._nlay, 1, 1)) *\
                 np.ones((self._nlay, self._ny, self._nx))
         else:
@@ -1725,7 +1844,7 @@ class Grid:
     @property
     def ZM_cbd(self):
         """Return model cbd cell center elevation as a 3D grid [ncbd, ny, nx]."""
-        if self._full == False:
+        if self._full is False:
             return self.zcbd.reshape((self._ncbd, 1, 1)) *\
                 np.ones((self._ncbd, self._ny, self._nx))
         else:
@@ -1772,7 +1891,9 @@ class Grid:
 
         Convenience property for contouring.
         """
-        Xc = self.Xm; Xc[:,0] = self._x[0]; Xc[:,-1] = self._x[-1]
+        Xc = self.Xm.copy()
+        Xc[:,0] = self._x[0]
+        Xc[:,-1] = self._x[-1]
         return Xc
 
     @property
@@ -1783,7 +1904,9 @@ class Grid:
 
         Convenience property for contouring.
         """
-        Yc = self.Ym; Yc[0,:] = self._y[0]; Yc[:,-1] = self._y[-1]
+        Yc = self.Ym.copy()
+        Yc[0,:] = self._y[0]
+        Yc[:,-1] = self._y[-1]
         return Yc
 
     @property
@@ -2122,10 +2245,17 @@ class Grid:
         """
         Zgr = np.zeros((self._nz + 1, self._ny + 1, self._nx + 1))
         msk = np.zeros_like(Zgr)
-        Zgr[:, :-1, :-1] += self.Z; msk[:, :-1, :-1] += 1
-        Zgr[:,  1:, :-1] += self.Z; msk[:,  1:, :-1] += 1
-        Zgr[:, :-1,  1:] += self.Z; msk[:, :-1,  1:] += 1
-        Zgr[:,  1:,  1:] += self.Z; msk[:,  1:,  1:] += 1
+        Zgr[:, :-1, :-1] += self.Z
+        msk[:, :-1, :-1] += 1
+        
+        Zgr[:,  1:, :-1] += self.Z
+        msk[:,  1:, :-1] += 1
+        
+        Zgr[:, :-1,  1:] += self.Z
+        msk[:, :-1,  1:] += 1
+        
+        Zgr[:,  1:,  1:] += self.Z
+        msk[:,  1:,  1:] += 1
         return Zgr / msk
 
 
@@ -2342,11 +2472,11 @@ class Grid:
         Lv = iy >= 0
 
         L = AND(Lu, Lv)
-        if self.full == False:
+        if self.full is False:
             iz[L] = index( -zp[L], -self.z, left, right)
         else:
             for i in range(len(zp)):
-                if L[i] == True:
+                if L[i] is True:
                     z = self._Z[:, iy[i], ix[i]]
                     if AND(zp[i] <= z[0], zp[i] >= z[-1]):
                         iz[i] = index(-zp[i], -z, left, right)
@@ -2495,11 +2625,11 @@ class Grid:
         iy = np.ones(yp.shape, dtype=int) * intNaN
         if zp is None:
             zp = self.ZM[iLay, iy, ix] # mid of layers  defined by iLay
-        I = self.inside(xp, yp, zp)
+        L = self.inside(xp, yp, zp)
         iz = np.ones(zp.shape, dtype=int) * intNaN
 
         ixyz = np.vstack((ix, iy, iz)).T
-        ixyz[I] = self.ixyz(xp[I], yp[I], zp[I], order='CRL')
+        ixyz[L] = self.ixyz(xp[L], yp[L], zp[L], order='CRL')
         return self.ixyz2global_index(ixyz[:, 0], ixyz[:, 1], ixyz[:, 2])
 
 
@@ -2604,12 +2734,12 @@ class Grid:
 
         L = AND(Lu, Lv)
         wp = np.zeros(zp.shape, dtype=float) * np.NaN
-        if self.full == False:
+        if self.full is False:
             wp = np.interp( -zp, -self.z, np.arange(self._nz+1),
                            left=left, right=right)
         else:
             for i in range(len(L)):
-                if L[i] == True:
+                if L[i] is True:
                     wp[i] = np.interp( -zp[i], -self._Z[:, iv[i], iu[i]],\
                         np.arange(self._nz+1) ,\
                             left=left, right=right)
@@ -2693,11 +2823,11 @@ class Grid:
 
         xp[L] = self._x[iu[L]] +  U[L] * self.dx[iu[L]]
         yp[L] = self._y[iv[L]] -  V[L] * self.dy[iv[L]]
-        if self.full == False:
+        if self.full is False:
             zp[L] = self.z[iw[L]] - W[L] * self.dz[iw[L]]
         else:
             for i in range(len(iw)):
-                if L[i]==True:
+                if L[i] is True:
                     zp[i] = self._Z[iw[i], iv[i], iu[i]] - W[i] *\
                              self.DZ[iw[i], iv[i], iu[i]]
         return xp, yp, zp
@@ -2862,12 +2992,19 @@ class Grid:
                 X = self.X[0]
                 Y = self.Y[0]
 
-            xr = X.copy(); xr[1::2, :] = xr[1::2, ::-1]
-            yr = Y.copy(); yr[1::2, :] = yr[1::2, ::-1]
+            xr = X.copy()
+            xr[1::2, :] = xr[1::2, ::-1]
+            
+            yr = Y.copy()
+            yr[1::2, :] = yr[1::2, ::-1]
             ax.plot(xr.ravel(), yr.ravel(), **kwargs)
 
-            xc = X.copy().T; xc[1::2, :] = xc[1::2, ::-1]
-            yc = Y.copy().T; yc[1::2, :] = yc[1::2, ::-1]
+            xc = X.copy().T
+            xc[1::2, :] = xc[1::2, ::-1]
+            
+            yc = Y.copy().T
+            yc[1::2, :] = yc[1::2, ::-1]
+            
             ax.plot(xc.ravel(), yc.ravel(), **kwargs)
 
         return ax
@@ -3061,10 +3198,13 @@ class Grid:
         ax.set_xlabel(kwargs.pop('xlabel', 'ix'))
         ax.set_ylabel(kwargs.pop('ylabel', 'iy'))
         ax.set_title(kwargs.pop('title', 'gr.imshow()'))
-        if 'xlim' in kwargs: ax.set_xlim(kwargs.pop('xlim'))
-        if 'ylim' in kwargs: ax.set_ylim(kwargs.pop('xlim'))
-        if 'size_inches' in kwargs: fig.set_size_inches(kwargs.pop('size_inches'))
-        ax.grid()
+        if 'xlim' in kwargs:
+            ax.set_xlim(kwargs.pop('xlim'))
+        if 'ylim' in kwargs:
+            ax.set_ylim(kwargs.pop('xlim'))
+        if 'size_inches' in kwargs:
+            fig.set_size_inches(kwargs.pop('size_inches'))
+        ax.grid(True)
         ax.imshow(A)  #, extent=(*self.xm[[0, -1]], *self.ym[[-1, 0]]), **kwargs)
 
 
@@ -3118,10 +3258,14 @@ class Grid:
         if fontsize is None:
             fontsize = kwargs.pop('fz', 8)
 
-        if xlim: ax.set_xlim(xlim)
-        if ylim: ax.set_ylim(ylim)
-        if xscale: ax.set_xscale(xscale)
-        if yscale: ax.set_yscale(yscale)
+        if xlim:
+            ax.set_xlim(xlim)
+        if ylim:
+            ax.set_ylim(ylim)
+        if xscale:
+            ax.set_xscale(xscale)
+        if yscale:
+            ax.set_yscale(yscale)
         ax.grid()
 
         if filled:
@@ -3267,12 +3411,12 @@ class Grid:
         y *= np.ones_like(z)
 
         LRC = self.ixyz(x, y, z, order, world)
-        I = self.I(LRC)
+        L = self.I(LRC)
         n = self._ny * self._nx
-        I  = np.arange(I[0], I[-1] + 1, n, dtype=int)
-        kD = kh.ravel()[I] * self.DZ.ravel()[I] # cell transmissivty
+        L  = np.arange(L[0], L[-1] + 1, n, dtype=int)
+        kD = kh.ravel()[L] * self.DZ.ravel()[L] # cell transmissivty
         Q  = kD / np.sum(kD) * Q # cell flows
-        return I, Q
+        return L, Q
 
 
     def quivdata(self, Out, iz=0):
@@ -3354,8 +3498,8 @@ class Grid:
             for sr in rdr.shapeRecords():
                 val = sr.record[idx]
                 pgon = np.array(sr.shape.points)
-                I = inpoly(self.Xmw, self.Ymw, pgon) # world coordinates
-                out[I] = val
+                L = inpoly(self.Xmw, self.Ymw, pgon) # world coordinates
+                out[L] = val
             return out
         else:
             if out is None:
@@ -3364,8 +3508,8 @@ class Grid:
             for sr in rdr.shapeRecords():
                 val = sr.record[idx]
                 pgon = np.array(sr.shape.points)
-                I = inpoly(self.Xm[:, row, :], self.Zm[:, row, :])
-                out[I] = val
+                L = inpoly(self.Xm[:, row, :], self.Zm[:, row, :])
+                out[L] = val
             return out
 
 
