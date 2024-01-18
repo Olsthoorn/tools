@@ -1166,8 +1166,11 @@ class Grid:
         
         return LRC[:,0] * self._ny * self._nx + LRC[:, 1] * self._nx + LRC[:, 2]
 
-
     def Iglob(self, LRC):
+        warnings.warn("Iglob is deprecated. Use Iglob_from_lrc instead.", DeprecationWarning)
+        return self.Iglob_from_lrc(LRC)
+
+    def Iglob_from_lrc(self, LRC):
         """Return global index given LRC (zero based).
         
         Parameters
