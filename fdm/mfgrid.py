@@ -455,14 +455,17 @@ def index(xp, xGr, left=-1, right=-1):
         xp   = - xp
     assert np.all(np.diff(xGr) > 0), "x is not monotonously increasing or decreasing"
 
-    Idx = np.zeros(xp.size, dtype=dtype)
-    Idx['ip']  = np.arange(Idx.size)
-    Idx['idx'] = np.interp(xp.ravel(), xGr, np.arange(len(xGr)), left, right)
+    Iglob = np.zeros(xp.size, dtype=dtype)
+    Iglob['ip']  = np.arange(Iglob.size)
+    Iglob['idx'] = np.interp(xp.ravel(), xGr, np.arange(len(xGr)), left, right)
     
-    return Idx[Idx['idx'] >= 0]
-
+    return Iglob[Iglob['idx'] >= 0]
 
 def lrc(xyz, xyzGr):
+    warnings.war("lrc is deprecated, use lrc_from_xyz instead")
+    lrc_from_xyz(xyz, xyzGr)
+
+def lrc_from_xyz(xyz, xyzGr):
     """Return LRC indices (iL,iR, iC) of point (x, y, z).
 
     Parameters
@@ -915,15 +918,19 @@ class Grid:
         """Return cell numbers in the grid."""
         return np.arange(self.nod).reshape((self._nlay, self._ny, self._nx))
 
-    def LRC(self, Idx, astuples=None, aslist=None):
+    def LRC(self, Iglob, astuples=None, aslist=None):
+        warnings.warn("LRC is deprecated. Use lrc_from_iglob instead.", DeprecationWarning)
+        return self.lrc_from_iglob(Iglob, astuples=None, aslist=None)
+
+    def lrc_from_iglob(self, Iglob, astuples=None, aslist=None):
         """Return ndarray [L R C] indices generated from global indices or boolean array I.
 
         Parameters
         ----------
-        Idx : ndarray of int or bool
-            if dtype is int, then Idx is global index
+        Iglob : ndarray of int or bool
+            if dtype is int, then Iglob is global index
 
-            if dtype is bool, then Idx is a zone array of shape
+            if dtype is bool, then Iglob is a zone array of shape
             [ny, nx] or [nz, ny, nx]
 
         astuples: bool or None
@@ -931,21 +938,26 @@ class Grid:
         aslist: bool or None:
             return as [[l, r, c], [l, r, c], ...]
         """
-        assert isinstance(Idx, np.ndarray), "I must be a np.ndarray of booleans or ints."
-        if len(Idx) == 0:
-            return Idx
-        assert Idx.dtype == int or Idx.dtype == bool, "I.dtype must be bool or int."
-        if Idx.dtype == bool:
-            assert np.all(self.shape == Idx.shape), "If Idx.dtype == bool, then I.shape must be equal to gr.shape"
-            Idx = self.NOD[Idx]
-        
-        Idx = Idx.flatten()
-        
+        assert isinstance(Iglob, np.ndarray), "I must be a np.ndarray of booleans or ints."
+        assert Iglob.dtype in (int, bool), "Iglobe.dtype must be bool or int."
+        if isinstance(Iglob.dtype, bool):
+            assert np.all(self.shape == Iglob.shape), (
+                "If Iglob.dtype == bool, then Iglob.shape must be equal to gr.shape"
+                )
+            Iglob = self.NOD[Iglob]
+        else:
+            assert np.all(np.logical_and(Iglob >= 0, Iglob < self.nod)), (
+                "Iglob must be > 0 and < {}".format(self.nod)
+                )
+                
+        Iglob = Iglob.flatten()
         ncol = self._nx
         nlay = self._ny * ncol
-        L = np.array(Idx / nlay, dtype=int)
-        R = np.array((Idx - L * nlay) / ncol, dtype=int)
-        C = Idx - L * nlay - R * ncol
+        
+        L = np.array(Iglob / nlay, dtype=int)
+        R = np.array((Iglob - L * nlay) / ncol, dtype=int)
+        C = Iglob - L * nlay - R * ncol
+        
         if astuples:
             return tuple((lay, row, col) for lay, row, col in zip(L, R, C))
         elif aslist:
@@ -961,12 +973,15 @@ class Grid:
         zone : ndarray of dtype bool
             zonearray, can be o shape (ny, nx) or (nz, ny, nx)
         """
+        assert isinstance(zone, np.np.ndarray) and zone.ndim in [2, 3], (
+            "zone must be a np.ndarray of shape (nz,nx) or (nz, ny, nx."
+        )                                                           
         if zone.ndim == 2:
-            return self.LRC(self.NOD[0][zone])
+            return self.lrc_from_iglob(self.NOD[0][zone])
         else:
-            return self.LRC(self.NOD[zone])
-
-
+            return self.lrc.from_iglob(self.NOD[zone])
+    
+    
     def lrc(self, x, y, z=None, Ilay=None):
         """Return pd.Series with zero-based index and values the lrc tuples.
         
@@ -977,7 +992,6 @@ class Grid:
         If z is None then iLay is used.
         If iLay is also None, then iLay is all zeros.
                 
-
         Parameters
         ----------
         x : ndarray
@@ -996,6 +1010,7 @@ class Grid:
 
         @TO 171105
         """
+        warnings.warn("lrc will be deprecated. Use lrc_from_xyz(...)['ic'] instead", DeprecationWarning)
         if np.isscalar(x):
             x = [x]
         if np.isscalar(y):
@@ -1055,81 +1070,75 @@ class Grid:
                                 IcolSeries[NewIndex])],                 index=NewIndex)
         return lrcSeries
 
-    def lrc_recarray(self, x, y, z=None, Ilay=None):
-        """Return pd.Series with zero-based index and values the lrc tuples.
+    def lrc_from_xyz(self, xyz=None, Ilay=None):
+        """Return lrc rec_array (see dtype) from world coordinates xyz or xy and layer index Iz.
         
-        The index can be used to find the points that were outside the grid.
+        dtype = np.dtype([('ip', int), ('ic', (int, 3))])
+        
+        Field 'ip' can be used to find the points that were outside the grid.
+        Field 'ic' (cell identifier has the np.array([[L, R, C], ...]] array.
 
-        Points must be given as x, y, z or as x, y, iLay.
-        The shape of x, y, and z or iLay must be the same.
-        If z is None then iLay is used.
-        If iLay is also None, then iLay is all zeros.
-                
+        Points must be given as xyz array or as xy aray and iLay.
+        The len of xy and Ilay must be the same if xy is used.
+        If Ilay is not None xzy.shape will be truncated from (n, 3) to (n, 2).
+        If xyz.ndim == 2, and ILay is None, then ILay will be set to all zeros,
+        which implies all points xy are in layer 0.
+        
+        Missing indices in field 'ip' denotes poitns were outside the model grid.                
 
         Parameters
         ----------
-        x : ndarray
-            x-coordinates
-        y : ndarray
-            y-coordinates
-        z : ndarray | None
-            z-coordinates
-        Ilay : ndarray | None
+        xyz : ndarray of xyz or xy coordinates
+        Ilay : ndarray of int | int | None
             layer indices
 
         Returns
         -------
-        [iL, iR, iC]
-        indices outside the extents of the model are < 0 (-999)
-
+        recarray with dtype
+        
+        dtype = np.dtype([('ip', int), ('ic', (int, 3))])
+        
+        field 'ip' original point order, only points inside the grid are returned.
+        field 'ic' the array (n, 3) with columns (iz, iy, ix), grid cell indices
+        
         @TO 171105
         """
         dtype = np.dtype([('ip', int), ('ic', (int, 3))])
         
-        if np.isscalar(x):
-            x = [x]
-        if np.isscalar(y):
-            y = [y]
-        if np.isscalar(z):
-            z = [z]
-        if np.isscalar(Ilay):
-            Ilay = [Ilay]
-                        
-        x = np.array(x)
-        y = np.array(y)
-
-        if z    is not None:
-            z    = np.array(z)
-        if Ilay is not None:
-            Ilay = np.array(Ilay, dtype=int)
-
-        assert np.all(x.shape == y.shape), "x.shape must equal y.shape"
-
-        if z is not None:
-            assert np.all(x.shape == z.shape), "x.shape must equal z.shape"
-        else:
-            if Ilay is not None:
-                assert np.all(x.shape == Ilay.shape), "x.shape must equal iLay.shape"
+        xyz = np.array(xyz)
+        assert np.all(xyz.shape == (len(xyz), 2) or np.all(xyz.shape == (len(xyz), 3))), (
+            "xyz.shape must be (n, 2) or (n, 3)"
+        )
+        if xyz.shape[1] == 2:
+            if Ilay is None:
+                Ilay = np.zeros(len(xyz), dtype=int)
+            elif np.isscalar(Ilay):
+                Ilay = np.ones(len(xyz), dtype=int) * np.int(Ilay)
             else:
-                Ilay = np.zeros_like(x, dtype=int)
+                assert len(Ilay) == len(xyz), "Ilay must have same length as xyz."
+                Ilay = np.array(Ilay, dtype=int)
+        else:
+            pass
 
-        lrc = np.ones(x.size, dtype=dtype)    # initialize not valid indices
+        lrc = np.ones(len(xyz), dtype=dtype)  # initialize not valid indices
         lrc['ip'] = np.arange(len(lrc), dtype=int) # input point array indices
         lrc['ic'] = -1
         
-        Ix = index(x.ravel(), self.x)  # recarray dtype = [('ip', int), ('idx', int)]
-        Iy = index(y.ravel(), self.y)  # recarray dtype = [('ip', int), ('idx', int)]
+        # Both Ix and Iy are recarrays with dtype = [('ip', int), ('idx', int)]
+        Ix = index(xyz[:, 0], self.x)  
+        Iy = index(xyz[:, 1], self.y)
         
         lrc['ic'][Ix['ip'], 2] = Ix['idx']
         lrc['ic'][Iy['ip'], 1] = Iy['idx']
 
-        if z is None:
+        if xyz.shape[1] == 2:
+            # z values not given, so use Ilay
             lrc['ic'][:, 0] = Ilay
-        else: # handle z-values one by one
-            for z_, (ip, ic) in zip(z, lrc):
-                _, iy, ix = ic
+        else:
+            # handle z-values one by one
+            for _z, ip, (iy, ix) in zip(xyz[:, 2], lrc['ip'], lrc['ic'][:, 1:]):                
                 if ix >= 0 and iy >=0:
-                    iz = index(z_, self.Z[:, iy, ix])[0]['idx']
+                    iz = index(_z, self.Z[:, iy, ix])[0]['idx']
                     lrc['ic'][ip, 0] = iz
                 
         valid = AND(lrc['ic'][:, 0] >=0, lrc['ic'][:, 1] >=0, lrc['ic'][:, 2] >= 0)
