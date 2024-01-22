@@ -1185,14 +1185,49 @@ class Grid:
             assert LRC.dtype == np.int, "LRC must be a ndarray of ints of shape (n, 3)"
         
         return LRC[:,0] * self._ny * self._nx + LRC[:, 1] * self._nx + LRC[:, 2]
-
     
-    def top_active_cells(self, IDOMAIN):
+    def Iglob_from_xyz(self, xyz):
+        """Return global index given xyz (n, 3) coordinates array.
+        
+        Parameters
+        ----------
+        xyz: ndarray of ints of shape (n, 3)
+            The array with xyz coordinates
+            
+        Returns
+        -------
+        Iglob: ndarray (n) of ints.
+            global cell indices for the xyz points that are inside the grid
+            
+        @TO 20140120
+        """
+        assert isinstance(xyz, np.ndarray), "xyz must be a ndarray."
+        assert xyz.shape[1] == 3, "xyz array must be of shape (n, 3)."
+        
+        lrc = self.lrc_from_xyz(xyz)
+        
+        return self.Iglob_from_lrc(lrc)
+        
+    def top_active_cells(self, IDOMAIN, Iz=None):
         """Return the iz of top active cells.
         IDOMAIN: np.ndarray of int
             as defined in MODFLOW 6, inactive is IDOMAIN <= 0
+        Iz: None | int | np.ndarray of dtype int en len(Iz) == self.nx
+        
+        @TO 20240120
         """
-        Ix, Iz = self.NOD[0, 0], np.zeros_like(self.NOD[0, 0])
+        Ix = self.NOD[0, 0]
+        if Iz is None:
+            Iz = np.zeros_like(self.NOD[0, 0])
+        elif np.isscalar(Iz):
+            Iz = np.zeros_like(self.NOD[0, Iz])
+        else:
+            pass
+        
+        assert isinstance(Iz, np.ndarray), "Iz must be an None | int | a np.ndarray with dtype int."
+        assert Iz.dtype == int, "Iz must have dtype int."
+        assert len(Iz) == self.nx, "len(Iz) muyst be equal to self.nx"
+        
         while(len(Ix) > 0):
             IxNew = []
             for ix in Ix:
