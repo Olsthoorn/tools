@@ -2124,7 +2124,7 @@ class Grid:
         row: int     (default = -1)
             row number
         """
-        Zmx = self.ZM[:, row, :].copy()
+        Zmx = np.concatenate((self.Z[0:1, row, :], self.ZM[1:-1, row, :], self.Z[-1:, row, :]), axis=0)
         for i in range(self.nz):
             Zmx[i][Zmx[i] > hwt] = hwt[Zmx[i] > hwt]
         return Zmx
@@ -3705,6 +3705,63 @@ class Grid:
 
         return grNew, new_params
 
+    def inactive_cells_array(self, IDOMAIN):
+        """Return recarray for itnerpolating inactive and flow-through cells.
+        
+        Cells of pinched-oout layers get IDOMAIN = -1 in Modflow 6 to convert them
+        to vertically flow-through cells. This makes them inactie, and causes heads
+        and concentrations to get the corresponding value of 1e30.
+        While for flow this does not matter, it does for contoruing of transport.
+        To solve this, we want to interpolate by taking the average of the first
+        active cell above and the first active cell below the inactive cell.
+        
+        This function computes the global indices of inactive cells and
+        those of the first active cells below and above them to be used
+        for this interpolation.
+            
+        Parameters
+        ----------
+        IDOMAIN: np.ndarray of self.shape, with dtype int
+            according to modflow 6 (0 = inactive, < 0 is flow-through cell, else active).
+        Returns
+        -------
+        recarray with dtype [('inact', int), ('itop, int),  ('ibot', int)]
+        where inact the global index of the inactive cells,
+        itop those of the first active cell above the inact cells
+        ibot those of the first active cell below the inact cells
+        if inact was a top layer, then itop = ibot
+        if inact was a bot layer, then ibot = itop
+        Usage
+        -----
+        c.ravel()[p['inact']] = 0.5 * c.ravel()[p['itop']] + c.ravel()[p['ibot']])
+        
+        """
+        Inact = self.NOD[IDOMAIN == -1]
+        Iarr = np.zeros(len(Inact),  dtype=np.dtype([('inact', int), ('itop', int), ('ibot', int)]))
+        Iarr['inact'] = Inact
+        Iarr['itop']  = Inact[:]
+        Iarr['ibot']  = Inact[:]
+        
+        # Get first active cell above
+        It = np.arange(len(Inact), dtype=int)
+        while len(It) > 0:
+            It = It[Iarr['itop'][It] - self.nx >= 0]
+            Iarr['itop'][It] -= self.nx
+            It = It[IDOMAIN.ravel()[Iarr['itop'][It]] <= 0]
+        
+        # Get first active cells below
+        Ib = np.arange(len(Inact), dtype=int)
+        while len(Ib) > 0:
+            Ib = Ib[Iarr['ibot'][Ib] + self.nx < self.nod]
+            Iarr['ibot'][Ib] += self.nx
+            Ib = Ib[IDOMAIN.ravel()[Iarr['ibot'][Ib]] <= 0]
+            
+        # If inactive cells were at top, use first active below
+        Iarr['itop'][Iarr['itop'] == Inact] = Iarr['ibot'][Iarr['itop'] == Inact]
+        Iarr['ibot'][Iarr['ibot'] == Inact] = Iarr['itop'][Iarr['ibot'] == Inact] # vice versa
+        return Iarr
+    
+# =================================================================
 
 def array2tuples(A):
     """Return array as a list of tuples."""
