@@ -644,9 +644,10 @@ class Grid:
             below it.
         'georef` : tuple
             (x0, x0, xw, yw, angle) relating world and model coordinates
-
         """
         assert (axial is True) or (axial is False), "axial must be True or False."
+        if axial or y is None:
+            y = [-0.5, 0.5]
         assert tol > 0, "tol must be > 0."
         assert min_dz > 0, "min_dz must be > 0."
         
@@ -2190,12 +2191,34 @@ class Grid:
             Zpy[i][Zpy[i] > hwt] = hwt[Zpy[i] > hwt]
         return Zpy
     
+    def heads_at_Z(self, heads, flf, k33):
+        """Return heads array adapted to cell top and bottom instead of cell mids.
+
+        Parameters
+        ----------
+        heads: np.ndarray with heads, shape == self.shape !
+            heads to be adapted to cell tops and bottoms
+        flf: np.ndarray with flow lower face. shape == self.shape
+            downward flow through cell bottoms
+        k33: int or np.ndarray of shape == self.shape
+            vertical layer conductance.
+        """
+        hZ = np.zeros_like(self.Z)
+        hZ[:-1] = heads + flf / self.AREA / k33 * self.DZ / 2
+        hZ[ -1] = heads[-1]
+        return hZ
+
+    
 
     def layer_patches_x(self, alpha=None,  row=-1):
         """Return a list of patches for the layers along row."""
         # Build patches
         ptchs = []
-        x = np.hstack((self.Xp[0], self.Xp[0][::-1], self.Xp[0][0]))
+        # Set left and  right most points equal to gr.x[0] and gr.x[-1]
+        Xp = self.Xp[0]
+        Xp[ 0] = self.x[ 0]
+        Xp[-1] = self.x[-1]
+        x = np.hstack((Xp, Xp[::-1], Xp[0]))
         for z1, z2 in zip(self.Zpx(row=row)[:-1], self.Zpx(row=row)[1:]):        
             z = np.hstack((z1, z2[::-1], z1[0]))
             xy = np.vstack((x, z)).T
