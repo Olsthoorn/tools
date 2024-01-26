@@ -2230,9 +2230,24 @@ class Grid:
         k33: int or np.ndarray of shape == self.shape
             vertical layer conductance.
         """
-        hZ = np.zeros_like(self.Z)
-        hZ[:-1] = heads + flf / self.AREA / k33 * self.DZ / 2
-        hZ[ -1] = heads[-1]
+        assert np.all(flf.shape == self.shape), "shape Flow Lower not the same as shape of network."
+        assert np.all(flf[-1].ravel() == 0.),   "Flow Lower Face values must have all zero's at bottom (did you yse fff or frf?)"
+        
+         # vertical Darcy flow between layers
+        qv = flf[:-1, :, :] / gr.AREA[:-1, :, :]
+        
+        # vertical Darcy flow through cell tops and cell bottoms
+        qtop, qbot = np.zeros(self.shape), np.zeros_like(self.shape)
+        qtop[1: ] = qv
+        qbot[:-1] = qv
+        
+        # Head at cell tops and cell bottoms. Shape = shape of self.Z
+        hZ = np.zeros_like(self.Z)        
+        
+        # Note that flf is downward positive
+        hZ[:-1] = heads - self.DZ / k33 * (3 * qtop + 1 * qbot) / 8
+        hZ[ 1:] = heads + self.DZ / k33 * (1 * qtop + 3 * qbot) / 8
+            
         return hZ
     
     @property
