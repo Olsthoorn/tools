@@ -2191,8 +2191,35 @@ class Grid:
             Zpy[i][Zpy[i] > hwt] = hwt[Zpy[i] > hwt]
         return Zpy
     
-    def heads_at_Z(self, heads, flf, k33):
-        """Return heads array adapted to cell top and bottom instead of cell mids.
+    def Z_limited_to_water_table(self, hwt, min_dz=None):
+        """Return grid point elevations Z shape(nz + 1, ny,, nz) but limited to the water table.
+                
+        This helps with contouring in some cases.
+        The water table data, hwt, must have shape equal to that of self.shape(ny, nx), a grid plain.
+
+        Parameters
+        ----------
+        hwt: water table (shape (ny, nx))
+            head in the top layer or in the highest layer where
+            cells are wet.
+        min_dz: None | positive float
+            if min_dz is not None, make sure the layer thickness is at leat min_dz
+        """
+        assert hwt.ndim == 2 and np.all(hwt.shape == self.shape[1:]), (
+            "Shape of water table data must be ({}, {})".format(self.ny, self.nx))
+        Hwt = hwt[np.newaxis, :, :] * np.ones(self.Z.shape)
+        Z = self.Z.copy()
+        Z[Hwt < Z] = Hwt[Hwt < Z]
+        
+        if min_dz is not None:
+            DZ = -np.diff(Z, axis=0)
+            for ilay in range(Z.shape[0]):
+                Z[ilay + 1][DZ[ilay] < min_dz] = Z[ilay][DZ[ilay] < min_dz] - min_dz
+            
+        return Z
+    
+    def heads_on_zplanes(self, heads=None, flf=None, k33=None):
+        """Return heads array adapted to z_elevatons with shape(nz + 1, ny, nx) instead of cell cell mids.
 
         Parameters
         ----------
@@ -2207,9 +2234,12 @@ class Grid:
         hZ[:-1] = heads + flf / self.AREA / k33 * self.DZ / 2
         hZ[ -1] = heads[-1]
         return hZ
-
     
-
+    @property
+    def XM_on_zplanes(self):
+        """Return XM but for points on z-planes. I.e. of shape(nz+1, ny, nx)."""
+        return self.xm[np.newaxis, np.newaxis, :] * np.ones((self.nz + 1, self.ny, self.nx))
+        
     def layer_patches_x(self, alpha=None,  row=-1):
         """Return a list of patches for the layers along row."""
         # Build patches
@@ -3357,23 +3387,40 @@ class Grid:
     def const(self, u, dtype=float, axial=False, lay=True, cbd=False):
         """Return an ndarray of gr.shape with value u.
 
-        U can be a scaler or a vector in which case the values of u are used
-        to set the layers of the resulting array with the correspoining value
+        U can be a scalar or a vector, in which case the values of u are used
+        to set the layers of the resulting array with the corresponding values
         of u. The number of resulting layers is either equal to the length of u
-        or to nlay if lay is True or ncbd if cbd is True. lay and cbd only
+        nor to nlay if lay is True or ncbd if cbd is True. lay and cbd only
         work when u is scalar. Setting both lay and cbd does not work. In that
         case lay takes preference.
         If u is any sequence, then it's first converted to an array and then
-        the ravel() is used. Unce u is always used as a vector that will
-        be truned into the (downward) z-direction (the highest index is the
+        the ravel() is used. When u is a vector, it will
+        be turned a into the (downward) z-direction (the highest index is the
         lowest layer of the grid in space).
+        
+        Parameters
+        ----------
+        u: scalar or vector
+            layer values.
+        dtype: np.dtype (float | int | bool | ...)
+            The dtype of the resulting array.
+        lay: bool
+            if True, don't use cbd, nlay = self.nlay
+            Default. Indicates that an array for the model layers is wanted.
+        cbd: bool
+            if True, nz = self.ncbd
+            Indcates that an array for the cbd layer is wanted.
+        axial: bool
+            If True, then valus are multiplied by 2 * np.pi * self.XM
+        cbc: vector of ints where 1 means there is a cbd layer below the model layer and 0 none.
+            cbd indicator. Deprecated, becuase not used in Modflow 6.
 
         Examples
         --------
         U = gr.const(3.), U = gr.const(np.random.randn((1, 1, gr.nz)))
         U = gr.const(np.random.randn(gr.nz))
 
-        TO 161007
+        TO 29161007, 20240125
         """
         if isinstance(u, (np.ndarray, list, tuple)):
             u = u.ravel()[:, np.newaxis, np.newaxis]
@@ -3381,6 +3428,7 @@ class Grid:
         elif lay is True:
             nz = self._nlay
         elif cbd is True:
+            warnings.warn("Use of cbd is deprecated, it's not used in Modflow 6")
             nz = self._ncbd
         else:
             nz = self._nz

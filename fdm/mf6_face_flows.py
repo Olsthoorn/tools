@@ -317,6 +317,7 @@ def get_struct_flows(flowjas, grb_file=None, verbose=False):
     rec array of length flowjas, with keys frf, fff, flf, the three
     strutured arrays for flowjas[i]
     
+    @TO 20231201
     """
     ja_ptr, grb = get_indices_to_pick_fxf(grb_file=grb_file)
 
@@ -326,12 +327,62 @@ def get_struct_flows(flowjas, grb_file=None, verbose=False):
                       ('fff', (float, grb.shape)),
                       ('flf', (float, grb.shape))])
     
+    if verbose:
+        print("Generating a recarray len {} of structed flows of dtype\n{}".format(len(flowjas, repr(dtype))))
+
+    
     fxfs = np.zeros(len(flowjas), dtype=dtype)
     
     for i, flowja in enumerate(flowjas):
         fxfs[i]['frf'].ravel()[ja_ptr['frf']['node']] = -flowja[ja_ptr['frf']['ja']]
         fxfs[i]['fff'].ravel()[ja_ptr['fff']['node']] = -flowja[ja_ptr['fff']['ja']]
         fxfs[i]['flf'].ravel()[ja_ptr['flf']['node']] = -flowja[ja_ptr['flf']['ja']] # + or -? @TO 20240110
+    return fxfs
+
+def get_structured_flows_as_dict(budgetObj, grb_file=None, verbose=False):
+    """Return a dict with the structured flows flf, fff, flrf.
+    
+    Parameters
+    ----------
+    budgetObj: flopy.budgetObj
+        budgetObj with the flows in the cell-by-cell flows of the simulated GWF model.
+    grb_file: string
+        name of the flopy-generated grid file with .grb extension.
+    
+    Returns
+    -------
+    Dictionary with the flf, fff and frf. The keys are kstpkper in de budgetObj.
+    The items for each kstpkper are rec_arrays with keys 'flf', 'fff', 'frf'
+    and the data are float arrays with the shape of the model (nz, ny, nx)
+    
+    Usage
+    -----
+    fflows = structured_flows_dict(budgetObj, grb_file=grb_file_name)
+    flf[kstpkper] = fflows[kstpkper]['flf']
+    fff[kstpkper] = fflows[kstpkper]['fff']
+    frf[kstpkper] = fflows[kstpkper]['frf']
+    
+    @TO 20240125
+    """
+    if not grb_file.endswith('.grb'):
+        grb_file = grb_file + '.grb'
+
+    ja_ptr, grb = get_indices_to_pick_fxf(grb_file=grb_file)
+    flowjas = [flowja.flatten() for flowja in budgetObj.get_data(text='FLOW-JA')]
+    dtype = np.dtype([('frf', (float, grb.shape)),
+                      ('fff', (float, grb.shape)),
+                      ('flf', (float, grb.shape))])
+    
+    kstpkper = budgetObj.get_kstpkper()
+    
+    if verbose:
+        print("Generating a dictionary of {} structed flows with dtype\n{}".format(len(kstpkper), repr(dtype)))
+
+    fxfs = dict()
+    for ksp, flowja in zip(kstpkper, flowjas):
+        fxfs[ksp] = np.zeros(1, dtype=dtype)
+        for f in ['flf', 'fff', 'frf']:
+            fxfs[ksp][f].ravel()[ja_ptr[f]['node']] = -flowja[ja_ptr[f]['ja']]
     return fxfs
 
 if __name__ == '__main__':
