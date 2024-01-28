@@ -1776,10 +1776,7 @@ class Grid:
     @property
     def AREA(self):
         """Return area of the cells as a 3D grid [nz, ny, nx]."""
-        if self.axial:
-            return (np.pi * (self._x[1:]**2 - self._x[:-1]**2))[np.newaxis, np.newaxis, :]
-        else:
-            return self.DX * self.DY
+        return self.Area * np.ones((self._nlay, self._ny, self._nx))
 
     @property
     def Area(self):
@@ -2218,7 +2215,7 @@ class Grid:
             
         return Z
     
-    def heads_on_zplanes(self, heads=None, flf=None, k33=None):
+    def heads_on_zplanes(self, heads=None, flf=None, k33=None, continuous=False):
         """Return heads array adapted to z_elevatons with shape(nz + 1, ny, nx) instead of cell cell mids.
 
         Parameters
@@ -2229,25 +2226,32 @@ class Grid:
             downward flow through cell bottoms
         k33: int or np.ndarray of shape == self.shape
             vertical layer conductance.
+        continuous: bool
+            If True use continuous linear qv from qv_bot to qv_top within cells
+            else used cosntant but different qv above and below cell mids (stanard Modflow)
         """
         assert np.all(flf.shape == self.shape), "shape Flow Lower not the same as shape of network."
         assert np.all(flf[-1].ravel() == 0.),   "Flow Lower Face values must have all zero's at bottom (did you yse fff or frf?)"
         
-         # vertical Darcy flow between layers
-        qv = flf[:-1, :, :] / gr.AREA[:-1, :, :]
+         # vertical Darcy flow between layers, upward positive
+        qlf = flf[:-1, :, :] / self.AREA[:-1, :, :]
         
         # vertical Darcy flow through cell tops and cell bottoms
-        qtop, qbot = np.zeros(self.shape), np.zeros_like(self.shape)
-        qtop[1: ] = qv
-        qbot[:-1] = qv
+        qtop, qbot = np.zeros(self.shape), np.zeros(self.shape)
+        qtop[1: ] = -qlf
+        qbot[:-1] = -qlf
         
+        # Resistance of half cell thickness:
+        cCell2 = self.DZ / k33 / 2
+                
         # Head at cell tops and cell bottoms. Shape = shape of self.Z
-        hZ = np.zeros_like(self.Z)        
-        
-        # Note that flf is downward positive
-        hZ[:-1] = heads - self.DZ / k33 * (3 * qtop + 1 * qbot) / 8
-        hZ[ 1:] = heads + self.DZ / k33 * (1 * qtop + 3 * qbot) / 8
-            
+        hZ = np.zeros_like(self.Z)  
+        if continuous:
+            hZ[:-1] = heads - cCell2 * (0.75 * qtop + 0.25 * qbot)
+            hZ[ 1:] = heads + cCell2 * (0.25 * qtop + 0.75 * qbot)
+        else:      
+            hZ[:-1] = heads - cCell2 * qtop
+            hZ[ 1:] = heads + cCell2 * qbot
         return hZ
     
     @property

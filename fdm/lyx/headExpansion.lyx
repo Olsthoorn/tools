@@ -1,0 +1,607 @@
+#LyX 2.3 created this file. For more info see http://www.lyx.org/
+\lyxformat 544
+\begin_document
+\begin_header
+\save_transient_properties true
+\origin unavailable
+\textclass scrreprt
+\begin_preamble
+%\usepackage{epstopdf} % to include .eps graphics files with pdfLaTeX
+\usepackage{flafter}   % Don't place floats before their definition
+%\usepackage{topcapt}  % Define \topcation for placing captions above tables (not in gwTeX)
+
+\usepackage{xurl}      % better URL setting, uses old url package
+
+\usepackage{xcolor}
+\definecolor{darkblue}{rgb}{0,0,0.4}
+\usepackage[]{hyperref} % Generates all cross references
+\hypersetup{            % Setting options for hyperref package
+	breaklinks=true,    % break line with long hyperlinks
+	colorlinks=true,    % coloured links
+	linkcolor=blue,
+	filecolor=magenta,
+	urlcolor=darkblue,
+	citecolor=blue,
+	backref=page
+} 
+
+\usepackage{memhfixc}  % remove conflict between the memoir class & hyperref
+\usepackage{pdfsync}   % enable tex source and pdf output syncronicity
+
+\usepackage{memhfixc}  % remove conflict between the memoir class & hyperref
+\usepackage{pdfsync}   % enable tex source and pdf output syncronicity
+
+\usepackage{alltt}
+\end_preamble
+\use_default_options true
+\maintain_unincluded_children false
+\language english
+\language_package default
+\inputencoding utf8
+\fontencoding global
+\font_roman "default" "default"
+\font_sans "default" "default"
+\font_typewriter "default" "default"
+\font_math "auto" "auto"
+\font_default_family default
+\use_non_tex_fonts false
+\font_sc false
+\font_osf false
+\font_sf_scale 100 100
+\font_tt_scale 100 100
+\use_microtype false
+\use_dash_ligatures true
+\graphics default
+\default_output_format default
+\output_sync 0
+\bibtex_command biber
+\index_command default
+\paperfontsize default
+\spacing single
+\use_hyperref false
+\papersize default
+\use_geometry false
+\use_package amsmath 1
+\use_package amssymb 1
+\use_package cancel 1
+\use_package esint 1
+\use_package mathdots 1
+\use_package mathtools 1
+\use_package mhchem 1
+\use_package stackrel 1
+\use_package stmaryrd 1
+\use_package undertilde 1
+\cite_engine biblatex
+\cite_engine_type authoryear
+\biblio_options hyperref=true, backref=true, backrefstyle=three,backreffloats=true,indexing=bib,date=year
+\biblatex_bibstyle authoryear
+\biblatex_citestyle authoryear
+\use_bibtopic false
+\use_indices false
+\paperorientation portrait
+\suppress_date false
+\justification true
+\use_refstyle 1
+\use_minted 0
+\index Index
+\shortcut idx
+\color #008000
+\end_index
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation indent
+\paragraph_indentation default
+\is_math_indent 0
+\math_numbering_side default
+\quotes_style english
+\dynamic_quotes 0
+\papercolumns 1
+\papersides 1
+\paperpagestyle default
+\listings_params "language=Python,extendedchars=false,frameround=fttt,numbers=none,% left,line numbers use none,numberstyle={\tiny},stepnumber=2,% line numbers only every so many,numbersep=9pt,% how far line numbers from text?,showspaces=false,showstringspaces=false,showtabs=false,tab={\rightarrowfill},basicstyle={\small},keywordstyle={\color{blue}},commentstyle={\color{green}},%,stringstyle={\ttfamily \color{magenta}},identifierstyle={\color{black}}"
+\tracking_changes false
+\output_changes false
+\html_math_output 0
+\html_css_as_file 0
+\html_be_strict false
+\end_header
+
+\begin_body
+
+\begin_layout Title
+Head Expansion
+\end_layout
+
+\begin_layout Author
+T.N.Olsthoorn
+\end_layout
+
+\begin_layout Date
+2024-01-27
+\end_layout
+
+\begin_layout Section*
+Intro
+\end_layout
+
+\begin_layout Standard
+In Modflow's finite difference models, the heads are computed in cell centers.
+ While it is often convenient to use only a few layers in cross sectioin,
+ contouring them does not yield the expected pattern due to the contourlines
+ being based on the heads in the cell centers and not at the layer boundaries
+ where the properties suddenly change.
+ Instead of the expected nod at the layer boundaries, the contours are drawn
+ continuous at these boundaries and instead they sharply bend in the mid
+ of the layers.
+ While this can solved by using more layers, and thin ones at the top and
+ bottoms of the layers, this is not ideal.
+ Another approach is to compute the heads at the layer boundaries based
+ on the heads in the cell centers and the know vertical flux given by the
+ so-called `flow lower face`.
+\end_layout
+
+\begin_layout Section*
+Computing the heads at the layer boundaries
+\end_layout
+
+\begin_layout Subsection*
+Using only the vertical flux between the centers of the overlying cells
+\end_layout
+
+\begin_layout Standard
+After a model has finished successfully, the flows across all cell-boundaries
+ is know, including those at the cell bottoms, which is historically called
+ the FLOW_LOWER_FACE as computed by all Modflow variants by diff(heads,
+ axis=0) * vertical flow resistance:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+q_{v}=-k_{v}\frac{\partial h}{\partial z}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Or
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\partial h=-\frac{q_{v}}{k_{v}}\partial z
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\Delta h=-\intop_{z_{1}}^{z_{2}}\frac{q_{v}}{k_{v}}dz
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Where 
+\begin_inset Formula $z_{1}$
+\end_inset
+
+ and 
+\begin_inset Formula $z_{2}$
+\end_inset
+
+ are the centers of two overlying cells.
+\end_layout
+
+\begin_layout Standard
+In Modflow, 
+\begin_inset Formula $q_{v}$
+\end_inset
+
+ is constant between 
+\begin_inset Formula $z_{1}$
+\end_inset
+
+ and 
+\begin_inset Formula $z_{2}$
+\end_inset
+
+, while 
+\begin_inset Formula $k_{z}$
+\end_inset
+
+ jumps at the cell boundary from 
+\begin_inset Formula $k_{v1}$
+\end_inset
+
+ to 
+\begin_inset Formula $k_{v2}$
+\end_inset
+
+.
+ The boundary elevation depends on the thikness of the two overlying cells,
+ being 
+\begin_inset Formula $D_{1}$
+\end_inset
+
+ and 
+\begin_inset Formula $D_{2}$
+\end_inset
+
+ respectively.
+ The elevation is 
+\begin_inset Formula $z_{1}+\frac{D_{1}}{2}=z_{2}-\frac{D_{2}}{2}$
+\end_inset
+
+.
+ Integration from 
+\begin_inset Formula $z_{1}$
+\end_inset
+
+ to 
+\begin_inset Formula $z_{2}$
+\end_inset
+
+ yields
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\Delta h=-q_{v}\left[\intop_{z_{1}}^{z_{mid}}\frac{dz}{k_{v1}}+\intop_{z_{mid}}^{z_{2}}\frac{dz}{k_{v2}}\right]
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Because 
+\begin_inset Formula $k_{v1}$
+\end_inset
+
+ is constant in the first integral and 
+\begin_inset Formula $k_{v2}$
+\end_inset
+
+in the second, we get
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\Delta h=-q_{v}\left[\frac{\frac{1}{2}D_{1}}{k_{v1}}+\frac{\frac{1}{2}D_{2}}{k_{v2}}\right]
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The terms between the straight brackets are called resistances:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+c_{1} & =\frac{\frac{1}{2}D_{1}}{k_{v1}}\\
+c_{2} & =\frac{\frac{1}{2}D_{2}}{k_{v2}}
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula $c_{1}$
+\end_inset
+
+ and 
+\begin_inset Formula $c_{2}$
+\end_inset
+
+ [T] are half the vertical resistance against vertical flow of the two overlying
+ cells.
+\end_layout
+
+\begin_layout Standard
+But we can also integrate from 
+\begin_inset Formula $z_{1}$
+\end_inset
+
+ to the cell boundary to get the head at that boundary.
+ We can compute this head from the head at 
+\begin_inset Formula $z_{1}$
+\end_inset
+
+ just as well as from the head at 
+\begin_inset Formula $z_{2}$
+\end_inset
+
+: 
+\begin_inset Formula 
+\[
+h_{z_{mid}}=h_{z1}-q_{v}c_{1}=h_{z2}+q_{v}c_{2}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+With this formula we can comput the head at the top and bottom cell boundaries
+ and use these for contouring the head rather than the heads in the cell
+ centers.
+\end_layout
+
+\begin_layout Subsection*
+Using the fluxes at the top and bottom of the cells
+\end_layout
+
+\begin_layout Standard
+In the above approach, the vertical flux is assumed constant above the cell
+ center and constant but different at the bottom of the cell centers.
+ This too is unrealistic, although it is the result of how Modflow computes
+ these fluxes.
+ A physically more realistic approach is obtained by letting 
+\begin_inset Formula $q_{v}$
+\end_inset
+
+vary with in the cell from 
+\begin_inset Formula $q_{b}$
+\end_inset
+
+ ath the bottom of the cell to 
+\begin_inset Formula $q_{t}$
+\end_inset
+
+ at the top of the cell, where 
+\begin_inset Formula $q_{b}$
+\end_inset
+
+ and 
+\begin_inset Formula $q_{t}$
+\end_inset
+
+ are obtained from the Flow Lower Face computed by Modflow.
+ We then have
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+q_{z}\left(z\right)=q_{b}+\frac{q_{t}-q_{b}}{D}\left(z-z_{b}\right),\,\,\,with\,\,\,z_{b}<z<z_{t}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+h=h_{c}-\intop_{z_{c}}^{z}\frac{q_{v}}{k_{v}}dz,\,\,\,z_{c}=\frac{z_{b}+z_{t}}{2}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The head in the center of the cell is computed by Modflow.
+ Further, 
+\begin_inset Formula $k_{v}$
+\end_inset
+
+ is constant with the cell, so
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+h & =h_{c}-\frac{1}{k_{v}}\intop_{z_{c}}^{z}q_{vz}dz
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+h-h_{c}=-\frac{1}{k_{v}}\intop_{z_{c}}^{z}\left[q_{b}+\frac{q_{t}-q_{b}}{D}\left(z-z_{b}\right)\right]dz
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+h-h_{c} & =-\frac{q_{b}}{k_{v}}\intop_{z_{c}}^{z}dz-\left(q_{t}-q_{b}\right)\frac{D}{k_{v}}\intop_{z_{c}}^{z}\left[\frac{z-z_{b}}{D}\right]d\frac{z}{D}\\
+ & =-\frac{q_{b}}{k_{v}}\left(z-z_{c}\right)-\frac{q_{t}-q_{b}}{k_{v}}D\intop_{z_{c}}^{z}\left[\frac{z-z_{b}}{D}\right]d\left(\frac{z-z_{b}}{D}\right)\\
+h-h_{c} & =-\frac{q_{b}}{k_{v}}\left(z-z_{c}\right)-\frac{q_{t}-q_{b}}{k_{v}}D\intop_{\frac{1}{2}}^{\frac{z-z_{b}}{D}}\zeta d\zeta
+\end{align*}
+
+\end_inset
+
+
+\begin_inset Formula 
+\[
+\intop_{\frac{1}{2}}^{\frac{z-z_{b}}{D}}\zeta d\zeta=\left[\frac{1}{2}\zeta^{2}\right]_{\frac{1}{2}}{}^{\frac{z-z_{b}}{D}}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+For 
+\begin_inset Formula $h_{t}$
+\end_inset
+
+, 
+\begin_inset Formula $z=z_{t}$
+\end_inset
+
+ and so 
+\begin_inset Formula $\zeta=1$
+\end_inset
+
+.
+ For 
+\begin_inset Formula $h_{b}$
+\end_inset
+
+, 
+\begin_inset Formula $z=z_{b}$
+\end_inset
+
+ and so 
+\begin_inset Formula $\zeta=0$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+For 
+\begin_inset Formula $h_{1}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\left[\frac{1}{2}\zeta^{2}\right]_{\frac{1}{2}}^{1}=\frac{1}{2}-\frac{1}{8}=\frac{3}{8}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+For 
+\begin_inset Formula $h_{b}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\left[\frac{1}{2}\zeta^{2}\right]_{\frac{1}{2}}^{0}=-\frac{1}{8}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+For 
+\begin_inset Formula $h_{t}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+h_{t}-h_{c} & =-q_{b}\frac{D}{kv}-\left(q_{t}-q_{b}\right)\frac{3}{8}\frac{D}{kv}\\
+ & =-\left(q_{b}+\left(q_{t}-q_{b}\right)\frac{3}{8}\right)\frac{D}{kv}\\
+ & =-\left(\frac{3}{8}q_{t}+\frac{1}{8}q_{b}\right)\frac{D}{kv}
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The result for 
+\begin_inset Formula $h_{t}$
+\end_inset
+
+:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+h_{t}=h_{t}-\left(\frac{3}{8}q_{t}+\frac{1}{8}q_{b}\right)\frac{D}{kv}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+For 
+\begin_inset Formula $h_{b}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+h_{b}-h_{c} & =+\frac{1}{2}q_{b}\frac{D}{k_{v}}-\frac{q_{t}-q_{b}}{k_{v}}D\left(-\frac{1}{8}\right)\\
+ & =+\frac{1}{2}q_{b}\frac{D}{k_{v}}+\left(q_{t}-q_{b}\right)\frac{1}{8}\frac{D}{k_{v}}\\
+ & =\left(\frac{3}{8}q_{b}+\frac{1}{8}q_{t}\right)\frac{D}{k_{v}}
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+h_{b}=h_{c}+\left(\frac{1}{8}q_{t}+\frac{3}{8}q_{b}\right)\frac{D}{k_{v}}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The result for 
+\begin_inset Formula $h_{b}$
+\end_inset
+
+:
+\end_layout
+
+\end_body
+\end_document
