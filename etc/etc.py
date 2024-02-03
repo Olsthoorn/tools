@@ -101,7 +101,7 @@ def newfig(title='title?', xlabel='xlabel?', ylabel='ylabel?',
     return ax
 
 
-def newfigs(titles, xlabel, ylabels, xlim=None, ylims=None, xscale=None, yscales=None, invert_yaxes=None, figsize=(12, 12), fontsize=12):
+def newfigs(titles, xlabel, ylabels, xlim=None, ylims=None, xscale=None, yscales=None, invert_yaxes=None, sharex=False, sharey=False, figsize=(12, 12), fontsize=12):
     """Return array of xshared Axes on a single figure.
 
     @TO 2020-02-10
@@ -111,18 +111,22 @@ def newfigs(titles, xlabel, ylabels, xlim=None, ylims=None, xscale=None, yscales
     titles: seqence of str
         one title for each Axes.
     xlabel: str
-        label of the xshared Axes
+        label of the xshared Axes.
     ylabels: sequence of str
-        one label for each Axes
-    xlim: 2-sequence of left and right value of the shared x-axis
-        a single xlim used for all Axes
-    xscale: str (None, 'log' or 'linear')
-        a single value for all Axes
-    yscales: a sequence of str, each of which is 'log' or 'linear'
-        yscales itself may be None inwich case all Axes have a linear y-scale
+        one label for each Axes.
+    xlim: 2-sequence of left and right value of the shared x-axis.
+        a single xlim used for all Axes.
+    xscale: str (None, 'log' or 'linear').
+        a single value for all Axes.
+    yscales: a sequence of str, each of which is 'log' or 'linear'.
+        yscales itself may be None inwich case all Axes have a linear y-scale.
     invert_yaxes: seq of booleans
         one value for each Axes. Tells to invert the vertical axis of the respective Axes.
         ivert_yaxes may be None, in which case no y-axis will be inverted.
+    sharex: bool (False)
+        if True, share x-axes.
+    sharey: bool (False)
+        if True , share y-axes.
     figsize: 2-tuple of floats
         figure size in inches (w, h)
     fontsize: int
