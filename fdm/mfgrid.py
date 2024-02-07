@@ -25,6 +25,7 @@ from collections import OrderedDict
 import scipy.interpolate as sci_ip
 import warnings
 import unittest
+import itertools
 
 def AND(*args):
     """Return results of multiple and's on array."""
@@ -43,6 +44,13 @@ def OR(*args):
 NOT = np.logical_not
 
 intNaN = -999999
+
+
+def color_cycler(colors=None):
+    if not colors:
+        colors = 'rbgmkcy'
+    for c in itertools.cycle(colors):
+        yield c
 
 
 # interpolate along the first dimension (time or z) for points x, y.
@@ -3759,12 +3767,11 @@ class Grid:
             ax.set_ylabel('z [m]')
             for ilay, z in enumerate(self.Z):
                 ax.plot(self.xm, z[0], '.', lw=0.25, label='old Z[{}]'.format(ilay))
-         
-        clrs = 'rbgkmc'
+                 
         ilayNew = 0        
         Znew = np.zeros((np.sum(Layers[:, 1]) + 1, self.ny, self.nx))
         Znew[ilayNew] = self.Z[0]
-        for (ilay, N), clr in zip(Layers, clrs):
+        for (ilay, N), clr in zip(Layers, color_cycler()):
             DZ = self.DZ[ilay] / N
             for n in range(N):
                 Znew[ilayNew + 1] = Znew[ilayNew] - DZ
