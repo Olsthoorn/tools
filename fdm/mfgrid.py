@@ -736,7 +736,7 @@ class Grid:
 
         self._shape = (self._nz, self._ny, self._nx)
 
-        """Here we enter the confining beds defined thouth LAYCBD"""
+        """Here we enter the confining beds defined through LAYCBD"""
         # First complete the lAYCBD vector
         if LAYCBD is None:
             LAYCBD = np.zeros(self._nz, dtype=int)
@@ -802,6 +802,56 @@ class Grid:
                 Remedy:
                 Use min_dz=value explicitly when calling mfgrid.Grid.
                 """)
+
+    def check_array_tuple(self, k=None):
+        """Return arrays after checking their shape to be equal to self.shape.
+        
+        k is a tuple of  arrays that must have self.shape.
+        It's used when entering a tuple of conductiities to set kr, kz or kx, ky, kz
+        
+        parameters
+        ----------
+        k: float, 3D array or tuple of 3D arrays
+            cell conductivities        
+        """
+        knew = []
+        if isinstance(k, (tuple, list)):
+            for k_ in k:
+                assert isinstance(k_, np.ndarray), 'k must contain ndarrays'
+                if k_.ndim == 1:
+                    k_ = k_[:, np.newaxis, np.newaxis] * self.const(1.)                    
+                assert k_.shape == self.shape, f'k.shape must be {self.shape} not {k_.shape}'
+                knew.append(k_)
+        else:
+            raise ValueError("k must be tuple of 2 or 3 arrays of gr.shape.")
+        return knew
+    
+    def check_sarray_dict(self, sarray_dict=None, dtype=None):
+        """Return verified dict of struct arrays with given dtype.
+        
+        Parameters
+        -----------
+        sarray_dict: dict of struct arrays
+            dict of structarrays
+        dtype: np.dtype of struct arrays
+            the required dtype
+        """
+        assert isinstance(sarray_dict, dict), "sarray_dict must be a dict of struct arrays"
+        
+        #check consistency of dict indices, must be [0, ...] increasin ints starting at 0
+        idx = list(sarray_dict.keys())
+        assert idx[0] == 0, "first key in sarray_dict must be 0 (first stress period)!"
+        assert np.all(np.diff(idx) > 0), "keys of sarray_dict must be increaing"
+        assert np.all([isinstance(k, int) for k in idx]), "keys of sarray_dict must all be ints"
+        
+        # check the actual dtype and that node indices are < gr.nod
+        for i in idx:
+            dtp = sarray_dict[i].dtype
+            assert dtp == dtype, f"dtype of sarray_index{i} must be{dtype}, not {dtp} !"
+            assert np.all(sarray_dict[i]['I'] < self.nod),\
+                f"node number(s) in sarray_dict[{i}]['I'] must all be < {self.nod}"
+        return sarray_dict
+
 
     @property
     def tol(self):
@@ -2860,7 +2910,7 @@ class Grid:
         Lv = AND(yp >= self._y[-1], yp <= self._y[ 0])
 
         L = AND(Lu, Lv)
-        wp = np.zeros(zp.shape, dtype=float) * np.NaN
+        wp = np.zeros(zp.shape, dtype=float) * np.nan
         if self.full is False:
             wp = np.interp( -zp, -self.z, np.arange(self._nz+1),
                            left=left, right=right)
@@ -2873,7 +2923,7 @@ class Grid:
         return wp # always between 0 and nz
 
 
-    def xyz2uvw(self, xp, yp, zp, left=np.NaN, right=np.NaN):
+    def xyz2uvw(self, xp, yp, zp, left=np.nan, right=np.nan):
         """Return normalized coordinate for xp, yp, zp.
 
         Normalized coordinate runs from 0 to nx+1,0 to ny+1 and 0 to nz+1
@@ -2944,9 +2994,9 @@ class Grid:
                 vp >= 0, vp <= self._ny,\
                 wp >= 0, wp <= self._nz)
 
-        xp = np.zeros(up.shape, dtype=float) * np.NaN
-        yp = np.zeros(vp.shape, dtype=float) * np.NaN
-        zp = np.zeros(wp.shape, dtype=float) * np.NaN
+        xp = np.zeros(up.shape, dtype=float) * np.nan
+        yp = np.zeros(vp.shape, dtype=float) * np.nan
+        zp = np.zeros(wp.shape, dtype=float) * np.nan
 
         xp[L] = self._x[iu[L]] +  U[L] * self.dx[iu[L]]
         yp[L] = self._y[iv[L]] -  V[L] * self.dy[iv[L]]

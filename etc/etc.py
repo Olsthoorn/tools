@@ -13,7 +13,8 @@ import itertools
 
 #%%
 
-__all__ = ['dayofweek', 'week', 'attr', 'linestyles_', 'colors_', 'color_cycler', 'linestyle_cycler', 'line_cycler',
+__all__ = ['dayofweek', 'week', 'mlDatenum2npDatetime', 'npDatetime2mlDatenum', 'dn2dt', 'dt2dn',
+           'attr', 'linestyles_', 'colors_', 'color_cycler', 'linestyle_cycler', 'line_cycler',
            'newfig', 'newfigs', 'newfigs2', 'get_outliers']
 
 def dayofweek(d):
@@ -30,6 +31,37 @@ def week(yr, wk):
     week_end = week_start + np.timedelta64(6, 'D')
     return week_start, week_end
 
+
+def mlDatenum2npDatetime(mlDatenum):
+    """Return np.Datenum64(object) from matlab datenum.
+
+    >>>739291.4753587963
+    np.datetime64('2023-02-09 11:24:31')
+    """
+    unix_start_datetime = np.datetime64('1970-01-01')
+    unix_start_datenum = 719529
+    return (unix_start_datetime
+            + (mlDatenum - unix_start_datenum) * 86400 * np.timedelta64(1, 's'))
+
+
+def npDatetime2mlDatenum(datetime):
+    """Return matlab datenum from np.Datenum64 object.
+
+    >>>npDatetime642mlDatenum(np.datetime64('2023-02-09 11:24:31'))
+    739291.4753587963
+    """
+    unix_start_datetime = np.datetime64('1970-01-01')
+    unix_start_datenum = 719529
+    return ((datetime - unix_start_datetime)
+            / np.timedelta64(1, 's') / 86400 + unix_start_datenum)
+    
+
+#print(npDatetime2mlDatenum(np.datetime64('2023-02-09 11:24:31')))
+#print(mlDatenum2npDatetime(738926.4753587963))
+
+# Shorthand
+dn2dt = mlDatenum2npDatetime
+dt2dn = npDatetime2mlDatenum
 
 def attr(obj):
     """Return the attributes of an object that do not start with '_'."""

@@ -1,4 +1,4 @@
-''''A finite difference model for ransient groundwater flow is implemented.
+"""A finite difference model for ransient groundwater flow is implemented.
 The implementation is in the function fdm3t. Some other modules are used
 that are in subdirectories of the tools folder. One may change the line that
 includes the tools folde to an absolute path on a specific computer.
@@ -9,37 +9,48 @@ Under __main__ are several tests that have been implemented as functions
 themselves to prevent clutter under __main__.
 
 The data for the different tests are collectd in a dictionary 'cases'.
-'''
+"""
+# %%
 import os
 import sys
-sys.path.insert(0, os.path.abspath('../')) # Start in the subdirectory of tools
+
+# sys.path.insert(0, os.path.abspath('../')) # Start in the subdirectory of tools
 
 import warnings
 import numpy as np
 import matplotlib.pyplot as plt
 import scipy.sparse as sp
 from scipy.special import exp1, k0
-from scipy.interpolate import interp1d, RegularGridInterpolator
 from scipy.sparse.linalg import spsolve # to use its short name
+from scipy.interpolate import RegularGridInterpolator as interp1d
 from matplotlib import colors
+
+# In Tools folder:
 from analytic.hantush_convolution import Wh
+from fdm.mfgrid import Grid
 from etc import newfig, color_cycler
 
-from fdm.mfgrid import Grid
+print('Wh(0.001, 0.3)  =', Wh(0.001, 0.3))
+print('Wh(0.01, 0.3)   =', Wh(0.01, 0.3))
+print('Wh(0.1, 0.3)    =', Wh(0.1, 0.3))
 
+# %%
 class InputError(Exception):
+    """Define Input Error class."""
     pass
 
-ghb_dtype = np.dtype([('I', int),('h', float),('C', float)])
+dtypeQ   = np.dtype([('I', int), ('q', float)])
+dtypeH   = np.dtype([('I', int), ('h', float)])
+dtypeGHB = np.dtype([('I', int), ('h', float), ('C', float)])
 
-def fdm3t(gr=None, t=None, kxyz=None, c=None, Ss=None, GHB=None,
-          FQ=None, HI=None, IBOUND=None, epsilon=0.67):
+def fdm3t(gr=None, t=None, k=None, c=None, ss=None, fh=None, ghb=None,
+          fq=None, hi=None, idomain=None, epsilon=0.67):
     """Transient 3D Finite Difference Model returning computed heads and flows.
 
     Heads and flows are returned as 3D arrays as specified under output parmeters.
     
     Steady-state flow is computed when setting Ss = 0 for all Ss and making
-    sure at least one cell is fixed head, i.e. one IBOUND value < 0.
+    sure at least one cell has a fixed head, i.e. one with FH specified.
     For steady state, also use epsilon = 1, to prevent oscillatioin in the results
     of the first times.
 
@@ -50,7 +61,7 @@ def fdm3t(gr=None, t=None, kxyz=None, c=None, Ss=None, GHB=None,
     t : ndarray, shape: [Nt+1]
         times at which the heads and flows are desired including the start time,
         which is usually zero, but can have any value.
-    kxyz: 3-tuple of ndarray, shape: (Ny, Nx, Nz), [L/T]
+    k: 2 or 3-tuple of ndarray, shape: (Nz, Ny, Nx), [L/T]
         hydraulic conductivities along the three axes, 3D arrays.
     c: nd.array of shape (Nz-1, Ny, Nx) or (Nz, Nx, Ny) or (Nz+1, Ny, Nx)
         vertical resistances between the layers
@@ -58,20 +69,22 @@ def fdm3t(gr=None, t=None, kxyz=None, c=None, Ss=None, GHB=None,
             - includes above top layer if shape(0) = nlay
             - includes both  top and bottom layers if shape(0) = nlay + 1
         may be None
-    Ss : ndarray, shape: (Ny, Nx, Nz), [L-1]
+    ss : ndarray, shape: (Nz, Ny, Nx), [L-1]
         specific elastic storage
-    GHB: recarray with dtype = np.dtype([(I, 'int'), ('h', float), ('C', float)])
-        General head boundaries recarray. I=index in flatten array, h, head and C conductance.
-        TODO: Generalize this to include times.
-    FQ : ndarray, shape: (Ny, Nx, Nz), [L3/T]
-        prescrived cell flows (injection positive, zero of no inflow/outflow)
-    IH : ndarray, shape: (Ny, Nx, Nz), [L]
+    fh : Fixed-flow boundaries dict{ it: recarray, ...}
+        recarray with dtype = np.dtype([('I', int), ('h', float)])        
+    ghb: General head boundaries dict {it: recarray, ...}
+        recarray with dtype = np.dtype([(I, 'int'), ('h', float), ('C', float)])   
+    fq : Fixed-flow boundaries dict{ it: recarray, ...}
+        recarray with dtype = np.dtype([('I', int), ('Q', float)])
+    fh:  Fixed-head or perscribed heads dict {it: recarray, ....}
+        recarray dtype = np.dtype([('I', int), ('h', float)])
+    hi : ndarray, shape: (Nz, Ny, Nx), [L]
         initial heads. `IH` has the prescribed heads for the cells with prescribed head.
-    IBOUND : ndarray, shape: (Ny, Nx, Nz) of int
-        boundary array like in MODFLOW with values denoting
-        * IBOUND>0  the head in the corresponding cells will be computed
-        * IBOUND=0  cells are inactive, will be given value NaN
-        * IBOUND<0  coresponding cells have prescribed head
+    idomain : ndarray, shape: (Nz, Ny, Nx) of int
+        boundary array like in MF6, flow-through cells not supported
+        * idomain=0   cells are inactive, will be given value NaN
+        * idomain!=0  cells are active
     epsilon : float, dimension [-]
         degree of implicitness, choose value between 0.5 and 1.0
 
@@ -80,20 +93,20 @@ def fdm3t(gr=None, t=None, kxyz=None, c=None, Ss=None, GHB=None,
     out : dictionary gr, time, heads and flows:
         out['gr]: mfgrid.Grid objecy (holding the network)
         out['t']: array of times including the time of the initial head.
-        out['Phi'] : ndarray, shape: (Nt+1, Ny, Nx, Nz), [L3/T]
+        out['Phi'] : ndarray, shape: (Nt+1, Nz, Ny, Nx), [L3/T]
             computed heads. Inactive cells will have NaNs
             To get heads at time t[i], use Out.Phi[i]
             Out.Phi[0] = initial heads
-        out['Q']   : ndarray, shape: (Nt, Ny, Nx, Nz), [L3/T]
+        out['Q']   : ndarray, shape: (Nt, Nz, Ny, Nx), [L3/T]
             net inflow in all cells during time step, inactive cells have 0
             Q during time step i, use Out.Q[i]
-        out['Qs']  : ndarray, shape: (Nt, Ny, Nx, Nz), [L3/T]
+        out['Qs']  : ndarray, shape: (Nt, Nz, Ny, Nx), [L3/T]
             release from storage during time step.
         out['Qx']   : ndarray, shape: (Nt, Ny, Nx-1, Nz), [L3/T]
             intercell flows in x-direction (parallel to the rows)
         out['Qy']  : ndarray, shape: (Nt, Ny-1, Nx, Nz), [L3/T]
             intercell flows in y-direction (parallel to the columns)
-        out['Qz']  : ndarray, shape: (Nt, Ny, Nx, Nz-1), [L3/T]
+        out['Qz']  : ndarray, shape: (Nt, Nz, Ny, Nx-1), [L3/T]
             intercell flows in z-direction (vertially upward postitive)
         out['GHB'] : ndarray of gr.shape of general head boundary inflows if GHB is not None.
 
@@ -102,76 +115,66 @@ def fdm3t(gr=None, t=None, kxyz=None, c=None, Ss=None, GHB=None,
     if gr.axial:
         print('Running in axial mode, y-values are ignored.')
 
-    if isinstance(kxyz, (tuple, list)):
-        kx, ky, kz = kxyz
-    else:
-        kx = ky = kz = kxyz
-        
+        kx, ky, kz = gr.check_array_tuple(k)
+    
     if c is not None:
         if isinstance(c, np.ndarray):
             if not np.all(c.shape == (gr.nlay -1, gr.ny, gr.nx)):
-                raise AssertionError("shape c ({0}) should be {1}".
-                                 format(c.shape, (gr.nlay - 1, gr.ny, gr.nx)))
+                raise AssertionError(f"shape c ({c.shape}) should be {(gr.nlay - 1, gr.ny, gr.nx)}")
 
-    if kx.shape != gr.shape:
-        raise AssertionError("shape of kx {0} differs from that of model {1}".format(kx.shape,gr.shape))
-    if ky.shape != gr.shape:
-        raise AssertionError("shape of ky {0} differs from that of model {1}".format(ky.shape,gr.shape))
-    if kz.shape != gr.shape:
-        raise AssertionError("shape of kz {0} differs from that of model {1}".format(kz.shape,gr.shape))
-    if Ss.shape != gr.shape:
-        raise AssertionError("shape of Ss {0} differs from that of model {1}".format(Ss.shape,gr.shape))
+    active = (idomain != 0).reshape(gr.nod,)  # boolean vector denoting the active cells
+    inact  = (idomain == 0).reshape(gr.nod,)  # boolean vector denoting inacive cells
 
-    kx[kx<1e-20] = 1e-50 # Why?
-    ky[ky<1e-20] = 1e-50
-    kz[kz<1e-20] = 1e-50
+    if fh is not None:
+        fh = gr.check_sarray_dict(fh, dtype=dtypeH)
+    if fq is not None:
+        fq = gr.check_sarray_dict(fq, dtype=dtypeQ)
+    if ghb is not None:
+        ghb = gr.check_sarray_dict(ghb, dtype=dtypeGHB)
     
-    active = (IBOUND >0).reshape(gr.nod,)  # boolean vector denoting the active cells
-    inact  = (IBOUND==0).reshape(gr.nod,)  # boolean vector denoting inacive cells
-    fxhd   = (IBOUND <0).reshape(gr.nod,)  # boolean vector denoting fixed-head cells
-    
-    if np.all(Ss == 0.):
-        if all(fxhd == False) and GHB is None:
-            raise ValueError('If all Ss == 0, there must be at least one fxhd cell, i.e. one IBOUND value must be -1 or GHB must be used.')
-        else:
-            epsilon = 1.0 # Prevents oscillations in early times
-    
+    if ss is None:
+        if fh is None and ghb is None:
+            raise ValueError('If all ss == 0, at FQ or ghb must be used.')
+        epsilon = 1.0 # Prevents oscillations in early times
+
     # reshaping shorthands
     dx = np.reshape(gr.dx, (1, 1, gr.nx))
     dy = np.reshape(gr.dy, (1, gr.ny, 1))
 
     # half cell flow resistances
     if not gr.axial:
-        RxE = 0.5 *    dx / (   dy * gr.DZ) / kx
-        RxW = RxE
-        Ry1 = 0.5 *    dy / (gr.DZ *    dx) / ky
-        Rz1 = 0.5 * gr.DZ / (   dx *    dy) / kz        
-        Rc  = 0 if c is None else c   / (dx * dy)
+        rxe = 0.5 *    dx / (   dy * gr.DZ) / kx
+        rxw = rxe
+        ry = 0.5 *    dy / (gr.DZ *    dx) / ky
+        rz = 0.5 * gr.DZ / (   dx *    dy) / kz  
+        rc  = 0 if c is None else c   / (dx * dy)
     else:
         with warnings.catch_warnings():
-            warnings.simplefilter("ignore", category=RuntimeWarning) # Division  by zero when x==0, is ok --> np.inf as resistance.
-            RxW = 1 / (2 * np.pi * kx * gr.DZ) * np.log(gr.xm / gr.x[:-1]).reshape((1, 1, gr.nx))
-            RxE = 1 / (2 * np.pi * kx * gr.DZ) * np.log(gr.x[1:] /  gr.xm).reshape((1, 1, gr.nx))
-        Ry1 = np.inf * np.ones(gr.shape)
-        Rz1 = 0.5 * gr.DZ / (np.pi * (gr.x[1:] ** 2 - gr.x[:-1] ** 2).reshape((1, 1, gr.nx)) * kz)
-        Rc  = 0 if c is None else c   / (np.pi * (gr.x[1:] ** 2 - gr.x[:-1] ** 2).reshape((1, 1, gr.nx)))
+            # Division  by zero when x==0, is ok --> np.inf as resistance.
+            warnings.simplefilter("ignore", category=RuntimeWarning)
+            rxw = 1 / (2 * np.pi * kx * gr.DZ) * np.log(gr.xm / gr.x[:-1]).reshape((1, 1, gr.nx))
+            rxe = 1 / (2 * np.pi * kx * gr.DZ) * np.log(gr.x[1:] /  gr.xm).reshape((1, 1, gr.nx))
+        ry = np.inf * np.ones(gr.shape)
+        rz = 0.5 * gr.DZ / (np.pi * (gr.x[1:] ** 2 - gr.x[:-1] ** 2).reshape((1, 1, gr.nx)) * kz)
+        rc  = 0 if c is None else c   / (
+            np.pi * (gr.x[1:] ** 2 - gr.x[:-1] ** 2).reshape((1, 1, gr.nx))
+            )
 
     # set flow resistance in inactive cells to infinite
-    RxE[inact.reshape(gr.shape)] = np.inf
-    RxW[inact.reshape(gr.shape)] = np.inf
-    Ry1[inact.reshape(gr.shape)] = np.inf
-    Ry2 = Ry1
-    Rz1[inact.reshape(gr.shape)] = np.inf
-    Rz2 = Rz1
+    rxw[inact.reshape(gr.shape)] = np.inf
+    rxw[inact.reshape(gr.shape)] = np.inf
+    ry[inact.reshape(gr.shape)] = np.inf
+    rz[inact.reshape(gr.shape)] = np.inf
 
     # conductances between adjacent cells
-    Cx = 1 / (RxW[: , :,1:] + RxE[:  ,:  ,:-1])
-    Cy = 1 / (Ry1[: ,1:, :] + Ry2[:  ,:-1,:  ])
-    Cz = 1 / (Rz1[1:, :, :] + Rc + Rz2[:-1,:  ,:  ])
-        
+    cx = 1 / (rxw[: , :,1:] + rxe[:  ,:  ,:-1])
+    cy = 1 / (ry[: ,1:, :] + ry[:  ,:-1,:  ])
+    cz = 1 / (rz[1:, :, :] + rc + rz[:-1,:  ,:  ])
+
     # storage term, variable dt not included
-    Cs = Ss * gr.DZ * gr.Area[np.newaxis, :, :, ] / epsilon
-    
+    if ss is not None:
+        Cs = ss * gr.DZ * gr.Area[np.newaxis, :, :, ] / epsilon
+
     # cell number of neighboring cells
     IW = gr.NOD[:,:,:-1]  # east neighbor cell numbers
     IE = gr.NOD[:,:, 1:] # west neighbor cell numbers
@@ -184,94 +187,121 @@ def fdm3t(gr=None, t=None, kxyz=None, c=None, Ss=None, GHB=None,
 
     # notice the call  csc_matrix( (data, (rowind, coind) ), (M,N))  tuple within tupple
     # also notice that Cij = negative but that Cii will be postive, namely -sum(Cij)
-    A = sp.csc_matrix(( np.concatenate(( R(Cx), R(Cx), R(Cy), R(Cy), R(Cz), R(Cz)) ),\
+    A = sp.csc_matrix(( np.concatenate(( R(cx), R(cx), R(cy), R(cy), R(cz), R(cz)) ),\
                         (np.concatenate(( R(IE), R(IW), R(IN), R(IS), R(IT), R(IB)) ),\
                          np.concatenate(( R(IW), R(IE), R(IS), R(IN), R(IB), R(IT)) ),\
                       )),(gr.nod,gr.nod))
 
-    A = -A + sp.diags( np.array(A.sum(axis=1)).ravel() ) # Change sign and add diagonal
+    # Change sign and add diagonal
+    A = -A + sp.diags( np.array(A.sum(axis=1)).ravel() )
 
     #Initialize output arrays (= memory allocation)
-    Nt = len(t)-1
-    Phi = np.zeros((Nt+1, gr.nod)) # Nt+1 times
-    Q   = np.zeros((Nt  , gr.nod)) # Nt time steps
-    Qs  = np.zeros((Nt  , gr.nod))
-    Qx  = np.zeros((Nt, gr.nz, gr.ny, gr.nx-1))
-    Qy  = np.zeros((Nt, gr.nz, gr.ny-1, gr.nx))
-    Qz  = np.zeros((Nt, gr.nz-1, gr.ny, gr.nx))
+    if t is None:
+        nt, ndt, t = 2, 1, np.array([0., 1.])
+    else:
+        nt, ndt = len(t), len(t)-1
+    Phi = np.zeros((ndt+1, gr.nod)) # Nt+1 times
+    Q   = np.zeros((ndt,   gr.nod)) # Nt time steps
+    Qs  = np.zeros((ndt,   gr.nod))
+    Qghb= np.zeros((ndt,   gr.nod))
+
+    Qx  = np.zeros((ndt, gr.nz, gr.ny, gr.nx-1))
+    Qy  = np.zeros((ndt, gr.nz, gr.ny-1, gr.nx))
+    Qz  = np.zeros((ndt, gr.nz-1, gr.ny, gr.nx))
 
     # reshape input arrays to vectors for use in system equation
-    FQ = R(FQ);  HI = R(HI);  Cs = R(Cs)
     
-    if GHB is not None:
-        assert GHB.dtype == np.dtype([('I', int), ('h', float), ('C', float)])
-        assert np.all(np.logical_and(GHB['I'] >= 0, GHB['I'] < gr.nod)),\
-            "All global indices must be 0 <= I < gr.nod = {} !".format(gr.nod)
-        Cghb = gr.const(0.)
-        Hghb = gr.const(0.1)
-        Cghb.ravel()[GHB['I']] = GHB['C']
-        Hghb.ravel()[GHB['I']] = GHB['h']
-        Qghb = np.zeros((Nt, gr.nod))
-        
+    if ss is not None:
+        Cs = R(Cs)
+    
     # initialize heads
-    Phi[0] = HI
-
-    # solve heads at active locations at t_i+eps*dt_i
-
-    Nt=len(t)  # for heads, at all times Phi at t[0] = initial head
-    Ndt=len(np.diff(t)) # for flows, average within time step
-
+    if hi is not None:
+        Phi[0] = hi.flatten()
+    rhs  = np.zeros(gr.shape).flatten()
+    fQ   = np.zeros(gr.shape).flatten()
+    ghbc = np.zeros(gr.shape).flatten()
+    ghbh = np.zeros(gr.shape).flatten()
+    dia  = np.zeros(gr.shape).flatten()
+    act_it = active[:]
+    
+    # solve heads at active locations not fixed head at t_i+eps*dt_i
     for idt, dt in enumerate(np.diff(t)):
+        it = idt + 1
+        rhs[:] = 0.
+        dia[:] = 0.
+                 
+        if fq is not None:   
+            if idt in fq: # update fq
+                fQ[:] =0.          
+                fQ[fq[idt]['I']] = fq[idt]['q']
+            if idt >= tuple(fq.keys())[0]:
+                rhs += fQ
+        
+        if ghb is not None:
+            if idt in ghb: # update ghb
+                ghbc[:] = 0.
+                ghbh[:] = 0.
+                ghbc[ghb[idt]['I']] = ghb[idt]['C']
+                ghbh[ghb[idt]['I']] = ghb[idt]['h']
+            if idt >= tuple(ghb.keys())[0]:
+                dia += ghbc
+                rhs += ghbc * ghbh
+        
+        if ss is not None: # update Cs / dt
+            dia += Cs / dt
+            rhs += Cs / dt * Phi[it - 1]
 
-        it = idt+1
-
-        RHS = FQ - (A + sp.diags(Cs / dt))[:,fxhd].dot(Phi[it-1][fxhd]) # Right-hand side vector
-        if GHB is None:  
-            Phi[it][active] = spsolve( (A + sp.diags(Cs / dt))[active][:,active],
-                RHS[active] + Cs[active] / dt * Phi[it-1][active])
-        else:
-            Phi[it][active] = spsolve( (A + sp.diags(Cghb.ravel()) + sp.diags(Cs / dt))[active][:,active],
-                RHS[active] + R(Cghb * Hghb)[active] + Cs[active] / dt * Phi[it-1][active])
+        if fh is not None:            
+            if idt in fh: # update fh                          
+                Ifh, hfh = fh[idt]['I'], fh[idt]['h']            
+                isfh = gr.const(0., dtype=bool).ravel()
+                isfh[Ifh]    = True
+            if idt >= tuple(fh.keys())[0]:
+                Phi[it][Ifh] = hfh
+                fh_rhs = (A + sp.diags(dia))[:, Ifh].dot(Phi[it][Ifh])
+                act_it = np.logical_and(active, np.logical_not(isfh))
+                rhs -= fh_rhs
+        
+        Phi[it][act_it] = spsolve( (A + sp.diags(dia))[act_it][:,act_it], rhs[act_it])
 
         # net cell inflow
         Q[idt]  = A.dot(Phi[it])
 
-        Qs[idt] = -Cs/dt * (Phi[it]-Phi[it-1])
+        if ss is not None:
+            Qs[idt] = -Cs/dt * (Phi[it]-Phi[it-1])
 
         #Flows across cell faces
-        Qx[idt] =  -np.diff( Phi[it].reshape(gr.shape), axis=2) * Cx
-        Qy[idt] =  +np.diff( Phi[it].reshape(gr.shape), axis=1) * Cy
-        Qz[idt] =  +np.diff( Phi[it].reshape(gr.shape), axis=0) * Cz
-        if GHB is not None:
-            Qghb[idt] = (Hghb.ravel() - Phi[it]) * Cghb.ravel()
+        Qx[idt] =  -np.diff( Phi[it].reshape(gr.shape), axis=2) * cx
+        Qy[idt] =  +np.diff( Phi[it].reshape(gr.shape), axis=1) * cy
+        Qz[idt] =  +np.diff( Phi[it].reshape(gr.shape), axis=0) * cz
+        
+        if ghb is not None:
+            Qghb[idt] = (ghbh.ravel() - Phi[it]) * ghbc.ravel()
 
         # update head to end of time step
-        Phi[it][active] = Phi[it-1][active] + (Phi[it]-Phi[it-1])[active]/epsilon
-        Phi[it][fxhd]   = Phi[it-1][fxhd]
+        Phi[it][act_it] = Phi[it-1][act_it] + (Phi[it]-Phi[it-1])[act_it] / epsilon
+        #Phi[it][active] = Phi[it-1][active] + (Phi[it]-Phi[it-1])[active] / epsilon
         Phi[it][inact]  = np.nan
 
     # reshape Phi to shape of grid
-    Phi = Phi.reshape(  (Nt, ) + gr.shape)
-    Q   = Q.reshape(    (Ndt,) + gr.shape)
-    Qs  = Qs.reshape(   (Ndt,) + gr.shape) 
-
+    Phi  =  Phi.reshape((nt, ) + gr.shape)
+    Q    =    Q.reshape((ndt,) + gr.shape)
+    Qs   =   Qs.reshape((ndt,) + gr.shape)
+    Qghb = Qghb.reshape((ndt,) + gr.shape)
+    
     out = dict()
-    out.update(gr=gr, t=t, Phi=Phi, Q=Q, Qs=Qs, Qx=Qx, Qy=Qy, Qz=Qz)
-    
-    if GHB is not None:
-        Qghb = Qghb.reshape((Ndt,) + gr.shape)
-        out.update(Qghb=Qghb)
-    
-    return out 
+    out.update(gr=gr, t=t, Phi=Phi, Q=Q, Qs=Qs, Qx=Qx, Qy=Qy, Qz=Qz, Qghb=Qghb)
+
+    return out
 
 class Fdm3t:
-    """Class of trainsient finite difference groundwater model.
+    """Class of transient finite difference groundwater model.
     
     Wraps the function fdm3t in it.    
     """
 
-    def __init__(self, gr=None, t=None, kxyz=None, Ss=None, FQ=None, HI=None,
-                 c=None, GHB=None, IBOUND=None, epsilon=1.0):
+    def __init__(self, gr=None, t=None, k=None, ss=None, fh=None, fq=None, hi=None,
+                 c=None, ghb=None, idomain=None, epsilon=1.0):
         """Instantiate a 3D transient axially symmetric groundwater
         finite difference model.
 
@@ -285,27 +315,31 @@ class Fdm3t:
         t : time, numpy.ndarray
             if 0 is not included, it will be added to store
             the initial heads for t=0.
-        kxyz : tuple of (Kr, Kz) or (Kr, Ky, Kz)
+        k : tuple of (Kr, Kz) or (Kr, Ky, Kz)
             Ky is ignored.
-        Ss : ndarray of gr.shape
+        ss : ndarray of gr.shape
             Specifici storage coefficients.
-        FQ : ndarray of gr.shape
-            fixed infiltration per modflow cell. Extractoins are
+        fh: ndarray of gr.shape
+            fixed head per modflow cell.
+            This could be specified as a dict[isp] where isp is the
+            stress-period number.
+        fq : ndarray of gr.shape
+            fixed infiltration per modflow cell. Extractions are
             negative.
             This could be specified as a dict[isp] where isp is the
             stress-period number.
-        HI : ndarray of gr.shape.
+        hi : ndarray of gr.shape.
             initial heads and fixed heads.
-            The heads are fixed where IBOUND<0.
+            The heads are fixed where IDOMAIN<0.
             This could be specified as a dict[isp] where isp is the
             stress-period number. In that case, the heads at the
-            nodes with IBOUND<0 will be replaced by the fixed heads
+            nodes with IDOMAIN<0 will be replaced by the fixed heads
             speciied for the stress period.
         c: np.ndarray of shape (gr.nlay - 1, gr.nrow, gr.ncol)
             The vertical resistance in between the model layers.
-        GHB: np.recarray of dtype =np.dtype([('I', int), ('h', float), ('C', float)])
+        ghb: np.recarray of dtype =np.dtype([('I', int), ('h', float), ('C', float)])
             Specifies general head boundaries.
-        IBOUND : ndarray of dtype int of size gr.shape
+        idomain : ndarray of dtype int of size gr.shape
             Boundary array like in MODFLOW. <0 means head is
             prescribed for the cell; 0 means cell is inactive, >0 means,
             head will be compute for the cell.
@@ -321,49 +355,52 @@ class Fdm3t:
             the simulation results: Phi, Q, Qx, Qy, Qz, Qs
             ndarrays with time as first dimension.
         """
-        if isinstance(kxyz, (tuple, list)):
-            if len(kxyz)==3:
-                Kh, _, Kv = kxyz
-            elif len(kxyz) == 2:
-                Kh, Kv = kxyz
-            elif len(kxyz) == 1:
-                Kh = kxyz[0]
-                Kv = Kh
+        if isinstance(k, (tuple, list)):
+            if len(k)==3:
+                kh, _, kv = k
+            elif len(k) == 2:
+                kh, kv = k
+            elif len(k) == 1:
+                kh = k[0]
+                kv = kh
             else:
-                raise ValueError("Can't understand input kxyz, use (Kx, Kz) tuple")
+                raise ValueError("Can't understand input k, use (Kx, Kz) tuple")
         else:
-            Kh = kxyz
-            Kv = kxyz
+            kh = k
+            kv = k
 
-        assert np.all(gr.shape == Kh.shape), 'gr.shape != Kh.shape'
-        assert np.all(gr.shape == Kv.shape), 'gr.shape != Kv.shape'
-        assert np.all(gr.shape == FQ.shape), 'gr.shape != FQ.shape'
-        assert np.all(gr.shape == Ss.shape), 'gr.shape != HI.shape'
-        assert np.all(gr.shape == IBOUND.shape), 'gr.shape != IBOUND.shape'
+        assert np.all(gr.shape == kh.shape), 'gr.shape != kh.shape'
+        assert np.all(gr.shape == kv.shape), 'gr.shape != kv.shape'
+        assert np.all(gr.shape == fh.shape), 'gr.shape != fh.shape'
+        assert np.all(gr.shape == fq.shape), 'gr.shape != fq.shape'
+        assert np.all(gr.shape == ss.shape), 'gr.shape != hi.shape'
+        assert np.all(gr.shape == idomain.shape), 'gr.shape != idomain.shape'
 
         self.gr = gr
         self.t  = t
-        self.Kh = Kh
-        self.Kv = Kv
+        self.kh = kh
+        self.kv = kv
         self.c  = c
-        self.Ss = Ss
-        self.FQ = FQ
-        self.HI = HI
+        self.ss = ss
+        self.fq = fq
+        self.hi = hi
         self.c = c
-        self.GHB = GHB
-        self.IBOUND = IBOUND
+        self.ghb = ghb
+        self.idomain = idomain
+        self.psi = None
 
         # Immediately runs the model and stores its output
         self.out = fdm3t(gr=self.gr, t=self.t,
-                         kxyz=(self.Kh, self.Kh, self.Kv),
-                         Ss=self.Ss, FQ=self.FQ, HI=self.HI, c=self.c, 
-                         GHB=self.GHB,
-                         IBOUND=IBOUND, epsilon=epsilon)
+                         k=(self.kh, self.kh, self.kv),
+                         ss=self.ss, fq=self.fq, hi=self.hi, c=self.c, 
+                         ghb=self.ghb,
+                         idomain=self.idomain, epsilon=epsilon)
 
         print('Model was run see model.out, where model is your model name.')
 
     @property
     def obsNames(self):
+        """Return names of observation points."""
         return [p[0] for p in self.points]
     @property
     def r_ow(self):
@@ -390,7 +427,7 @@ class Fdm3t:
 
         # Numerical solutions interpolated at observation points
 
-        # Get itnepolator but also squeeze out axis 2 (y)
+        # Get interpolator but also squeeze out axis 2 (y)
         interpolator = interp1d(self.gr.xm, self.out['Phi'][:, :, 0, :], axis=2)
 
         # interpolate at radius of observation points
@@ -415,17 +452,22 @@ class Fdm3t:
         yscale = kwargs.pop('yscale', None)
         grid   = kwargs.pop('grid'  , None)
 
-        if size_inches: fig.set_size_inches(size_inches)
-        if title: ax.set_title(title)
-        if xscale: ax.set_xscale(xscale)
-        if yscale: ax.set_yscale(yscale)
-        if grid:   ax.grid(grid)
+        if size_inches:
+            plt.gcf().set_size_inches(size_inches)
+        if title:
+            ax.set_title(title)
+        if xscale:
+            ax.set_xscale(xscale)
+        if yscale:
+            ax.set_yscale(yscale)
+        if grid:
+            ax.grid(grid)
 
         # Numeric, fdm
         for fi, label, r, z, color in zip(
                 phi_t.T, self.obsNames, self.r_ow, self.z_ow, colors):
             ax.plot(self.t[1:], fi[1:], color=color,
-                    label='{:6}, r={:>5.0f} m, z={:>3.0f} m'.format(label,r,z),
+                    label=f'{label:6}, r={r:>5.0f} m, z={z:>3.0f} m',
                      **kwargs)
         ax.legend(loc='best')
         return ax
@@ -470,7 +512,7 @@ class Fdm3t:
             fmax = np.max(phi[np.logical_not(np.isnan(phi))])
             philevels = np.arange(np.floor(fmin), np.ceil(fmax), dphi)
 
-            title + ' dphi={:.3g}m.'.format(dphi)
+            title += f' dphi={dphi:.3g}m.'
 
         if dpsi is not None:
             self.get_psi()
@@ -478,11 +520,11 @@ class Fdm3t:
             pmax = np.max(self.psi)
             psilevels = np.arange(np.floor(pmin), np.ceil(pmax), dpsi)
 
-            title + ' dpsi={:.3g}m2/d'.format(dpsi)
+            title += f' dpsi={dpsi:.3g}m2/d'
 
         fig, ax = plt.subplots()
         size_inches = kwargs.pop('size_inches', None)
-        if not size_inches is None:
+        if size_inches is not None:
             fig.set_size_inches(size_inches)
 
         ax.set_title(title)
@@ -495,10 +537,14 @@ class Fdm3t:
         xscale = kwargs.pop('xscale', None)
         yscale = kwargs.pop('yscale', None)
 
-        if not xlim is None: ax.set_xlim(xlim)
-        if not ylim is None: ax.set_ylim(ylim)
-        if not xscale is None: ax.set_xscale(xscale)
-        if not yscale is None: ax.set_yscale(yscale)
+        if xlim is not None:
+            ax.set_xlim(xlim)
+        if ylim is not None:
+            ax.set_ylim(ylim)
+        if xscale is not None:
+            ax.set_xscale(xscale)
+        if yscale is not None:
+            ax.set_yscale(yscale)
 
         if dphi is not None:
             ax.contour(self.gr.xm,     self.gr.zc, phi, philevels, **kwargs)
@@ -511,237 +557,324 @@ class Fdm3t:
                 ax.add_patch(p)
 
         return ax
-    
-def testPars(kw):
-    """`Return test parameters given the case kw."""
-    z0 = 0.
-    z = np.hstack((z0, z0 - np.cumsum(kw['D'])))
-    gr = Grid(kw['r'], None, z, axial=True)
-    kD = kw['kr'] * kw['D']  
-    S = kw['Ss'] * kw['D']  
-    Q = 4 * np.pi * kD.sum()
-    HI, FQ = gr.const(0.), gr.const(0.)    
-    FQ[-1, 0, 0] = Q
-    HI[-1] = 0. # exp1(kw['tau'][0])
-    IBOUND = gr.const(1, dtype=int)
-    Ss = gr.const(kw['Ss'])
-    Kr  = gr.const(kw['kr'])
-    Kz  = gr.const(kw['kz'])
-    return gr, kD, S, Kr, Kz, Ss, Q, HI, FQ, IBOUND
 
-def steady(kw):
+
+def deGlee(r=None, D=None, kr=None, kz=None, c=None, use_ghb=False, **kw):
     """Return De Glee output in a two-layer axially symmetric layer.
     
-    Steady state is computed be setting all Ss = 0. and setting IBOUND < 0 for at least
-    one cell or using GHB to fix the model to the outside world.
-    Furthermore, use epsilon = 1 to prevent oscillations in early times.
+    Steady state is computed be setting all ss = 0.  if c is given ghb is used else, kz is use
+    to set the resistance.
+    
+    Returns the besselfunction because Q = 2 * np.kD
+    
+    Parameters
+    ----------
+    gr: mfgrid.Grid object
+        the grid
+    kr, kz: float, 3D arrays of horizontal and vertical conductivities
+        kr, kz conductivities
     """
-    gr, kD, S, Kr, Kz, Ss, Q, HI, FQ, IBOUND = testPars(kw)
-       
-    IBOUND[0] = -1 # Top layer fixed.
-    Ss.ravel()[:] = 0
-    kw['t'] = kw['t'][:2] # only need a single timestep, but more is ok.
-     
-    c = gr.const(kw['c'])
-        
-    out = fdm3t(gr=gr, t=kw['t'], kxyz=(Kr, Kr, Kz), Ss=Ss, FQ=FQ, HI=HI, IBOUND=IBOUND, c=c)
+    kD = (kr * D).sum()
+    ctop = c
+    L = np.sqrt(kD * c)
+    Q = 2 * np.pi * kD
     
-    xlim = gr.xm[[0, -1]]
-    ylim = None # (30., 0.)
+    z = -np.cumsum(np.hstack((0, D)))
+    
+    gr = Grid(r, [-0.5, 0.5], z, axial=True)
+    
+    kr = kr[:, np.newaxis, np.newaxis] * gr.const(1.)
+    kz = kz[:, np.newaxis, np.newaxis] * gr.const(1.)
+    
+    fq = np.zeros(1, dtype=dtypeQ)
+    fq['I'], fq['q'] = gr.NOD[-1, 0, 0], Q
+    fq = {0: fq}
+    
+    if use_ghb:
+        # use ghb instead of c. So fh must be None as well as c
+        ghb = np.zeros(gr.nx * gr.ny, dtype=dtypeGHB)
+        ghb['I'], ghb['C'], ghb['h'] = gr.NOD[-1].ravel(), gr.Area.ravel() / c, 0.
+        ghb = {0: ghb}
+        fh = None
+        c = None        
+    else:
+        #use c insteand of ghb, so ghb must be None and fh and c must be set to None
+        fh = np.zeros(gr.nx * gr.ny, dtype=dtypeH)
+        fh['I'], fh['h'] = gr.NOD[0].ravel(), 0.
+        fh = {0: fh}
+        c = gr.const(0.)[:-1]
+        c[0] = ctop
+        ghb = None
+    
+    idomain = gr.const(1, dtype=int)
+    hi = gr.const(0.)
 
-    ax = newfig(kw['title'],
-        'r [m]', r'$4 \pi kD s / Q$',
-        xscale='log', yscale='linear', xlim=xlim, ylim=ylim)
-    
-    it = len(kw['t']) - 1
-    
-    ax.plot(gr.xm, out['Phi'][it, -1, 0, :], '.-', label='t={:.3g} d'.format(kw['t'][it]))
-    
-    B = np.sqrt(kD[-1] * kw['c'].mean())
-    x =np.hstack((1e-5, gr.x[1:]))
-    deGlee = Q / (2 * np.pi * kD[-1]) * k0(x / B)
-    ax.plot(x, deGlee, '-', label='DeGlee')
-    
+    out = fdm3t(gr=gr, t=None, k=(kr, kr, kz), c=c,
+                fh=fh, fq=fq, ghb=ghb,
+                hi=hi, idomain=idomain)
+
+    ax = newfig('De Glee example',
+        'r [m]', 'drawdown',
+        xscale='log', yscale='linear')
+    ax.invert_yaxis()
+
+    ax.plot(gr.xm, out['Phi'][-1, -1, 0, :], '.-', label='numerical')
+
+    ax.plot(gr.xm, Q / (2 * np.pi * kD) * k0(gr.xm / L), '-', label='DeGlee')
+
     ax.legend()
     return ax
 
-def theis1(kw):
-    """Return Theis output in a one layer axially symmetric layer.
+def theis1(um1=None, r=None, D=None, kr=None, kz=None, ss=None, r_=None, **kw):
+    """Return Theis output in a one-layer axially symmetric model.
     
-    If np.all(Ss == 0.), steady state should be returned. For his at least
-    one IBOUND value must be -1 (fixed head). In this test function this is
-    done automatically by inspecting Ss.
+    If np.all(ss == 0.), steady state should be returned. For his at least
+    one cell must be fixed head (as specified by fh).
     """
-    gr, kD, S, Kr, Kz, Ss, Q, HI, FQ, IBOUND = testPars(kw)
-       
-    # Steady case?
-    if np.all(Ss == 0):
-        IBOUND[:, :, -1] = -1
-        epsilon = 1.0
-    else: # non-steady case
-        u0 = gr.xm ** 2 * S.sum() / (4 * kD.sum() * 0.5 * (kw['t'][0] + kw['t'][1]))
-        HI[0] = exp1(u0)
-        epsilon = 0.67
+    
+    kD = (kr * D).sum()
+    S  = (ss * D).sum()
+
+    z = -np.cumsum(np.hstack((0, D)))
+    gr = Grid(r, [-0.5, 0.5], z, axial=True)
+    idomain = gr.const(1, dtype=int)
+
+    Q = 4 * np.pi * kD
         
-    out = fdm3t(gr=gr, t=kw['t'], kxyz=(Kr, Kr, Kz), Ss=Ss, FQ=FQ, HI=HI, IBOUND=IBOUND, epsilon=epsilon)
+    ir = np.arange(gr.nx + 1)[r < 60][-1]
+    t = um1 * r[ir] ** 2 * S / (4 * kD)
 
-    xlim = kw['t'][[0, -1]]
-    ylim = (1e-3, 1e2)
+    hi = gr.const(0.)
+    hi[0, 0, :] = Q / (4 * np.pi * kD) * exp1(gr.xm ** 2 * D  / (4 * kD * t[0]))
 
-    ax = newfig(kw['title'] + ', function of time, with closed outer boundary',
-        't [d]', r'$4 \pi kD s / Q$',
-        xscale='log', yscale='log', xlim=xlim, ylim=ylim)
+    fq = np.zeros(1, dtype=dtypeQ)
+    fq['I'], fq['q'] = gr.NOD[-1, 0, 0], Q
+    fq = {0: fq}
+    
+
+    fh = np.zeros(gr.nz * gr.ny, dtype=dtypeH)
+    fh['I'], fh['h'] = gr.NOD[:, :, -1].ravel(), 0
+    fh = {0: fh}
+    fh = None
+
+    out = fdm3t(gr=gr, t=t, k=(kr, kr, kz), ss=ss, fh=fh, fq=fq, hi=hi, idomain=idomain)
+
+    xlim = np.logspace(-2, 6, 2)
+    ylim = np.logspace(-4, 1, 2)
+    
+    ax = newfig(kw['title'],
+        'r increases <---- (4 kD / S) t / r^2 [-] ----> time increase' ,
+        's / (Q / (4 pi kD)) [-]',
+        xscale='log', yscale='log',
+        xlim=xlim, ylim=ylim)
+    
     cc = color_cycler()
+    # select a few distances for which the show the graph
     for ir in range(0, gr.nx, 10):
-        color = next(cc)
-        ax.plot(kw['t'][1:], out['Phi'][1:, 0, 0, ir], '-', color=color, label='r={:.3g} m'.format(gr.xm[ir]))
-        u = gr.xm[ir] ** 2 * S.sum() / (4 * kD.sum() * kw['t'])
-        ax.plot(kw['t'], exp1(u), '.', label='Theis, color=color, r={:.3g} m'.format(gr.xm[ir]))
-    ax.legend()
-    
-    xlim = gr.xm[[0, -1]]
-    ylim = (60., -1.)
-
-    ax = newfig(kw['title'] + ', function of r with closed outer boundary',
-        'r [m]', r'$4 \pi kD s / Q$',
-        xscale='log', yscale='linear', xlim=xlim, ylim=ylim)
-    cc = color_cycler()
-    for it in range(0, len(kw['t']), 10):
-        color = next(cc)
-        ax.plot(gr.xm, out['Phi'][it, 0, 0, :], '-', color=color, label='t={:.3g} d'.format(kw['t'][it]))
-        u = gr.xm ** 2 * S.sum() / (4 * kD.sum() * kw['t'][it])
-        ax.plot(gr.xm, exp1(u), '.', color=color, label='Theis, t={:.3g} d'.format(kw['t'][it]))
-    ax.legend()
-    return ax
-
-def theis(kw):
-    gr, kD, S, Kr, Kz, Ss, Q, HI, FQ, IBOUND = testPars(kw)
-    
-    t = kw['r_'] ** 2 * S.sum() / (4 * kD.sum()) * kw['tau']
-            
-    out = fdm3t(gr=gr, t=t, kxyz=(Kr, Kr, Kz), Ss=Ss, FQ=FQ, HI=HI, IBOUND=IBOUND, epsilon=1.0)
-
-    xlim = None # (1e-1, kw['tau'][-1]) 
-    ylim = (1e-2, 1e2)
-       
-    ax = newfig(kw['title'],
-        r'$\tau = r^2 S/(4 kD)$', r'$4 \pi kD s / Q$',
-        xscale='log', yscale='log', xlim=xlim, ylim=ylim)
-    
-    cc = color_cycler()
-    for ir in range(1, len(gr.xm), 4):  #, rm in enumerate(gr.xm[1:-1:5]):
-        color = next(cc)
+        color = next(cc)        
         rm = gr.xm[ir]
-        u = rm ** 2 * S.sum() / (4 * kD.sum() * t)
+        if rm < 1.0 or rm > 1000.:
+            continue
+        ax.plot((4 * kD  / S) * (t / rm ** 2), out['Phi'][:, -1, 0, ir] / (Q / (4 * np.pi * kD)), '-', color=color, label=f'r={gr.xm[ir]:.3g} m')
+               
+    ax.plot(um1, exp1(1 / um1), '.', label=f'Theis, r={gr.xm[ir]:.3g} m')
+    ax.legend()
+    return ax
+
+def hantush(um1=None, r=None, kr=None, kz=None, D=None, ss=None, rhos=None, use_ghb=False, **kw):
+    """Show hantush well function using two layer model."""
+    
+    # c is not used, it's obtained for the given rho = r / lambda
+    
+    kD = (kr * D).sum()
+    S  = (ss * D).sum()
+    Q = 4 * np.pi * kD
+    
+    z =- np.hstack((0, D)).cumsum()
         
-        tau0 = 1 / u[0] 
+    gr = Grid(r, [-0.5, 0.5], z, axial=True)
+    
+    if gr.nlay == 1:
+        use_ghb = True
+
+    idomain = gr.const(1, dtype=int)
+    hi = gr.const(0.)
+    kx = kr[:, np.newaxis, np.newaxis] * gr.const(1)
+    kz = kz[:, np.newaxis, np.newaxis] * gr.const(1.)
+    ss = ss[:, np.newaxis, np.newaxis] * gr.const(1.)
+                
+    fq = np.zeros(1, dtype=dtypeQ)
+    fq['I'], fq['q'] = gr.NOD[-1, 0, 0], Q
+    fq = {0: fq}
+
+    xlim = np.logspace(-2, 6, 2)
+    ylim = np.logspace(-4, 1, 2)
+
+    ax = newfig(f"Hantush using {gr.nlay} layers, leakage using {'ghb' if use_ghb else 'c'}",
+            r'increasing r <--- $(4 kD /S) (t / r^2)$ ---> increasing t',
+            r'$s / (Q / (4 \pi kD))$',
+            xscale='log', yscale='log', xlim=xlim, ylim=ylim)
+
+    ir = np.arange(gr.nx + 1)[r < 60][-1]
+
+    for rho in rhos:
+        t = r[ir] ** 2 * S / (4 * kD) * um1
+        L = r[ir] / rho
+        ctop = L ** 2  / kD
         
-        ax.plot(1/u, out['Phi'][:, 0, 0, ir], color=color, label="$r_m$={:.3g}, $tau_0$={:.3g}".format(rm, tau0))
-        ax.plot(1/u, exp1(u), '.', color=color, label=r"$r_m$={:.3g} m, exp1(u)".format(rm))
-        ax.plot(tau0, 2 * ylim[0], 'o', color=color)
-    ax.text(1e6, 2 * ylim[0], 'o = corresponds with smallest tau for given r', ha='left', va='center')
+        if use_ghb:
+            ghb = np.zeros(gr.nx * gr.ny, dtype=dtypeGHB)
+            ghb['I'], ghb['h'], ghb['C'] = gr.NOD[-1].ravel(), 0., gr.Area.ravel() / ctop
+            ghb = {0: ghb}
+            c = None
+            fh = None
+        else:
+            fh = np.zeros(gr.nx * gr.ny, dtype=dtypeH)
+            fh['I'], fh['h'] = gr.NOD[0].ravel(), 0.
+            fh = {0: fh}
+            c = gr.const(0.)[:-1]
+            c[0] = ctop 
+            ghb = None       
+        
+        out = fdm3t(gr=gr, t=t, k=(kx, kx, kz), ss=ss, c=c, fh=fh, fq=fq, ghb=ghb, hi=hi, idomain=idomain)
+        
+        um1 = 4 * kD * t  / (S * r[ir] ** 2)
+        wh = out['Phi'][:, -1, 0, ir] /(Q  / (4 *np.pi * kD))
+        
+        ax.plot(um1, wh, '-',                 label=f"numeric fdm, rho={rho:.4g}")
+        ax.plot(um1, Wh(1/um1, rho)[0], '--', label=f'Wh(u, rho),  rho={rho:.4g}')
 
     ax.legend()
     plt.show()
     return ax
 
-def hantush1L(kw):
-    gr, kD, S, Kr, Kz, Ss, Q, HI, FQ, IBOUND = testPars(kw)
+def boulton(um1=None, r=None, D=None, kr=None, kz=None, ss=None, rhos=None, **kw):
+
+    kD = (kr[1:] * D[1:]).sum()
+    S0  = ss[0] * D[0]
+    S1 = (ss[1:] * D[1:]).sum()
+
+    Q = 4 * np.pi * kD
+
+    z = np.hstack((0, -D))
+
+    gr = Grid(r, [-0.5, +0.5], z, axial=True)
     
-    t = kw['r_'] ** 2 * S.sum() / (4 * kD.sum()) * kw['tau']
+    idomain = gr.const(1, dtype=int)
+        
+    ss = ss[:, np.newaxis, np.newaxis] * gr.const(1.)
+    kr = kr[:, np.newaxis, np.newaxis] * gr.const(1.)
+    kz = kz[:, np.newaxis, np.newaxis] * gr.const(1.)
+
+    hi = gr.const(0.)
     
+    fq = np.zeros(1, dtype=dtypeQ)
+    fq['I'], fq['q'] = gr.NOD[-1, 0, 0], Q
+    fq = {0: fq}
+
+    xlim = np.logspace(-2, 7, 2)
+    ylim = np.logspace(-4, 2, 2)
+
+    ax = newfig(kw['title'] + f", no fixed heads, grid shape = {gr.shape}, ",
+            r'increasing r <--- $(4 kD /S) (t / r^2)$ ---> increasing t',
+            r'$s  / (Q / (4 \pi kD))$',
+            xscale='log', yscale='log', xlim=xlim, ylim=ylim)
+
+    ax.plot(um1,          exp1(1/um1), 'r.-',  lw=2, label=f'Theis Sy = {S0:.4g}')
+    ax.plot(um1 * S0 /S1, exp1(1/um1), 'r.--', lw=2, label=f'Theis S  = {S1:.4g}')
+
+    ir = np.arange(gr.nx + 1)[r < 60][-1]
+
+    clrs = color_cycler()
+    for rho in rhos:
+        clr = next(clrs)
+        t = r[ir] ** 2 * S1 / (4 * kD) * um1
+        B = r[ir] / rho
+        ctop = B ** 2  / kD     
+        
+        c = gr.const(0.)[:-1]
+        c[0] = ctop
+
+        out = fdm3t(gr=gr, t=t, k=(kr, kr, kz), ss=ss, fh=None,
+                    fq=fq, hi=hi, idomain=idomain, c=c, ghb=None, epsilon=1.0)
+
+        ax.plot(um1, out['Phi'][:, -1, 0, ir],  color=clr, label=f"Phi[:,-1,0,{ir}], rho={rho:.4g}")            
+        ax.plot(um1, Wh(1/um1, rho)[0], '--', color=clr, label=f"Wh(u, rho),     rho={rho:.4g}")
+
+    ax.legend()
+    plt.show()
+    return ax
+
+def brug223_02(t=None, r=None, D=None, kr=None, kz=None, ss=None, **kw):
+    """Return solution of Bruggeman 223_02, in a one-layer axially symmetric model.
+    
+    The problem is flow  outside a cyling with radius R afger sudden head change at R.    
+    """    
+    kD = (kr * D).sum()
+    S  = (ss * D).sum()
+    
+    z = -np.cumsum(np.hstack((0, D)))
+    gr = Grid(r, [-0.5, 0.5], z, axial=True)
+    
+    kr = kr[:, np.newaxis, np.newaxis] * gr.const(1.)
+    kz = kz[:, np.newaxis, np.newaxis] * gr.const(1.)
+    ss = ss[:, np.newaxis, np.newaxis] * gr.const(1.)
+    
+    idomain = gr.const(1, dtype=int)
+
+    s0 = 1.0
+    hi = gr.const(0.)
+    #hi[:, :, 0] = s0
+    
+    
+    fh = np.zeros(gr.nz * gr.ny, dtype=dtypeH)
+    fh['I'], fh['h'] = gr.NOD[:, :, 0].ravel(), s0
+    fh = {0: fh}
+    
+    out = fdm3t(gr=gr, t=t, k=(kr, kr, kz), ss=ss, fh=fh, fq=None, hi=hi, idomain=idomain)
+
+    xlim = np.logspace(np.log10(t[0]), np.log10(t[-1]), 2)
+    ylim = np.logspace(-4, 1, 2)
+    
+    # The head change s
     ax = newfig(kw['title'],
-            r'$\tau = r^2 S/(4 kD)$', r'$4 \pi kD s / Q$',
-            xscale='log', yscale='log', xlim=kw['tau'][[1, -1]], ylim=(1e-3, 1e2))
-
-    ax.plot(kw['tau'], exp1(1/kw['tau']), 'r-', lw=2, label='Theis')
-       
-    for rho in kw['rhos']:
-        B = kw['r_'] / rho
-        ctop = B ** 2  / kD.sum()
-        GHB = np.zeros(gr.nx, dtype=ghb_dtype)
-        GHB['I'] = gr.NOD[0].ravel()
-        GHB['h'] = np.zeros(gr.nx, dtype=float)
-        GHB['C'] = gr.Area / ctop
-        c=None
-        
-        out = fdm3t(gr=gr, t=t, kxyz=(Kr, Kr, Kz), Ss=Ss, FQ=FQ, HI=HI, IBOUND=IBOUND, c=c, GHB=GHB, epsilon=1.0)
-        
-        points = (kw['tau'], gr.xm)
-        interp = RegularGridInterpolator(points=points, values=out['Phi'][:, -1, 0, :], method='linear')
-        xi = np.vstack((kw['tau'], np.ones_like(kw['tau']) *  kw['r_'])).T
-        ax.plot(kw['tau'], interp(xi), '-', marker='.', label="rho={:.4g}".format(rho))
+        't [d]',
+        's [m]',
+        xscale='log', yscale='log',
+        xlim=xlim, ylim=ylim)
     
+    cc = color_cycler()
+    # select a few distances for which the show the graph
+    for ir in np.hstack((0, 1, 2, 3, 4, np.arange(5, gr.nx, 5))):
+        if gr.xm[ir] > 100:
+            continue
+        color = next(cc)                
+        ax.plot(t, out['Phi'][:, -1, 0, ir], '-', color=color, label=f'r={gr.xm[ir]:.3g} m')
+               
     ax.legend()
-    plt.show()
+    
+    # The flow Q
+    ylim = np.logspace(0, 5, 2)
+    
+    ax = newfig(kw['title'] + "Flow Q [m3/d]",
+        't [d]',
+        'Q [m3/d]',
+        xscale='log', yscale='log',
+        xlim=xlim, ylim=ylim)
+    
+    cc = color_cycler()
+    # select a few distances for which the show the graph
+    for ir in np.hstack((0, 1, 2, 3, 4, np.arange(5, gr.nx, 5))):
+        if gr.xm[ir] > 1000:
+            continue
+        color = next(cc)                
+        ax.plot(t[1:], out['Qx'][:, -1, 0, ir], '-', color=color, label=f'r={gr.x[ir]:.3g} m')
+               
+    ax.legend()
+
+    
     return ax
 
-
-def hantush2L(kw):
-    gr, kD, S, Kr, Kz, Ss, Q, HI, FQ, IBOUND = testPars(kw)
-    
-    t = kw['r_'] ** 2 * S[-1] / (4 * kD[-1]) * kw['tau']
-    
-    ax = newfig(kw['title'],
-            r'$\tau = r^2 S/(4 kD)$', r'$4 \pi kD s / Q$',
-            xscale='log', yscale='log', xlim=kw['tau'][[1, -1]], ylim=(1e-3, 1e2))
-
-    ax.plot(kw['tau'], exp1(1/kw['tau']), 'r-', lw=2, label='Theis')
-       
-    for rho in kw['rhos']:
-        B = kw['r_'] / rho
-        ctop = B ** 2  / kD.sum()        
-        IBOUND[0] = -1
-        GHB = None
-        c = gr.const(0.)[:-1]; c[0] = ctop
-        
-        out = fdm3t(gr=gr, t=t, kxyz=(Kr, Kr, Kz), Ss=Ss, FQ=FQ, HI=HI, IBOUND=IBOUND, c=c, GHB=GHB, epsilon=1.0)
-
-        points = (kw['tau'], np.arange(gr.nlay), gr.xm)
-        interp = RegularGridInterpolator(points=points, values=out['Phi'][:, :, 0, :], method='linear')
-        xi = np.vstack((kw['tau'], np.ones(len(kw['tau'])) * gr.nlay - 1, np.ones_like(kw['tau']) *  kw['r_'])).T
-        ax.plot(kw['tau'], interp(xi), '-', label="rho={:.4g}".format(rho))
-        ax.plot(kw['tau'], Wh(1/kw['tau'], rho)[0], '.', label=r'$Wh(1/\tau, \rho)$'.format(rho))
-
-    ax.legend()
-    plt.show()
-    return ax
-
-def boulton(kw):
-    gr, kD, S, Kr, Kz, Ss, Q, HI, FQ, IBOUND = testPars(kw)
-    
-    t = kw['r_'] ** 2 * S.sum() / (4 * kD.sum()) * kw['tau']
-
-    ax = newfig(kw['title'],
-            r'$\tau = r^2 S/(4 kD)$', r'$4 \pi kD s / Q$',
-            xscale='log', yscale='log', xlim=kw['tau'][[1, -1]], ylim=(1e-3, 1e2))
-
-    ax.plot(kw['tau'],              exp1(1/kw['tau']), 'r-', lw=2, label='Theis [Sy]')
-    ax.plot(kw['tau'] * S[1] /S[0], exp1(1/kw['tau']), 'r-', lw=2, label='Theis [S]')
-    
-    for rho in kw['rhos']:
-        B = kw['r_'] / rho
-        ctop = B ** 2  / kD.sum()        
-        IBOUND[0] = 1
-        GHB = None
-        c = gr.const(0.)[:-1]; c[0] = ctop
-        
-        out = fdm3t(gr=gr, t=t, kxyz=(Kr, Kr, Kz), Ss=Ss, FQ=FQ, HI=HI, IBOUND=IBOUND, c=c, GHB=GHB, epsilon=1.0)
-
-        points = (kw['tau'], np.arange(gr.nlay), gr.xm)
-        interp = RegularGridInterpolator(points=points, values=out['Phi'][:, :, 0, :], method='linear')
-        
-        xi = np.vstack((kw['tau'], np.ones(len(kw['tau'])) * gr.nlay - 1, np.ones_like(kw['tau']) *  kw['r_'])).T
-        ax.plot(kw['tau'], interp(xi), label="rho={:.4g}".format(rho))                            
-        
-        xi = np.vstack((kw['tau'], np.ones(len(kw['tau'])) * 0, np.ones_like(kw['tau']) *  kw['r_'])).T
-        ax.plot(kw['tau'], interp(xi), label="rho={:.4g}".format(rho))            
-        
-        ax.plot(kw['tau'] * S[1]/S[0], Wh(1/kw['tau'], rho)[0], '.', label=r'$Wh(1/\tau, \rho)$'.format(rho))
-        
-    ax.legend()
-    plt.show()
-    return ax
 
 if __name__ == '__main__':
         
@@ -757,59 +890,37 @@ if __name__ == '__main__':
             'kr': np.array([ 1e-6, 10.]),
             'kz': np.array([ 1e6,  1e6]),
             'Ss': np.array([ 0.01, 0.2e-6]),
-            'c': np.array([[600.]])
-             },
-        'test0':
-            {'title': 'test',
-             "comment": """This test is to verify the accuracy of the model against an analytical
-             solution of Theis or even Hantush by a regular simulation, no dimensionless parameters.
-             """,
-            't': np.logspace(-4, 9, 131),
-            'r': np.hstack((0., np.logspace(-2, 6, 81))),
-            'D': np.array([50.]),
-            'kr': np.array([10.]),
-            'kz': np.array([1e6]),
-            'Ss': np.array([0.2e-6]),
-            'r_' :30.,
-            'rhos': [0.01, 0.03, .1, .3, 1., 3.],             
+            'c': np.array([600.]),
+            'use_ghb': True,
              },
         'Theis':
-            {'title': r"""Theis numeric
-             $\tau_0$ corresponds to the smallest time for given $r$""",
-             'comment': """Theis numeric. Computes theis at dimensionloss scale tau = 1/u.
-             The numeric model computes ones the drawdown for many t and r, which results in
-             Phi[nt, nlay, ny, nr]. To get the dimensionless drawdown, Q = 4 pi kD. The dimensionless
-             time is tau = 4 kD S * t / r ** 2. Hence a single kind of reference r has to be chosen in
-             a single plot. By plotting multiple limes, each time chosing a different ref. distance,
-             we get parts of the Theis curve on a dimensionless time scale tau as if each curve was
-             drawn for a different piezometer. In fact, by fixing tau, while choosing another r for
-             each curve we show the piezometer results with different times, as if they were measured
-             at different times. For points curves with large reference r, the times start at high             
-             values (late) which causes the graphs to start seemingly wrong on early times, which is
-             an artefact that can be removed by broading the time span.
+            {'title': r"""Theis numeric vs um1 = 1/u. Increasing um1 --> increasing time --> decreasing r.
+             Curves for different r overlap due to the choice of both axes which yieldds the Theis type curve.
+             Small deviations with the analytic type curve occur only for very large r or very small t.
              """,
-            'tau': np.logspace(-5, 9, 141), # tau = 1/ u
-            'r': np.hstack((0., np.logspace(-2, 6, 81))),
+             'comment': """Theis numeric.
+             Computes the theis type curve by plotting s / (Q / (4 pi kD) vs 4 kD / S * t / r^2
+             and compare this with the real theis function exp1.
+             """,
+            'um1': np.logspace(-5, 9, 141), # um1 = 1/ u
+            'r': np.hstack((0., np.logspace(-2, 6, 381))),
             'D': np.array([50.]),
             'kr': np.array([10.]),
             'kz': np.array([1e6]),
-            'Ss': np.array([1e-5]),
-            'r_' :30.,
-            'rhos': [0.01, 0.03, .1, .3, 1., 3.],
+            'ss': np.array([1e-5]),
             },
         'Hantush1L':
-            {'title' : 'Hantush using 1 layer and GHB',
+            {'title' : 'Hantush using 1 layer',
             'comment': """Hantush is numerically simlated using a single model layer, the inflow
             at the top is made using general head boundaries. This result should be the same
             as the one alled Hantush 2L. It's a way to verify that the GHB has been implemented correctly.
             """,
-            'tau': np.logspace(-5, 9, 141), # tau = 1/ u
+            'um1': np.logspace(-3, 3, 71), # um1 = 1/ u
             'r': np.hstack((0., np.logspace(-2, 6, 81))),
-            'D': np.array([50.]),
+            'D': np.array([20.]),
             'kr': np.array([10.]),
             'kz': np.array([1e6]),
-            'Ss': np.array([0.2e-6]),
-            'r_' :30.,
+            'ss': np.array([0.2e-6]),                              
             'rhos': [0.01, 0.03, .1, .3, 1., 3.],
             },
         'Hantush2L': {
@@ -818,14 +929,14 @@ if __name__ == '__main__':
             given resistance between the first and second layer. The second layer is the aquifer. This
             example also serves to verify the implementation of the interlayer resistance 'c'.
             """,
-            'tau': np.logspace(-5, 9, 141), # tau = 1/ u
-            'r': np.hstack((0., np.logspace(-2, 6, 81))),
-            'D': np.array([  10., 50.]),
-            'kr': np.array([ 1e-6, 10.]),
+            'um1': np.logspace(-5, 9, 141), # um1 = 1/ u
+            'r': np.hstack((0., np.logspace(-2, 6, 581))),
+            'D': np.array([10., 20.]),
+            'kr': np.array([ 1e-6, 1e1]),
             'kz': np.array([ 1e6,  1e6]),
-            'Ss': np.array([ 0.01, 0.2e-6]),
-            'r_' :30.,
+            'ss': np.array([   0., 1e-5]),            
             'rhos': [0.01, 0.03, .1, .3, 1., 3.],
+            'use_ghb': False,
             },
         'Boulton63': {
             'title': 'Boulton 1963, delayed yield',
@@ -835,24 +946,33 @@ if __name__ == '__main__':
             value of rho used. A single reference distance r_ is used for all curve. This has no effect
             on the results because these are given on dimensionless graphs.
             """,
-            'tau': np.logspace(-5, 9, 141), # tau = 1/ u
-            'r': np.hstack((0., np.logspace(-2, 6, 81))),
-            'D': np.array([  10., 50.]),
+            'um1': np.logspace(-5, 9, 141), # um1 = 1/ u
+            'r': np.hstack((0., np.logspace(-2, 6, 581))),
+            'D': np.array([10., 50.]),
             'kr': np.array([ 1e-6, 10.]),
             'kz': np.array([ 1e6,  1e6]),
-            'Ss': np.array([  0.01, 0.2e-6]),
-            'r_' :30.,
+            'ss': np.array([  0.01, 0.2e-6]),            
             'rhos': [0.01, 0.03, .1, .3, 1., 3.],
-            }
+            },
+        'Brug223_02': {
+            'title': """Burggeman (1999) solution 223.02. Sudden change of head at r=R.
+             This solution is very difficult to correctly evaluate analytically""",             
+             'comment': """Same as Theis but sudden head change at cylinder with r=R.""",
+            't': np.logspace(-3, 3, 141), # um1 = 1/ u
+            'r': np.hstack((30. - 0.01, np.logspace(np.log10(30.), 6, 181))),
+            'D': np.array([100.]),
+            'kr': np.array([10.]),
+            'kz': np.array([1e6]),
+            'ss': np.array([1e-3]),
+            },
+
         }
-    
-    print('Available cases:\n{}'.format(cases.keys()))
-    
-    #steady(cases['steady'])
-    theis1(cases['test0'])
-    #theis(cases['Theis'])
-    #hantush1L(cases['Hantush1L'])
-    #hantush2L(cases['Hantush2L'])
-    #boulton(cases['Boulton63'])
+    print(f'Available cases:\n{cases.keys()}')
+    #deGlee(**cases['steady'])
+    #theis1(**cases['Theis'])
+    #hantush(**cases['Hantush1L']) # for S=0 -> steady De Glee
+    #hantush(**cases['Hantush2L'])
+    #boulton(**cases['Boulton63'])
+    brug223_02(**cases['Brug223_02'])
 
     plt.show()
