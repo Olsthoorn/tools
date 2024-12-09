@@ -300,8 +300,7 @@ class Fdm3t:
     Wraps the function fdm3t in it.    
     """
 
-    def __init__(self, gr=None, t=None, k=None, ss=None, fh=None, fq=None, hi=None,
-                 c=None, ghb=None, idomain=None, epsilon=1.0):
+    def __init__(self, gr=None, k=None, c=None, ss=None, hi=None, idomain=None, epsilon=0.67):
         """Instantiate a 3D transient axially symmetric groundwater
         finite difference model.
 
@@ -312,37 +311,18 @@ class Fdm3t:
         ----------
         gr : mfgrid.Grid object
             contains the computation finite difference network.
-        t : time, numpy.ndarray
-            if 0 is not included, it will be added to store
-            the initial heads for t=0.
-        k : tuple of (Kr, Kz) or (Kr, Ky, Kz)
-            Ky is ignored.
+        k : tuple of (kr, kz) or (kx, ky, kz)
+            ky is ignored if gr.axial is True.
         ss : ndarray of gr.shape
-            Specifici storage coefficients.
-        fh: ndarray of gr.shape
-            fixed head per modflow cell.
-            This could be specified as a dict[isp] where isp is the
-            stress-period number.
-        fq : ndarray of gr.shape
-            fixed infiltration per modflow cell. Extractions are
-            negative.
-            This could be specified as a dict[isp] where isp is the
-            stress-period number.
+            Specific storage coefficients.
         hi : ndarray of gr.shape.
             initial heads and fixed heads.
-            The heads are fixed where IDOMAIN<0.
-            This could be specified as a dict[isp] where isp is the
-            stress-period number. In that case, the heads at the
-            nodes with IDOMAIN<0 will be replaced by the fixed heads
-            speciied for the stress period.
-        c: np.ndarray of shape (gr.nlay - 1, gr.nrow, gr.ncol)
+        c:  np.ndarray of shape (gr.nlay - 1, gr.nrow, gr.ncol)
             The vertical resistance in between the model layers.
-        ghb: np.recarray of dtype =np.dtype([('I', int), ('h', float), ('C', float)])
-            Specifies general head boundaries.
         idomain : ndarray of dtype int of size gr.shape
-            Boundary array like in MODFLOW. <0 means head is
-            prescribed for the cell; 0 means cell is inactive, >0 means,
-            head will be compute for the cell.
+            Boundary array like in MODFLOW: 0 is inactive not zeros is active.
+            Note that -1 for fixed hads (mf5) or flow through cells (mf6)
+            are not used. Just zero or nog zero.
         epsilon : float between 0.5 and 1.
             Implicitness. 0.5 is indifferently stable (Crank Nicholson
             scheme of updating future head, most accurate), 1 is completely
@@ -355,48 +335,26 @@ class Fdm3t:
             the simulation results: Phi, Q, Qx, Qy, Qz, Qs
             ndarrays with time as first dimension.
         """
-        if isinstance(k, (tuple, list)):
-            if len(k)==3:
-                kh, _, kv = k
-            elif len(k) == 2:
-                kh, kv = k
-            elif len(k) == 1:
-                kh = k[0]
-                kv = kh
-            else:
-                raise ValueError("Can't understand input k, use (Kx, Kz) tuple")
-        else:
-            kh = k
-            kv = k
+        if gr.axial:
+            print('Axially symmetric model, y-values are ignored.')
 
-        assert np.all(gr.shape == kh.shape), 'gr.shape != kh.shape'
-        assert np.all(gr.shape == kv.shape), 'gr.shape != kv.shape'
-        assert np.all(gr.shape == fh.shape), 'gr.shape != fh.shape'
-        assert np.all(gr.shape == fq.shape), 'gr.shape != fq.shape'
-        assert np.all(gr.shape == ss.shape), 'gr.shape != hi.shape'
-        assert np.all(gr.shape == idomain.shape), 'gr.shape != idomain.shape'
+        self.kx, self.ky, self.kz = gr.check_array_tuple(k)
+    
+        if c is not None:
+            if isinstance(c, np.ndarray):
+                if not np.all(c.shape == (gr.nlay -1, gr.ny, gr.nx)):
+                    raise AssertionError(f"shape c ({c.shape}) should be {(gr.nlay - 1, gr.ny, gr.nx)}")
+            self.c = c
+
+        assert np.all(gr.shape == ss.shape), 'ss.shape != gr.shape'
+        assert np.all(gr.shape == idomain.shape), 'idomain.shape != gr.shape'
 
         self.gr = gr
-        self.t  = t
-        self.kh = kh
-        self.kv = kv
-        self.c  = c
         self.ss = ss
-        self.fq = fq
         self.hi = hi
         self.c = c
-        self.ghb = ghb
         self.idomain = idomain
-        self.psi = None
-
-        # Immediately runs the model and stores its output
-        self.out = fdm3t(gr=self.gr, t=self.t,
-                         k=(self.kh, self.kh, self.kv),
-                         ss=self.ss, fq=self.fq, hi=self.hi, c=self.c, 
-                         ghb=self.ghb,
-                         idomain=self.idomain, epsilon=epsilon)
-
-        print('Model was run see model.out, where model is your model name.')
+        self.epsilon = epsilon
 
     @property
     def obsNames(self):
@@ -409,8 +367,36 @@ class Fdm3t:
     def z_ow(self):
         return [p[2] for p in self.points]
 
+    def simulate(self, t, fh, fq, ghb):
+        """"Simulate the model with specified time and boundary conditions.
+        
+        You can run steady-state by setting self.ss to None.
+        If there are more times, you can run multiple steady states with
+        boundary conditions specified by fh, fq and ghb.
+        If ss is not None, then the simulation will be transient.
+        
+        Parameters
+        ----------
+        t : time, numpy.ndarray
+            if 0 is not included, it will be added to store
+            the initial heads for t=0.
+        fh: dict of recarrays with dtype=dtypeH and keys are stress period numbers
+            fixed head per modflow cell.
+        fq : dict of ndarray of dtype=dtypeQ
+            fixed infiltration per modflow cell. Extractions negative.
+        ghb: np.recarray of dtype =dtypeGHB: [('I', int), ('h', float), ('C', float)]
+            Specifies general head boundaries.
+        """
+        self.out = fdm3t(gr=self.gr, t=t,
+            k=(self.kx, self.ky, self.kz), c=self.c,
+            ss=self.ss, fh=fh, fq=fq, ghb=ghb, hi=self.hi,
+            idomain=self.idomain, epsilon=self.epsilon)
+        
+        print('Model was run, see self.out')
 
-    def show(self, points, **kwargs):
+        return self.out
+
+    def show(self, points=None, out=None, **kwargs):
         '''Plot the time-drawdown curves for the observation points.
 
         parameters
@@ -433,7 +419,7 @@ class Fdm3t:
         # interpolate at radius of observation points
         phi_t = interpolator(self.r_ow)
 
-        # prepare fance selection of iz, ix combinations of obs points
+        # prepare fence selection of iz, ix combinations of obs points
         Ipnt = np.arange(phi_t.shape[-1], dtype=int) # nr of obs points
 
         phi_t = phi_t[:, layNr, Ipnt] # fancy selection, all times
