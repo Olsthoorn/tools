@@ -21,7 +21,9 @@ def get_structured_faceflows(
     nlay=None,
     nrow=None,
     ncol=None,
-    verbose=False,):
+    verbose=False,
+    asdict=False,
+    ):
     """
     Get the face flows for the flow right face, flow front face, and
     flow lower face from the MODFLOW 6 flowja flows. This method can
@@ -46,6 +48,8 @@ def get_structured_faceflows(
         number of columns in the grid. Only required if grb_file is not provided.
     verbose: bool
         Write information to standard output
+    asdict: bool
+        return faceflows as a dict.
 
     Returns
     -------
@@ -152,7 +156,13 @@ def get_structured_faceflows(
             flows[face][n] = -1 * flowja[i]
 
     # reshape and return
-    return frf.reshape(shape), fff.reshape(shape), flf.reshape(shape)
+    if asdict:
+        return {'frf': frf.reshape(shape),
+                'fff': fff.reshape(shape), 
+                'flf': flf.reshape(shape),
+        }
+    else:
+        return frf.reshape(shape), fff.reshape(shape), flf.reshape(shape)
 
 
 

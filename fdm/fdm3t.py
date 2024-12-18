@@ -961,117 +961,122 @@ def kraaij(t=None, x=None, D=None, kx=None, kz=None, ss=None, dh=None, epsilon=1
     ax.legend()
     return ax
 
+cases = {
+    'steady':
+        {'title': 'steady',
+         "comment": """This test is to verify the accuracy of the model against an analytical
+         solution of Theis or even Hantush by a regular simulation, no dimensionless parameters.
+         """,
+        't': np.logspace(-4, 9, 131),
+        'r': np.hstack((0, np.logspace(-2, 6, 81))),
+        'D': np.array([  10., 50.]),
+        'kr': np.array([ 1e-6, 10.]),
+        'kz': np.array([ 1e6,  1e6]),
+        'Ss': np.array([ 0.01, 0.2e-6]),
+        'c': np.array([600.]),
+        'use_ghb': True,
+         },
+    'Theis':
+        {'title': r"""Theis numeric vs um1 = 1/u. Increasing um1 --> increasing time --> decreasing r.
+         Curves for different r overlap due to the choice of both axes which yieldds the Theis type curve.
+         Small deviations with the analytic type curve occur only for very large r or very small t.
+         """,
+         'comment': """Theis numeric.
+         Computes the theis type curve by plotting s / (Q / (4 pi kD) vs 4 kD / S * t / r^2
+         and compare this with the real theis function exp1.
+         """,
+        'um1': np.logspace(-5, 9, 141), # um1 = 1/ u
+        'r': np.hstack((0., np.logspace(-2, 6, 381))),
+        'D': np.array([50.]),
+        'kr': np.array([10.]),
+        'kz': np.array([1e6]),
+        'ss': np.array([1e-5]),
+        'epsilon': 0.5,
+        },
+    'Hantush1L':
+        {'title' : 'Hantush using 1 layer',
+        'comment': """Hantush is numerically simlated using a single model layer, the inflow
+        at the top is made using general head boundaries. This result should be the same
+        as the one alled Hantush 2L. It's a way to verify that the GHB has been implemented correctly.
+        """,
+        #'um1': np.logspace(-3, 3, 71), # um1 = 1/ u,
+        'um1': np.logspace(-3, 3, 31), # um1 = 1/ u,           
+        'r': np.hstack((0., np.logspace(-2, 6, 1 * 80 + 1))), # so many points per log cycle
+        'D': np.array([50.]),
+        'kr': np.array([10.]),
+        'kz': np.array([1e6]),
+        'ss': np.array([0.2e-6]),                              
+        'rhos': [0., 0.01, 0.03, .1, .3, 1., 3.],
+        'r_': 30.,
+        'epsilon': 1.0,
+        },
+    'Hantush2L': {
+        'title': 'Hantush using 2 layers',
+        'comment': """Hantush is simulated using 2 layer. One is the top layer with fixed head and
+        given resistance between the first and second layer. The second layer is the aquifer. This
+        example also serves to verify the implementation of the interlayer resistance 'c'.
+        """,
+        'um1': np.logspace(-5, 9, 141), # um1 = 1/ u
+        'r': np.hstack((0., np.logspace(-2, 6, 581))),
+        'D': np.array([10., 20.]),
+        'kr': np.array([ 1e-6, 1e1]),
+        'kz': np.array([ 1e6,  1e6]),
+        'ss': np.array([   0., 1e-5]),            
+        'rhos': [0., 0.01, 0.03, .1, .3, 1., 3.],
+        'r_': 30.,
+        'use_ghb': False,
+        'epsilon': 0.5,
+        },
+    'Boulton63': {
+        'title': 'Boulton 1963, delayed yield',
+        'comment': """Boulton is simulated using 2 layers. One is the top layer with given Sy and
+        given resistance between the first and second layer. The second layer is the aquifer with
+        elastic storage coefficient S. The resisance between the two layers follows from the
+        value of rho used. A single reference distance r_ is used for all curve. This has no effect
+        on the results because these are given on dimensionless graphs.
+        """,
+        'um1': np.logspace(-5, 9, 141), # um1 = 1/ u
+        'r': np.hstack((0., np.logspace(-2, 6, 8 * 80))),
+        'D': np.array([10., 50.]),
+        'kr': np.array([ 0., 10.]),            
+        'kz': np.array([ 1e6,  1e6]),
+        'ss': np.array([  0.01, 0.2e-6]),            
+        'rhos': [0., 0.01, 0.03, .1, .3, 1., 3.], # c comes from rho
+        'r_': 30,
+        'epsilon': 0.5,
+        },
+    'Brug223_02': {
+        'title': "Bruggeman (1999) solution 223.02.""",
+         'comment': """Sudden change of head at r=R.
+         This solution is very difficult to correctly evaluate analytically.
+         Same as Theis but sudden head change at cylinder with r=R.""",
+        't': np.logspace(-3, 3, 141), # um1 = 1/ u
+        'r': np.hstack((30. - 0.01, np.logspace(np.log10(30.), 6, 1 * 160))),
+        'D': np.array([100.]),
+        'kr': np.array([10.]),
+        'kz': np.array([1e6]),
+        'ss': np.array([1e-3]),
+        'epsilon': 0.6,
+        },
+    'Kraaij':
+        {'title': r"""Kraaijenhoff vd Leur, 1D head development after sudden change of head at x +/- b.
+         """,
+         'comment': """Kraaij.
+         Computes the head change in a cross section after chaning the head at +/-b suddenly at t=0
+         """,
+        't': np.logspace(-3, 3, 61),
+        'x': np.linspace(0, 1000.0, 2 * 100),
+        'D': np.array([50.]),
+        'kx': np.array([10.]),
+        'kz': np.array([1e6]),
+        'ss': np.array([1e-3]),
+        'dh': 1.0,
+        'epsilon': 0.5
+        },
+    }
+
 if __name__ == '__main__':
-        
-    cases = {
-        'steady':
-            {'title': 'steady',
-             "comment": """This test is to verify the accuracy of the model against an analytical
-             solution of Theis or even Hantush by a regular simulation, no dimensionless parameters.
-             """,
-            't': np.logspace(-4, 9, 131),
-            'r': np.hstack((0, np.logspace(-2, 6, 81))),
-            'D': np.array([  10., 50.]),
-            'kr': np.array([ 1e-6, 10.]),
-            'kz': np.array([ 1e6,  1e6]),
-            'Ss': np.array([ 0.01, 0.2e-6]),
-            'c': np.array([600.]),
-            'use_ghb': True,
-             },
-        'Theis':
-            {'title': r"""Theis numeric vs um1 = 1/u. Increasing um1 --> increasing time --> decreasing r.
-             Curves for different r overlap due to the choice of both axes which yieldds the Theis type curve.
-             Small deviations with the analytic type curve occur only for very large r or very small t.
-             """,
-             'comment': """Theis numeric.
-             Computes the theis type curve by plotting s / (Q / (4 pi kD) vs 4 kD / S * t / r^2
-             and compare this with the real theis function exp1.
-             """,
-            'um1': np.logspace(-5, 9, 141), # um1 = 1/ u
-            'r': np.hstack((0., np.logspace(-2, 6, 381))),
-            'D': np.array([50.]),
-            'kr': np.array([10.]),
-            'kz': np.array([1e6]),
-            'ss': np.array([1e-5]),
-            'epsilon': 0.5,
-            },
-        'Hantush1L':
-            {'title' : 'Hantush using 1 layer',
-            'comment': """Hantush is numerically simlated using a single model layer, the inflow
-            at the top is made using general head boundaries. This result should be the same
-            as the one alled Hantush 2L. It's a way to verify that the GHB has been implemented correctly.
-            """,
-            #'um1': np.logspace(-3, 3, 71), # um1 = 1/ u,
-            'um1': np.logspace(-3, 3, 31), # um1 = 1/ u,           
-            'r': np.hstack((0., np.logspace(-2, 6, 80 * 8))),
-            'D': np.array([20.]),
-            'kr': np.array([10.]),
-            'kz': np.array([1e6]),
-            'ss': np.array([0.2e-6]),                              
-            'rhos': [0., 0.01, 0.03, .1, .3, 1., 3.],
-            'epsilon': 0.5,
-            },
-        'Hantush2L': {
-            'title': 'Hantush using 2 layers',
-            'comment': """Hantush is simulated using 2 layer. One is the top layer with fixed head and
-            given resistance between the first and second layer. The second layer is the aquifer. This
-            example also serves to verify the implementation of the interlayer resistance 'c'.
-            """,
-            'um1': np.logspace(-5, 9, 141), # um1 = 1/ u
-            'r': np.hstack((0., np.logspace(-2, 6, 581))),
-            'D': np.array([10., 20.]),
-            'kr': np.array([ 1e-6, 1e1]),
-            'kz': np.array([ 1e6,  1e6]),
-            'ss': np.array([   0., 1e-5]),            
-            'rhos': [0., 0.01, 0.03, .1, .3, 1., 3.],
-            'use_ghb': False,
-            'epsilon': 0.5,
-            },
-        'Boulton63': {
-            'title': 'Boulton 1963, delayed yield',
-            'comment': """Boulton is simulated using 2 layers. One is the top layer with given Sy and
-            given resistance between the first and second layer. The second layer is the aquifer with
-            elastic storage coefficient S. The resisance between the two layers follows from the
-            value of rho used. A single reference distance r_ is used for all curve. This has no effect
-            on the results because these are given on dimensionless graphs.
-            """,
-            'um1': np.logspace(-5, 9, 141), # um1 = 1/ u
-            'r': np.hstack((0., np.logspace(-2, 6, 8 * 80))),
-            'D': np.array([10., 50.]),
-            'kr': np.array([ 0., 10.]),            
-            'kz': np.array([ 1e6,  1e6]),
-            'ss': np.array([  0.01, 0.2e-6]),            
-            'rhos': [0., 0.01, 0.03, .1, .3, 1., 3.], # c comes from rho
-            'epsilon': 0.5,
-            },
-        'Brug223_02': {
-            'title': """Brurgeman (1999) solution 223.02. Sudden change of head at r=R.
-             This solution is very difficult to correctly evaluate analytically""",             
-             'comment': """Same as Theis but sudden head change at cylinder with r=R.""",
-            't': np.logspace(-3, 3, 141), # um1 = 1/ u
-            'r': np.hstack((30. - 0.01, np.logspace(np.log10(30.), 6, 7 * 160))),
-            'D': np.array([100.]),
-            'kr': np.array([10.]),
-            'kz': np.array([1e6]),
-            'ss': np.array([1e-3]),
-            'epsilon': 0.6,
-            },
-        'Kraaij':
-            {'title': r"""Kraaijenhoff vd Leur, 1D head development after sudden change of head at x +/- b.
-             """,
-             'comment': """Kraaij.
-             Computes the head change in a cross section after chaning the head at +/-b suddenly at t=0
-             """,
-            't': np.logspace(-3, 3, 61),
-            'x': np.linspace(0, 1000.0, 2 * 100),
-            'D': np.array([50.]),
-            'kx': np.array([10.]),
-            'kz': np.array([1e6]),
-            'ss': np.array([1e-3]),
-            'dh': 1.0,
-            'epsilon': 0.5
-            },
-        }
+
     print(f'Available cases:\n{cases.keys()}')
     #deGlee(**cases['steady'])
     #theis1(**cases['Theis'])
