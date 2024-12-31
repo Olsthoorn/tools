@@ -840,12 +840,15 @@ class Grid:
         
         #check consistency of dict indices, must be [0, ...] increasin ints starting at 0
         idx = list(sarray_dict.keys())
-        assert idx[0] == 0, "first key in sarray_dict must be 0 (first stress period)!"
-        assert np.all(np.diff(idx) > 0), "keys of sarray_dict must be increaing"
-        assert np.all([isinstance(k, int) for k in idx]), "keys of sarray_dict must all be ints"
+        #assert idx[0] == 0, "first key in sarray_dict must be 0 (first stress period)!"
+        assert np.all(np.diff(idx) > 0), "keys of sarray_dict must be increasing"
+        sarray_dict = {int(k): sarray_dict[k] for k in sarray_dict.keys()}
+        assert np.all([isinstance(k, (int, np.integer)) for k in idx]), "keys of sarray_dict must all be ints"
         
         # check the actual dtype and that node indices are < gr.nod
         for i in idx:
+            if sarray_dict[i] is None:
+                continue
             dtp = sarray_dict[i].dtype
             assert dtp == dtype, f"dtype of sarray_index{i} must be{dtype}, not {dtp} !"
             assert np.all(sarray_dict[i]['I'] < self.nod),\
@@ -998,7 +1001,7 @@ class Grid:
             return as [[l, r, c], [l, r, c], ...]
         """
         assert isinstance(Iglob, np.ndarray), "I must be a np.ndarray of booleans or ints."
-        assert Iglob.dtype in (int, bool), "Iglobe.dtype must be bool or int."
+        assert Iglob.dtype in (np.integer, bool), "Iglobe.dtype must be bool or int."
         if isinstance(Iglob.dtype, bool):
             assert np.all(self.shape == Iglob.shape), (
                 "If Iglob.dtype == bool, then Iglob.shape must be equal to gr.shape"
