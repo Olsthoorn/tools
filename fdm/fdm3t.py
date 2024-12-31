@@ -38,9 +38,9 @@ class InputError(Exception):
     """Define Input Error class."""
     pass
 
-dtypeQ   = np.dtype([('I', int), ('q', float)])
-dtypeH   = np.dtype([('I', int), ('h', float)])
-dtypeGHB = np.dtype([('I', int), ('h', float), ('C', float)])
+dtypeQ   = np.dtype([('I', np.int32), ('q', float)])
+dtypeH   = np.dtype([('I', np.int32), ('h', float)])
+dtypeGHB = np.dtype([('I', np.int32), ('h', float), ('C', float)])
 
 def fdm3t(gr=None, t=None, k=None, c=None, ss=None, fh=None, ghb=None,
           fq=None, hi=None, idomain=None, epsilon=0.67):
@@ -231,7 +231,7 @@ def fdm3t(gr=None, t=None, k=None, c=None, ss=None, fh=None, ghb=None,
                  
         if fq is not None:   
             if idt in fq: # update fq
-                fQ[:] =0.          
+                fQ[:] = 0.          
                 fQ[fq[idt]['I']] = fq[idt]['q']
             if idt >= tuple(fq.keys())[0]:
                 rhs += fQ
@@ -251,7 +251,7 @@ def fdm3t(gr=None, t=None, k=None, c=None, ss=None, fh=None, ghb=None,
             rhs += Cs / dt * Phi[it - 1]
 
         if fh is not None:            
-            if idt in fh: # update fh                          
+            if idt in fh: # update fh
                 Ifh, hfh = fh[idt]['I'], fh[idt]['h']            
                 isfh = gr.const(0., dtype=bool).ravel()
                 isfh[Ifh]    = True
