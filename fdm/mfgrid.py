@@ -978,7 +978,7 @@ class Grid:
     @property
     def NOD(self):
         """Return cell numbers in the grid."""
-        return np.arange(self.nod).reshape((self._nlay, self._ny, self._nx))
+        return np.arange(self.nod, dtype=int).reshape((self._nlay, self._ny, self._nx))
 
     def LRC(self, Iglob, astuples=None, aslist=None):
         warnings.warn("LRC is deprecated. Use lrc_from_iglob instead.", DeprecationWarning)
@@ -1244,7 +1244,7 @@ class Grid:
         if LRC.dtype == np.dtype([('ip', int), ('ic', (int, 3))]):
             LRC = LRC['ic']
         else:
-            assert LRC.dtype == np.int, "LRC must be a ndarray of ints of shape (n, 3)"
+            assert LRC.dtype == np.integer, "LRC must be a ndarray of ints of shape (n, 3)"
         
         return LRC[:,0] * self._ny * self._nx + LRC[:, 1] * self._nx + LRC[:, 2]
     
