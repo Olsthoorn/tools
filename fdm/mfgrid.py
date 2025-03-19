@@ -1317,11 +1317,11 @@ class Grid:
         @TO 230505
         """
         assert isinstance(cells, np.ndarray) and cells.dtype == bool, "Array cells must be a full array of dtype bool."
-        assert isinstance(hds,   (np.float, np.int, np.ndarray)), "hds must be a float or a np.ndarray."
-        assert isinstance(cond,  (np.float, np.int, np.ndarray)), "cond must be a float or a np.ndarray."
+        assert isinstance(hds,   (float, int, np.ndarray)), "hds must be a float or a np.ndarray."
+        assert isinstance(cond,  (float, int, np.ndarray)), "cond must be a float or a np.ndarray."
         
         dtype = np.dtype([('I', int), ('h', float), ('C', float)])
-        N = np.count_nonzero(cells is True)
+        N = np.count_nonzero(cells)
         
         ghb = np.zeros(N, dtype=dtype)
         ghb['I'] = self.NOD[cells]
