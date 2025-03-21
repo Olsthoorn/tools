@@ -745,8 +745,8 @@ class Grid:
         LAYCBD[LAYCBD!=0] = 1 # valuesa are either 1 or 0
 
         # How many layers and confining beds do we have?
-        self._ncbd = np.sum(LAYCBD)
-        self._nlay = self._nz - self._ncbd
+        self._ncbd = int(np.sum(LAYCBD))
+        self._nlay = int(self._nz - self._ncbd)
 
         # Check if input wass consistent
         assert self._nlay > 0 and self._nlay>self._ncbd,\
@@ -931,9 +931,9 @@ class Grid:
     def shape(self, cbd=False):
         """Return shape of the grid."""
         if cbd is False:
-            return self._nlay, self._ny, self._nx # prevent ref. to original
+            return int(self._nlay), self._ny, self._nx # prevent ref. to original
         else:
-            return self._ncbd, self._ny, self._nx
+            return int(self._ncbd), self._ny, self._nx
 
     @property
     def nx(self):
