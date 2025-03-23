@@ -1855,10 +1855,7 @@ class Grid:
     @property
     def Volume(self):
         """Return volume of cells as a 3D grid [ny, nx, nz]."""
-        if self.axial:
-            return self.Area[np.newaxis, :, :] * self.DZ
-        else:
-            return self.DX * self.DY * self.DZ
+        return self.Area[np.newaxis, :, :] * self.DZ
 
     @property
     def volume(self):
@@ -1867,7 +1864,7 @@ class Grid:
 
     @property
     def Vlay(self):
-        """Return volume of model layer cells as a 3D grid [ny, nx, nlay]."""
+        """Return volume of model layer cells as a 3D grid [ny, nx, nlay]."""        
         if self.axial:
             return self.Area[np.newaxis, :, :] * self.Dlay
         else:
