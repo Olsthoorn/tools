@@ -1021,9 +1021,9 @@ class Grid:
         C = Iglob - L * nlay - R * ncol
         
         if astuples:
-            return tuple((lay, row, col) for lay, row, col in zip(L, R, C))
+            return tuple((int(lay), int(row), int(col)) for lay, row, col in zip(L, R, C))
         elif aslist:
-            return [[lay, row, col] for lay, row, col, in zip(L, R, C)]
+            return [[int(lay), int(row), int(col)] for lay, row, col, in zip(L, R, C)]
         else:
             return np.vstack((L, R, C)).T
 
