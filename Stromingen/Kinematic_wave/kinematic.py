@@ -166,10 +166,10 @@ class KWprofile():
             when generating several new points at once at the same depth every
             time then the recharge q is less than its previous value.
         """
-        fr = self.profile
-        dv = fr['v'][:-1] - fr['v'][1:]
+        profile = self.profile
+        dv = profile['v'][:-1] - profile['v'][1:]
         dv[np.isclose(dv, 0)] = 1e-10  # Avoid division by zero
-        tsh = fr['t'][0] + np.fmax(fr['z'][1:] - fr['z'][:-1], ztol) / dv                    
+        tsh = profile['t'][0] + np.fmax(profile['z'][1:] - profile['z'][:-1], ztol) / dv                    
         return tsh
     
     def fr_update(self, t0, dt):
@@ -298,28 +298,31 @@ class KWprofile():
         self.profile = np.delete(self.profile, slice(i2 + 1, None, 1))
         return q
 
-    def plot_profile(self, fr, ax=None):
+    def plot_profile(self, profile=None, ax=None):
         """Plot the profile."""
-        z = np.vstack((fr['z'], fr['z'])).T.flatten()
-        theta = np.vstack((fr['theta1'], fr['theta2'])).T.flatten()
+        if profile is None:
+            profile = self.profile
+        z = np.vstack((profile['z'], profile['z'])).T.flatten()
+        theta = np.vstack((profile['theta1'], profile['theta2'])).T.flatten()
+        t = profile['t'][0]
         if ax is None:
             _, ax = plt.subplots(figsize=(10, 6))
             ax.set_title('Kinematic Wave Profile')
             ax.set_xlabel('Depth (m)')
             ax.set_ylabel('Soil Moisture Content (m^3/m^3)')
-            ax.grid(True)                
-            ax.plot(z, theta, label=f't={fr['t'][0]:.3f}')
+            ax.grid(True)                  
+            ax.plot(z, theta, label=f't={t:.3f} d')
             ax.legend()
             plt.show()
         else:
-            ax.plot(z, theta, label=f't={fr['t'][0]:.3f}')
+            ax.plot(z, theta, label=f't={t:.3f} d')
 
     def plot_profiles(self, ax=None):
         """Plot the profiles."""
         if ax is None:
             _, ax = plt.subplots(figsize=(10, 6))
-        for t, fr in self.profiles.items():
-            self.plot_profile(fr, ax=ax)
+        for t, profile in self.profiles.items():
+            self.plot_profile(profile, ax=ax)
         ax.set_title('Kinematic Wave Profiles')
         ax.set_xlabel('Depth (m)')
         ax.set_ylabel('Soil Moisture Content (m^3/m^3)')
