@@ -2,6 +2,7 @@
 # Kinematic wave of moisture through unsaturated zone
 #
 # %%
+import os
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation, FFMpegWriter
@@ -30,12 +31,12 @@ class KWprofile():
     """
     
     profile_dtype = np.dtype([
+                        ('t', '<f8'),      # Time (d)
+                        ('z', '<f8'),      # Depth (m)
+                        ('v', '<f8'),      # Velocity (m/d)
                         ('theta1', '<f8'), # Upstream soil moisture content (m^3/m^3)
                         ('theta2', '<f8'), # Downstream soil moisture content (m^3/m^3)
-                        ('z', '<f8'),      # Depth (m)
-                        ('t', '<f8'),      # Time (d)
-                        ('v', '<f8')]      # Velocity (m/d)
-                       )
+                        ])
 
     # Properties of the soil
     props = {'K_s': K_s, 'theta_s': theta_s, 'theta_r': theta_r, 'epsilon': epsilon}
@@ -59,9 +60,13 @@ class KWprofile():
 
     def theta_0(self, z, scen=1):
         """Initial condition for theta given a scenario."""
-        if scen == 1: # Replace with actual condition
-            theta_s = self.props['theta_s']
-            theta_r = self.props['theta_r'] 
+        theta_s = self.props['theta_s']
+        theta_r = self.props['theta_r']
+        
+        if scen == 0:  # Replace with actual condition
+            theta = theta_r * np.ones(len(z))
+            return theta * 1.05            
+        elif scen == 1:
         
             return (1.1 * self.props['theta_r'] + 
                     0.9 * (self.props['theta_s'] -
@@ -69,26 +74,24 @@ class KWprofile():
                                 np.sin(np.linspace(0, 4 * np.pi, len(z))))
             )
         elif scen == 2:  # Replace with actual condition
-            theta = self.props['theta_r'] * np.ones(len(z))
+            theta = theta_r * np.ones(len(z))
             iz1 = int(0.25 * len(z))
             iz2 = int(0.75 * len(z))
-            theta[iz1:iz2] = self.props['theta_s']
+            theta[iz1:iz2] = theta_s
             return theta
         elif scen==3:  # Replace with actual condition
-            theta = self.props['theta_r'] * np.ones(len(z))
+            theta = theta_r * np.ones(len(z))
             iz1 = int(0.10 * len(z))
             iz2 = int(0.20 * len(z))
-            theta[iz1:iz2] = self.props['theta_s']
-            theta[0:iz1] = np.linspace(self.props['theta_r'], self.props['theta_s'], iz1)
+            theta[iz1:iz2] = theta_s
+            theta[0:iz1] = np.linspace(theta_r, theta_s, iz1)
             return theta
         elif scen == 4:  # Replace with actual condition
-            theta_r = self.props['theta_r']
-            theta_s = self.props['theta_s']
             theta = theta_s * np.ones(len(z))
             iz1 = int(0.48 * len(z))
             iz2 = int(0.52 * len(z))            
-            theta[:iz1] = np.linspace(theta_r, self.props['theta_s'], iz1)
-            theta[iz2:] = np.linspace(self.props['theta_s'], theta_r, len(z) - iz2)
+            theta[:iz1] = np.linspace(theta_r, theta_s, iz1)
+            theta[iz2:] = np.linspace(theta_s, theta_r, len(z) - iz2)
             return theta
         else:
             return np.linspace(theta_s, theta_r, len(z))
@@ -166,10 +169,10 @@ class KWprofile():
             when generating several new points at once at the same depth every
             time then the recharge q is less than its previous value.
         """
-        profile = self.profile
-        dv = profile['v'][:-1] - profile['v'][1:]
+        fr = self.profile
+        dv = fr['v'][:-1] - fr['v'][1:]
         dv[np.isclose(dv, 0)] = 1e-10  # Avoid division by zero
-        tsh = profile['t'][0] + np.fmax(profile['z'][1:] - profile['z'][:-1], ztol) / dv                    
+        tsh = fr['t'][0] + np.fmax(fr['z'][1:] - fr['z'][:-1], ztol) / dv                    
         return tsh
     
     def fr_update(self, t0, dt):
@@ -211,8 +214,8 @@ class KWprofile():
             z: z of the current points of the profile, double to match theta1 and theta2 of each point
             theta: theta along the profile, for each point (same z) theta1 and theta2
         """
-        z_profile = np.hstack((self.profile['z'], self.profile['z'])).T.flatten()
-        theta_profile = np.hstack((self.profile['theta1'], self.profile['theta2'])).T.flatten()
+        z_profile = np.vstack((self.profile['z'], self.profile['z'])).T.flatten()
+        theta_profile = np.vstack((self.profile['theta1'], self.profile['theta2'])).T.flatten()
         t_profile = np.mean(self.profile['t'])
         return t_profile, z_profile, theta_profile
 
@@ -262,13 +265,21 @@ class KWprofile():
         return self.profiles
     
     def prepend(self, theta, nNew=5):        
-        """Prepend a new points to the existing profile."""
+        """Prepend a new points to the existing profile, in place."""
         if theta is None:
             return
         elif not np.isscalar(theta):
             raise ValueError("Input must be a scalar.")
 
+        if np.isclose(self.profile['z'][0], 0):
+            # Don't prepend, previous point did not move, just replace theta and v
+            self.profile['theta1'][0] = theta
+            self.profile['theta2'][0] = theta
+            self.profile['v'][0]
+            return
+        
         last = self.profile[0]
+            
         if theta < last['theta1']:
             points = np.zeros(nNew, dtype=KWprofile.profile_dtype)
             points['t'] = last['t']
@@ -298,31 +309,28 @@ class KWprofile():
         self.profile = np.delete(self.profile, slice(i2 + 1, None, 1))
         return q
 
-    def plot_profile(self, profile=None, ax=None):
+    def plot_profile(self, fr, ax=None):
         """Plot the profile."""
-        if profile is None:
-            profile = self.profile
-        z = np.vstack((profile['z'], profile['z'])).T.flatten()
-        theta = np.vstack((profile['theta1'], profile['theta2'])).T.flatten()
-        t = profile['t'][0]
+        z = np.vstack((fr['z'], fr['z'])).T.flatten()
+        theta = np.vstack((fr['theta1'], fr['theta2'])).T.flatten()
         if ax is None:
             _, ax = plt.subplots(figsize=(10, 6))
             ax.set_title('Kinematic Wave Profile')
             ax.set_xlabel('Depth (m)')
             ax.set_ylabel('Soil Moisture Content (m^3/m^3)')
-            ax.grid(True)                  
-            ax.plot(z, theta, label=f't={t:.3f} d')
+            ax.grid(True)                
+            ax.plot(z, theta, label=f't={fr['t'][0]:.3f}')
             ax.legend()
             plt.show()
         else:
-            ax.plot(z, theta, label=f't={t:.3f} d')
+            ax.plot(z, theta, label=f't={fr['t'][0]:.3f}')
 
     def plot_profiles(self, ax=None):
         """Plot the profiles."""
         if ax is None:
             _, ax = plt.subplots(figsize=(10, 6))
-        for t, profile in self.profiles.items():
-            self.plot_profile(profile, ax=ax)
+        for t, fr in self.profiles.items():
+            self.plot_profile(fr, ax=ax)
         ax.set_title('Kinematic Wave Profiles')
         ax.set_xlabel('Depth (m)')
         ax.set_ylabel('Soil Moisture Content (m^3/m^3)')
@@ -330,6 +338,16 @@ class KWprofile():
         ax.legend()
 
 if __name__ == "__main__":
+    class Dirs():
+        def __init__(self):
+            self.HOME = '/Users/Theo/GRWMODELS/python/tools/Stromingen/Kinematic_wave'
+            if not os.path.isdir(self.HOME):
+                raise FileNotFoundError(f"Can't find folder {self.HOME}")
+            os.chdir(self.HOME)
+            
+    dirs = Dirs()
+    print(os.getcwd())
+    
     # This block is executed only when the script is run directly, not when imported.
     import matplotlib.pyplot as plt
     # Set up the plot style    
@@ -351,14 +369,22 @@ if __name__ == "__main__":
     # Initialize the Kinematic Wave profile
     z_gwt = 05.  # Water table depth (m)   
     z = np.hstack((np.linspace(0,0.1, 51), np.linspace(0.2, z_gwt, 51)))
-    kw_profile = KWprofile(theta=None, z=z, scen=4)  # Initialize profile with given scenario
+    kw_profile = KWprofile(theta=None, z=z, scen=0)  # Initialize profile with given scenario
+    K_s = kw_profile.props['K_s']
     
     # Define the recharge time series
     q_dtype=np.dtype([('t', '<f8'), ('q', '<f8'), ('theta', '<f8'), ('q_out', '<f8')])
     rch = np.zeros(100, dtype=q_dtype)
 
     np.random.seed(42)  # For reproducibility
-    rch['q'] = np.clip(np.random.uniform(-0.02, kw_profile.props['K_s'], size=100), 0, None)  # Random recharge values (m/d)
+    rch['q'] = np.clip(np.random.uniform(-0.02, K_s, size=100), 0, None)  # Random recharge values (m/d)
+        
+    rch['q'][:20] = 0 
+    rch['q'][20:40] = 0.9 * K_s
+    rch['q'][40:60] = 0.3 * K_s
+    rch['q'][60:80] = 0.
+    rch['q'][80:]  = K_s
+    
     rch['t'] = np.arange(100)  # Time in days
     rch['theta'] = kw_profile.theta_from_q(rch['q'])  # Calculate initial soil moisture
     rch['q_out'] = 0. # The flux leaving the profile at the water table
@@ -370,9 +396,12 @@ if __name__ == "__main__":
     ax.set_xlabel('Depth z (m)')
     ax.set_ylabel('Soil Moisture Content (m^3/m^3)')
     ax.grid(True)
+    ax.set_ylim(0, kw_profile.props['theta_s'])
     
+    kw_profile.profile = np.delete(kw_profile.profile, [0])
     t, z, theta = kw_profile.tztheta
     line, = ax.plot(z, theta, label=f"t={rch['t'][0]:.2f} d")
+    
 
     def update_profile(i):
         dt = rch['t'][i + 1] - rch['t'][i]
@@ -388,14 +417,13 @@ if __name__ == "__main__":
         line.set_xdata(z)
         line.set_ydata(theta)
         ax.legend(loc='lower left')
-        ax.relim()
-        ax.autoscale_view()
+        # ax.relim()
+        # ax.autoscale_view()
         return line
 
     ani = FuncAnimation(fig, update, frames=len(rch) - 1, blit=False)
     
     ani.save('animation.mp4', writer=FFMpegWriter(fps=10))
-    plt.close()
     
     # FF = F.fr_update_all(t)  # Update profiles for each time step
     # F.plot_profiles()
