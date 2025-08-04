@@ -169,10 +169,10 @@ class KWprofile():
             when generating several new points at once at the same depth every
             time then the recharge q is less than its previous value.
         """
-        fr = self.profile
-        dv = fr['v'][:-1] - fr['v'][1:]
+        profile = self.profile
+        dv = profile['v'][:-1] - profile['v'][1:]
         dv[np.isclose(dv, 0)] = 1e-10  # Avoid division by zero
-        tsh = fr['t'][0] + np.fmax(fr['z'][1:] - fr['z'][:-1], ztol) / dv                    
+        tsh = profile['t'][0] + np.fmax(profile['z'][1:] - profile['z'][:-1], ztol) / dv                    
         return tsh
     
     def fr_update(self, t0, dt):
@@ -264,7 +264,7 @@ class KWprofile():
             self.profiles[t0 + dt] = self.fr_update(t0, dt)
         return self.profiles
     
-    def prepend(self, theta, nNew=5):        
+    def prepend(self, theta, nNew=15):        
         """Prepend a new points to the existing profile, in place."""
         if theta is None:
             return
@@ -275,7 +275,7 @@ class KWprofile():
             # Don't prepend, previous point did not move, just replace theta and v
             self.profile['theta1'][0] = theta
             self.profile['theta2'][0] = theta
-            self.profile['v'][0]
+            self.profile['v'][0] = self.vf(theta1=theta, theta2=theta)
             return
         
         last = self.profile[0]
@@ -287,12 +287,12 @@ class KWprofile():
             points['theta1'] = np.linspace(theta, last['theta1'], nNew)
             points['theta2'] = np.linspace(theta, last['theta1'], nNew)
             points['v'] = self.vf(points['theta1'], points['theta2'])
-        else:
+        else: # There is a new front at x=0
             points = np.zeros(1, dtype=KWprofile.profile_dtype)
             points['t'] = last['t']
             points['z'] = self.z0
             points['theta1'] = theta
-            points['theta2'] = theta
+            points['theta2'] = last['theta1']
             points['v'] = self.vf(theta, theta)
         # Prepend the new points to the profile
         self.profile = np.append(points, self.profile.copy())
@@ -309,28 +309,31 @@ class KWprofile():
         self.profile = np.delete(self.profile, slice(i2 + 1, None, 1))
         return q
 
-    def plot_profile(self, fr, ax=None):
+    def plot_profile(self, profile=None, ax=None):
         """Plot the profile."""
-        z = np.vstack((fr['z'], fr['z'])).T.flatten()
-        theta = np.vstack((fr['theta1'], fr['theta2'])).T.flatten()
+        if profile is None:
+            profile = self.profile
+        t = profile['t'][0]
+        z = np.vstack((profile['z'], profile['z'])).T.flatten()
+        theta = np.vstack((profile['theta1'], profile['theta2'])).T.flatten()
         if ax is None:
             _, ax = plt.subplots(figsize=(10, 6))
             ax.set_title('Kinematic Wave Profile')
             ax.set_xlabel('Depth (m)')
             ax.set_ylabel('Soil Moisture Content (m^3/m^3)')
             ax.grid(True)                
-            ax.plot(z, theta, label=f't={fr['t'][0]:.3f}')
+            ax.plot(z, theta, label=f't={t:.3f} d')
             ax.legend()
             plt.show()
         else:
-            ax.plot(z, theta, label=f't={fr['t'][0]:.3f}')
+            ax.plot(z, theta, label=f't={t:.3f} d')
 
     def plot_profiles(self, ax=None):
         """Plot the profiles."""
         if ax is None:
             _, ax = plt.subplots(figsize=(10, 6))
-        for t, fr in self.profiles.items():
-            self.plot_profile(fr, ax=ax)
+        for t, profile in self.profiles.items():
+            self.plot_profile(profile, ax=ax)
         ax.set_title('Kinematic Wave Profiles')
         ax.set_xlabel('Depth (m)')
         ax.set_ylabel('Soil Moisture Content (m^3/m^3)')
@@ -367,25 +370,26 @@ if __name__ == "__main__":
     # When this works a root-zone module will be inserted to simulate the storage of water in the root zone.
     
     # Initialize the Kinematic Wave profile
-    z_gwt = 05.  # Water table depth (m)   
-    z = np.hstack((np.linspace(0,0.1, 51), np.linspace(0.2, z_gwt, 51)))
+    z_gwt = 20.  # Water table depth (m)   
+    z = np.hstack((np.linspace(0,0.1, 51), np.linspace(0.2, z_gwt, 201)))
     kw_profile = KWprofile(theta=None, z=z, scen=0)  # Initialize profile with given scenario
     K_s = kw_profile.props['K_s']
     
     # Define the recharge time series
     q_dtype=np.dtype([('t', '<f8'), ('q', '<f8'), ('theta', '<f8'), ('q_out', '<f8')])
-    rch = np.zeros(100, dtype=q_dtype)
+    rch = np.zeros(200, dtype=q_dtype)
 
     np.random.seed(42)  # For reproducibility
-    rch['q'] = np.clip(np.random.uniform(-0.02, K_s, size=100), 0, None)  # Random recharge values (m/d)
+    rch['q'] = np.clip(np.random.uniform(-0.02, K_s, size=len(rch)), 0, None)  # Random recharge values (m/d)
         
     rch['q'][:20] = 0 
     rch['q'][20:40] = 0.9 * K_s
     rch['q'][40:60] = 0.3 * K_s
     rch['q'][60:80] = 0.
-    rch['q'][80:]  = K_s
+    rch['q'][80:100]  = K_s
+    rch['q'][100:] = 0.
     
-    rch['t'] = np.arange(100)  # Time in days
+    rch['t'] = np.arange(len(rch))  # Time in days
     rch['theta'] = kw_profile.theta_from_q(rch['q'])  # Calculate initial soil moisture
     rch['q_out'] = 0. # The flux leaving the profile at the water table
      
@@ -396,30 +400,28 @@ if __name__ == "__main__":
     ax.set_xlabel('Depth z (m)')
     ax.set_ylabel('Soil Moisture Content (m^3/m^3)')
     ax.grid(True)
-    ax.set_ylim(0, kw_profile.props['theta_s'])
+    ax.set_ylim(0, 1.25 * kw_profile.props['theta_s'])
     
     kw_profile.profile = np.delete(kw_profile.profile, [0])
     t, z, theta = kw_profile.tztheta
     line, = ax.plot(z, theta, label=f"t={rch['t'][0]:.2f} d")
-    
+    txt = ax.text(0.2, 0.02, f't={0:.3f} d', transform=ax.transAxes)
+    ax.grid(True)
 
     def update_profile(i):
         dt = rch['t'][i + 1] - rch['t'][i]
-        kw_profile.prepend(rch['theta'][i], nNew=5)
+        kw_profile.prepend(rch['theta'][i], nNew=15)
         kw_profile.fr_update(rch['t'][i], dt)  # Update the profile for the current time(s)
         rch['q_out'][i] = kw_profile.recharge(z_gwt=z_gwt)
         return
-
 
     def update(frame):
         update_profile(frame)
         t, z, theta = kw_profile.tztheta        
         line.set_xdata(z)
         line.set_ydata(theta)
-        ax.legend(loc='lower left')
-        # ax.relim()
-        # ax.autoscale_view()
-        return line
+        txt.set_text(f't={t:.3f} d')
+        return line, txt
 
     ani = FuncAnimation(fig, update, frames=len(rch) - 1, blit=False)
     
