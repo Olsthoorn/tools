@@ -64,8 +64,8 @@ class KWprofile():
         theta_r = self.props['theta_r']
         
         if scen == 0:  # Replace with actual condition
-            theta = theta_r * np.ones(len(z))
-            return theta * 1.05            
+            theta = theta_r + 0.2 * (theta_s - theta_r) * np.ones(len(z))
+            return theta * 1.            
         elif scen == 1:
         
             return (1.1 * self.props['theta_r'] + 
@@ -370,9 +370,11 @@ if __name__ == "__main__":
     # When this works a root-zone module will be inserted to simulate the storage of water in the root zone.
     
     # Initialize the Kinematic Wave profile
-    z_gwt = 20.  # Water table depth (m)   
+    z_gwt = 5.  # Water table depth (m)   
     z = np.hstack((np.linspace(0,0.1, 51), np.linspace(0.2, z_gwt, 201)))
-    kw_profile = KWprofile(theta=None, z=z, scen=0)  # Initialize profile with given scenario
+    
+    scen = 0
+    kw_profile = KWprofile(theta=None, z=z, scen=scen)  # Initialize profile with given scenario
     K_s = kw_profile.props['K_s']
     
     # Define the recharge time series
@@ -382,12 +384,13 @@ if __name__ == "__main__":
     np.random.seed(42)  # For reproducibility
     rch['q'] = np.clip(np.random.uniform(-0.02, K_s, size=len(rch)), 0, None)  # Random recharge values (m/d)
         
-    rch['q'][:20] = 0 
-    rch['q'][20:40] = 0.9 * K_s
-    rch['q'][40:60] = 0.3 * K_s
-    rch['q'][60:80] = 0.
-    rch['q'][80:100]  = K_s
-    rch['q'][100:] = 0.
+    rch['q'][:20]   = 0.0 * K_s 
+    rch['q'][20:40] = 0.8 * K_s
+    rch['q'][40:60] = 0.0 * K_s
+    rch['q'][60:80] = 0.8 * K_s
+    rch['q'][80:100]  = 0. * K_s
+    rch['q'][100:120] = 0.8 * K_s
+    rch['q'][120:] = 0. * K_s
     
     rch['t'] = np.arange(len(rch))  # Time in days
     rch['theta'] = kw_profile.theta_from_q(rch['q'])  # Calculate initial soil moisture
@@ -395,31 +398,40 @@ if __name__ == "__main__":
      
     t = rch['t'] # Time steps for the simulation
     
-    fig, ax = plt.subplots(figsize=(10, 6))
+    # Animate the profile with time, showing kinematic waves in action
+    fig, ax = plt.subplots(figsize=(6, 10))
     ax.set_title('Kinematic Wave Profiles')
-    ax.set_xlabel('Depth z (m)')
-    ax.set_ylabel('Soil Moisture Content (m^3/m^3)')
+    ax.set_ylabel('Depth z (m)')
+    ax.set_xlabel(r'Soil Moisture Content ($m^3 / m^3$)')
     ax.grid(True)
-    ax.set_ylim(0, 1.25 * kw_profile.props['theta_s'])
+    ax.set_xlim(0., 1.25 * kw_profile.props['theta_s'])
+    ax.set_ylim(z[-1], 0)
     
+    # Remove the first point, it will be replaced by the input from recharge at each time step
     kw_profile.profile = np.delete(kw_profile.profile, [0])
+    
+    # Get the time, and z, theta of the current profile
     t, z, theta = kw_profile.tztheta
-    line, = ax.plot(z, theta, label=f"t={rch['t'][0]:.2f} d")
-    txt = ax.text(0.2, 0.02, f't={0:.3f} d', transform=ax.transAxes)
+    
+    # Set up the plot
+    line, = ax.plot(theta, z, '.-', label=f"t={rch['t'][0]:.2f} d")
+    txt = ax.text(0.6, 0.95, f't={0:.3f} d', transform=ax.transAxes)
     ax.grid(True)
 
-    def update_profile(i):
-        dt = rch['t'][i + 1] - rch['t'][i]
-        kw_profile.prepend(rch['theta'][i], nNew=15)
-        kw_profile.fr_update(rch['t'][i], dt)  # Update the profile for the current time(s)
-        rch['q_out'][i] = kw_profile.recharge(z_gwt=z_gwt)
+    def update_profile(it):
+        """Update the profile by prepending a new point and updating it to after the time step."""
+        dt = rch['t'][it + 1] - rch['t'][it]
+        kw_profile.prepend(rch['theta'][it], nNew=15)
+        kw_profile.fr_update(rch['t'][it], dt)  # Update the profile for the current time(s)
+        rch['q_out'][it] = kw_profile.recharge(z_gwt=z_gwt)
         return
 
     def update(frame):
+        """Animation function, updates artists at every new frame."""
         update_profile(frame)
-        t, z, theta = kw_profile.tztheta        
-        line.set_xdata(z)
-        line.set_ydata(theta)
+        t, z, theta = kw_profile.tztheta   # Get the new profile
+        line.set_ydata(z)
+        line.set_xdata(theta)
         txt.set_text(f't={t:.3f} d')
         return line, txt
 
@@ -429,4 +441,16 @@ if __name__ == "__main__":
     
     # FF = F.fr_update_all(t)  # Update profiles for each time step
     # F.plot_profiles()
+    
+    fig, ax = plt.subplots(figsize=(10, 6))
+    ax.set_title("In- and output of the unsaturated column")
+    ax.set_xlabel('tijd [d]')
+    ax.set_ylabel('flux [m/d]')
+    ax.set_ylim(0., kw_profile.q_from_theta(kw_profile.props['theta_s']))
+    ax.grid(True)
+    
+    ax.plot(rch['t'], rch['q'], label="In: from root zone at z = {z[0]:.3f} m")
+    ax.plot(rch['t'], rch['q_out'], label=f'Uit: recharge at gwt, z={z_gwt:.3f} m')
+    
+    ax.legend(loc='upper right')
     plt.show()
