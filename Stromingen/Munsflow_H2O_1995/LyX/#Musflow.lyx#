@@ -833,14 +833,31 @@ Nu zoeken we een oplossing voor een puls op
 \end_layout
 
 \begin_layout Standard
-De analytische oplossing voor de lineaire convectie-dispersie vergelijking met puls als randvoorwaarde is bekend
+De analytische oplossing voor de lineaire convectie-dispersie vergelijking met puls als randvoorwaarde is bekend.
+\end_layout
+
+\begin_layout Standard
+Merk op dat de rol van 
+\begin_inset Formula $k_{1}=v$
+\end_inset
+
+ [L/T] en van 
+\begin_inset Formula $k_{0}h_{1}=D$
+\end_inset
+
+ [L
+\begin_inset Formula $^{2}$
+\end_inset
+
+/T]
 \end_layout
 
 \begin_layout Standard
 \begin_inset Formula 
-\[
-q\left(z,t\right)=\frac{z}{\sqrt{4\pi k_{0}h_{1}t^{3}}}\exp\left(-\frac{\left(z-k_{1}t\right)^{2}}{2k_{0}h_{1}t}\right)
-\]
+\begin{align*}
+q\left(z,t\right) & =\frac{z}{\sqrt{4\pi k_{0}h_{1}t^{3}}}\exp\left(-\frac{\left(z-k_{1}t\right)^{2}}{2k_{0}h_{1}t}\right)\\
+ & =\frac{z}{\sqrt{4\pi Dt^{3}}}\exp\left(-\frac{\left(z-vt\right)^{2}}{2Dt}\right)
+\end{align*}
 
 \end_inset
 
@@ -850,7 +867,7 @@ q\left(z,t\right)=\frac{z}{\sqrt{4\pi k_{0}h_{1}t^{3}}}\exp\left(-\frac{\left(z-
 \begin_layout Standard
 \begin_inset Formula 
 \[
-q\left(z,t\right)=\intop_{0}^{t}\frac{z}{\sqrt{4\pi k_{0}h_{1}\tau^{3}}}\exp\left(-\frac{\left(z-k_{1}\tau\right)^{2}}{2k_{0}h_{1}\tau}\right)d\tau
+q\left(z,t\right)=\intop_{0}^{t}\frac{z}{\sqrt{4\pi D\tau^{3}}}\exp\left(-\frac{\left(z-v\tau\right)^{2}}{2D\tau}\right)d\tau
 \]
 
 \end_inset
@@ -896,6 +913,79 @@ met
 \begin_inset Formula 
 \[
 \Phi=\frac{1}{\sqrt{2\pi}}\intop_{-\infty}^{z}e^{-u^{2}/2}du
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+De parameters k0,
+ k1,
+ h0 en h1
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula $q_{avg}=0.002$
+\end_inset
+
+ m/d.
+ Den dus ook 
+\begin_inset Formula $K_{avg}=0.002$
+\end_inset
+
+ m/d
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\frac{\theta-\theta_{r}}{\theta_{s}-\theta_{r}}=\left(\frac{\psi_{b}}{\psi}\right)^{\lambda}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\psi=\psi_{b}\left(\frac{\theta-\theta_{r}}{\theta_{s}-\theta_{r}}\right)^{-\frac{1}{\lambda}}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\frac{d\psi}{d\theta}=-\frac{\psi_{b}}{\lambda\left(\theta_{s}-\theta_{r}\right)}\left(\frac{\theta-\theta_{r}}{\theta_{s}-\theta_{r}}\right)^{-\frac{1}{\lambda}-1}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+q_{avg}=K_{avg}=K_{s}\left(\frac{\theta_{avg}-\theta_{r}}{\theta_{s}-\theta_{r}}\right)^{\epsilon}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\theta_{avg}=\theta_{r}+\left(\theta_{s}-\theta_{r}\right)\left(\frac{q_{avg}}{K_{S}}\right)^{1/\epsilon}
 \]
 
 \end_inset
@@ -1020,7 +1110,7 @@ Uitwerking voor de linker term leidt tot
 \begin_layout Standard
 \begin_inset Formula 
 \[
--1=k_{1}\frac{dM_{1}}{dz}+k_{0}h_{1}\frac{d^{2}M_{2}}{dz^{2}}
+-1=v\frac{dM_{1}}{dz}+D\frac{d^{2}M_{2}}{dz^{2}}
 \]
 
 \end_inset
@@ -1029,7 +1119,155 @@ Uitwerking voor de linker term leidt tot
 \end_layout
 
 \begin_layout Standard
+De momenten zijn als volgt (zie 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "Zw95"
+literal "false"
 
+\end_inset
+
+).
+ Ze worden daarin ook niet uitgelegd of afgeleid,
+ maar verstrekt.
+ Je moet de theorie erachter bestuderen om hier inzicht in te krijgen of het proefschrift van Kees Maas lezen / doorwerken.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+M_{1} & =-\frac{z}{v}\\
+M_{2}^{c} & =-2\frac{D}{v^{3}}z\\
+M_{3}^{c} & =-12\frac{D^{2}}{v^{5}}z
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+De vorm van de kansverdeling wordt beschreven door die van Pearson type III.
+ Deze blijkt bijna gelijk aan de exacte oplossing van de lineaire convectie-dispersievergelijking (Maas (1994)).Het is de verdeling voor de uitstroming na passage van 
+\begin_inset Formula $n$
+\end_inset
+
+ lineaire reservoirs waarvan de uitkomst voor passage van een enkel reservoir gelijk is aan
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+F\left(t\right)=ae^{-at}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+F\left(t\right)=\frac{a^{n}\left(t-b\right)^{n-1}}{\Gamma\left(n\right)}e^{-a\left(t-b\right)\,\,\,\mathtt{voor}\,\,\,t\ge b}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Parameter 
+\begin_inset Formula $b$
+\end_inset
+
+ geeft de verschuiving in de tijd:
+ bij een serie lineaire reservoirs beging de uitstroom al op 
+\begin_inset Formula $t=0$
+\end_inset
+
+ toe te nemen,
+ de parameter 
+\begin_inset Formula $b$
+\end_inset
+
+ zorgt ervoor dat dit pas op 
+\begin_inset Formula $t=b$
+\end_inset
+
+ begint.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+a & =2\frac{M_{2}^{c}}{M_{3}^{c}}=\frac{1}{3}\frac{v^{2}}{D}\\
+b & =M_{1}-2\frac{\left(M_{2}^{c}\right)^{2}}{M_{3}^{c}}=-\frac{1}{3}\frac{z}{v}\\
+n & =4\frac{\left(M_{2}^{c}\right)^{3}}{\left(M_{3}^{c}\right)^{2}}=\frac{2}{9}\frac{v}{D}z
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+De parameters 
+\begin_inset Formula $v=k_{1}$
+\end_inset
+
+ en 
+\begin_inset Formula $D=k_{0}h_{1}$
+\end_inset
+
+ moeten uit de bodemkarakteristieken bepaald worden voor de situatie van gemiddelde flux.
+\end_layout
+
+\begin_layout Standard
+Wanneer de bodemfysisch relaties niet bekend zijn,
+ moeten v en D geschat worden.
+ In de praktijk kan de reactietijd tussen neerslagpiek (verhoogde percolatie) en een stijging van de grondwaterstand (verhoogde grondwateraanvulling) bepaald worden.
+ De fluctuaties van de grondwaterstand geven een indicatie voor de demping (D).
+ Als in de gemodelleerde grondwaterstanden de fluctuaties te groot zijn,
+ moet de demping van de verzadigde zone verhoogd worden.
+\end_layout
+
+\begin_layout Standard
+We hebben dus alleen te maken met de parameters 
+\begin_inset Formula $v$
+\end_inset
+
+ en D,
+ voor de passagetijd en 
+\begin_inset Formula $D$
+\end_inset
+
+ voor de demping,
+ beide te ijken aan de hand van het verloop van de grondwaterstand.
+ Dit is iets dat geoptimaliseerd kan worden.
+\end_layout
+
+\begin_layout Standard
+Scherpe gradiënten in het vochtgehalte zullen niet voorkomen (p63).
+ Dit is pertinent niet waar.
+ Ook niet dat het vochtgehalte zo goed als constant is.uh
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+F & =\intop_{b}^{t+b}\frac{a^{n}\left(\tau-b\right)^{n-1}}{\Gamma\left(n\right)}\exp\left(-a(\tau-b\right)d\tau\\
+ & =\frac{\gamma\left(n,at\right)}{\Gamma\left(n\right)}=CDF\,of\,Gamma(t;n,a)
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+Veronderstellingen bij de transferfunctie
 \end_layout
 
 \begin_layout Bibliography
