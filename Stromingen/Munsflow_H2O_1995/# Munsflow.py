@@ -7,7 +7,7 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.stats import norm
-from scipy.special import gamma as Gamma
+from scipy.special import gamma as Gamma, erfc
 from scipy.stats import gamma
 import pandas as pd
 from itertools import cycle
@@ -74,16 +74,28 @@ def IR(z, t, q_avg=None):
     arg = np.clip((z -  v * t) ** 2 / (2 * D * t), 0, 50)
     return z / np.sqrt(4 * np.pi * D * t ** 3) * np.exp(-arg)
 
-def SR(z, t, q_avg):
+
+def SR_Phi(z, t, q_avg, clip=50):
     """Return step response of q with the linearized convection dispersion equation for flux.
     """    
     v, D = get_vD(q_avg)
-    arg1 = np.clip((z - v * t) / np.sqrt(2 * D * t), -50, 50)
-    arg2 = np.clip((z + v * t) / np.sqrt(2 * D * t), -50, 50)
+    arg1 = np.clip( (z - v * t) / np.sqrt(2 * D * t), -clip, clip)
+    arg2 = np.clip(-(z + v * t) / np.sqrt(2 * D * t), -clip, clip)
     phi1 = norm.cdf(arg1)
     phi2 = norm.cdf(arg2)
-    factor = np.exp((v * z / D))
-    return phi1 - factor * phi2
+    factor = np.exp(v * z / D)
+    return 1 - (phi1 - factor * phi2)
+
+def SR_erfc(z, t, q_avg, clip=50):
+    """Return step response of q with the linearized convection dispersion equation for flux.
+    Maas (1994) eq. 3.25
+    """    
+    v, D = get_vD(q_avg)
+    sqrt4Dt = np.sqrt(4.0 * D * t)
+    A = np.clip((z - v * t) / sqrt4Dt, -clip, clip)
+    B = np.clip((z + v * t) / sqrt4Dt, -clip, clip)
+    return 0.5 * (erfc(A)  + np.exp(v * z / D) * erfc(B))
+
 
 def soil_props(K_s=None, theta_r=None, theta_s=None, lambda_=3.7, psi_b=46.0):
     r"""Store and return the relavant unsaturated soil properties.
@@ -214,7 +226,24 @@ def SR_PIII(z, t, q_avg):
     F[t >= b] = gamma.cdf(t[t >= b] - b, a=n, scale=1/a)
     return F
     
+def BR(sr_func, z, t, q_avg):
+    """Return the block response using step response function sr_func.
     
+    Parameters
+    ----------
+    sr_func: function
+        step response function (must take z, t, q_avg)
+    z: float [m] or ndarray
+        depth
+    t: ndarray (starting with 0) [d]
+        time
+    q_avg: float [m/d]
+        average recharge
+    """
+    BR = np.hstack((0., sr_func(z, t[1:], q_avg)))
+    BR[1:] -= BR[:-1]
+    return BR
+
 # %%
     
 fig, ax = plt.subplots(figsize=(10, 6))
@@ -311,9 +340,7 @@ ax.grid(True)
 for z in [5, 10, 20, 30]:
 
     for soil_nm in ['sand']:
-        props = soil_props(**soils.loc[soil_nm])
-        resp = IR(z, t, q_avg)
-        ax.plot(t, resp, label=f'soil_nm, z={z:.3g} m')
+        props = soil_props(**soils.loc[soil_nm])        
         ax.plot(t, IR_PIII(z, t, q_avg), label=f'soil_nm, z={z:.3g} moments')
 ax.legend(loc='best')
 # plt.show()
@@ -334,8 +361,9 @@ ax.grid(True)
 for z in [5, 10, 20, 30]:
 
     for soil_nm in ['sand']:
-        props = soil_props(**soils.loc[soil_nm])                    
-        # ax.plot(t, SR(z, t, q_avg), label=f'soil_nm, z={z:.3g} m')
+        props = soil_props(**soils.loc[soil_nm])                            
+        ax.plot(t, SR_Phi(z, t, q_avg), 'x', label=f'soil_nm, z={z:.3g} m, IR_Phi')
+        ax.plot(t, SR_erfc(z, t, q_avg), '.', label=f'soil_nm, z={z:.3g} m, IR_erfc')              
         ax.plot(t, SR_PIII(z, t, q_avg), label=f'soil_nm, z={z:.3g} m, momenten')
         
 ax.legend(loc='best')
@@ -358,11 +386,10 @@ ax.grid(True)
 for z in [5, 10, 20, 30]:
 
     for soil_nm in ['sand']:
-        props = soil_props(**soils.loc[soil_nm])                    
-        SR = SR_PIII(z, t, q_avg)
-        BR = SR
-        BR[1:] -= BR[:-1]
-        ax.plot(t, BR, label=f'soil_nm, z={z:.3g} m, momenten')
+        props = soil_props(**soils.loc[soil_nm])
+        ax.plot(t, BR(SR_Phi, z, t, q_avg),  '-', label=f'soil_nm, z={z:.3g} m, BR_phi')
+        ax.plot(t, BR(SR_erfc, z, t, q_avg), '.', label=f'soil_nm, z={z:.3g} m, BR_erfc')                         
+        ax.plot(t, BR(SR_PIII, z, t, q_avg), '+', label=f'soil_nm, z={z:.3g} m, BR_mom')
         
 ax.legend(loc='best')
 plt.show()

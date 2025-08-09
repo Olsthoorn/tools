@@ -894,6 +894,10 @@ q\left(z,t\right)=\Phi\left(\frac{z-vt}{\sqrt{2Dt}}\right)-\exp\left(\frac{vz}{D
 
 \end_inset
 
+
+\end_layout
+
+\begin_layout Standard
 met 
 \begin_inset Formula $v=k_{1}$
 \end_inset
@@ -912,7 +916,56 @@ met
 \begin_layout Standard
 \begin_inset Formula 
 \[
-\Phi=\frac{1}{\sqrt{2\pi}}\intop_{-\infty}^{z}e^{-u^{2}/2}du
+\Phi=\frac{1}{\sqrt{2\pi}}\intop_{-\infty}^{z}e^{-u^{2}/2}du=\frac{1}{2}\mathtt{erfc}\left(-\frac{z}{\sqrt{2}}\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+q\left(z,t\right)=\frac{1}{2}\mathtt{erfc}\left(-\frac{z-vt}{2\sqrt{Dt}}\right)-\frac{1}{2}\exp\left(\frac{vz}{D}\right)\mathtt{erfc}\left(+\frac{z+vt}{2\sqrt{Dt}}\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Proefschrift Maas (eq 3.25,
+ p61)
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+q\left(z,t\right)=\frac{1}{2}\mathtt{erfc}\left(\frac{X-T}{2\sqrt{T}}\right)-\frac{1}{2}\exp\left(X\right)\mathtt{erfc}\left(\frac{X+T}{2\sqrt{T}}\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+x=\frac{xv}{D},\,\,T=\frac{v^{2}t}{D}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+q\left(z,t\right)=\frac{1}{2}\mathtt{erfc}\left(\frac{x-vt}{2\sqrt{Dt}}\right)-\frac{1}{2}\exp\left(\frac{xv}{D}\right)\mathtt{erfc}\left(\frac{x+vt}{2\sqrt{Dt}}\right)
 \]
 
 \end_inset
