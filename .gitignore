@@ -7,3 +7,5 @@
 **/*.pptx
 **/Interactive*
 **/*.*~
+# Ignore LyX autosaves
+*#*.lyx#
