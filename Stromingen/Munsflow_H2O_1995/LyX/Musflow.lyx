@@ -615,23 +615,36 @@ literal "false"
 \begin_inset Formula $K\left(\theta\right)=k_{0}$
 \end_inset
 
- in strijd is met de K-linearisatie waarvan werd uitgegaan.
+ in strijd is met de 
+\begin_inset Formula $K$
+\end_inset
+
+linearisatie waarvan werd uitgegaan.
  Voorts behoeft de aanname 
 \begin_inset Formula $\left(\frac{\partial\theta}{\partial z}\right)^{2}\approx0$
 \end_inset
 
- discussie omdat deze niet altijd vanzelf spreekt,
- met name niet waar in het profiel van de onverzadigde profiel scherpe fronten optreden.
+ discussie omdat deze niet altijd vanzelf spreekt.
+ Dit is met name het geval waar in het profiel van de percolatiezone scherpe fronten optreden.
  Dit laatste is gebeurt veelvuldig,
- omdat het water (in feite de vochtgolf) sneller daalt naarmate het vochtgehalte hoger is.
+ omdat zowel de flux 
+\begin_inset Formula $q$
+\end_inset
+
+ als het de vochtgolf 
+\begin_inset Formula $d\theta/dt$
+\end_inset
+
+ in de percolatiezone groter wordt naarmate het vochtgehalte hoger is.
  Hierdoor haalt en achterop komende golf van hoger vochtgehalte een voorop lopende golf met lager vochtgehalte in.
- Bij variërende toevoer boven in het profiel onstaan zo scherpe vochtfronten die elkaar inhalen en opslokken.
- Een in deze context belangrijke consequentie hiervan is dat de tijd waarin een vochtfront het freatisch vlak bereikt sterk afhangt van het dynamisch vochtgehalte langs het profiel.
- Verschillen in de doorlooptijd die hierdoor optreden tussen seizoenen en jaren ziet Munsflow dus niet,
- waardoor Munsflow afwijkt van het resultaat van een compleet onverzadigde zonemodel zoals SWAP en Onzat (
+ Bij variërende toevoer boven in het profiel ontstaan zo scherpe vochtfronten die elkaar inhalen en opslokken.
+ Een in deze context belangrijke consequentie is dat de tijd waarin een vochtfront en daarmee ook een flux het freatisch vlak bereikt,
+ sterk afhangt van het dynamisch en over de percolatiezone variërende vochtgehalte.
+ Verschillen in de doorlooptijd van de percolatiezone die hierdoor optreden tussen seizoenen en jaren ziet Munsflow dus niet.
+ Hierdoor wijkt Munsflow af van het resultaat van een compleet onverzadigde zonemodel zoals SWAP en Onzat (
 \begin_inset CommandInset citation
 LatexCommand cite
-key "Gehrels99"
+key "Zw95,Gehrels99"
 literal "false"
 
 \end_inset
@@ -640,6 +653,7 @@ literal "false"
 \end_layout
 
 \begin_layout Standard
+Tussen de door 
 \begin_inset CommandInset citation
 LatexCommand cite
 key "Zw95"
@@ -647,12 +661,7 @@ literal "false"
 
 \end_inset
 
- bespreekt verschillende methoden om de passage van vocht door de percolatiezone te modelleren.
- Maar er is een alternatieve methode die ontbreekt.
-\end_layout
-
-\begin_layout Standard
-Een alternatieve manier om vochtpassage door een dikke onverzadigde te modelleren is met 
+ besproken alternatieve methoden om de passage van vocht door de percolatiezone te modelleren ontbreekt de methode van 
 \begin_inset Quotes eld
 \end_inset
 
@@ -669,13 +678,20 @@ literal "false"
 \end_inset
 
 .
- Deze methode vewaarloost de tweede afgeleide van de gradiënt van de drukhoogte (de diffusie) maar houdt wel rekening met de sterk vochtafhankelijke doorlatendheid in de percolatiezone.
- Met de kinematic wave methode,
- wordt de niet-lineariteit van de doorlatendheid wel adequaat meegenomen en ontstaan er ook de snelheidsafhankelijkheid van 
-\begin_inset Formula $\theta$
+ De methode van kinematische golven verwaarloost de tweede afgeleide van de gradiënt van de drukhoogte (de diffusie) in de advectie-diffusievergelijking,
+ maar houdt,
+ i.t.t.
+ Munsflow,
+ wel rekening met de sterk vochtafhankelijke doorlatendheid in de percolatiezone.
+ De methode met kinematische golven,
+ verwaarloost weliswaar de de gradiënt in capillaire spanning in de percolatiezone,
+ maar neemt wel de sterke niet-lineaire 
+\begin_inset Formula $K-\theta$
 \end_inset
 
- ook vochtfronten en variatie in de passagetijd van de percolatiezone.
+ relatie mee.
+ Hierdoor ontstaan vochtfronten die elkaar in halen,
+ scherpe vochtfronten en variatie in de passagetijd.
 \end_layout
 
 \begin_layout Standard
@@ -687,7 +703,7 @@ De volgende stap in Munsflow is de vorige vergelijking uit te drukken in termen 
 \begin_inset Formula $\theta$
 \end_inset
 
-
+ als afhankelijke parameter.
 \end_layout
 
 \begin_layout Standard
@@ -710,11 +726,11 @@ Eerste stap differentieer de gelineariseerde vergelijking naar
 \end_layout
 
 \begin_layout Standard
-First get 
+Druk eerst 
 \begin_inset Formula $q$
 \end_inset
 
- in terms of 
+ uit in termen van 
 \begin_inset Formula $\theta$
 \end_inset
 
@@ -775,7 +791,7 @@ Vermenigvuldig beide zijden met
 \end_inset
 
  te krijgen.
- In volgende substappen zorg dat je rechts steeds een uitdrukking voor 
+ In volgende stappen zorg dat je rechts steeds de hiervoor afgeleide uitdrukking voor 
 \begin_inset Formula $q$
 \end_inset
 
@@ -833,7 +849,22 @@ Nu zoeken we een oplossing voor een puls op
 \end_layout
 
 \begin_layout Standard
-De analytische oplossing voor de lineaire convectie-dispersie vergelijking met puls als randvoorwaarde is bekend.
+De analytische oplossing voor de lineaire convectie-diffusievergelijking met een 
+\begin_inset Formula $q$
+\end_inset
+
+-puls als randvoorwaarde is bekend.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+q\left(z,t\right) & =\frac{z}{\sqrt{4\pi k_{0}h_{1}t^{3}}}\exp\left(-\frac{\left(z-k_{1}t\right)^{2}}{2k_{0}h_{1}t}\right)
+\end{align*}
+
+\end_inset
+
+
 \end_layout
 
 \begin_layout Standard
@@ -849,15 +880,32 @@ Merk op dat de rol van
 \begin_inset Formula $^{2}$
 \end_inset
 
-/T]
+/T] in de convectie-diffusievergelijking.
+ Om dichtbij reeds gepubliceerde analytische oplossingen te blijven gebruiken we vanaf nu 
+\begin_inset Formula $k_{1}$
+\end_inset
+
+ door 
+\begin_inset Formula $v$
+\end_inset
+
+ en 
+\begin_inset Formula $k_{0}h_{1}$
+\end_inset
+
+ door 
+\begin_inset Formula $D$
+\end_inset
+
+.
+ De impuls response door een unit-puls wordt zo
 \end_layout
 
 \begin_layout Standard
 \begin_inset Formula 
-\begin{align*}
-q\left(z,t\right) & =\frac{z}{\sqrt{4\pi k_{0}h_{1}t^{3}}}\exp\left(-\frac{\left(z-k_{1}t\right)^{2}}{2k_{0}h_{1}t}\right)\\
- & =\frac{z}{\sqrt{4\pi Dt^{3}}}\exp\left(-\frac{\left(z-vt\right)^{2}}{2Dt}\right)
-\end{align*}
+\[
+q_{IR}\left(z,t\right)=\frac{z}{\sqrt{4\pi Dt^{3}}}\exp\left(-\frac{\left(z-vt\right)^{2}}{2Dt}\right)
+\]
 
 \end_inset
 
@@ -865,9 +913,35 @@ q\left(z,t\right) & =\frac{z}{\sqrt{4\pi k_{0}h_{1}t^{3}}}\exp\left(-\frac{\left
 \end_layout
 
 \begin_layout Standard
+De stap-respons wordt verkregen door integratie van de impuls response vanaf 
+\begin_inset Formula $t=-\infty$
+\end_inset
+
+ tot 
+\begin_inset Formula $t=t$
+\end_inset
+
+.
+ Omdat 
+\begin_inset Formula $q=0$
+\end_inset
+
+ voor 
+\begin_inset Formula $t\le$
+\end_inset
+
+0,
+ kunnen we net zo goed vanaf 
+\begin_inset Formula $t=0$
+\end_inset
+
+ integreren
+\end_layout
+
+\begin_layout Standard
 \begin_inset Formula 
 \[
-q\left(z,t\right)=\intop_{0}^{t}\frac{z}{\sqrt{4\pi D\tau^{3}}}\exp\left(-\frac{\left(z-v\tau\right)^{2}}{2D\tau}\right)d\tau
+q_{SR}\left(z,t\right)=\intop_{0}^{t}\frac{z}{\sqrt{4\pi D\tau^{3}}}\exp\left(-\frac{\left(z-v\tau\right)^{2}}{2D\tau}\right)d\tau
 \]
 
 \end_inset
@@ -889,20 +963,15 @@ The analytische oplossing hiervan is (Ogata,
 \begin_layout Standard
 \begin_inset Formula 
 \[
-q\left(z,t\right)=\Phi\left(\frac{z-vt}{\sqrt{2Dt}}\right)-\exp\left(\frac{vz}{D}\right)\Phi\left(-\frac{z+vt}{\sqrt{2Dt}}\right)
+q_{SR}\left(z,t\right)=\Phi\left(\frac{z-vt}{\sqrt{2Dt}}\right)-\exp\left(\frac{vz}{D}\right)\Phi\left(-\frac{z+vt}{\sqrt{2Dt}}\right)
 \]
 
 \end_inset
 
-met 
-\begin_inset Formula $v=k_{1}$
-\end_inset
 
- en 
-\begin_inset Formula $D=k_{0}h_{1}$
-\end_inset
+\end_layout
 
- en 
+\begin_layout Standard
 \begin_inset Formula $\Phi$
 \end_inset
 
@@ -912,7 +981,7 @@ met
 \begin_layout Standard
 \begin_inset Formula 
 \[
-\Phi=\frac{1}{\sqrt{2\pi}}\intop_{-\infty}^{z}e^{-u^{2}/2}du
+\Phi=\frac{1}{\sqrt{2\pi}}\intop_{-\infty}^{z}e^{-u^{2}/2}du=\frac{1}{2}\mathtt{erfc}\left(-\frac{z}{\sqrt{2}}\right)
 \]
 
 \end_inset
@@ -920,18 +989,228 @@ met
 
 \end_layout
 
+\begin_layout Standard
+Invullen van 
+\begin_inset Formula $\Phi$
+\end_inset
+
+ levert de exacte oplossing van de stap respons.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+q\left(z,t\right)=\frac{1}{2}\mathtt{erfc}\left(-\frac{z-vt}{2\sqrt{Dt}}\right)-\frac{1}{2}\exp\left(\frac{vz}{D}\right)\mathtt{erfc}\left(+\frac{z+vt}{2\sqrt{Dt}}\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Proefschrift Maas (eq 3.25,
+ p61)
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+q\left(z,t\right)=\frac{1}{2}\mathtt{erfc}\left(\frac{X-T}{2\sqrt{T}}\right)-\frac{1}{2}\exp\left(X\right)\mathtt{erfc}\left(\frac{X+T}{2\sqrt{T}}\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+x=\frac{xv}{D},\,\,T=\frac{v^{2}t}{D}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+q\left(z,t\right)=\frac{1}{2}\mathtt{erfc}\left(\frac{x-vt}{2\sqrt{Dt}}\right)-\frac{1}{2}\exp\left(\frac{xv}{D}\right)\mathtt{erfc}\left(\frac{x+vt}{2\sqrt{Dt}}\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+De parameters 
+\begin_inset Formula $k_{0}$
+\end_inset
+
+,
+ 
+\begin_inset Formula $k_{1}$
+\end_inset
+
+,
+ 
+\begin_inset Formula $h_{0}$
+\end_inset
+
+ en 
+\begin_inset Formula $h_{1}$
+\end_inset
+
+ gebruik makend van de relaties van Brooks en Corey (1966)
+\end_layout
+
+\begin_layout Standard
+Brooks & Corey (1966) wordt hierna afgekort to BC.
+ De verzadiging volgens BC:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\frac{\theta-\theta_{r}}{\theta_{s}-\theta_{r}}=\left(\frac{\psi_{b}}{\psi}\right)^{\lambda}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Dit maakt duidelijk dat 
+\begin_inset Formula $\Psi_{b}=\Psi\left(\theta_{s}\right)$
+\end_inset
+
+.
+ 
+\begin_inset Formula $\lambda$
+\end_inset
+
+ is een vormfactor.
+ Hieruit volgt dat volgens BC
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\psi=\psi_{b}\left(\frac{\theta-\theta_{r}}{\theta_{s}-\theta_{r}}\right)^{-\frac{1}{\lambda}}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+En 
+\begin_inset Formula $d\psi/d\theta$
+\end_inset
+
+ volgens BC gelijk is aan
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\frac{d\psi}{d\theta}=-\frac{\psi_{b}}{\lambda\left(\theta_{s}-\theta_{r}\right)}\left(\frac{\theta-\theta_{r}}{\theta_{s}-\theta_{r}}\right)^{-\frac{1}{\lambda}-1}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Bij percolatie geldt 
+\begin_inset Formula $q=K\left(\theta\right)$
+\end_inset
+
+ zodat voor de gemiddelde omstandigheden geldt dat
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+q_{avg}=K_{avg}=K_{s}\left(\frac{\theta_{avg}-\theta_{r}}{\theta_{s}-\theta_{r}}\right)^{\epsilon}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Of omgekeerd,
+ gegeven 
+\begin_inset Formula $q_{avg}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\theta_{avg}=\theta_{r}+\left(\theta_{s}-\theta_{r}\right)\left(\frac{q_{avg}}{K_{S}}\right)^{1/\epsilon}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+De vraag is natuurlijk welke waarde 
+\begin_inset Formula $q_{avg}$
+\end_inset
+
+ zou moeten hebben.
+ Het vochtgehalte moet boven dat bij veldcapaciteit zijn,
+ want bij veldcapaciteit is de flux gelijk aan nul en dus niet de gemiddelde.
+ Een waarde rond 
+\begin_inset Formula $q_{avg}=0.001$
+\end_inset
+
+ m/d zou voor Nederlandse omstandigheden redelijk zijn als jaargemiddelde.
+ Echter,
+ omdat de voeding van het grondwater vooral in de winter plaats vindt zou 
+\begin_inset Formula $q_{avg}=0.002$
+\end_inset
+
+ m/d waarschijnlijk een betere keuze zijn,
+ en dus zou ook 
+\begin_inset Formula $K_{avg}=q_{avg}\approx0.002$
+\end_inset
+
+ m/d.
+ Maar hoe dan ook,
+ wanneer de voeding varieert in de tijd,
+ dan varieert ook het vochtgehalte.
+ Dit vochtgehalte zal in elk geval in de winter hoger zijn dan in de zomer wanneer de voeding van het grondwater via dikke onverzadigde zones zo goed als stil valt.
+\end_layout
+
 \begin_layout Section
-Met de momentenmethode
+Bepaling van de stap-respons met de momentenmethode
 \end_layout
 
 \begin_layout Standard
-De momentenmethode schat de impuls response aan de hand van een aantal momenten,
+De momentenmethode schat de impuls-respons aan de hand van een aantal momenten,
  meestal twee of drie.
- Drie wanneer de verdeling (of de respons) scheef is.
+ Drie wanneer de verdeling (of de respons) scheef is,
+ zoals hier het geval.
 \end_layout
 
 \begin_layout Standard
-De bodem kan worden beschouwd als een reeks opeenvolgende systemen met elk een transfer functie die kunnen worden 
+De bodem kan volgens Maas (1994)@@@worden beschouwd als een reeks op elkaar volgende systemen met elk een overdrachtsfunctie.
+ De momenten van elk deelsysteem mogen dan worden 
 \begin_inset Quotes pld
 \end_inset
 
@@ -939,8 +1218,8 @@ opgeteld
 \begin_inset Quotes prd
 \end_inset
 
- middels convolutie.
- Wanneer het aantal kansverdelingen van opeenvolgende systemen wordt 
+ middels mathematische convolutie.
+ Wanneer het aantal kansverdelingen van opeenvolgende systemen zo wordt 
 \begin_inset Quotes pld
 \end_inset
 
@@ -949,8 +1228,10 @@ opgeteld
 \end_inset
 
 ,
- dan zal de resulterende kansverdeling de normale verdeling ontwikkelen naarmate het aantal systemen toeneemt.
- Zolang de normale verdeling nog niet ontwikkeld is speelt ook het derde moment de 
+ dan zal de resulterende kansverdeling zich tot de normale verdeling ontwikkelen,
+ naarmate het aantal systemen toeneemt.
+ Zolang de normale verdeling nog niet volledig ontwikkeld is,
+ speelt ook het derde moment de 
 \begin_inset Quotes pld
 \end_inset
 
@@ -966,8 +1247,11 @@ skewness
 \begin_inset Quotes prd
 \end_inset
 
- een rol.
- We zoeken daarom een kansverdeling die beschreven wordt door zijn gemiddelde 
+ een rol,
+ en wellicht ook nog hogere momenten,
+ die we hier verwaarlozen.
+ We zoeken daarom een kansverdeling die beschreven wordt de volgende momenten:
+ zijn gemiddelde 
 \begin_inset Formula $M_{1}$
 \end_inset
 
@@ -984,7 +1268,7 @@ skewness
 \end_layout
 
 \begin_layout Standard
-Uit de convectie-dispersie vergelijking worden drie momenten van 
+Uit de convectie-diffusievergelijking worden drie momenten van 
 \begin_inset Formula $q\left(z,t\right)$
 \end_inset
 
@@ -997,7 +1281,7 @@ Uit de convectie-dispersie vergelijking worden drie momenten van
 \end_layout
 
 \begin_layout Standard
-De lineaire convectie-dispersievergelijking wordt met 
+De lineaire convectie-diffusievergelijking wordt met 
 \begin_inset Formula $t$
 \end_inset
 
@@ -1181,8 +1465,228 @@ Scherpe gradiënten in het vochtgehalte zullen niet voorkomen (p63).
  Ook niet dat het vochtgehalte zo goed als constant is.uh
 \end_layout
 
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+F & =\intop_{b}^{t+b}\frac{a^{n}\left(\tau-b\right)^{n-1}}{\Gamma\left(n\right)}\exp\left(-a(\tau-b\right)d\tau\\
+ & =\frac{\gamma\left(n,at\right)}{\Gamma\left(n\right)}=CDF\,of\,Gamma(t;n,a)
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
 \begin_layout Section
 Veronderstellingen bij de transferfunctie
+\end_layout
+
+\begin_layout Section
+Van Genughten relaties
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\theta=\theta_{r}+\frac{\theta_{s}-\theta_{r}}{\left(1+\left(\alpha\psi\right)^{n}\right)^{m}}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+of
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+S\left(\psi\right)=\left(1+\left(\alpha\psi\right)^{n}\right)^{-m}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+S\left(\theta\right)=\frac{\theta-\theta_{r}}{\theta_{s}-\theta_{r}}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\theta\left(\psi\right)=\theta_{r}+\left(\theta_{s}-\theta_{r}\right)S\left(\psi\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\psi\left(\theta\right)=\frac{1}{\alpha}\left[S\left(\theta\right)^{-1/m}-1\right]^{1/n}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+K\left(\psi\right)=K_{s}\left(S\left(\psi\right)\right)^{l}\left[1-\left(1-S\left(\psi\right)^{1/m}\right)^{m}\right]^{2}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+K\left(\theta\right)=K_{s}\left(S\left(\theta\right)\right)^{l}\left[1-\left(1-S\left(\theta\right)^{1/m}\right)^{m}\right]^{2}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+K\left(\theta\right)=K_{s}\left(S\left(\theta\right)\right)^{l}\left(B\left(S\right)\right)^{2}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+\frac{dK\left(\theta\right)}{d\theta} & =\frac{K_{s}}{\theta_{s}-\theta_{r}}\left(S\left(\theta\right)\right)^{l}\left[lS^{l-1}B^{2}+S^{l}\cdot2B\cdot B'\right]\\
+B'\left(S\right) & =\frac{dB}{dS}=\left(1-S^{1/m}\right)^{m-1}S^{1/m-1}
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+In a compact set of equations
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+S\left(\theta\right)=\frac{\theta-\theta_{r}}{\theta_{s}-\theta_{r}}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+m=1-\frac{1}{n}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+B\left(S\right)=1-\left(1-S^{1/m}\right)^{m}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\frac{dB}{dS}=\left(1-S^{1/m}\right)^{m-1}S^{1/m-1}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+K\left(\theta\right)=K_{s}S\left(\theta\right)^{l}B\left(S\right)^{2}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Zonder verdere informatie neem 
+\begin_inset Formula $l=\frac{1}{2}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\frac{dK\left(\theta\right)}{d\theta}=\frac{K_{s}}{\theta_{s}-\theta_{r}}\left[lS^{l-1}B^{2}S^{l}\cdot2B\cdot\frac{dB}{dS}\right]
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\psi\left(\theta\right)=\frac{1}{\alpha}\left(S^{-1/m}-1\right)^{1/n}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\frac{d\psi}{d\theta}=-\frac{1}{\alpha mn}\frac{1}{\theta_{s}-\theta_{r}}S^{-1/m-1}\left(S^{-1/m}-1\right)^{1/n-1}
+\]
+
+\end_inset
+
+
 \end_layout
 
 \begin_layout Bibliography

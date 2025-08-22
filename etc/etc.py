@@ -10,12 +10,59 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import itertools
+from pathlib import Path
 
 #%%
 
-__all__ = ['dayofweek', 'week', 'mlDatenum2npDatetime', 'npDatetime2mlDatenum', 'dn2dt', 'dt2dn',
+__all__ = ['Dirs', 'dayofweek', 'week', 'mlDatenum2npDatetime', 'npDatetime2mlDatenum', 'dn2dt', 'dt2dn',
            'attr', 'linestyles_', 'colors_', 'color_cycler', 'linestyle_cycler', 'line_cycler',
            'newfig', 'newfigs', 'newfigs2', 'get_outliers']
+
+class Dirs:
+    def __init__(self, home):
+        """Return a standard project directory tree with home as root, without overwriting).
+
+        @ TO 2025-08-20 with ChatGPT
+
+        Usage
+        -----
+        dirs = Dirs('~projects/my_project')
+        dirs.create_standard_files()
+        print(dirs.data)
+        print(dirs.images)
+        """
+        self.home = Path(home).expanduser().resolve()
+
+        # Standard project layout
+        self.src = self.home / 'src'
+        self.data = self.home / 'data'
+        self.images = self.home / 'images'
+        self.docs = self.home / 'docs'
+        self.LyX  = self.home / 'LyX'
+        self.notebooks = self.home / 'notebooks'
+        self.tests = self.home / 'tests'
+
+        # Make directories (silently skip if they exist)
+        for d in [self.src, self.data, self.images, self.docs, self.notebooks, self.tests]:
+            d.mkdir(parents=True, exist_ok=True)
+            
+        self.create_standard_files()
+            
+    def create_standard_files(self):
+        """Create common project files if they do not exist."""
+        files = ['.gitignore', 'requirements.txt', 'pyproject.toml', 'README.md']
+        for f in files:
+            file_path = self.home / f  # self.home is a Path object, so '/' works
+            if not file_path.exists():
+                file_path.touch()  # creates an empty file
+
+    def add_dir(self, name):
+        """Create a new subdirectory under the project home and return its Path."""
+        new_dir = self.home / name
+        new_dir.mkdir(parents=True, exist_ok=True)
+        return new_dir
+
+
 
 def dayofweek(d):
     """Return dayofweek (0..7)."""
