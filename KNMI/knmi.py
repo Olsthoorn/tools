@@ -157,6 +157,7 @@ def parseKNMI(knmifname, fields=['RH', 'EV24'], datecol='YYYYMMDD', tompd=None, 
     # See if you want to convert the columns to m/d
     if fields is not None and tompd:
         for fld in fields:
+            data[fld] = data[fld].astype(float) # Convert to float
             b = data.loc[:, fld]  < 0
             data.loc[b, fld] = 0.25
             data[fld] /= 10000.0 # original is in 0.1 mm units

@@ -3,3 +3,7 @@
 **/__pycache__/
 **/*.zip
 **/*.db
+**/*.mp4
+**/*.pptx
+**/Interactive*
+**/*.*~

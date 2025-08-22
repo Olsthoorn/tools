@@ -1,0 +1,1794 @@
+#LyX 2.4 created this file. For more info see https://www.lyx.org/
+\lyxformat 620
+\begin_document
+\begin_header
+\save_transient_properties true
+\origin unavailable
+\textclass article
+\begin_preamble
+% Options for packages loaded elsewhere
+
+
+%
+\usepackage{iftex}
+\ifPDFTeX
+  \usepackage{textcomp}% provide euro and other symbols
+\else % if luatex or xetex
+  \usepackage{unicode-math}
+\defaultfontfeatures{Scale=MatchLowercase}
+  \defaultfontfeatures[\rmfamily]{Ligatures=TeX,Scale=1}
+\fi
+% Use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+\IfFileExists{microtype.sty}{% use microtype if available
+  \usepackage[]{microtype}
+  \UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+
+\@ifundefined{KOMAClassName}{% if non-KOMA class
+  \IfFileExists{parskip.sty}{%
+    \usepackage{parskip}
+  }{% else
+    \setlength{\parindent}{0pt}
+    \setlength{\parskip}{6pt plus 2pt minus 1pt}}
+}{% if KOMA class
+  \KOMAoptions{parskip=half}}
+
+\usepackage{xcolor}
+\IfFileExists{xurl.sty}{\usepackage{xurl}}{} % add URL line breaks if available
+\IfFileExists{bookmark.sty}{\usepackage{bookmark}}{\usepackage{hyperref}}
+
+\urlstyle{same} % disable monospaced font for URLs
+\setlength{\emergencystretch}{3em} % prevent overfull lines
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+ % remove section numbering
+\ifLuaTeX
+  \usepackage{selnolig}% disable illegal ligatures
+\fi
+
+\author{}
+\end_preamble
+\use_default_options false
+\maintain_unincluded_children no
+\language dutch
+\language_package none
+\inputencoding utf8
+\fontencoding T1
+\font_roman "lmodern" "default"
+\font_sans "default" "default"
+\font_typewriter "lmodern" "default"
+\font_math "auto" "auto"
+\font_default_family default
+\use_non_tex_fonts false
+\font_sc false
+\font_roman_osf false
+\font_sans_osf false
+\font_typewriter_osf false
+\font_sf_scale 100 100
+\font_tt_scale 100 100
+\use_microtype false
+\use_dash_ligatures true
+\graphics default
+\default_output_format default
+\output_sync 0
+\bibtex_command default
+\index_command default
+\float_placement class
+\float_alignment class
+\paperfontsize default
+\spacing single
+\use_hyperref true
+\pdf_bookmarks false
+\pdf_bookmarksnumbered false
+\pdf_bookmarksopen false
+\pdf_bookmarksopenlevel 1
+\pdf_breaklinks false
+\pdf_pdfborder false
+\pdf_colorlinks false
+\pdf_backref section
+\pdf_pdfusetitle false
+\pdf_quoted_options "hidelinks,pdfcreator={LaTeX via pandoc}"
+\papersize default
+\use_geometry false
+\use_package amsmath 2
+\use_package amssymb 2
+\use_package cancel 0
+\use_package esint 1
+\use_package mathdots 0
+\use_package mathtools 0
+\use_package mhchem 0
+\use_package stackrel 0
+\use_package stmaryrd 0
+\use_package undertilde 0
+\cite_engine basic
+\cite_engine_type default
+\biblio_style plain
+\use_bibtopic false
+\use_indices false
+\paperorientation portrait
+\suppress_date true
+\justification true
+\use_refstyle 0
+\use_formatted_ref 0
+\use_minted 0
+\use_lineno 0
+\index Index
+\shortcut idx
+\color #008000
+\end_index
+\secnumdepth -1
+\tocdepth 3
+\paragraph_separation indent
+\paragraph_indentation default
+\is_math_indent 0
+\math_numbering_side default
+\quotes_style polish
+\dynamic_quotes 0
+\papercolumns 1
+\papersides 1
+\paperpagestyle default
+\tablestyle default
+\tracking_changes false
+\output_changes false
+\change_bars false
+\postpone_fragile_content true
+\html_math_output 0
+\html_css_as_file 0
+\html_be_strict false
+\docbook_table_output 0
+\docbook_mathml_prefix 1
+\end_header
+
+\begin_body
+
+\begin_layout Title
+Munsflow
+\end_layout
+
+\begin_layout Abstract
+Munsflow is een model voor verticaal vochttransport door een dikke onverzadigde zone,
+ bedacht door Kees Maas begin negentiger jaren en uitgewerkt in het afstudeerwerk van Marette Zwambron 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "Zw95,Ze95H2O"
+literal "false"
+
+\end_inset
+
+.
+ Het hart van Munsflow berekent de passage van neerslagoverschot door de onverzadigde zone beneden de wortelzone.
+ Het modelconcept gebuikt voor projecten van KIWA en door Gehrels (1998) bij modellering van de onverzazigde zone in zijn model van de Veluwe.
+ De aandacht gaat hier uit naar de onverzadigde zone tussen de wortelzone en het freatisch vlak,
+ die we met percolatiezone zullen noemen.
+\end_layout
+
+\begin_layout Abstract
+Munsflow lineariseert de Richards-vergelijking voor de onverzadigde zone.
+ Dit maakt het mogelijk de onverzadigde zone als een transferfunctie te modelleren.
+ Dit werkt handig en de berekeningen zijn vooral heel snel omdat de onverzadigde hiermee een hele tijdeeks met neerslagoverschot in een slag middels convolutie kan worden gesimuleerd.
+ Het probleem met de linearisatie van de Richardsvergelijking is echter,
+ dat de lineaire transfer-functie tot een gedrag van vertikaal vochttransport leidt dat substantieel afwijkt van modellering met de niet-lineaire Richards-vergelijking en hierdoor vaak ook van de realiteit.
+\end_layout
+
+\begin_layout Abstract
+Hieronder wordt de basisvergelijking van Munsflow afgeleid,
+ maar worden benaderingsstappen expliciet gemaakt.
+\end_layout
+
+\begin_layout Section
+Linearisatie van de Richards-vergelijking voor verticale stroming door de percolatiezone
+\end_layout
+
+\begin_layout Standard
+De Richards vergelijking die verticaal transport beschrijft door de percolatiezone (zonder bronterm) is als volgt,
+ waarbij de verticale coördinaat 
+\begin_inset Formula $z$
+\end_inset
+
+ [L] positief omlaag is genomen:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\frac{\partial\theta}{\partial t}=\frac{\partial}{\partial z}\left[K(h)\left(\frac{\partial h}{\partial z}-1\right)\right]
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Waarin 
+\begin_inset Formula $\theta$
+\end_inset
+
+ [-] het volumetrisch vochtgehalte,
+ 
+\begin_inset Formula $h$
+\end_inset
+
+ de drukhoogte of matrix-potentiaal [L],
+ 
+\begin_inset Formula $t$
+\end_inset
+
+ tijd [L],
+ en 
+\begin_inset Formula $K(h)$
+\end_inset
+
+ [L/T] de onverzadigde doorlatendheid.
+\end_layout
+
+\begin_layout Standard
+Dit is de gemengde form van de Richards-vergelijking omdat zowel de 
+\begin_inset Formula $\theta$
+\end_inset
+
+ als de 
+\begin_inset Formula $z$
+\end_inset
+
+ er als onafhankelijke variabelen in voorkomen.
+ De Richards-vergelijking kan worden uitgedrukt in alleen 
+\begin_inset Formula $\psi$
+\end_inset
+
+ door te schrijven
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\frac{\partial\theta}{\partial t}=\frac{d\theta}{dh}\frac{\partial h}{\partial t}=C(h)\frac{\partial h}{\partial t}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+C\left(h\right)\frac{\partial h}{\partial t}=\frac{\partial}{\partial z}\left[K(h)\left(\frac{\partial h}{\partial z}-1\right)\right]
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula $C\left(h\right)$
+\end_inset
+
+ [L
+\begin_inset Formula $^{-1}$
+\end_inset
+
+] gedraagt zich hier als de specifieke bergingscoëfficiënt.
+\end_layout
+
+\begin_layout Standard
+En andere vorm is de flux-vorm.
+ Omdat de term 
+\begin_inset Formula $q=-K(\psi)\left(\frac{\partial\psi}{\partial z}-1\right)$
+\end_inset
+
+ de flux representeert,
+ neerwaarts positief,
+ hebben we nu ook simpelweg de vergelijking voor continuïteit,
+ waarop de Richards-vergelijking steunt:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\frac{\partial\theta}{\partial t}=-\frac{\partial q}{\partial z}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+waarin 
+\begin_inset Formula $q$
+\end_inset
+
+ [L/T] de verticale neerwaartse flux.
+\end_layout
+
+\begin_layout Standard
+De Richards-vergelijking is sterk niet-lineair omdat de doorlatendheid zeer sterk afhangt van de drukhoogte 
+\begin_inset Formula $h$
+\end_inset
+
+ dan wel het vochtgehalte 
+\begin_inset Formula $\theta$
+\end_inset
+
+.
+ Analytische oplossingen zijn hierdoor meestal niet mogelijk,
+ terwijl ook het numerieke modelleren een hele uitdaging kan zijn,
+ door de vereiste fijne laagindeling en kleine tijdstappen.
+ Hierdoor is het numeriek modelleren van de percolatiezone middels de niet-lineaire Richards-vergelijking onhaalbaar in een regionaal grondmodel.
+\end_layout
+
+\begin_layout Standard
+Linearisatie van de Richards vergelijking is een cruciale stap om de vergelijking te kunnen oplossen of in een simpel en sneller model te kunnen implementeren.
+ Linearisatie verloopt meestal door de niet-lineaire hydraulische eigenschappen als constant te beschouwen 
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+C\frac{\partial h}{\partial t}=K\frac{\partial^{2}h}{\partial z^{2}}+\frac{\partial K}{\partial z},\,\,\,\mathtt{met\,dan\,dus}\,\,\,\frac{\partial K}{\partial z}=0
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+De vergelijking is daarmee gelijk geworden aan de standaard diffusie-advectie-vergelijking voor verzadigde stroming.
+ De toepasbaarheid daarvan voor simulatie van vochttransport door de percolatiezone is begrensd tot een zodanig nauwe range van omstandigheden,
+ dat deze linearisatie voor de praktijk nauwelijks waarde heeft.
+\end_layout
+
+\begin_layout Section
+Linearisatie van 
+\begin_inset Formula $K$
+\end_inset
+
+ and 
+\begin_inset Formula $h$
+\end_inset
+
+,
+ volgens Munsflow
+\end_layout
+
+\begin_layout Standard
+Hysteresis ter zijde geschoven zijn de hydraulische doorlatendheid (
+\begin_inset Formula $K$
+\end_inset
+
+) en de drukhoogte (
+\begin_inset Formula $h$
+\end_inset
+
+) in de percolatiezone beide een functie van het vochtgehalte 
+\begin_inset Formula $\theta$
+\end_inset
+
+.
+ 
+\begin_inset Formula $K\left(\theta\right)$
+\end_inset
+
+ en 
+\begin_inset Formula $h\left(\theta\right)$
+\end_inset
+
+ kunnen daarin worden gelineariseerd met betrekking tot het vochtgehalte (
+\begin_inset Formula $\theta$
+\end_inset
+
+).
+ Modellering van de Richards-vergelijking met 
+\begin_inset Formula $\theta$
+\end_inset
+
+ als afhankelijke parameter is doorgaans robuuster dan met 
+\begin_inset Formula $h$
+\end_inset
+
+ als afhankelijke parameter.
+\end_layout
+
+\begin_layout Standard
+Linearisatie van 
+\begin_inset Formula $K\left(\theta\right)$
+\end_inset
+
+ en 
+\begin_inset Formula $h\left(\theta\right)$
+\end_inset
+
+ voor vochtgehaltes rond het gemiddelde 
+\begin_inset Formula $\theta_{avb}$
+\end_inset
+
+ met twee termen van de Taylor-reeksontwikkeling is als volgt
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+K(\theta) & =k_{0}+k_{1}(\theta-\theta_{avg})+\frac{1}{2}k_{2}\left(\theta-\theta_{avg}\right)+O\left(\theta-\theta_{avg}\right)^{3}\\
+\psi(\theta) & =h_{0}+h_{1}(\theta-\theta_{avg})+\frac{1}{2}h_{2}\left(\theta-\theta_{avg}\right)+O\left(\theta-\theta_{avg}\right)^{3}
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+waarin 
+\begin_inset Formula $k_{0}$
+\end_inset
+
+,
+ 
+\begin_inset Formula $k_{1}$
+\end_inset
+
+,
+ 
+\begin_inset Formula $k_{2}$
+\end_inset
+
+,
+ 
+\begin_inset Formula $h_{0}$
+\end_inset
+
+,
+ 
+\begin_inset Formula $h_{1}$
+\end_inset
+
+ en 
+\begin_inset Formula $h_{2}$
+\end_inset
+
+ constanten zijn.
+\end_layout
+
+\begin_layout Standard
+De Richards-vergelijking met 
+\begin_inset Formula $K=K\left(\theta\right)$
+\end_inset
+
+ is
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\frac{\partial\theta}{\partial t}=\frac{\partial}{\partial z}\left[K\left(\theta\right)\left(\frac{\partial h}{\partial z}-1\right)\right]
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Uitwerken van het rechter lid geeft
+\begin_inset Formula 
+\[
+\frac{\partial\theta}{\partial t}=\frac{\partial}{\partial z}\left(K\left(\theta\right)\frac{\partial h}{\partial z}\right)-\frac{\partial K\left(\theta\right)}{\partial z}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Differentiëren van de eerste term naar 
+\begin_inset Formula $z$
+\end_inset
+
+ levert met 
+\begin_inset Formula $\frac{\partial h}{\partial z}=\frac{dh}{d\theta}\frac{\partial\theta}{\partial z}$
+\end_inset
+
+ met rechte 
+\begin_inset Formula $d$
+\end_inset
+
+ voor 
+\begin_inset Formula $dh/d\theta$
+\end_inset
+
+ door de rechtstreeks en afhankelijkheid van de drukhoogte van het vochtgehalte geeft
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+\frac{\partial}{\partial z}\left(K\left(\theta\right)\cdot\frac{\partial h}{\partial\theta}\cdot\frac{\partial\theta}{\partial z}\right) & =\frac{dK\left(\theta\right)}{d\theta}\cdot\frac{\partial h}{\partial\theta}\cdot\left(\frac{\partial\theta}{\partial z}\right)^{2}+K\left(\theta\right)\cdot\frac{\partial^{2}h}{\partial\theta^{2}}\cdot\left(\frac{\partial\theta}{\partial z}\right)^{2}+K\left(\theta\right)\cdot\frac{\partial h}{\partial\theta}\cdot\frac{\partial^{2}\theta}{\partial z^{2}}\\
+ & =\left(\frac{dK\left(\theta\right)}{d\theta}\cdot\frac{dh}{d\theta}+K\left(\theta\right)\cdot\frac{d^{2}h}{d\theta^{2}}\right)\left(\frac{\partial\theta}{\partial z}\right)^{2}+K\left(\theta\right)\cdot\frac{\partial h}{\partial\theta}\cdot\frac{\partial^{2}\theta}{\partial z^{2}}
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Zodat de complete Richards-vergelijking in 
+\begin_inset Formula $\theta$
+\end_inset
+
+-vorm er als volgt uitziet
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+\frac{\partial\theta}{\partial t} & =\frac{\partial}{\partial z}\left[K\left(\theta\right)\left(\frac{\partial h}{\partial z}-1\right)\right]\\
+ & =\frac{\partial}{\partial z}\left(K\left(\theta\right)\frac{\partial h}{\partial z}\right)-\frac{\partial K\left(\theta\right)}{\partial z}\\
+ & =\left(\frac{dK\left(\theta\right)}{d\theta}\cdot\frac{dh}{d\theta}+K\left(\theta\right)\cdot\frac{d^{2}h}{d\theta^{2}}\right)\left(\frac{\partial\theta}{\partial z}\right)^{2}+K\left(\theta\right)\cdot\frac{dh}{d\theta}\cdot\frac{\partial^{2}\theta}{\partial z^{2}}-\frac{\partial K\left(\theta\right)}{\partial z}\\
+\frac{\partial\theta}{\partial t} & =K\left(\theta\right)\cdot\frac{dh}{d\theta}\cdot\frac{\partial^{2}\theta}{\partial z^{2}}+\left(\frac{dK\left(\theta\right)}{d\theta}\cdot\frac{dh}{d\theta}+K\left(\theta\right)\cdot\frac{d^{2}h}{d\theta^{2}}\right)\left(\frac{\partial\theta}{\partial z}\right)^{2}-\frac{dK\left(\theta\right)}{d\theta}\frac{\partial\theta}{\partial z}
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Met de volgende linearisaties
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\frac{dK\left(\theta\right)}{d\theta}=k_{1},\,\frac{dh}{d\theta}=h_{1},\,\frac{d^{2}h}{d\theta^{2}}=h_{2}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Levert dit volgende vorm van de Richards-vergelijking op
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+\frac{\partial\theta}{\partial t} & =-\frac{dK\left(\theta\right)}{d\theta}\frac{\partial\theta}{\partial z}+K\left(\theta\right)\cdot\frac{dh}{d\theta}\cdot\frac{\partial^{2}\theta}{\partial z^{2}}+\left(\frac{dK\left(\theta\right)}{d\theta}\cdot\frac{dh}{d\theta}+K\left(\theta\right)\cdot\frac{d^{2}h}{d\theta^{2}}\right)\left(\frac{\partial\theta}{\partial z}\right)^{2}\\
+\frac{\partial\theta}{\partial t} & \approx-k_{1}\frac{\partial\theta}{\partial z}+K\left(\theta\right)h_{1}\frac{\partial^{2}\theta}{\partial z^{2}}+\left(k_{1}h_{1}+K\left(\theta\right)h_{2}\right)\left(\frac{\partial\theta}{\partial z}\right)^{2}
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Om deze vergelijking geheel te lineariseren moeten we de volgende extra aannamen doen
+\begin_inset Formula 
+\begin{align*}
+K\left(\theta\right) & \approx k_{0}\\
+\left(\frac{\partial\theta}{\partial z}\right)^{2} & \approx0
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Dit levert dan uiteindelijk
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+\frac{\partial\theta}{\partial t} & \approx-k_{1}\frac{\partial\theta}{\partial z}+k_{0}h_{1}\frac{\partial^{2}\theta}{\partial z^{2}}
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Dit is vergelijking 7.7 in Zwambron (1995).
+\end_layout
+
+\begin_layout Standard
+Deze (voor Munsflow) noodzakelijke stappen worden niet expliciet benoemd in 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "Zw95"
+literal "false"
+
+\end_inset
+
+.
+ Enige discussie zou daar welkom zijn geweest omdat de aanname 
+\begin_inset Formula $K\left(\theta\right)=k_{0}$
+\end_inset
+
+ in strijd is met de 
+\begin_inset Formula $K$
+\end_inset
+
+linearisatie waarvan werd uitgegaan.
+ Voorts behoeft de aanname 
+\begin_inset Formula $\left(\frac{\partial\theta}{\partial z}\right)^{2}\approx0$
+\end_inset
+
+ discussie omdat deze niet altijd vanzelf spreekt.
+ Dit is met name het geval waar in het profiel van de percolatiezone scherpe fronten optreden.
+ Dit laatste is gebeurt veelvuldig,
+ omdat zowel de flux 
+\begin_inset Formula $q$
+\end_inset
+
+ als het de vochtgolf 
+\begin_inset Formula $d\theta/dt$
+\end_inset
+
+ in de percolatiezone groter wordt naarmate het vochtgehalte hoger is.
+ Hierdoor haalt en achterop komende golf van hoger vochtgehalte een voorop lopende golf met lager vochtgehalte in.
+ Bij variërende toevoer boven in het profiel ontstaan zo scherpe vochtfronten die elkaar inhalen en opslokken.
+ Een in deze context belangrijke consequentie is dat de tijd waarin een vochtfront en daarmee ook een flux het freatisch vlak bereikt,
+ sterk afhangt van het dynamisch en over de percolatiezone variërende vochtgehalte.
+ Verschillen in de doorlooptijd van de percolatiezone die hierdoor optreden tussen seizoenen en jaren ziet Munsflow dus niet.
+ Hierdoor wijkt Munsflow af van het resultaat van een compleet onverzadigde zonemodel zoals SWAP en Onzat (
+\begin_inset CommandInset citation
+LatexCommand cite
+key "Zw95,Gehrels99"
+literal "false"
+
+\end_inset
+
+).
+\end_layout
+
+\begin_layout Standard
+Tussen de door 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "Zw95"
+literal "false"
+
+\end_inset
+
+ besproken alternatieve methoden om de passage van vocht door de percolatiezone te modelleren ontbreekt de methode van 
+\begin_inset Quotes eld
+\end_inset
+
+kinematic waves
+\begin_inset Quotes erd
+\end_inset
+
+ 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "Char00,UZF1"
+literal "false"
+
+\end_inset
+
+.
+ De methode van kinematische golven verwaarloost de tweede afgeleide van de gradiënt van de drukhoogte (de diffusie) in de advectie-diffusievergelijking,
+ maar houdt,
+ i.t.t.
+ Munsflow,
+ wel rekening met de sterk vochtafhankelijke doorlatendheid in de percolatiezone.
+ De methode met kinematische golven,
+ verwaarloost weliswaar de de gradiënt in capillaire spanning in de percolatiezone,
+ maar neemt wel de sterke niet-lineaire 
+\begin_inset Formula $K-\theta$
+\end_inset
+
+ relatie mee.
+ Hierdoor ontstaan vochtfronten die elkaar in halen,
+ scherpe vochtfronten en variatie in de passagetijd.
+\end_layout
+
+\begin_layout Standard
+De volgende stap in Munsflow is de vorige vergelijking uit te drukken in termen van de flux 
+\begin_inset Formula $q$
+\end_inset
+
+ in plaats van 
+\begin_inset Formula $\theta$
+\end_inset
+
+ als afhankelijke parameter.
+\end_layout
+
+\begin_layout Standard
+Eerste stap differentieer de gelineariseerde vergelijking naar 
+\begin_inset Formula $z$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\frac{\partial\theta}{\partial t}\approx-k_{1}\frac{\partial\theta}{\partial z}+k_{0}h_{1}\frac{\partial^{2}\theta}{\partial z^{2}}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Druk eerst 
+\begin_inset Formula $q$
+\end_inset
+
+ uit in termen van 
+\begin_inset Formula $\theta$
+\end_inset
+
+:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+q & =-K\left(\theta\right)\left(\frac{\partial h}{\partial z}-1\right)\\
+q & =-K\left(\theta\right)\left(\frac{dh}{d\theta}\frac{\partial\theta}{\partial z}-1\right)\,\,\,\mathtt{with\,\,\,}K\left(\theta\right)\approx k_{0}\,\,\,\mathtt{and}\,\,\,\frac{dh}{d\theta}\approx h_{1}\\
+ & \approx-k_{0}h_{1}\frac{\partial\theta}{\partial z}+k_{0}
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+We willen links 
+\begin_inset Formula $\frac{\partial q}{\partial t}$
+\end_inset
+
+ dus differentieer 
+\begin_inset Formula $q$
+\end_inset
+
+ naar 
+\begin_inset Formula $t$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\frac{\partial q}{\partial t}=-k_{0}h_{1}\frac{\partial^{2}\theta}{\partial z\partial t}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Vermenigvuldig beide zijden met 
+\begin_inset Formula $-k_{0}h_{1}$
+\end_inset
+
+ en differentieer beide zijden naar 
+\begin_inset Formula $z$
+\end_inset
+
+ om links de hiervoor afgeleide uitdrukking voor 
+\begin_inset Formula $\frac{\partial q}{\partial t}$
+\end_inset
+
+ te krijgen.
+ In volgende stappen zorg dat je rechts steeds de hiervoor afgeleide uitdrukking voor 
+\begin_inset Formula $q$
+\end_inset
+
+ krijgt
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+-k_{0}h_{1}\frac{\partial^{2}\theta}{\partial t\partial z} & \approx-k_{0}h_{1}\frac{\partial}{\partial z}\left(-k_{1}\frac{\partial\theta}{\partial z}+k_{0}h_{1}\frac{\partial^{2}\theta}{\partial z^{2}}\right)\\
+\frac{\partial q}{\partial t} & =-k_{1}\frac{\partial}{\partial z}\left(-k_{0}h_{1}\frac{\partial\theta}{\partial z}\right)-k_{0}h_{1}\frac{\partial}{\partial z}\left(k_{0}h_{1}\frac{\partial^{2}\theta}{\partial z^{2}}\right)\\
+ & =-k_{1}\frac{\partial}{\partial z}\left(q-k_{0}\right)+k_{0}h_{1}\frac{\partial}{\partial z}\left(-k_{0}h_{1}\frac{\partial^{2}\theta}{\partial z^{2}}\right)\\
+ & =-k_{1}\frac{\partial}{\partial z}\left(q-k_{0}\right)+k_{0}h_{1}\frac{\partial}{\partial z}\left(\frac{\partial q}{\partial z}\right)\\
+\frac{\partial q}{\partial t} & =-k_{1}\frac{\partial q}{\partial z}+k_{0}h_{1}\frac{\partial^{2}q}{\partial z^{2}}
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Dit is de gezochte Munsflow vergelijking,
+ nr.
+ 7.10 in 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "Zw95"
+literal "false"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Section
+De impuls-respons benadering
+\end_layout
+
+\begin_layout Standard
+Nu zoeken we een oplossing voor een puls op 
+\begin_inset Formula $t=0$
+\end_inset
+
+,
+ echter niet met 
+\begin_inset Formula $q=0$
+\end_inset
+
+ maar 
+\begin_inset Formula $q=q_{avg}$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+De analytische oplossing voor de lineaire convectie-diffusievergelijking met een 
+\begin_inset Formula $q$
+\end_inset
+
+-puls als randvoorwaarde is bekend.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+q\left(z,t\right) & =\frac{z}{\sqrt{4\pi k_{0}h_{1}t^{3}}}\exp\left(-\frac{\left(z-k_{1}t\right)^{2}}{2k_{0}h_{1}t}\right)
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Merk op dat de rol van 
+\begin_inset Formula $k_{1}=v$
+\end_inset
+
+ [L/T] en van 
+\begin_inset Formula $k_{0}h_{1}=D$
+\end_inset
+
+ [L
+\begin_inset Formula $^{2}$
+\end_inset
+
+/T] in de convectie-diffusievergelijking.
+ Om dichtbij reeds gepubliceerde analytische oplossingen te blijven gebruiken we vanaf nu 
+\begin_inset Formula $k_{1}$
+\end_inset
+
+ door 
+\begin_inset Formula $v$
+\end_inset
+
+ en 
+\begin_inset Formula $k_{0}h_{1}$
+\end_inset
+
+ door 
+\begin_inset Formula $D$
+\end_inset
+
+.
+ De impuls response door een unit-puls wordt zo
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+q_{IR}\left(z,t\right)=\frac{z}{\sqrt{4\pi Dt^{3}}}\exp\left(-\frac{\left(z-vt\right)^{2}}{2Dt}\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+De stap-respons wordt verkregen door integratie van de impuls response vanaf 
+\begin_inset Formula $t=-\infty$
+\end_inset
+
+ tot 
+\begin_inset Formula $t=t$
+\end_inset
+
+.
+ Omdat 
+\begin_inset Formula $q=0$
+\end_inset
+
+ voor 
+\begin_inset Formula $t\le$
+\end_inset
+
+0,
+ kunnen we net zo goed vanaf 
+\begin_inset Formula $t=0$
+\end_inset
+
+ integreren
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+q_{SR}\left(z,t\right)=\intop_{0}^{t}\frac{z}{\sqrt{4\pi D\tau^{3}}}\exp\left(-\frac{\left(z-v\tau\right)^{2}}{2D\tau}\right)d\tau
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The analytische oplossing hiervan is (Ogata,
+ A,
+ & Banks,
+ R.B (1961),
+ Lapidus,
+ L & Amundson,
+ N.
+ R> (1952)
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+q_{SR}\left(z,t\right)=\Phi\left(\frac{z-vt}{\sqrt{2Dt}}\right)-\exp\left(\frac{vz}{D}\right)\Phi\left(-\frac{z+vt}{\sqrt{2Dt}}\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula $\Phi$
+\end_inset
+
+ de standaard normale verdeling
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\Phi=\frac{1}{\sqrt{2\pi}}\intop_{-\infty}^{z}e^{-u^{2}/2}du=\frac{1}{2}\mathtt{erfc}\left(-\frac{z}{\sqrt{2}}\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Invullen van 
+\begin_inset Formula $\Phi$
+\end_inset
+
+ levert de exacte oplossing van de stap respons.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+q\left(z,t\right)=\frac{1}{2}\mathtt{erfc}\left(-\frac{z-vt}{2\sqrt{Dt}}\right)-\frac{1}{2}\exp\left(\frac{vz}{D}\right)\mathtt{erfc}\left(+\frac{z+vt}{2\sqrt{Dt}}\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Proefschrift Maas (eq 3.25,
+ p61)
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+q\left(z,t\right)=\frac{1}{2}\mathtt{erfc}\left(\frac{X-T}{2\sqrt{T}}\right)-\frac{1}{2}\exp\left(X\right)\mathtt{erfc}\left(\frac{X+T}{2\sqrt{T}}\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+x=\frac{xv}{D},\,\,T=\frac{v^{2}t}{D}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+q\left(z,t\right)=\frac{1}{2}\mathtt{erfc}\left(\frac{x-vt}{2\sqrt{Dt}}\right)-\frac{1}{2}\exp\left(\frac{xv}{D}\right)\mathtt{erfc}\left(\frac{x+vt}{2\sqrt{Dt}}\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+De parameters 
+\begin_inset Formula $k_{0}$
+\end_inset
+
+,
+ 
+\begin_inset Formula $k_{1}$
+\end_inset
+
+,
+ 
+\begin_inset Formula $h_{0}$
+\end_inset
+
+ en 
+\begin_inset Formula $h_{1}$
+\end_inset
+
+ gebruik makend van de relaties van Brooks en Corey (1966)
+\end_layout
+
+\begin_layout Standard
+Brooks & Corey (1966) wordt hierna afgekort to BC.
+ De verzadiging volgens BC:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\frac{\theta-\theta_{r}}{\theta_{s}-\theta_{r}}=\left(\frac{\psi_{b}}{\psi}\right)^{\lambda}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Dit maakt duidelijk dat 
+\begin_inset Formula $\Psi_{b}=\Psi\left(\theta_{s}\right)$
+\end_inset
+
+.
+ 
+\begin_inset Formula $\lambda$
+\end_inset
+
+ is een vormfactor.
+ Hieruit volgt dat volgens BC
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\psi=\psi_{b}\left(\frac{\theta-\theta_{r}}{\theta_{s}-\theta_{r}}\right)^{-\frac{1}{\lambda}}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+En 
+\begin_inset Formula $d\psi/d\theta$
+\end_inset
+
+ volgens BC gelijk is aan
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\frac{d\psi}{d\theta}=-\frac{\psi_{b}}{\lambda\left(\theta_{s}-\theta_{r}\right)}\left(\frac{\theta-\theta_{r}}{\theta_{s}-\theta_{r}}\right)^{-\frac{1}{\lambda}-1}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Bij percolatie geldt 
+\begin_inset Formula $q=K\left(\theta\right)$
+\end_inset
+
+ zodat voor de gemiddelde omstandigheden geldt dat
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+q_{avg}=K_{avg}=K_{s}\left(\frac{\theta_{avg}-\theta_{r}}{\theta_{s}-\theta_{r}}\right)^{\epsilon}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Of omgekeerd,
+ gegeven 
+\begin_inset Formula $q_{avg}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\theta_{avg}=\theta_{r}+\left(\theta_{s}-\theta_{r}\right)\left(\frac{q_{avg}}{K_{S}}\right)^{1/\epsilon}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+De vraag is natuurlijk welke waarde 
+\begin_inset Formula $q_{avg}$
+\end_inset
+
+ zou moeten hebben.
+ Het vochtgehalte moet boven dat bij veldcapaciteit zijn,
+ want bij veldcapaciteit is de flux gelijk aan nul en dus niet de gemiddelde.
+ Een waarde rond 
+\begin_inset Formula $q_{avg}=0.001$
+\end_inset
+
+ m/d zou voor Nederlandse omstandigheden redelijk zijn als jaargemiddelde.
+ Echter,
+ omdat de voeding van het grondwater vooral in de winter plaats vindt zou 
+\begin_inset Formula $q_{avg}=0.002$
+\end_inset
+
+ m/d waarschijnlijk een betere keuze zijn,
+ en dus zou ook 
+\begin_inset Formula $K_{avg}=q_{avg}\approx0.002$
+\end_inset
+
+ m/d.
+ Maar hoe dan ook,
+ wanneer de voeding varieert in de tijd,
+ dan varieert ook het vochtgehalte.
+ Dit vochtgehalte zal in elk geval in de winter hoger zijn dan in de zomer wanneer de voeding van het grondwater via dikke onverzadigde zones zo goed als stil valt.
+\end_layout
+
+\begin_layout Section
+Bepaling van de stap-respons met de momentenmethode
+\end_layout
+
+\begin_layout Standard
+De momentenmethode schat de impuls-respons aan de hand van een aantal momenten,
+ meestal twee of drie.
+ Drie wanneer de verdeling (of de respons) scheef is,
+ zoals hier het geval.
+\end_layout
+
+\begin_layout Standard
+De bodem kan volgens Maas (1994)@@@worden beschouwd als een reeks op elkaar volgende systemen met elk een overdrachtsfunctie.
+ De momenten van elk deelsysteem mogen dan worden 
+\begin_inset Quotes pld
+\end_inset
+
+opgeteld
+\begin_inset Quotes prd
+\end_inset
+
+ middels mathematische convolutie.
+ Wanneer het aantal kansverdelingen van opeenvolgende systemen zo wordt 
+\begin_inset Quotes pld
+\end_inset
+
+opgeteld
+\begin_inset Quotes prd
+\end_inset
+
+,
+ dan zal de resulterende kansverdeling zich tot de normale verdeling ontwikkelen,
+ naarmate het aantal systemen toeneemt.
+ Zolang de normale verdeling nog niet volledig ontwikkeld is,
+ speelt ook het derde moment de 
+\begin_inset Quotes pld
+\end_inset
+
+scheefheid
+\begin_inset Quotes prd
+\end_inset
+
+ of 
+\begin_inset Quotes pld
+\end_inset
+
+skewness
+\begin_inset Quotes prd
+\end_inset
+
+ een rol,
+ en wellicht ook nog hogere momenten,
+ die we hier verwaarlozen.
+ We zoeken daarom een kansverdeling die beschreven wordt de volgende momenten:
+ zijn gemiddelde 
+\begin_inset Formula $M_{1}$
+\end_inset
+
+,
+ zijn variantie 
+\begin_inset Formula $M_{2}^{c}$
+\end_inset
+
+ en zijn scheefheid 
+\begin_inset Formula $M_{3}^{c}$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+Uit de convectie-diffusievergelijking worden drie momenten van 
+\begin_inset Formula $q\left(z,t\right)$
+\end_inset
+
+ afgeleid.
+ In de verdere afleiding is 
+\begin_inset Formula $q\left(z,t\right)=F\left(t\right)$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+De lineaire convectie-diffusievergelijking wordt met 
+\begin_inset Formula $t$
+\end_inset
+
+ vermenigvuldigd en geïntegreerd over de tijd:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\intop_{-\infty}^{\infty}t\frac{\partial q}{\partial t}dt=\intop_{-\infty}^{\infty}tk_{1}\frac{\partial q}{\partial z}dt+\intop_{-\infty}^{\infty}tk_{0}h_{1}\frac{\partial^{2}q}{\partial z^{2}}dt
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Herschrijf dit tot een vergelijking waarin het eerste moment zichtbaar wordt
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\intop_{-\infty}^{\infty}t\frac{\partial q}{\partial t}dt=k_{1}\frac{\partial}{\partial z}\intop_{-\infty}^{\infty}t\,q\left(t\right)dt+k_{0}h_{1}\frac{\partial^{2}}{\partial z^{2}}\intop_{-\infty}^{\infty}t\,q\left(t\right)dt
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Uitwerking voor de linker term leidt tot
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+-1=v\frac{dM_{1}}{dz}+D\frac{d^{2}M_{2}}{dz^{2}}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+De momenten zijn als volgt (zie 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "Zw95"
+literal "false"
+
+\end_inset
+
+).
+ Ze worden daarin ook niet uitgelegd of afgeleid,
+ maar verstrekt.
+ Je moet de theorie erachter bestuderen om hier inzicht in te krijgen of het proefschrift van Kees Maas lezen / doorwerken.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+M_{1} & =-\frac{z}{v}\\
+M_{2}^{c} & =-2\frac{D}{v^{3}}z\\
+M_{3}^{c} & =-12\frac{D^{2}}{v^{5}}z
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+De vorm van de kansverdeling wordt beschreven door die van Pearson type III.
+ Deze blijkt bijna gelijk aan de exacte oplossing van de lineaire convectie-dispersievergelijking (Maas (1994)).Het is de verdeling voor de uitstroming na passage van 
+\begin_inset Formula $n$
+\end_inset
+
+ lineaire reservoirs waarvan de uitkomst voor passage van een enkel reservoir gelijk is aan
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+F\left(t\right)=ae^{-at}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+F\left(t\right)=\frac{a^{n}\left(t-b\right)^{n-1}}{\Gamma\left(n\right)}e^{-a\left(t-b\right)\,\,\,\mathtt{voor}\,\,\,t\ge b}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Parameter 
+\begin_inset Formula $b$
+\end_inset
+
+ geeft de verschuiving in de tijd:
+ bij een serie lineaire reservoirs beging de uitstroom al op 
+\begin_inset Formula $t=0$
+\end_inset
+
+ toe te nemen,
+ de parameter 
+\begin_inset Formula $b$
+\end_inset
+
+ zorgt ervoor dat dit pas op 
+\begin_inset Formula $t=b$
+\end_inset
+
+ begint.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+a & =2\frac{M_{2}^{c}}{M_{3}^{c}}=\frac{1}{3}\frac{v^{2}}{D}\\
+b & =M_{1}-2\frac{\left(M_{2}^{c}\right)^{2}}{M_{3}^{c}}=-\frac{1}{3}\frac{z}{v}\\
+n & =4\frac{\left(M_{2}^{c}\right)^{3}}{\left(M_{3}^{c}\right)^{2}}=\frac{2}{9}\frac{v}{D}z
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+De parameters 
+\begin_inset Formula $v=k_{1}$
+\end_inset
+
+ en 
+\begin_inset Formula $D=k_{0}h_{1}$
+\end_inset
+
+ moeten uit de bodemkarakteristieken bepaald worden voor de situatie van gemiddelde flux.
+\end_layout
+
+\begin_layout Standard
+Wanneer de bodemfysisch relaties niet bekend zijn,
+ moeten v en D geschat worden.
+ In de praktijk kan de reactietijd tussen neerslagpiek (verhoogde percolatie) en een stijging van de grondwaterstand (verhoogde grondwateraanvulling) bepaald worden.
+ De fluctuaties van de grondwaterstand geven een indicatie voor de demping (D).
+ Als in de gemodelleerde grondwaterstanden de fluctuaties te groot zijn,
+ moet de demping van de verzadigde zone verhoogd worden.
+\end_layout
+
+\begin_layout Standard
+We hebben dus alleen te maken met de parameters 
+\begin_inset Formula $v$
+\end_inset
+
+ en D,
+ voor de passagetijd en 
+\begin_inset Formula $D$
+\end_inset
+
+ voor de demping,
+ beide te ijken aan de hand van het verloop van de grondwaterstand.
+ Dit is iets dat geoptimaliseerd kan worden.
+\end_layout
+
+\begin_layout Standard
+Scherpe gradiënten in het vochtgehalte zullen niet voorkomen (p63).
+ Dit is pertinent niet waar.
+ Ook niet dat het vochtgehalte zo goed als constant is.uh
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+F & =\intop_{b}^{t+b}\frac{a^{n}\left(\tau-b\right)^{n-1}}{\Gamma\left(n\right)}\exp\left(-a(\tau-b\right)d\tau\\
+ & =\frac{\gamma\left(n,at\right)}{\Gamma\left(n\right)}=CDF\,of\,Gamma(t;n,a)
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+Veronderstellingen bij de transferfunctie
+\end_layout
+
+\begin_layout Section
+Van Genughten relaties
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\theta=\theta_{r}+\frac{\theta_{s}-\theta_{r}}{\left(1+\left(\alpha\psi\right)^{n}\right)^{m}}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+of
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+S\left(\psi\right)=\left(1+\left(\alpha\psi\right)^{n}\right)^{-m}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+S\left(\theta\right)=\frac{\theta-\theta_{r}}{\theta_{s}-\theta_{r}}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\theta\left(\psi\right)=\theta_{r}+\left(\theta_{s}-\theta_{r}\right)S\left(\psi\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\psi\left(\theta\right)=\frac{1}{\alpha}\left[S\left(\theta\right)^{-1/m}-1\right]^{1/n}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+K\left(\psi\right)=K_{s}\left(S\left(\psi\right)\right)^{l}\left[1-\left(1-S\left(\psi\right)^{1/m}\right)^{m}\right]^{2}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+K\left(\theta\right)=K_{s}\left(S\left(\theta\right)\right)^{l}\left[1-\left(1-S\left(\theta\right)^{1/m}\right)^{m}\right]^{2}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+K\left(\theta\right)=K_{s}\left(S\left(\theta\right)\right)^{l}\left(B\left(S\right)\right)^{2}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+\frac{dK\left(\theta\right)}{d\theta} & =\frac{K_{s}}{\theta_{s}-\theta_{r}}\left(S\left(\theta\right)\right)^{l}\left[lS^{l-1}B^{2}+S^{l}\cdot2B\cdot B'\right]\\
+B'\left(S\right) & =\frac{dB}{dS}=\left(1-S^{1/m}\right)^{m-1}S^{1/m-1}
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+In a compact set of equations
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+S\left(\theta\right)=\frac{\theta-\theta_{r}}{\theta_{s}-\theta_{r}}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+m=1-\frac{1}{n}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+B\left(S\right)=1-\left(1-S^{1/m}\right)^{m}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\frac{dB}{dS}=\left(1-S^{1/m}\right)^{m-1}S^{1/m-1}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+K\left(\theta\right)=K_{s}S\left(\theta\right)^{l}B\left(S\right)^{2}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Zonder verdere informatie neem 
+\begin_inset Formula $l=\frac{1}{2}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\frac{dK\left(\theta\right)}{d\theta}=\frac{K_{s}}{\theta_{s}-\theta_{r}}\left[lS^{l-1}B^{2}S^{l}\cdot2B\cdot\frac{dB}{dS}\right]
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\psi\left(\theta\right)=\frac{1}{\alpha}\left(S^{-1/m}-1\right)^{1/n}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\frac{d\psi}{d\theta}=-\frac{1}{\alpha mn}\frac{1}{\theta_{s}-\theta_{r}}S^{-1/m-1}\left(S^{-1/m}-1\right)^{1/n-1}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Bibliography
+\begin_inset CommandInset bibitem
+LatexCommand bibitem
+label "Charbeneau (2000)"
+key "Char00"
+literal "false"
+
+\end_inset
+
+Charbeneau R.J.
+ (2000) Groundwater Hydraulics and Pollutant Transport.
+ Prentice Hall.
+ ISBN 0-13-975616-7.
+ 594p.
+\end_layout
+
+\begin_layout Bibliography
+\begin_inset CommandInset bibitem
+LatexCommand bibitem
+label "Gehrels (1999)"
+key "Gehrels99"
+literal "false"
+
+\end_inset
+
+Gehrels J.C.
+ (1999) Groundwater Level Fluctuations.
+ Separation of natural from athropologic influences and determination of groundwater recharge in the Veluwe area,
+ the Netherlands.
+ PhD,
+ Vrije Universiteit Amsterdam.
+ ISBN 90-75739-04-4.
+ 269p.
+\end_layout
+
+\begin_layout Bibliography
+\begin_inset CommandInset bibitem
+LatexCommand bibitem
+label "Niswonger et al. (2006)"
+key "UZF1"
+literal "false"
+
+\end_inset
+
+Niswonger,
+ R.G.,
+ Prudic,
+ D.E.,
+ Regan R.S.
+ (2006) Documentation of the Unsaturated-Zone Flow (UZF1) Package for Modeling Unsaturated Flow Between the Land Surface and the Water Table with Modflow.
+ Chapter 19 of Section A,
+ Ground Water,
+ of Book 6,
+ Modeling Techniques.
+ Techniques and Methods 6-A19.
+ USGS,
+ Reston Virginia 2006.
+\end_layout
+
+\begin_layout Bibliography
+\begin_inset CommandInset bibitem
+LatexCommand bibitem
+label "Zwamborn (1995)"
+key "Zw95"
+literal "false"
+
+\end_inset
+
+Zwambron,
+ M.H.
+ (1995) Modellering van de onverzadigde zone ten behoeve van grondwatermodellen.
+ SWI 95.142.
+ KIWA Onderzoek en Advies.
+ Nieuwegein,
+ april 1995.
+\end_layout
+
+\begin_layout Bibliography
+\begin_inset CommandInset bibitem
+LatexCommand bibitem
+label "Zwamborn et al. (1995)"
+key "Ze95H2O"
+literal "false"
+
+\end_inset
+
+Zwamborn M.H.,
+ Athmer,
+ W.H.G.
+ en Maas,
+ C.
+ (1995) Model voor de berekening van grondwateraanvulling in gebieden met dikke onverzadigde zones:
+ Munsflow.
+ H2O,
+ vol 28,
+ 1995,
+ nr.
+ 20.
+ 604–609
+\end_layout
+
+\end_body
+\end_document

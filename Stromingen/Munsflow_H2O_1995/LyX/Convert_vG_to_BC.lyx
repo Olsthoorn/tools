@@ -1,0 +1,536 @@
+#LyX 2.4 created this file. For more info see https://www.lyx.org/
+\lyxformat 620
+\begin_document
+\begin_header
+\save_transient_properties true
+\origin unavailable
+\textclass article
+\begin_preamble
+%\usepackage{epstopdf} % to include .eps graphics files with pdfLaTeX
+\usepackage{flafter}   % Don't place floats before their definition
+%\usepackage{topcapt}  % Define \topcation for placing captions above tables (not in gwTeX)
+
+\usepackage{xurl}      % better URL setting, uses old url package
+
+\usepackage{xcolor}
+\definecolor{darkblue}{rgb}{0,0,0.4}
+\usepackage[]{hyperref} % Generates all cross references
+\hypersetup{            % Setting options for hyperref package
+	breaklinks=true,    % break line with long hyperlinks
+	colorlinks=true,    % coloured links
+	linkcolor=blue,
+	filecolor=magenta,
+	urlcolor=darkblue,
+	citecolor=blue,
+	backref=page
+} 
+
+\usepackage{memhfixc}  % remove conflict between the memoir class & hyperref
+\usepackage{pdfsync}   % enable tex source and pdf output syncronicity
+
+\usepackage{memhfixc}  % remove conflict between the memoir class & hyperref
+\usepackage{pdfsync}   % enable tex source and pdf output syncronicity
+
+\usepackage{alltt}
+
+% \usepackage{listings}
+% \usepackage{xcolor}
+
+% \lstdefinestyle{mystyle}{
+%   language=Python,
+%   numbers=left
+% }
+
+% Put lstset here, after lstdefinestyle
+% \lstset{style=mystyle}
+\end_preamble
+\use_default_options true
+\maintain_unincluded_children no
+\language english
+\language_package default
+\inputencoding utf8
+\fontencoding auto
+\font_roman "default" "default"
+\font_sans "default" "default"
+\font_typewriter "default" "default"
+\font_math "auto" "auto"
+\font_default_family default
+\use_non_tex_fonts false
+\font_sc false
+\font_roman_osf false
+\font_sans_osf false
+\font_typewriter_osf false
+\font_sf_scale 100 100
+\font_tt_scale 100 100
+\use_microtype false
+\use_dash_ligatures true
+\graphics default
+\default_output_format pdf2
+\output_sync 0
+\bibtex_command biber
+\index_command default
+\float_placement h
+\float_alignment center
+\paperfontsize default
+\spacing single
+\use_hyperref false
+\papersize default
+\use_geometry true
+\use_package amsmath 1
+\use_package amssymb 1
+\use_package cancel 1
+\use_package esint 1
+\use_package mathdots 1
+\use_package mathtools 1
+\use_package mhchem 1
+\use_package stackrel 1
+\use_package stmaryrd 1
+\use_package undertilde 1
+\cite_engine biblatex
+\cite_engine_type authoryear
+\biblio_options hyperref=true, backref=true, backrefstyle=three,backreffloats=true,indexing=bib,date=year
+\biblatex_bibstyle authoryear
+\biblatex_citestyle authoryear
+\use_bibtopic false
+\use_indices false
+\paperorientation portrait
+\suppress_date false
+\justification true
+\use_refstyle 1
+\use_formatted_ref 0
+\use_minted 0
+\use_lineno 0
+\index Index
+\shortcut idx
+\color #008000
+\end_index
+\leftmargin 1in
+\topmargin 1in
+\rightmargin 1in
+\bottommargin 1in
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation indent
+\paragraph_indentation default
+\is_math_indent 0
+\math_numbering_side default
+\quotes_style english
+\dynamic_quotes 0
+\papercolumns 1
+\papersides 1
+\paperpagestyle default
+\tablestyle default
+\listings_params "language=Python,extendedchars=false,frameround=fttt,numbers=left,% line numbers use none,numberstyle={\tiny},stepnumber=2,% line numbers only every so many,numbersep=9pt,% how far line numbers from text?,showspaces=false,showstringspaces=false,showtabs=false,tab={\rightarrowfill},basicstyle={\small},keywordstyle={\color{blue}},commentstyle={\color{green}},stringstyle={\ttfamily \color{magenta}},identifierstyle={\color{black}}"
+\tracking_changes false
+\output_changes false
+\change_bars false
+\postpone_fragile_content false
+\html_math_output 0
+\html_css_as_file 0
+\html_be_strict false
+\docbook_table_output 0
+\docbook_mathml_prefix 1
+\end_header
+
+\begin_body
+
+\begin_layout Title
+Invert a synthetic van Genuchten–Mualem (vG–M) dataset and fit Brooks–Corey (BC) parameters to it
+\end_layout
+
+\begin_layout Author
+ChatGPT
+\end_layout
+
+\begin_layout Date
+Aug.
+ 22 2025
+\end_layout
+
+\begin_layout Standard
+That’s often the cleanest way to ensure apples-to-apples behavior in your model.
+\end_layout
+
+\begin_layout Part
+Practical recipe (robust and fast)
+\end_layout
+
+\begin_layout Section
+Generate vG–M synthetic data
+\end_layout
+
+\begin_layout Itemize
+Pick 
+\begin_inset Formula $\ensuremath{(\theta_{s},\theta_{r},\alpha,n,m=1-1/n,K_{s},\ell)}.$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+Create a suction grid $
+\backslash
+psi$ (e.g.
+ log-spaced from 
+\backslash
+~1 cm to,
+ say,
+ 10⁵ cm).
+\end_layout
+
+\begin_layout Itemize
+Compute 
+\begin_inset Formula $S_{e,\mathrm{VG}}(\psi)=[1+(\alpha\psi)^{n}]^{-m}$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Itemize
+Compute 
+\begin_inset Formula $\theta_{\mathrm{VG}}=\theta_{r}+S_{e}(\theta_{s}-\theta_{r})$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Itemize
+Compute 
+\begin_inset Formula $K_{\mathrm{VG}}(\psi)$
+\end_inset
+
+ via Mualem (or your chosen conductivity model).
+\end_layout
+
+\begin_layout Section
+Fit BC retention first (recommended)
+\end_layout
+
+\begin_layout Itemize
+BC retention (for 
+\begin_inset Formula $\psi\ge\psi_{b}$
+\end_inset
+
+):
+ 
+\begin_inset Formula $S_{e,\mathrm{BC}}=(\psi_{b}/\psi)^{\lambda}$
+\end_inset
+
+;
+ and $S_e=1$ for $
+\backslash
+psi<
+\backslash
+psi_b$.
+\end_layout
+
+\begin_layout Itemize
+Unknowns:
+ 
+\begin_inset Formula $\psi_{b}>0$
+\end_inset
+
+,
+ 
+\begin_inset Formula $\lambda>0$
+\end_inset
+
+.
+ (Keep 
+\begin_inset Formula $\theta_{s},\theta_{r}$
+\end_inset
+
+ fixed to the vG values for a clean comparison.)
+\end_layout
+
+\begin_layout Itemize
+
+\series bold
+Objective
+\series default
+ (robust):
+ minimize 
+\begin_inset Formula $\sum w_{i}\,[\log S_{e,\mathrm{VG}}(\psi_{i})-\log S_{e,\mathrm{BC}}(\psi_{i})]^{2}$
+\end_inset
+
+ over 
+\begin_inset Formula $\psi\ge\psi_{b}$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Itemize
+Log on 
+\begin_inset Formula $S_{e}$
+\end_inset
+
+ emphasizes the dry tail where differences matter.
+\end_layout
+
+\begin_layout Itemize
+Use bounds and good initials:
+ 
+\begin_inset Formula $\psi_{b}^{(0)}\!=\!1/\alpha,\;\lambda^{(0)}\!=\!n-1$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Section
+Then fit conductivity
+\end_layout
+
+\begin_layout Itemize
+Choose your BC conductivity closure (Mualem-BC or Burdine-BC).
+ Each gives a closed-form 
+\begin_inset Formula $K_{\mathrm{BC}}(S_{e};\lambda,\ell)$
+\end_inset
+
+ (with 
+\begin_inset Formula $K_{s}$
+\end_inset
+
+ common).
+\end_layout
+
+\begin_layout Itemize
+Either:
+\end_layout
+
+\begin_layout Itemize
+
+\series bold
+(a) Fix 
+\begin_inset Formula $\psi_{b},\lambda$
+\end_inset
+
+
+\series default
+ from retention fit,
+ fit only 
+\begin_inset Formula $\ell$
+\end_inset
+
+ (and optionally a small scale tweak in 
+\begin_inset Formula $\psi_{b}$
+\end_inset
+
+) to 
+\begin_inset Formula $\log K$
+\end_inset
+
+;
+ or
+\end_layout
+
+\begin_layout Itemize
+
+\series bold
+(b) Do
+\series default
+ a 
+\series bold
+joint fit
+\series default
+ on 
+\begin_inset Formula $\theta$
+\end_inset
+
+ and 
+\begin_inset Formula $K$
+\end_inset
+
+ with a weighted objective:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+J=\sum w_{\theta}[\theta_{\mathrm{VG}}-\theta_{\mathrm{BC}}]^{2}+\sum w_{K}[\log K_{\mathrm{VG}}-\log K_{\mathrm{BC}}]^{2}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+Start from 
+\begin_inset Formula $\psi_{b}=1/\alpha,\;\lambda=n-1,\;\ell=0.5$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Itemize
+Fit 
+\begin_inset Formula $K$
+\end_inset
+
+ in 
+\series bold
+log space
+\series default
+ and 
+\series bold
+exclude/low-weight the near-saturated range
+\series default
+ (where tiny head errors create large 
+\begin_inset Formula $K$
+\end_inset
+
+ swings).
+\end_layout
+
+\begin_layout Section
+Region selection / masking
+\end_layout
+
+\begin_layout Itemize
+For BC retention,
+ 
+\series bold
+only include 
+\begin_inset Formula $\psi\ge\psi_{b}$
+\end_inset
+
+
+\series default
+ in the objective (the dry branch).
+\end_layout
+
+\begin_layout Itemize
+For conductivity,
+ ignore points where 
+\begin_inset Formula $S_{e}\to1$
+\end_inset
+
+ (or cap weights above
+\begin_inset Formula $S_{e}>0.95$
+\end_inset
+
+).
+\end_layout
+
+\begin_layout Section
+Diagnostics
+\end_layout
+
+\begin_layout Itemize
+Plot 
+\begin_inset Formula $S_{e}(\psi)$
+\end_inset
+
+ and 
+\begin_inset Formula $K(\psi)$
+\end_inset
+
+ on log scales (
+\begin_inset Formula $\psi$
+\end_inset
+
+ on log axis) to verify slopes match in the dry tail.
+\end_layout
+
+\begin_layout Itemize
+Check that your fitted 
+\begin_inset Formula $\lambda\approx n-1$
+\end_inset
+
+ and 
+\begin_inset Formula $\psi_{b}\approx1/\alpha$
+\end_inset
+
+;
+ small deviations are expected because VG has a smooth “air-entry” while BC is piecewise.
+\end_layout
+
+\begin_layout Part
+Tips that prevent headaches
+\end_layout
+
+\begin_layout Itemize
+
+\series bold
+Identifiability:
+
+\series default
+ If you try to fit 
+\begin_inset Formula $(\theta_{s},\theta_{r},\psi_{b},\lambda)$
+\end_inset
+
+ all at once from synthetic vG,
+ the problem can become sloppy.
+ Fix 
+\begin_inset Formula $\theta_{s},\theta_{r}$
+\end_inset
+
+ to vG’s values unless you intentionally want differences.
+\end_layout
+
+\begin_layout Itemize
+
+\series bold
+Weighting:
+
+\series default
+ Set 
+\begin_inset Formula $w_{K}$
+\end_inset
+
+ so the K-fit doesn’t dominate the retention fit (e.g.,
+ normalize by the number of points and use log-space for K).
+\end_layout
+
+\begin_layout Itemize
+
+\series bold
+Initialization:
+
+\series default
+ The asymptotic mapping is a great start:
+ 
+\begin_inset Formula $n=\lambda+1$
+\end_inset
+
+,
+ 
+\begin_inset Formula $\alpha\approx1/\psi_{b}$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Itemize
+
+\series bold
+Purpose-driven fit:
+
+\series default
+ If your model is sensitive to mid-range moistures (root-zone),
+ weight that 
+\begin_inset Formula $\psi$
+\end_inset
+
+-range more.
+\end_layout
+
+\begin_layout Standard
+This workflow will give you BC parameters that track your vG curves as closely as you like—
+both for 
+\begin_inset Formula $\theta(\psi)$
+\end_inset
+
+ and 
+\begin_inset Formula $K(\psi)$
+\end_inset
+
+—
+without relying on hand-wavy mappings.
+ If you later want,
+ I can draft a compact Python least-squares snippet that drops right into your current vG code.
+\end_layout
+
+\end_body
+\end_document
