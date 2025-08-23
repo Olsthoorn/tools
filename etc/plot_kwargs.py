@@ -1,3 +1,6 @@
+
+__all__ = ['plot_kw', 'text_kw']
+
 plot_kw = {
   'agg_filter': "a filter function, which takes a (m, n, 3) float array and a dpi value, and returns a (m, n, 3) array",
   'alpha': "scalar or None",

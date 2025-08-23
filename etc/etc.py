@@ -14,9 +14,32 @@ from pathlib import Path
 
 #%%
 
-__all__ = ['Dirs', 'dayofweek', 'week', 'mlDatenum2npDatetime', 'npDatetime2mlDatenum', 'dn2dt', 'dt2dn',
-           'attr', 'linestyles_', 'colors_', 'color_cycler', 'linestyle_cycler', 'line_cycler',
-           'newfig', 'newfigs', 'newfigs2', 'get_outliers']
+__all__ = ['where_is', 'Dirs', 'dayofweek', 'week', 'mlDatenum2npDatetime', 'npDatetime2mlDatenum',
+           'dn2dt', 'dt2dn',
+           'attr', 'linestyles_', 'colors_',
+           'color_cycler', 'linestyle_cycler', 'line_cycler',
+           'newfig', 'newfigs', 'newfigs2',
+           'get_outliers']
+
+import importlib.util
+
+def where_is(module_name: str) -> str:
+    """
+    Return the file path of the given module if it can be found,
+    or a message if it is a built-in or not found.
+
+    Example:
+    >>> where_is("numpy")
+    '/Users/Theo/miniconda3/envs/flopy/lib/python3.10/site-packages/numpy/__init__.py'
+    >>> where_is("sys")
+    'sys is a built-in module'
+    """
+    spec = importlib.util.find_spec(module_name)
+    if spec is None:
+        return f"Module '{module_name}' not found"
+    if spec.origin == "built-in":
+        return f"{module_name} is a built-in module"
+    return spec.origin
 
 class Dirs:
     def __init__(self, home):
