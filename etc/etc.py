@@ -5,7 +5,8 @@ Created on Mon Jun 18 00:23:37 2018
 
 @author: Theo
 """
-
+import os
+import sys
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -41,6 +42,25 @@ def where_is(module_name: str) -> str:
         return f"{module_name} is a built-in module"
     return spec.origin
 
+def setup_paths():
+    """
+    Ensure that the current project root (where src/, notebooks/, etc. live)
+    is on sys.path so modules like `src.dutch_soils` can be imported safely.
+    """
+    project_root = os.getcwd()
+
+    # Safety check: does this look like a project root?
+    expected_dirs = {"src", "notebooks"}
+    if not expected_dirs.issubset(set(os.listdir(project_root))):
+        raise RuntimeError(
+            f"{project_root} does not look like a valid project root. "
+            f"Expected to see {expected_dirs} inside."
+            "Maybe you didn't launch VScode from the project directory."
+        )
+
+    if project_root not in sys.path:
+        sys.path.insert(0, project_root)  # prepend for priority
+
 class Dirs:
     def __init__(self, home):
         """Return a standard project directory tree with home as root, without overwriting).
@@ -54,6 +74,8 @@ class Dirs:
         print(dirs.data)
         print(dirs.images)
         """
+        setup_paths()
+        
         self.home = Path(home).expanduser().resolve()
 
         # Standard project layout

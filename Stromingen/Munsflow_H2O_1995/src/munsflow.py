@@ -22,59 +22,319 @@ from scipy.special import gamma as Gamma, erfc
 from scipy.stats import gamma
 import pandas as pd
 from itertools import cycle
+import etc
 
 # %%
-class Dirs():
-    def __init__(self):
-        self.home = '/Users/Theo/GRWMODELS/python/tools/Stromingen/Munsflow_H2O_1995'
-        self.docs = os.path.join(self.home, 'docs')
-        self.images = os.path.join(self.home, 'images')
-        self.data = os.path.join(self.home, 'data')
+dirs =     dirs = etc.Dirs('~/GRWMODELS/python/tools/Stromingen/Munsflow_H2O_1995')
 
-dirs = Dirs()
 # %% Define soil properties (from Charbeneau (2000), yet without their uncertainties.
+class Soil():
+    
+    def __init__(self):
+        pass
+    
+    @classmethod
+    def load_soils(cls, wbook):
+        """Load US soils table of Brooks and Corey parameters once into class attribute.
+        
+        The parameters are from:
+        Charmbneau (2000), table 4.4.1, p199, Originally published by Carsen & Parish (1980)
+        The parameters are Brooks & Corey parameters and their standard deviations.
+        
+        parameters
+        ----------
+        wbook: str | path
+            Excel workbook with the table of Charbeneau (dimensions have been converted to cm and cm/d)
+            Look in project-->data for US_BC_soilprops.xlsx
+            
+            
+        >>>import Soils
+        >>>Soils.load_soils(wbook) # look at ../data/US_BC_soilprops.xlsx
+        print(Soils.data)
+        """        
+        df = pd.read_excel(wbook, sheet_name='Sheet1',
+                            usecols='A:M',
+                            dtype={'A':str, 'B':str, 'C':str, 'D':float, 'E':float, 'F':float, 'G':float, 'H':float, 'I':float,
+                                   'J':float, 'K':float, 'L':float, 'M':float},
+                            index_col='code',
+                            header=18,
+                            skiprows=[1])
+        
+        cls.data = df
+        
+        # The dimensions of these data are
+        cls.dimensions={
+            'Main cat':'',
+            'Soil Texture': '',
+            'Ks': 'cm/d', 'sigma_Ks': 'cm/d',
+            'theta_s':'', 'sigma_theta_s': '',            
+            'theta_r':'', 'sigma_theta_r': '',
+            'psi_b':'cm', 'sigma_psi_b': 'cm',
+            'lambda':'', 'sigma_lambda': '',
+            }
+        
+        extra_in_df   = set(df.columns) - set(cls.dimensions.keys())
+        missing_in_df = set(cls.dimensions.keys()) - set(df.columns)
+        
+        if missing_in_df or extra_in_df:
+            raise ValueError(
+                f"Mismatch between dimensions and DataFrame columns. "
+                f"Missing in DataFrame: {missing_in_df}, Extra in DataFrame: {extra_in_df}"
+            )
 
-# turn typed array into a pd.DataFrame
-soils_dtype = np.dtype([('soil', 'U15'), ('theta_s', '<f8'), ('theta_r', '<f8'), ('K_s', '<f8'), ('psi_b', '<f8'), ('lambda_', '<f8')])
+    @classmethod
+    def pretty_data(cls):
+        if cls.data is None:
+            return "No soil  data loaded."
+        print(cls.data.to_string()) # nicely formatted DataFrame
+        
+    def __str__(self):
+        """Print soil properties in a readable format, starting with Main cat and Soil Texture."""
+        # Order keys: start with hoofdsoort and Omschrijving
+        keys = ['Main cat', 'Soil Texture'] + [k for k in self.props.index if k not in ('Main cat', 'Soil Texture')]
+        
+        lines = [f"Soil Texture code: {self.code}"]
+        for k in keys:
+            val = self.props[k]
+            unit = Soil.dimensions.get(k, '')
+            lines.append(f"{k:12} {unit:6}: {val}")
+        return "\n".join(lines)
 
-soils = np.zeros(10, dtype=soils_dtype)
-soils_ = np.array([('clay'           , 0.38, 0.068, 0.048 , 1.25 , 0.09),
-                  ('clay loam'      , 0.41, 0.095, 0.062 , 0.53 , 0.31),
-                  ('loam'           , 0.43, 0.078, 0.25  , 0.28 , 0.56),
-                  ('loamy sand'     , 0.41, 0.057, 3.5   , 0.081, 1.28),
-                  ('silt'           , 0.46, 0.034, 0.060 , 0.62 , 0.37),
-                  ('silty loam'     , 0.45, 0.067, 0.11  , 0.50 , 0.41),
-                  ('silty clay loam', 0.36, 0.070, 0.0048, 2.0  , 0.09),
-                  ('silty clay'     , 0.43, 0.089, 0.017 , 1.0  , 0.23),
-                  ('sand'           , 0.43, 0.045, 7.1   , 0.069, 1.68),
-                  ('sandy clay'     , 0.38, 0.100, 0.029 , 0.37 , 0.23),
-                  ('sandy clay loam', 0.39, 0.100, 0.31  , 0.17 , 0.48),
-                  ('sandy loam'     , 0.41, 0.065, 1.1   , 0.13 , 0.89),
-                  ('test'           , 0.43, 0.045, 7.1   , 0.41 , 3.7),
-                  ], dtype=soils_dtype)
+    def __repr__(self):
+        return f"Soil('{self.props['code']}')"
 
-soils = pd.DataFrame(soils_, index=soils_['soil']).drop('soil', axis=1)
+    def S(self, theta, eps=1e-12): 
+        r"""Return $S(\theta)$"""   
+        theta_s, theta_r = self.props['theta_s'], self.props['theta_r']        
+        return (np.clip(theta, theta_r + eps, theta_s - eps) - theta_r) / (theta_s - theta_r)
+    
+    def S_fr_psi(self, psi):
+        """Return S(psi)"""
+        psi_b, lambda_ = self.props['psi_b'], self.props['lambda']
+        return (psi_b / psi) ** lambda_
+    
+    def psi_fr_theta(self, theta):
+        """Return $psi(theta)$"""
+        psi_b, lambda_ = self.props['psi_b'], self.props['lambda']        
+        S_ = self.S(theta)
+        return psi_b * S_ ** (-1 / lambda_)
+    
+    def theta_fr_S(self, S, eps=1e-12):
+        """Return theta(S)"""
+        theta_s, theta_r = self.props['theta_s'], self.props['theta_r']
+        return theta_r + (theta_s - theta_r) * np.clip(S, eps, 1 - eps)
+    
+    def theta_fr_psi(self, psi):
+        """Return theta(psi)"""
+        psi_b, lambda_ = self.props['psi_b'], self.props['lambda']
+        S_ = (psi_b / psi) ** lambda_
+        return self.theta_fr_S(S_)
+        
+    def K(self, theta):
+        """Return K(theta)"""
+        Ks, lambda_ = self.props['Ks'], self.props['lambda']
+        S_ = self.S(theta)
+        return Ks * S_ ** (3 + 2  / lambda_)
+    
+    def dK_dtheta(self, theta):
+        """Return dK/dtheta"""
+        pr = self.props
+        Ks, theta_s, theta_r, lambda_ = pr['Ks'], pr['theta_s'], pr['theta_r'], pr['lambda']
+        S_ = self.S(theta)
+        dS_dtheta = 1 / (theta_s - theta_r)        
+        return Ks * S_ ** (3 + 2  / lambda_ - 1) * dS_dtheta
+        
+    def dpsi_dtheta(self, theta):
+        """Return dpsi/dtheta."""
+        pr = self.props        
+        psi_b, lambda_ = pr['psi_b'], pr['lambdan']
+        S_ = self.S(theta)        
+        return psi_b / lambda_ * S_ ** (1 / lambda_ - 1)
+        
+    
+    def theta_fc(self, pF=2.5):
+        """Return theta at field capacity (where pF = 2.0 or 2.5). (vdMolen (1973))"""        
+        psi_fc = 10 ** pF # cm
+        return self.theta_fr_psi(psi_fc)
+    
+    def theta_wp(self, pF=4.2):
+        """Return theta at wilting point (where pF = 5.2) (vdMolen (1973))"""        
+        psi_wp = 10 ** pF # cm
+        return self.theta_fr_psi(psi_wp)
+    
+    def available_moisture(self):
+        """Return available moisture to plants (between fc and wp)."""
+        return self.theta_fc() - self.theta_wp()
+    
+    def alpha_wet(self, theta, psi1=10.0, psi2=25.0):
+        """Return suffocation factor for wet conditions.
+        
+        Note that the input is theta, but the criteria are with psi1 and psi2.
+        
+        Parameters
+        ----------
+        theta: float or np.array
+            moisture content
+        psi1: float
+            suction head below wich ET=0 (total suffocation), alpha=0
+        psi2:
+            suction head above which alpha=1 (no suffocation)
+        """
+        theta = np.atleast_1d(theta)
+        psi = self.psi_fr_theta(theta)
+        alpha = np.zeros_like(psi)
+        alpha[psi < psi1] = 0.0
+        alpha[psi > psi2] = 1.0
+        rng = (psi >= psi1) & (psi <= psi2)
+        alpha[rng] = (psi[rng] - psi1) / (psi2 - psi1)
+        if len(alpha) == 1:
+            return np.item(alpha)
+        else:
+            return alpha
+
+    def feddes_alpha(self, theta, psi1=10, psi2=25, psi3=400, psi_w=16000):
+        """
+        Compute Feddes reduction factor alpha(ψ) for given water content(s).
+        Input is θ, converted internally to ψ using van Genuchten–Mualem relations.
+
+        Feddes stress function (example parameters in cm suction head):
+            psi < psi1        → 0.0 (saturation, anoxia)
+            psi1 < psi < psi2 → linear increase to 1.0 (wet side)
+            psi2 ≤ psi ≤ psi3 → 1.0 (optimal)
+            psi3 < psi < psi_w→ linear decrease to 0.0 (dry side)
+            psi ≥ psi_w       → 0.0 (permanent wilting)
+
+        Parameters
+        ----------
+        theta : float or array_like
+            Volumetric moisture content.
+        psi1, psi2, psi3, psi_w : float
+            Suction head thresholds (cm).
+
+        Returns
+        -------
+        alpha : float or ndarray
+            Stress reduction factor in [0, 1], same shape as input.
+        """
+        theta = np.atleast_1d(theta)
+        psi = self.psi_fr_theta(theta)  # convert θ → ψ
+        alpha = np.zeros_like(psi, dtype=float)
+
+        # Wet side: increase from 0 → 1
+        mask_wet = (psi1 < psi) & (psi < psi2)
+        alpha[mask_wet] = (psi[mask_wet] - psi1) / (psi2 - psi1)
+
+        # Optimal zone: α = 1
+        mask_opt = (psi2 <= psi) & (psi <= psi3)
+        alpha[mask_opt] = 1.0
+
+        # Dry side: decrease from 1 → 0
+        mask_dry = (psi3 < psi) & (psi < psi_w)
+        alpha[mask_dry] = (psi_w - psi[mask_dry]) / (psi_w - psi3)
+
+        # Return scalar if input was scalar
+        if alpha.size == 1:
+            return alpha.item()
+        return alpha
+
+        
+    def smooth_alpha(self, theta, s=0.2, pF50=3.6, psi2=25):
+        """Return smooth ET throttling factor.
+
+        Parameters
+        ----------
+        theta : float | array_like
+            Volumetric moisture content.
+        s : float, default=0.2
+            Controls steepness of the dry-side logistic decline (0.15 < s < 0.30).
+        pF50 : float, default=3.6
+            pF at which alpha = 0.5 (typically 3.5 < pF50 < 3.8).
+        psi2 : float, default=25
+            Suction head [cm] at upper bound of wet side (Feddes psi2).
+
+        Returns
+        -------
+        alpha : float or ndarray
+            Reduction factor between 0 and 1.
+        """
+        theta = np.atleast_1d(theta)
+        psi   = self.psi_fr_theta(theta)
+
+        # pF definition
+        pF = np.log10(psi)
+        pF2 = np.log10(psi2)
+        pFw = 4.2   # wilting at pF ~ 4.2
+
+        # Start with wet-side reduction (Feddes-style)
+        alpha = self.alpha_wet(theta, psi2=psi2)
+
+        # Set to zero beyond wilting
+        alpha[pF > pFw] = 0.0
+
+        # Logistic decline on dry side
+        rng = (pF >= pF2) & (pF < pFw)
+        alpha[rng] = 1.0 / (1.0 + np.exp((pF[rng] - pF50) / s))
+
+        # Return scalar if input was scalar
+        return np.item(alpha) if alpha.size == 1 else alpha
+            
+    def mualem_alpha(self, theta, beta=1.0, psi2=25, psi_fc=300, psi_w=16000):
+        """Return smooth ET throttling factor acc Mualem.
+
+        Parameters
+        ----------
+        theta: float, ndarray    
+            moisture content        
+        beta: tunes curvature
+            0.7 < beta < 1.3, beta > 1 steeper, beta < 1 gentler
+        """        
+        theta = np.atleast_1d(theta)
+        psi = self.psi_fr_theta(theta)
+        
+        alpha = np.ones_like(psi)
+                
+        K_fc = max(self.K(self.theta_fr_psi(psi_fc)), 1e-30)
+
+        rng = (psi > psi_fc) & (psi < psi_w)
+        alpha[rng] = (self.K(self.theta_fr_psi(psi[rng])) / K_fc) ** beta
+        alpha[psi >= psi_w] = 0
+
+        alpha  *= self.alpha_wet(theta, psi2=psi2)
+
+        # Return scalar if input was scalar
+        return np.item(alpha) if alpha.size == 1 else alpha
+
+    def alpha_dry_blend(self, theta, beta=1.0, w=0.6,
+                        psi1=10, psi2=25, psi3=400, psi_w=16000, eps=1e-12):
+        """
+        Dry-side throttle: geometric blend of Mualem and Feddes.
+        w=1 → pure Mualem, w=0 → pure Feddes.
+        """
+        psi_fc, psi_w = 300, 16000
+        theta = np.atleast_1d(theta)
+        
+        # masks
+        # dry = (theta > th_wp) & (theta < th_fc)
+
+        a_mualem = self.mualem_alpha(theta, beta=beta, psi2=psi2, psi_fc=psi_fc, psi_w=psi_w)        
+        a_feddes = self.feddes_alpha(theta, psi1=psi1, psi2=psi2, psi3=psi3, psi_w=psi_w)
+        a_m = np.clip(a_mualem, eps, 1.0)
+        a_f = np.clip(a_feddes, eps, 1.0)
+
+        alpha = np.exp(w * np.log(a_m) +  (1 - w) * np.log(a_f))
+        
+        # enforce bounds
+        alpha = np.clip(alpha, 0.0, 1.0)
+        return alpha.item() if alpha.size == 1 else alpha
 
 
-# %% Read the Van Genughten soil properties for the 18 Dutch soils
-
-# The dimensions of these data are
-vG_dims={'theta_r':'L3/L3', 'theta_s':'L3/L3', 'alpha':'1/cm', 'n':'-', 'lambda':'-', 'Ks':'cm/d'}
-
-wbook = os.path.join(dirs.docs, 'VG_soilprops.xlsx')
-props = pd.read_excel(wbook, sheet_name='props',
-              usecols='A:I',
-              dtype={'a':str, 'b':str, 'c':float, 'd':float, 'e':float, 'f':float, 'g':float, 'h':float, 'i':str},
-              header=0,
-              index_col=1,
-              skiprows=[1])
 
 # %%
 
 def get_vD_BC(q_avg):
     """Return parameters v and D for the linearized IR and SR.
     
-    Using the BC relations we can alway determin the parameters h0 and h1
+    Using the BC relations we can alway determin thee parameters h0 and h1
     and k0 and k1 of the linearized dh/dtheta and dk/dtheta at some theta_avg.
     
     Parameters
@@ -186,7 +446,6 @@ def theta_from_psi_BC(psi):
     theta = theta_r + (theta_s - theta_r) * (psi_b / psi) ** pr_BC['lambda_']
     theta[psi < pr_BC['psi_b']] = pr_BC['theta_s']
     return theta
-
 
 
 def psi_from_theta_BC(theta):
