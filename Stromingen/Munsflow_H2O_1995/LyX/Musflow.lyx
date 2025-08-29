@@ -1076,12 +1076,79 @@ Brooks & Corey (1966) wordt hierna afgekort to BC.
 \begin_layout Standard
 \begin_inset Formula 
 \[
-\frac{\theta-\theta_{r}}{\theta_{s}-\theta_{r}}=\left(\frac{\psi_{b}}{\psi}\right)^{\lambda}
+S=\frac{\theta-\theta_{r}}{\theta_{s}-\theta_{r}}=\left(\frac{\psi_{b}}{\psi}\right)^{\lambda}
 \]
 
 \end_inset
 
 
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+\frac{dS}{d\psi} & =\lambda\left(\frac{\psi_{b}}{\psi}\right)^{\lambda-1}\left(-\frac{\psi_{b}}{\psi^{2}}\right)\\
+\frac{dS}{d\theta}\frac{d\theta}{d\psi} & =-\frac{\lambda}{\psi}\left(\frac{\psi_{b}}{\psi}\right)^{\lambda}\\
+\frac{1}{\left(\theta_{s}-\theta_{r}\right)} & \frac{d\theta}{d\psi}=-\frac{\lambda}{\psi}\left(\frac{\psi_{b}}{\psi}\right)^{\lambda}\\
+\frac{d\theta}{d\psi} & =-\frac{\lambda}{\psi}\left(\theta_{s}-\theta_{r}\right)\left(\frac{\psi_{b}}{\psi}\right)^{\lambda}
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\frac{d\psi}{d\theta}=-\frac{\psi}{\lambda}\frac{1}{\theta_{s}-\theta_{r}}\left(\frac{\psi}{\psi_{b}}\right)^{\lambda}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+K\left(\psi\right) & =K_{s}S^{\epsilon}\\
+K\left(\theta\right) & =K_{s}\left(\frac{\theta-\theta_{r}}{\theta_{s}-\theta_{r}}\right)^{\epsilon}
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+\frac{dK}{d\psi} & =\frac{dK}{dS}\frac{dS}{d\psi}\\
+ & =\epsilon K_{s}S^{\epsilon-1}\frac{d}{d\psi}\left(\frac{\psi_{b}}{\psi}\right)^{\lambda}\\
+ & =-\epsilon\lambda K_{s}S^{\epsilon-1}\left(\frac{\psi_{b}}{\psi}\right)^{\lambda-1}\left(\frac{\psi_{b}}{\psi^{2}}\right)\\
+ & =-\frac{\epsilon\lambda}{\psi}K_{s}S^{\epsilon-1}\left(\frac{\psi_{b}}{\psi}\right)^{\lambda}
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+\frac{dK}{d\psi} & =\frac{dK}{d\theta}\frac{d\theta}{d\psi}\\
+ & =\epsilon K_{s}\left(\frac{1}{\theta_{s}-\theta_{r}}\right)\left(\frac{\theta-\theta_{r}}{\theta_{s}-\theta_{r}}\right)^{\epsilon-1}\frac{d\theta}{d\psi}\\
+ & =-\epsilon K_{s}\left(\frac{1}{\theta_{s}-\theta_{r}}\right)\left(\frac{\theta-\theta_{r}}{\theta_{s}-\theta_{r}}\right)^{\epsilon-1}\frac{\lambda\left(\theta_{s}-\theta_{r}\right)}{\psi_{b}}\left(\frac{\theta-\theta_{r}}{\theta_{s}-\theta_{r}}\right)^{1+\frac{1}{\lambda}}\\
+ & =-\frac{\epsilon\lambda K_{s}}{\psi_{b}}\left(\frac{\theta-\theta_{r}}{\theta_{s}-\theta_{r}}\right)^{2+\frac{2}{\lambda}}\left(\frac{\theta-\theta_{r}}{\theta_{s}-\theta_{r}}\right)^{1+\frac{1}{\lambda}}
+\end{align*}
+
+\end_inset
+
+
+\backslash
+fra
 \end_layout
 
 \begin_layout Standard
@@ -1110,6 +1177,18 @@ Dit maakt duidelijk dat
 \end_layout
 
 \begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+S & =\left(\frac{\psi}{\psi_{b}}\right)^{-\lambda}\\
+\frac{dS}{d\psi} & =\frac{-\lambda}{\psi_{b}}\left(\frac{\psi}{\psi_{b}}\right)^{-1-\lambda}
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
 En 
 \begin_inset Formula $d\psi/d\theta$
 \end_inset
@@ -1119,8 +1198,65 @@ En
 
 \begin_layout Standard
 \begin_inset Formula 
+\begin{align*}
+\frac{d\psi}{d\theta} & =-\frac{\psi_{b}}{\lambda\left(\theta_{s}-\theta_{r}\right)}\left(\frac{\theta-\theta_{r}}{\theta_{s}-\theta_{r}}\right)^{-1-\frac{1}{\lambda}}\\
+ & =-\frac{\psi_{b}}{\lambda\left(\theta_{s}-\theta_{r}\right)}S^{-1-\frac{1}{\lambda}}\\
+ & =-\frac{\psi_{b}}{\lambda\left(\theta_{s}-\theta_{r}\right)}\left(\left(\frac{\psi}{\psi_{b}}\right)^{-\lambda}\right)^{-1-\frac{1}{\lambda}}\\
+ & =-\frac{\psi_{b}}{\lambda\left(\theta_{s}-\theta_{r}\right)}\left(\frac{\psi}{\psi_{b}}\right)^{1+\lambda}
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula $d\theta/d\psi$
+\end_inset
+
+ is just de reciproke van 
+\begin_inset Formula $d\psi/d\theta$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+\frac{d\theta}{d\psi} & =-\frac{\lambda\left(\theta_{s}-\theta_{r}\right)}{\psi_{b}}S_{\psi}^{1+\frac{1}{\lambda}}\\
+ & =-\frac{\lambda\left(\theta_{s}-\theta_{r}\right)}{\psi_{b}}\left(\frac{\psi}{\psi_{b}}\right)^{-\lambda\times\left(1+\frac{1}{\lambda}\right)}\\
+ & =-\frac{\lambda\left(\theta_{s}-\theta_{r}\right)}{\psi_{b}}\left(\frac{\psi}{\psi_{b}}\right)^{-1-\lambda}
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Andere poging om 
+\begin_inset Formula $d\theta/d\psi$
+\end_inset
+
+ te berekenen
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
 \[
-\frac{d\psi}{d\theta}=-\frac{\psi_{b}}{\lambda\left(\theta_{s}-\theta_{r}\right)}\left(\frac{\theta-\theta_{r}}{\theta_{s}-\theta_{r}}\right)^{-\frac{1}{\lambda}-1}
+\theta=\theta_{r}+\left(\theta_{s}-\theta_{r}\right)\left(\frac{\psi}{\psi_{b}}\right)^{-\lambda}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\frac{d\theta}{d\psi}=-\frac{\lambda}{\psi_{b}}\left(\theta_{s}-\theta_{r}\right)\left(\frac{\psi}{\psi_{b}}\right)^{-1-\lambda}
 \]
 
 \end_inset
@@ -1478,17 +1614,79 @@ F & =\intop_{b}^{t+b}\frac{a^{n}\left(\tau-b\right)^{n-1}}{\Gamma\left(n\right)}
 \end_layout
 
 \begin_layout Section
-Veronderstellingen bij de transferfunctie
+Brooks and Corey parameters
 \end_layout
 
-\begin_layout Section
-Van Genughten relaties
+\begin_layout Itemize
+\begin_inset Formula $S$
+\end_inset
+
+ [-] saturation 
+\begin_inset Formula $\in\left[0...1\right]$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $\theta_{s}$
+\end_inset
+
+ [-] maximum moisture content (porosity)
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $\theta_{r}$
+\end_inset
+
+ [-] residual moisture content
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $\psi$
+\end_inset
+
+ [cm] suction head (-pressure head 
+\begin_inset Formula $h$
+\end_inset
+
+) 
+\begin_inset Formula $\in[0...\infty]$
+\end_inset
+
+ 
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $\psi_{b}$
+\end_inset
+
+ [cm] air entry pressure,
+ thickness capillary zone
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $\lambda$
+\end_inset
+
+ [-] shape factor
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $\epsilon=3+2/\lambda$
+\end_inset
+
+ [-] shape factor
+\end_layout
+
+\begin_layout Standard
+Saturation
 \end_layout
 
 \begin_layout Standard
 \begin_inset Formula 
 \[
-\theta=\theta_{r}+\frac{\theta_{s}-\theta_{r}}{\left(1+\left(\alpha\psi\right)^{n}\right)^{m}}
+S\left(\theta\right)=\frac{\theta-\theta_{r}}{\theta_{s}-\theta_{r}},\,\,\,\,\frac{dS}{d\theta}=\frac{1}{\theta_{s}-\theta_{r}}
 \]
 
 \end_inset
@@ -1497,7 +1695,310 @@ Van Genughten relaties
 \end_layout
 
 \begin_layout Standard
-of
+\begin_inset Formula 
+\[
+\theta=\theta_{r}+\left(\theta_{s}-\theta_{r}\right)S,\,\,\,\,\frac{d\theta}{dS}=\left(\theta_{s}-\theta_{r}\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Relations 
+\begin_inset Formula $S\left(\psi\right)$
+\end_inset
+
+ and 
+\begin_inset Formula $\frac{dS}{d\psi}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+S=\left(\frac{\psi_{b}}{\psi}\right)^{\lambda}=\left(\frac{\psi}{\psi_{b}}\right)^{-\lambda}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\frac{dS}{d\psi}=-\frac{\lambda}{\psi_{b}}\left(\frac{\psi}{\psi_{b}}\right)^{-\lambda-1}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Relations 
+\begin_inset Formula $\psi\left(S\right)$
+\end_inset
+
+ and 
+\begin_inset Formula $\frac{d\psi}{dS}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\psi=\psi_{b}S^{-\frac{1}{\lambda}}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\frac{d\psi}{dS}=-\frac{\psi_{b}}{\lambda}S^{-\frac{1}{\lambda}-1}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Moisture content 
+\begin_inset Formula $d\theta/d\psi\,\,\,\left[\mathtt{cm}^{-1}\right]$
+\end_inset
+
+:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+\frac{d\theta}{d\psi} & =\frac{d\theta}{dS}\frac{dS}{d\psi}\\
+ & =-\frac{\lambda}{\psi_{b}\left(\theta_{s}-\theta_{r}\right)}\left(\frac{\psi}{\psi_{b}}\right)^{-\lambda-1}
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Hydraulic conductivities 
+\begin_inset Formula $K\,\left[\mathtt{cm}\times\mathtt{d}^{-1}\right]$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+K=K_{s}S^{3+2/\lambda}=K_{s}S^{\epsilon}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+\frac{dK}{dS} & =K_{s}\epsilon S^{\epsilon-1}\,\,\,\mathtt{with}\,\,\,\epsilon=3+\frac{2}{\lambda}
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\frac{dK}{d\theta}=\frac{dK}{dS}\frac{dS}{d\theta}=\frac{1}{\left(\theta_{s}-\theta_{r}\right)}\frac{dK}{dS}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\frac{dK}{d\psi}=\frac{dK_{s}}{dS}\frac{dS}{d\psi}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+C=\frac{d\theta}{d\psi}\,\,\,\left[\mathtt{cm}^{-1}\right]
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+D=\frac{K}{d\theta/d\psi}=\frac{K}{C}\,\,\,\left[\mathtt{cm}^{2}\mathtt{d}^{-1}\right]
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+Van Genughten parameters
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $S$
+\end_inset
+
+ [-] saturation 
+\begin_inset Formula $\in[0...1]$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $\theta_{s}$
+\end_inset
+
+ [-] maximum moisture content (porosity)
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $\theta_{r}$
+\end_inset
+
+ [-] residual moisture content
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $\psi$
+\end_inset
+
+ [cm] suction head (-pressure head 
+\begin_inset Formula $h$
+\end_inset
+
+) 
+\begin_inset Formula $\in[0...\infty]$
+\end_inset
+
+ 
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $\alpha$
+\end_inset
+
+ [-] shape parameter
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $m$
+\end_inset
+
+ [-] shape parameter 
+\begin_inset Formula $m=1-1/n$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $n$
+\end_inset
+
+ [-] shape parameter 
+\begin_inset Formula $n=1/\left(1-n\right)$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+l [-] shape parameter
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $\lambda$
+\end_inset
+
+ [-] shape parameter,
+ not used in Van Genughten relations 
+\end_layout
+
+\begin_layout Standard
+Saturation
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+S\left(\theta\right)=\frac{\theta-\theta_{r}}{\theta_{s}-\theta_{r}},\,\,\,\,\frac{dS}{d\theta}=\frac{1}{\theta_{s}-\theta_{r}}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\theta=\theta_{r}+\left(\theta_{s}-\theta_{r}\right)S,\,\,\,\,\frac{d\theta}{dS}=\left(\theta_{s}-\theta_{r}\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Relations 
+\begin_inset Formula $S\left(\psi\right)$
+\end_inset
+
+ and 
+\begin_inset Formula $\frac{dS}{d\psi}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+S=\left(1+\left(\alpha\psi\right)^{n}\right)^{-m},\,\,\ \mathtt{with}\,\,\,m=1-\frac{1}{n}\,\,\,\mathtt{or}\,\,\,n=1/(1-m)
+\]
+
+\end_inset
+
+
 \end_layout
 
 \begin_layout Standard
@@ -1514,7 +2015,30 @@ S\left(\psi\right)=\left(1+\left(\alpha\psi\right)^{n}\right)^{-m}
 \begin_layout Standard
 \begin_inset Formula 
 \[
-S\left(\theta\right)=\frac{\theta-\theta_{r}}{\theta_{s}-\theta_{r}}
+\frac{dS}{d\psi}=-\alpha nm\left(1+\left(\alpha\psi\right)^{n}\right)^{-1-m}\left(\alpha\psi\right)^{n-1}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Relations 
+\begin_inset Formula $\psi\left(S\right)$
+\end_inset
+
+ and 
+\begin_inset Formula $\frac{d\psi}{dS}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\psi=\frac{\left(S^{-1/m}-1\right)^{1/n}}{\alpha}
 \]
 
 \end_inset
@@ -1525,7 +2049,7 @@ S\left(\theta\right)=\frac{\theta-\theta_{r}}{\theta_{s}-\theta_{r}}
 \begin_layout Standard
 \begin_inset Formula 
 \[
-\theta\left(\psi\right)=\theta_{r}+\left(\theta_{s}-\theta_{r}\right)S\left(\psi\right)
+\frac{d\psi}{dS}=-\frac{1}{\alpha nm}\left(S^{-1/m}-1\right)^{-1+1/n}S^{-1-1/m}
 \]
 
 \end_inset
@@ -1534,9 +2058,25 @@ S\left(\theta\right)=\frac{\theta-\theta_{r}}{\theta_{s}-\theta_{r}}
 \end_layout
 
 \begin_layout Standard
+Moisture content 
+\begin_inset Formula $d\theta/d\psi\,\,\,\left[\mathtt{cm}^{-1}\right]$
+\end_inset
+
+:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+\frac{d\theta}{d\psi} & =\frac{d\theta}{dS}\frac{dS}{d\psi}\\
+ & =-\frac{\alpha nm}{\theta_{s}-\theta_{r}}\left(1+\left(\alpha\psi\right)^{n}\right)^{-1-m}\left(\alpha\psi\right)^{n-1}
+\end{align*}
+
+\end_inset
+
+
 \begin_inset Formula 
 \[
-\psi\left(\theta\right)=\frac{1}{\alpha}\left[S\left(\theta\right)^{-1/m}-1\right]^{1/n}
 \]
 
 \end_inset
@@ -1545,9 +2085,21 @@ S\left(\theta\right)=\frac{\theta-\theta_{r}}{\theta_{s}-\theta_{r}}
 \end_layout
 
 \begin_layout Standard
+Hydraulic conductivities 
+\begin_inset Formula $K\,\left[\mathtt{cm}\times\mathtt{d}^{-1}\right]$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Original Van Genughten -Mualem relation for hydraulic conductivity
+\end_layout
+
+\begin_layout Standard
 \begin_inset Formula 
 \[
-K\left(\psi\right)=K_{s}\left(S\left(\psi\right)\right)^{l}\left[1-\left(1-S\left(\psi\right)^{1/m}\right)^{m}\right]^{2}
+K=K_{s}S^{l}\left[1-\left(1-S^{1/m}\right)^{m}\right]^{2}
 \]
 
 \end_inset
@@ -1556,11 +2108,12 @@ K\left(\psi\right)=K_{s}\left(S\left(\psi\right)\right)^{l}\left[1-\left(1-S\lef
 \end_layout
 
 \begin_layout Standard
-\begin_inset Formula 
-\[
-K\left(\theta\right)=K_{s}\left(S\left(\theta\right)\right)^{l}\left[1-\left(1-S\left(\theta\right)^{1/m}\right)^{m}\right]^{2}
-\]
+Define help-parameter 
+\begin_inset Formula $B$
+\end_inset
 
+
+\begin_inset Formula $\left(S\right)$
 \end_inset
 
 
@@ -1569,7 +2122,7 @@ K\left(\theta\right)=K_{s}\left(S\left(\theta\right)\right)^{l}\left[1-\left(1-S
 \begin_layout Standard
 \begin_inset Formula 
 \[
-K\left(\theta\right)=K_{s}\left(S\left(\theta\right)\right)^{l}\left(B\left(S\right)\right)^{2}
+B=1-\left(1-S^{1/m}\right)^{m}
 \]
 
 \end_inset
@@ -1580,8 +2133,8 @@ K\left(\theta\right)=K_{s}\left(S\left(\theta\right)\right)^{l}\left(B\left(S\ri
 \begin_layout Standard
 \begin_inset Formula 
 \begin{align*}
-\frac{dK\left(\theta\right)}{d\theta} & =\frac{K_{s}}{\theta_{s}-\theta_{r}}\left(S\left(\theta\right)\right)^{l}\left[lS^{l-1}B^{2}+S^{l}\cdot2B\cdot B'\right]\\
-B'\left(S\right) & =\frac{dB}{dS}=\left(1-S^{1/m}\right)^{m-1}S^{1/m-1}
+\frac{dB}{dS} & =-m\left(1-S^{1/m}\right)^{m-1}\left(-\frac{1}{m}S^{-1+1/m}\right)\\
+ & =\left(1-S^{1/m}\right)^{m-1}S^{-1+1/m}
 \end{align*}
 
 \end_inset
@@ -1590,13 +2143,32 @@ B'\left(S\right) & =\frac{dB}{dS}=\left(1-S^{1/m}\right)^{m-1}S^{1/m-1}
 \end_layout
 
 \begin_layout Standard
-In a compact set of equations
+\begin_inset Formula 
+\[
+K=K_{s}S^{l}B^{2}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+\frac{dK}{dS} & =K_{s}\left(lS^{l-1}B^{2}+2S^{l}B\frac{dB}{dS}\right)\\
+ & =K_{s}\left(lS^{l-1}\left[1-\left(1-S^{1/m}\right)^{m}\right]^{2}+2S^{l}\right)
+\end{align*}
+
+\end_inset
+
+
 \end_layout
 
 \begin_layout Standard
 \begin_inset Formula 
 \[
-S\left(\theta\right)=\frac{\theta-\theta_{r}}{\theta_{s}-\theta_{r}}
+\frac{dK}{d\theta}=\frac{dK}{dS}\frac{dS}{d\theta}
 \]
 
 \end_inset
@@ -1607,7 +2179,7 @@ S\left(\theta\right)=\frac{\theta-\theta_{r}}{\theta_{s}-\theta_{r}}
 \begin_layout Standard
 \begin_inset Formula 
 \[
-m=1-\frac{1}{n}
+\frac{dK}{d\psi}=\frac{dK_{s}}{dS}\frac{dS}{d\psi}
 \]
 
 \end_inset
@@ -1618,7 +2190,7 @@ m=1-\frac{1}{n}
 \begin_layout Standard
 \begin_inset Formula 
 \[
-B\left(S\right)=1-\left(1-S^{1/m}\right)^{m}
+C=\frac{d\theta}{d\psi}\,\,\,\left[\mathtt{cm}^{-1}\right]
 \]
 
 \end_inset
@@ -1629,7 +2201,86 @@ B\left(S\right)=1-\left(1-S^{1/m}\right)^{m}
 \begin_layout Standard
 \begin_inset Formula 
 \[
-\frac{dB}{dS}=\left(1-S^{1/m}\right)^{m-1}S^{1/m-1}
+D=\frac{K}{d\theta/d\psi}=\frac{K}{C}\,\,\,\left[\mathtt{cm}^{2}\mathtt{d}^{-1}\right]
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The Heinen,
+ Bakker and Wösten (2018) relation for conductivity which uses a different conductivity model with an extra parameter 
+\begin_inset Formula $\lambda$
+\end_inset
+
+ while dropping the 
+\begin_inset Quotes pld
+\end_inset
+
+el
+\begin_inset Quotes prd
+\end_inset
+
+ 
+\begin_inset Formula $l$
+\end_inset
+
+ parameter in VG-M
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+K\left(\psi\right) & =K_{s}\frac{\left(\left(1+\left(\alpha\psi\right)^{n}\right)^{m}-\left(\alpha\psi\right)^{n-1}\right)^{2}}{\left(1+\left(\alpha\psi\right)^{n}\right)^{m\left(\lambda+2\right)}}\\
+ & =K_{s}\left[\left(1+\left(\alpha\psi\right)^{n}\right)^{-m}\right]^{\left(\lambda+2\right)}\left(\left(1+\left(\alpha\psi\right)^{n}\right)^{m}-\left(\alpha\psi\right)^{n-1}\right)^{2}\\
+ & =K_{s}S^{\left(\lambda+2\right)}\left(S^{-1}-\left(\alpha\psi\right)^{n-1}\right)^{2}\\
+ & =K_{s}S^{\left(\lambda+2\right)}\left(S^{-1}-\left(S^{-\frac{1}{m}}-1\right)^{\frac{n-1}{n}}\right)^{2}
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+with
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+S & =\left(1+\left(\alpha\psi\right)^{n}\right)^{-m}\\
+S^{-1} & =\left(1+\left(\alpha\psi\right)^{n}\right)^{+m}\\
+\left(1+\left(\alpha\psi\right)^{n}\right)^{+m} & =S^{-1}\\
+\left(\alpha\psi\right)^{n} & =S^{-\frac{1}{m}}-1\\
+\left(\alpha\psi\right)^{n-1} & =\left(S^{-\frac{1}{m}}-1\right)^{\frac{n-1}{n}}
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+We get a simpler form
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+K\left(\psi\right)=K_{s}\left[\left(1+\left(\alpha\psi\right)^{n}\right)^{-m}\right]^{\lambda+2}\left(S^{-1}-\left(\alpha\psi\right)^{n-1}\right)^{2}
 \]
 
 \end_inset
@@ -1640,26 +2291,7 @@ B\left(S\right)=1-\left(1-S^{1/m}\right)^{m}
 \begin_layout Standard
 \begin_inset Formula 
 \[
-K\left(\theta\right)=K_{s}S\left(\theta\right)^{l}B\left(S\right)^{2}
-\]
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-Zonder verdere informatie neem 
-\begin_inset Formula $l=\frac{1}{2}$
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\[
-\frac{dK\left(\theta\right)}{d\theta}=\frac{K_{s}}{\theta_{s}-\theta_{r}}\left[lS^{l-1}B^{2}S^{l}\cdot2B\cdot\frac{dB}{dS}\right]
+K\left(\psi\right)=K_{s}S^{\lambda+2}\left(S^{-1}-\left(1-S^{\frac{n-1}{nm}}\right)\right)^{2}
 \]
 
 \end_inset
@@ -1669,8 +2301,53 @@ Zonder verdere informatie neem
 
 \begin_layout Standard
 \begin_inset Formula 
+\begin{align*}
+K\left(\psi\right) & =K_{s}\left(1+\left(\alpha\psi\right)^{-m\left(\lambda-2\right)}\right)\left(S^{-1}-\left(\alpha\psi\right)^{n-1}\right)^{2}\\
+K & =K_{s}S^{\lambda-2}\left(S^{-1}-\left(\alpha\psi\right)^{n-1}\right)^{2}
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+With 
+\begin_inset Formula $\left(\alpha\psi\right)^{n}=S^{-1/m}-1$
+\end_inset
+
+,
+ so that 
+\begin_inset Formula $\left(\alpha\psi\right)^{n-1}=\left(S^{-1/m}-1\right)^{\left(n-1\right)/n}$
+\end_inset
+
+,
+ we get
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
 \[
-\psi\left(\theta\right)=\frac{1}{\alpha}\left(S^{-1/m}-1\right)^{1/n}
+K=K_{s}S^{\lambda+2}\left(S^{-1}-\left(S^{-1/m}-1\right)^{1=1/n}\right)^{2}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+For small 
+\begin_inset Formula $S$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+K\approx K_{s}S^{\lambda},\,\,\,\mathtt{for}\,\,\,S\rightarrow0
 \]
 
 \end_inset
@@ -1681,7 +2358,70 @@ Zonder verdere informatie neem
 \begin_layout Standard
 \begin_inset Formula 
 \[
-\frac{d\psi}{d\theta}=-\frac{1}{\alpha mn}\frac{1}{\theta_{s}-\theta_{r}}S^{-1/m-1}\left(S^{-1/m}-1\right)^{1/n-1}
+\frac{dK}{dS}=\lambda K_{s}S^{\lambda-1}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+For not small values of S
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+B=S^{-1}-\left(S^{-1/m}-1\right)^{1-1/n}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+\frac{dB}{dS} & =-S^{-2}-\left(1-\frac{1}{n}\right)\left(S^{-1/m}-1\right)^{-1/n}\left(-\frac{1}{m}\right)S^{-1-\frac{1}{m}}\\
+ & =-S^{-2}+\frac{1}{m}\left(1-\frac{1}{n}\right)\left(S^{-1/m}-1\right)^{-1/n}S^{-1-\frac{1}{m}}
+\end{align*}
+
+\end_inset
+
+
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\nospellcheck off
+\bar no
+\strikeout off
+\xout off
+\uuline off
+\uwave off
+\noun off
+\color none
+S^{-1/m}
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+K=K_{s}S^{\lambda+2}B^{2}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\frac{dK}{dS}=K_{s}\left(\left(\lambda+2\right)S^{\lambda+1}B^{2}+S^{\lambda+2}\cdot2B\frac{dB}{dS}\right)
 \]
 
 \end_inset

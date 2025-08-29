@@ -1,5 +1,5 @@
-
-__all__ = ['plot_kw', 'text_kw']
+# Plot kwargs and plot kwarg text for convenience.
+# See __all__ at the bottom.
 
 plot_kw = {
   'agg_filter': "a filter function, which takes a (m, n, 3) float array and a dpi value, and returns a (m, n, 3) array",
@@ -112,3 +112,7 @@ text_kw = {
     'y': "float",
     'zorder': "float",
 }
+
+
+__all__ =[name for name in locals() if callable(locals()[name])
+           and not name.startswith('_')]

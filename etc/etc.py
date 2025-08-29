@@ -15,13 +15,6 @@ from pathlib import Path
 
 #%%
 
-__all__ = ['where_is', 'Dirs', 'dayofweek', 'week', 'mlDatenum2npDatetime', 'npDatetime2mlDatenum',
-           'dn2dt', 'dt2dn',
-           'attr', 'linestyles_', 'colors_',
-           'color_cycler', 'linestyle_cycler', 'line_cycler',
-           'newfig', 'newfigs', 'newfigs2',
-           'get_outliers']
-
 import importlib.util
 
 def where_is(module_name: str) -> str:
@@ -42,7 +35,7 @@ def where_is(module_name: str) -> str:
         return f"{module_name} is a built-in module"
     return spec.origin
 
-def setup_paths():
+def check_project_root():
     """
     Ensure that the current project root (where src/, notebooks/, etc. live)
     is on sys.path so modules like `src.dutch_soils` can be imported safely.
@@ -60,10 +53,12 @@ def setup_paths():
 
     if project_root not in sys.path:
         sys.path.insert(0, project_root)  # prepend for priority
+    return project_root
 
 class Dirs:
-    def __init__(self, home):
-        """Return a standard project directory tree with home as root, without overwriting).
+    def __init__(self, home=None):
+        """Return a standard project directory tree with home as root
+        of home is given path, without overwriting).
 
         @ TO 2025-08-20 with ChatGPT
 
@@ -74,7 +69,8 @@ class Dirs:
         print(dirs.data)
         print(dirs.images)
         """
-        setup_paths()
+        if home is None:
+            home = check_project_root()
         
         self.home = Path(home).expanduser().resolve()
 
@@ -417,5 +413,8 @@ def get_outliers(ds, inner=1.5, outer=3.0):
         print(ds[truOutliers])
     else:
         print('No outliers in df.')
+
+__all__ =[name for name in locals() if callable(locals()[name])
+           and not name.startswith('_')]
 
 # %%
