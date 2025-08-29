@@ -55,8 +55,8 @@ class Soil(SoilBase):
         # ...
         self.code = soil_code
         
-        # Interpolator to get S given K
-        self.S_fr_K  = self.S_fr_K_interpolator()
+        # Interpolator object to get S given ln(K)
+        self.S_fr_lnK  = self.S_fr_lnK_interpolator(S_limit=1e-4)
   
     
     @classmethod

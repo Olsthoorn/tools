@@ -44,7 +44,7 @@ class Soil(SoilBase):
         else:
             raise ValueError("Missing positional argument 'soil_code'")
         
-        # Additional properties    
+        # Additional properties        
         self.props['el'] = 0.5
         self.props['m'] = 1 - 1 / self.props['n']
         self.code = soil_code
