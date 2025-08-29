@@ -424,16 +424,30 @@ class SoilBase(ABC):
         
         """
         S = np.linspace(S_limit, 1, 20)
-        k = self.K_fr_S(S)
-        return PchipInterpolator(np.log(k[k > 0]), S[k > 0])
+        # Dummy k
+        K = self.K_fr_S(S)
+        
+        # Guarantee that k always rises
+        rises = np.ones_like(K, dtype=bool)
+        kmax = 0
+        for i, k in enumerate(K):
+            if k > kmax:
+                kmax = k
+            else:
+                rises[i] = False
+        K = K[rises]
+        S = S[rises]
+            
+        return PchipInterpolator(np.log(K), S)
 
-    def k_fr_S(S):
-        k = np.exp(ln_k_fr_S())
+    def S_fr_K(self, k: float | np.ndarray)-> float | np.ndarray:
+        """Return S(K), saturation given K (by interpolation) """
+        return self.S_fr_lnK(np.log(k))
 
     def get_vD(self, q_avg: float)-> tuple[float, float]:
         """Return v = dK_dtheta(theta_avg)) and D(theta_abg) =k0(theta_avg) h1(theta_avg)"""        
         k0 = q_avg
-        S = self.S_fr_lnK(np.log(k0)).item()        
+        S = self.S_fr_K(k0).item()        
         v = self.dK_dtheta(self.theta_fr_S(S))
         D = self.D_fr_S(S)
         return v.item() if len(v) == 1 else v, D.item() if len(D) == 1 else D

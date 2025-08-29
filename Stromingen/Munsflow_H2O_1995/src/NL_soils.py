@@ -22,7 +22,7 @@ class Soil(SoilBase):
     
     data = None
     
-    def __init__(self, soil_code: str =None, HBW: bool = False) -> None:
+    def __init__(self, soil_code: str =None, HBW: bool = True) -> None:
         """Return soil object.
         
         Parameters
@@ -55,9 +55,9 @@ class Soil(SoilBase):
         # Because we obtain all parameters from HBW, HBW = True is default.
         self.HBW = HBW
         
-        # Interpolator to get S given K
+        # Interpolator object to get S given ln(K)
         self.S_fr_lnK  = self.S_fr_lnK_interpolator(S_limit=1e-4)
-        
+                
  
     @classmethod
     def load_soils(cls, wbook: str | Path)-> None:
@@ -166,17 +166,19 @@ class Soil(SoilBase):
         S = np.atleast_1d(S).clip(S_limit, 1.0)
         K = Ks * S ** (lambda_ + 2) * (S ** (-1) - (S ** (-1 / m) - 1) ** (1 - 1 / n)) ** 2
         return K.item() if K.size == 1 else K
-
     
     def dK_HBW_dS(self, S: float | np.ndarray, S_limit: float = 1e-12)-> float | np.ndarray:
         """Return K(S) according to Heinen, Bakker and Wösten (2018)"""
         Ks, n, m, lambda_ = self.props['Ks'], self.props['n'], self.props['m'], self.props['lambda']        
         S = np.atleast_1d(S).clip(S_limit, 1.0)
 
-        B = S ** (-1) - (S ** (-1 / m) - 1) ** (1 - 1 / n)
-        dBdS = -S ** (-2) * (1 - 1 / n) / m * (S **(-1 / m) - 1) ** (-1 / n) * S ** (-1 - 1 / m)
-        dKdS = Ks * ((lambda_ + 2) * S ** (lambda_ + 1) * B ** 2 + S ** (lambda_ + 2) * 2 * B * dBdS)                                                      
+        A = S ** (-1) - (S ** (-1/m) - 1) ** (1-1/n)
+        dAdS = -S ** (-2) - (1 - 1/n) * (S ** (-1/m) - 1) ** (-1/n) * (-1/m) * S ** (-1-1/m)
+        dKdS = Ks * ((lambda_ + 2) * S ** (lambda_ + 1) * A ** 2 +
+                     S ** (lambda_ + 2) * A * dAdS
+        )                                                 
         return dKdS.item() if dKdS.size == 1 else dKdS
+
     
     def K_fr_S(self, S: float | np.ndarray, S_limit: float = 1e-12)-> float | np.ndarray:
         """Return K(S) according HBW or VGM"""
@@ -208,7 +210,7 @@ def _smoke_test():
 
     # Test the interpolator
     K_test = [2.0, 5.0, 9.0]
-    print("S(K) =", soil.S_fr_lnK(np.log(K_test)))
+    print("S(K) =", soil.S_fr_K(K_test))
 
 # %%
 if __name__ == "__main__":
@@ -220,14 +222,14 @@ if __name__ == "__main__":
     _smoke_test()
 
 
-    # %%
+    # %% SGet the soil data from the Excel workbook
     wbook = os.path.join(dirs.data, 'NL_VG_soilprops.xlsx')
     Soil.load_soils(wbook) # load once
     Soil.pretty_data()
     sand_b = Soil("O01")
     sand_o = Soil("B01")
 
-    # %% Soil parameters
+    # %% Show the parametr values parameters
     
     for BO in ['Boverngronden', 'Ondergronden']:
         title = f'K(theta) bij Veldcapaciteit van {BO} van de Staringreeks'
@@ -317,7 +319,7 @@ if __name__ == "__main__":
     ax.legend(loc='upper right')
 
 
-    # %% K(theta)
+    # %% Show K(theta)
 
     psi = np.logspace(0, 4.2)
     
@@ -331,18 +333,24 @@ if __name__ == "__main__":
         soil_codes = [c for c in Soil.data.index if c.startswith(BO[0])]
     
         for i, code in enumerate(soil_codes):
-            if i == 8:
-                break
             clr = next(clrs)
             soil = Soil(code)
             soil_nm = soil.props['Omschrijving']
             theta = soil.theta_fr_psi(psi)
             ax.plot(theta, soil.K_fr_theta(theta), '-', color=clr, label=fr"{code}: $K(\theta)$ {soil_nm}")
+            
+            # # Numerical dKdtheta to check
+            # K = soil.K_fr_theta(theta)
+            # theta_mid = 0.5 * (theta[:-1] + theta[1:])            
+            # dKdth = np.diff(K) / np.diff(theta)
+            # ax.plot(theta_mid, dKdth, 'o', color=clr, label=fr"{code}: d$K$/d$\theta),numerical$ {soil_nm}")
+
             ax.plot(theta, soil.dK_dtheta(theta), '--', color=clr, label=fr"{code}: d$K$/d$\theta)$ {soil_nm}")
         ax.legend(loc='lower right')
 
 
     # %% Show the throttle function to throttle ET depending on theta
+    
     soil = sand_o
 
     title = f"Throttle functions(theta) for ET  for soil {soil.props['Omschrijving']}"
