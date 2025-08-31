@@ -27,6 +27,8 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import etc
 from itertools import cycle 
+
+
 dirs = etc.Dirs()
 os.chdir(dirs.python)
 print("os.getcwd()\n", os.getcwd())
@@ -158,6 +160,9 @@ class RechargeBase(ABC):
         return Out
 
 class RchMak(RechargeBase):
+        """Compute recharge without interception and rootzone.
+        Given E0  =(Emak / 0.8) as input Emx = 0.8 E0
+    """
     
         def __init__(self, Smax_I: float = 2.5, Smax_R: float = 2.5)-> float:
             super().init(Smax_I, Smax_R)
@@ -175,6 +180,10 @@ class RchMak(RechargeBase):
 
     
 class RchBin(RechargeBase):
+    """Compute recharge with interception and root_zone storage assuming
+    that the evapotranspiration is not throttled with S/Sm..
+    """
+
     
     def __init__(self, Smax_I: float = 2.5, Smax_R: float = 2.5)-> float:
             super().init(Smax_I, Smax_R)
@@ -211,12 +220,9 @@ class RchBin(RechargeBase):
         self.S_R = S
         return q, Ea
 
-    
-    
 class RchEarth(RechargeBase):
     """Compute recharge with interception and root_zone storage assuming
-    that the evapotranspiration is reduced linearly according to the
-    remainder of the storaga.
+    that the evapotranspiration from th eroot zone is reduced by factor S/Smax.
                 
     Decay of storage in root zone (during 12 h).
     exp(-2 Emax / Sto * 0.5 dtau) = exp(- Emax / Sto * tau), answer is the same for 12 and 24 h
@@ -251,6 +257,55 @@ class RchEarth(RechargeBase):
         Ea = P - (S - S0) / self.dt - q
         self.S_R = S
         return q, Ea
+
+
+class RchRoot(RechargeBase):
+    """Compute recharge with interception and root_zone storage assuming
+    that the evapotranspiration is reduced by factor sqrt(S/Smax).
+                
+    Decay of storage in root zone (during 12 h).
+    exp(-2 Emax / Sto * 0.5 dtau) = exp(- Emax / Sto * tau), answer is the same for 12 and 24 h
+    decay = np.exp(-(Emax / STOmax) * dtau) # Storage decay by evap. during daytime            
+    pe['EA']  = pe['STO'] * (1 - decay) # Actual crop evap.
+    """
+    
+    def __init__(self, Smax_I: float = 2.5, Smax_R: float = 2.5)-> float:    
+        super().__init__(Smax_I, Smax_R)
+        
+    def newS(p, e, dt, S0, Sm):
+        x0 = np.sqrt(S0 / Sm)
+        z0 = 1 - (e/p) * np.sqrt(x0)
+        arg = z0 * e ** z0 * np.exp(e ** 2 /(2 * p) * dt)
+        z = scipy.special.lambertw(arg)
+        x = ((p - (1 - z)) / 2) ** 2
+        
+        
+    def root_zone(self, P, E):
+        """Decay of storage in root zone (during 12 h).
+        
+        exp(-2 Emax / Sto * 0.5 dtau) = exp(- Emax / Sto * tau)
+        
+        answer is the same for 12 and 24 h
+        
+        decay = np.exp(-(Emax / STOmax) * dtau)
+        
+        Storage decay by evap. during daytime            
+        
+        pe['EA']  = pe['STO'] * (1 - decay) # Actual crop evap.
+        """
+        S0, Smax = self.Smax_R
+        def z(t) = scipy.special.lambertW(z0 * e ** z0 * np.exp(e ** 2 / (2 * p) * dt))
+        x = (p - (1 - z(t)) / e) ** 2
+        S = Smax * (P / E+ (S0 / Smax - P / E ) * np.exp(- E / Smax * self.dt))
+        if S >Smax:
+            q = (S - Smax) / self.dt
+            S = Smax
+        else:
+            q = 0.
+        Ea = P - (S - S0) / self.dt - q
+        self.S_R = S
+        return q, Ea
+
 
 
 
@@ -374,4 +429,237 @@ if __name__ == "__main__":
     print('Recharge according to BIN method:\n', rch_bin.loc[index].mean(), '\n')
     print('Recharge according to EARTH method:\n', rch_ear.loc[index].mean(), '\n')
     
+
     
+# %%
+
+def f(x, p, r, lam):
+    return p - r * x**lam
+
+def f_derivatives_at_x(x, p, r, lam):
+    # returns f, f1, f2  where
+    # f = f(x), f1 = f'(x), f2 = f''(x)
+    f0 = p - r * x**lam
+    f1 = - r * lam * x**(lam - 1)
+    f2 = - r * lam * (lam - 1) * x**(lam - 2)
+    return f0, f1, f2
+
+def taylor_step3(x0, h, p, r, lam, xmin=1e-6):
+    """
+    third-order Taylor step for dx/dt = p - r x^lambda
+    x0: current x (must be > xmin)
+    h: step
+    returns x1 (approx x(t0+h))
+    """
+    if x0 <= xmin:
+        raise ValueError("x0 too small for safe Taylor expansion; increase xmin or use implicit method")
+    f0, f1, f2 = f_derivatives_at_x(x0, p, r, lam)
+    # time derivatives along solution:
+    x1p = f0                              # x'
+    x2p = f1 * f0                         # x''
+    x3p = f2 * f0**2 + (f1**2) * f0       # x''' (as derived earlier)
+    x1 = x0 + h*x1p + 0.5*h**2 * x2p + (1.0/6.0)*h**3 * x3p
+    return x1
+
+# Example usage:
+p, r, lam = 0.5, 1.2, 0.5
+x0 = 0.2
+h = 0.01
+x1 = taylor_step3(x0, h, p, r, lam, xmin=1e-4)
+print(x1)
+
+# %%
+# Example usage:
+p, r, lam = 0.0, 1.2, 0.5
+x0 = 0.5
+t = np.linspace(0, 1)
+
+fig, ax = plt.subplots()
+for lam in [1, 0.7, 0.5, 0.3, 0.1]:
+    x1 = taylor_step3(x0, t, p, r, lam, xmin=1e-4)
+    ax.plot(t, x1, label=f"lambda = {lam}")
+ax.legend()
+
+# %%
+# Example usage, copute the derivative = p - r * x ** lambda:
+p, r, lam = 0.0, 1.2, 0.5
+x0 = 0.5
+t = np.linspace(0,1)
+dt = 0.001
+
+fig, ax = plt.subplots()
+ax.set_title("$dx/dt = p - e x^\lambda$ and numerically $x(t+dt) - x(t))/ dt$")
+ax.set_xlabel("t")
+ax.set_ylabel('dx/dt')
+ax.grid(True)
+
+clrs = cycle('rbgkmcy')
+for lam in [1, 0.7, 0.5, 0.3, 0.1]:
+    clr = next(clrs)
+    x1 = taylor_step3(x0, t,      p, r, lam, xmin=1e-4)
+    x2 = taylor_step3(x0, t + dt, p, r, lam, xmin=1e-4)
+    
+    ax.plot(t, p - r * x1 ** lam, '-', color=clr, label=fr"$dx/dt = p - e x^\lambda$, $\lambda={lam}$")
+    ax.plot(t, (x2 - x1) / dt,'-.', color=clr,  label=fr"$(x(t + dt) - x(t) / dt, \lambda={lam}$" )
+ax.legend()
+
+
+# %%
+import numpy as np
+import matplotlib.pyplot as plt
+from itertools import cycle
+from scipy.integrate import solve_ivp
+
+# Problem: dx/dt = p - r * x**lam
+def f(t, x, p, r, lam):
+    return p - r * x**lam
+
+# Derivatives of f wrt x at point x (needed for Taylor time-derivs)
+def f_x_derivs(x, p, r, lam):
+    # returns f, f1, f2
+    f0 = p - r * x**lam
+    f1 = - r * lam * x**(lam - 1)
+    f2 = - r * lam * (lam - 1) * x**(lam - 2)
+    return f0, f1, f2
+
+def taylor_step3_single(x0, h, p, r, lam, xmin=1e-12):
+    if x0 <= xmin:
+        raise ValueError("x0 too small for Taylor expansion")
+    f0, f1, f2 = f_x_derivs(x0, p, r, lam)
+    x1p = f0                    # x'
+    x2p = f1 * f0               # x''
+    x3p = f2 * f0**2 + (f1**2) * f0  # x'''
+    x_new = x0 + h*x1p + 0.5*h**2 * x2p + (1.0/6.0)*h**3 * x3p
+    return x_new
+
+def integrate_taylor3(x0, t_span, n_steps, p, r, lam):
+    t0, t1 = t_span
+    ts = np.linspace(t0, t1, n_steps+1)
+    xs = np.empty_like(ts)
+    xs[0] = x0
+    for i in range(n_steps):
+        h = ts[i+1] - ts[i]
+        xs[i+1] = taylor_step3_single(xs[i], h, p, r, lam)
+    return ts, xs
+
+# Example parameters
+p, r = 0.0, 0.25
+x0 = 0.4
+t_span = (0.0, 1.5)
+
+fig, ax = plt.subplots(figsize=(8, 5))
+ax.set_title(r'Comparison: $\dot x = p - r x^\lambda$, $\lambda=0.5$')
+ax.set(xlabel='t', ylabel='x(t)')
+ax.grid(True)
+
+clrs = cycle('rbgkmcy')
+for lam in [1.0, 0.75, 0.5, 0.25, 0.1]:
+    clr = next(clrs)
+    
+    # integrate with Taylor (many small steps)
+    # ts_taylor, xs_taylor = integrate_taylor3(x0, t_span, n_steps=1000, p=p, r=r, lam=lam)
+
+    # integrate with RK45 and BDF
+    sol_rk = solve_ivp(lambda t, x: f(t, x, p, r, lam), t_span, [x0], method='RK45', rtol=1e-8, atol=1e-10, dense_output=True)
+    # sol_bdf = solve_ivp(lambda t, x: f(t, x, p, r, lam), t_span, [x0], method='BDF', rtol=1e-8, atol=1e-10, dense_output=True)
+
+    # compare on a common time grid
+    N = 50
+    t_plot = np.linspace(t_span[0], t_span[1], N)
+
+    x_rk = sol_rk.sol(t_plot)[0]
+    # x_bdf = sol_bdf.sol(t_plot)[0]
+    x_taylor_interp = np.interp(t_plot, ts_taylor, xs_taylor)
+
+    plt.plot(t_plot, x_rk, 'o', color=clr, mfc='none', label=fr'RK45, $\lambda$={lam}')
+    # plt.plot(t_plot, x_bdf, '--', color=clr, label=fr'BDF, $\lambda$={lam}')
+    # plt.plot(t_plot, x_taylor_interp, '.', color=clr, label=fr'Taylor3 ({N} steps), $\lambda$={lam}')
+ax.legend()
+plt.show()
+
+# %%
+
+import numpy as np
+from scipy.special import lambertw
+
+def x_explicit(t, p, r, x0, t0=0.0):
+    """
+    Explicit solution for dx/dt = p - r * sqrt(x).
+    Accepts scalar or numpy array t.
+    Handles p > 0 via Lambert W, and p == 0 via separable formula.
+    """
+    t = np.asarray(t, dtype=float)
+    # trivial constant solution if r == 0 -> x = x0 + p*(t-t0)  (but here r>0 usually)
+    if np.isclose(p, 0.0):
+        # separable solution: sqrt{x}(t) = sqrt{x0} - (r/2)*(t-t0)
+        s = np.sqrt(x0) - 0.5 * r * (t - t0)
+        s = np.maximum(s, 0.0)   # if hit zero, floor at zero
+        return s**2
+
+    # general p > 0 case (Lambert W formula)
+    sqrt_x0 = np.sqrt(x0)
+    y0 = p - r * sqrt_x0
+    # Build A(t) = (y0/p) * exp(-y0/p) * exp(- (r^2/(2p))*(t-t0))
+    A = (y0 / p) * np.exp(-y0 / p) * np.exp(-(r**2 / (2.0 * p)) * (t - t0))
+    arg = -A
+    # lambertw returns complex arrays in general; for our regime principal branch real part suffices
+    W = lambertw(arg, k=0)
+    W = np.real_if_close(W, tol=1000)   # convert small imag parts to real
+    z = -W.real
+    u = (p * (1.0 - z)) / r
+    x = (u ** 2)
+    # numerical safety: ensure non-negative
+    x = np.maximum(x, 0.0)
+    return x
+
+# %%
+p, x0 = 1.0, 0.9
+t = np.linspace(0, 10)
+
+fig, ax = plt.subplots(figsize=(8,6))
+ax.set_title(r'x=S/Smax for different p and r, function with power=0.5')
+ax.set(xlabel='t', ylabel='S/Smax')
+ax.grid(True)
+
+for r in [0., 0.1, 0.2, 0.3, 0.5]:
+    x = x_explicit(t, p, r, x0, t0=0.0)
+    ax.plot(t, x, label=f"p={p}, r={r}")
+ax.legend()
+
+# %%
+
+def implicit_euler_step(xn, dt, p, r, lam, tol=1e-12, maxit=10):
+    # Solve G(x) = x - xn - dt*(p - r*x**lam) = 0
+    x = xn  # initial guess
+    for _ in range(maxit):
+        G = x - xn - dt*(p - r * x**lam)
+        if abs(G) < tol:
+            break
+        Gp = 1 + dt * r * lam * x**(lam - 1)   # derivative of G
+        dx = - G / Gp
+        x += dx
+        if abs(dx) < tol:
+            break
+    return max(x, 0.0)
+
+
+
+# %%
+p, x0 = 0.1, 0.9
+t = np.linspace(0, 30)
+
+fig, ax = plt.subplots(figsize=(8,6))
+ax.set_title(r'x=S/Smax  implicit euler method')
+ax.set(xlabel='t', ylabel='S/Smax')
+ax.grid(True)
+
+for lam in [0.1]:
+    clrs = cycle('rbgkmcy')
+    for r in [0., 0.01, 0.02, 0.05, 0.1, 0.2, 0.3, 0.5]:
+        xt = np.zeros_like(t)
+        for i, dt in enumerate(t):
+            xt[i] = implicit_euler_step(x0, dt, p, r, lam)
+        ax.plot(t, xt, label=f"p={p}, r={r}")
+ax.legend()
+
+# %%

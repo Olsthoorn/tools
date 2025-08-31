@@ -649,5 +649,244 @@ When throttling the Evaporation linearly with the filling of the root zone
 
 \end_layout
 
+\begin_layout Standard
+This is equation is implified by replacing 
+\begin_inset Formula $x=S/S_{max}$
+\end_inset
+
+ and 
+\begin_inset Formula $p=P/S_{max}$
+\end_inset
+
+ and 
+\begin_inset Formula $r=E/S_{max}$
+\end_inset
+
+:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\frac{dx}{dt}=p-rx^{\lambda}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+For 
+\begin_inset Formula $\lambda=1$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+x=p+(x_{0}-p)\exp\left(-r\left(t-t_{0}\right)\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+For 
+\begin_inset Formula $\lambda=0.5$
+\end_inset
+
+ there is an explicit solution using the Lambert function (scipy.special.lambert)
+\end_layout
+
+\begin_layout Standard
+For 
+\begin_inset Formula $p>0$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+y\left(t\right) & =\frac{p}{r}-\frac{2p}{r}W\left(\frac{r}{2p}\exp\left(\frac{r}{2p}\sqrt{x_{0}}-\frac{r^{2}}{2p}t\right)\left(p-r\sqrt{x_{0}}\right)\right)\\
+x\left(t\right) & =y\left(t\right)^{2}
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+For 
+\begin_inset Formula $p=0$
+\end_inset
+
+ use the separable solution
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\sqrt{x\left(t\right)}=\sqrt{x_{0}}-\frac{r}{2}\left(t-t_{0}\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Compute 
+\begin_inset Formula $x\left(t\right)$
+\end_inset
+
+ by evaluating the 
+\begin_inset Formula $W$
+\end_inset
+
+-argument (watch small imaginary parts),
+ then squaring the resulting real 
+\begin_inset Formula $y\left(t\right)$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Cheap implicit euler for 
+\begin_inset Formula $\lambda=0.5$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+There is also a cheap and fast iterative solution that is always stable.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\frac{dx}{dt}=p-r\sqrt{x}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+with time step 
+\begin_inset Formula $\Delta t$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+x_{n+1}=x_{n}+\Delta t\left(p-r\sqrt{x}\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Using 
+\begin_inset Formula $u=\sqrt{x}$
+\end_inset
+
+ so that 
+\begin_inset Formula $u^{2}=x$
+\end_inset
+
+ we get
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+u_{n+1}^{2}=u_{n}^{2}+\Delta t\left(p-ru_{n+1}\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Rearrange to a quadratic in 
+\begin_inset Formula $u_{n+1}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+u_{n+1}^{2}+\left(r\Delta t\right)u_{n+1}-\left(u_{n}^{2}+r\Delta t\right)=0
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+D=\left(r\Delta t\right)^{2}+4\left(u_{n}^{2}+p\Delta t\right)>0
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+u_{n+1}=\frac{-r\Delta t\pm\sqrt{D}}{2}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+u_{n+1}=\frac{-r\Delta t\pm\sqrt{\left(r\Delta t\right)^{2}+4\left(u_{n}^{2}+p\Delta t\right)}}{2}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+In our physical regime the 
+\begin_inset Formula $\sqrt{D}>r\Delta t$
+\end_inset
+
+ so this is always positive.
+\end_layout
+
+\begin_layout Standard
+
+\end_layout
+
 \end_body
 \end_document
