@@ -868,7 +868,7 @@ u_{n+1}=\frac{-r\Delta t\pm\sqrt{D}}{2}
 \begin_layout Standard
 \begin_inset Formula 
 \[
-u_{n+1}=\frac{-r\Delta t\pm\sqrt{\left(r\Delta t\right)^{2}+4\left(u_{n}^{2}+p\Delta t\right)}}{2}
+u_{n+1}=\frac{-r\Delta t+\sqrt{\left(r\Delta t\right)^{2}+4\left(u_{n}^{2}+p\Delta t\right)}}{2}
 \]
 
 \end_inset
@@ -884,8 +884,287 @@ In our physical regime the
  so this is always positive.
 \end_layout
 
-\begin_layout Standard
+\begin_layout Subsection
+Compute the hitting 
+\begin_inset Formula $\left(t\left(x=1\right)\right)$
+\end_inset
 
+ time for 
+\begin_inset Formula $\lambda=0.5$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\frac{dx}{dt}=p-r\sqrt{x},\,p>0,\,r>0,x_{0}=\in[0,1)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+We want the continuous time hitting time 
+\begin_inset Formula $T$
+\end_inset
+
+ to reach 
+\begin_inset Formula $x=1$
+\end_inset
+
+ starting from 
+\begin_inset Formula $x_{0}<1$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Subsubsection*
+Separate variables:
+\end_layout
+
+\begin_layout Standard
+Let 
+\begin_inset Formula $u=\sqrt{x},$
+\end_inset
+
+so 
+\begin_inset Formula $x=u^{2}$
+\end_inset
+
+ and 
+\begin_inset Formula $dx=2udu$
+\end_inset
+
+.
+ Then
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\frac{dx}{p-r\sqrt{x}}=\frac{2udu}{p-ru}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Integrate from 
+\begin_inset Formula $x_{0}$
+\end_inset
+
+ to 1 (i.e.,
+ from 
+\begin_inset Formula $u=\sqrt{x_{0}}$
+\end_inset
+
+ to 1):
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+T=\intop_{x_{0}}^{1}\frac{dx}{p-r\sqrt{x}}=\intop_{u_{0}}^{1}\frac{2u}{p-ru}du
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsubsection*
+Compute the integral
+\end_layout
+
+\begin_layout Standard
+A convenient antiderivative is
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\intop\frac{2u}{p-ru}du=-\frac{2u}{r}--\frac{2p}{r^{2}}\ln\left(p-ru\right)+C
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Thus:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+T=\left[-\frac{2u}{r}-\frac{2p}{r^{2}}\ln\left(p-ru\right)\right]_{u_{0}}^{1}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsubsection*
+Hitting time when it is finite
+\end_layout
+
+\begin_layout Standard
+Evaluating and simplifying gives
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+T=\frac{2p}{r^{2}}\ln\left(\frac{p-r\sqrt{x_{0}}}{p-r}\right)-\frac{2}{r}\left(1-\sqrt{x_{0}}\right),\,\,\mathtt{for}\,\,p>r
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsubsection*
+Existance conditions
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $p>r$
+\end_inset
+
+:
+ the denominator 
+\begin_inset Formula $p-ru$
+\end_inset
+
+ stays positivie on 
+\begin_inset Formula $\left[u_{0},1\right]$
+\end_inset
+
+,
+ so the integral is finite,
+ i.e.
+ the reservoir hits 
+\begin_inset Formula $x=1$
+\end_inset
+
+ in finite time.
+\end_layout
+
+\begin_layout Itemize
+if 
+\begin_inset Formula $p=r$
+\end_inset
+
+:
+ the integrand has a logarithmic divergence at 
+\begin_inset Formula $u=1$
+\end_inset
+
+.
+ The solution increases toward 
+\begin_inset Formula $x=1$
+\end_inset
+
+,
+ but only reaches it asynptotically at 
+\begin_inset Formula $T=+\infty$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+if 
+\begin_inset Formula $p<r$
+\end_inset
+
+:
+ there is an equilibrium at 
+\begin_inset Formula $u^{*}=p/r<1$
+\end_inset
+
+,
+ i.e.
+ at 
+\begin_inset Formula $x^{*}=\left(p/r\right)^{2}$
+\end_inset
+
+.The denominator vanishes at 
+\begin_inset Formula $u^{*}$
+\end_inset
+
+,
+ so the trajectory converges to 
+\begin_inset Formula $x^{*}<1$
+\end_inset
+
+ and never reaches 1;
+ gain 
+\begin_inset Formula $T=+\infty$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+So,
+ in practice:
+\end_layout
+
+\begin_layout Itemize
+Check that 
+\begin_inset Formula $p>r$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+If yes,
+ plug 
+\begin_inset Formula $x_{0}$
+\end_inset
+
+ into the formula for 
+\begin_inset Formula $T$
+\end_inset
+
+ above.
+\end_layout
+
+\begin_layout Itemize
+If not,
+ the reservoir won't hit full capacity in finite time.
+\end_layout
+
+\begin_layout Standard
+In conclusion.
+ First see if the hitting time is finite and if 
+\begin_inset Formula $t\le\Delta t$
+\end_inset
+
+ the timestep.
+ If so,
+ 
+\begin_inset Formula $x=1$
+\end_inset
+
+ and compute the hit time.
+ If not,
+ compute 
+\begin_inset Formula $x\left(t=\Delta t\right)$
+\end_inset
+
+ and continue.
 \end_layout
 
 \end_body

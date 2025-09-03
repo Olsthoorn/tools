@@ -21,17 +21,29 @@ It stores the results in a specified directory for further analysis or reporting
 
 # %%
 import os
+import sys
+
+sys.path.insert(0, os.getcwd())
+
 from abc import ABC, abstractmethod
 import numpy as np
+import math
 import matplotlib.pyplot as plt
+from scipy.special import lambertw
+from scipy.integrate import solve_ivp
 import pandas as pd
 import etc
 from itertools import cycle 
 
+import src.rootzone_nonlin as rzf #noqa
 
-dirs = etc.Dirs()
-os.chdir(dirs.python)
+# Project directory namespace
+dirs = etc.Dirs(os.getcwd())
+
+# Verify that project directory is the current working directory
+# Start VScode from the project directory to realize this.
 print("os.getcwd()\n", os.getcwd())
+
 
 # %% Recharge function
 
@@ -41,12 +53,40 @@ class RechargeBase(ABC):
     
     def __init__(self, Smax_I: float = 2.5, Smax_R: float = 2.5)-> float:
         self.Smax_I = Smax_I
-        self.SMax_R = Smax_R
+        self.Smax_R = Smax_R
         self.S_I = 0.
         self.S_R = 0.
+            
+    def dt_hit_interception(self, P: float, E: float)->float:
+        """Return S, t, point where S hits top or bottom of  reservoir."""
+        Smin, Smax, Dt = 0., self.Smax_I, self.dt
         
-    def interception(self, P: float, E: float)-> float:
-        """Accept P, E0 and return q, E1
+        S0 = self.S_I # current interception storage
+        
+        # New guessed reservoir contents update
+        S1 = S0 + (P - E) * Dt
+
+        # Get S, dt
+        if np.isclose(P, E): # Nothing changes
+            return S1, Dt
+        elif P > E:          # Reservoir fills up and may overflow at Dt < dt
+            dt = (Smax  - S0) / (P - E)
+            if dt <= Dt:     # Moment when reservoir becamse full.
+                return Smax, dt
+            else:
+                return S1, Dt
+        elif P < E:          # Reservoir is emptied
+            dt = (Smin - S0) / (P - E) # Moment when reservoir became empty
+            if dt <= Dt:
+                return Smin, dt
+            else:            # Reservoir neither overflows not empties
+                return S1, Dt 
+        else:
+            raise ValueError("Didn't expect to get here in t_hit")
+     
+     
+    def interception(self, P0: float, E0: float)-> float:
+        """Accept P0, E0 and return q, E1
         
         Parameters
         ----------
@@ -60,64 +100,138 @@ class RechargeBase(ABC):
         q: float
             downward outflow of inerception (fall-thorugh)
         E1: float
-            Left over of E0 after evaporation of intercepted water
+            Evaporaton from interception resrvoir
         """
-        S0, Smax = self.S_I, self.Smax_I
-        dt = self.dt
-        S = S0 + (P- E) * dt
-        if S > Smax:                            
-            q = (S - Smax) / dt
-            S = self.Smax    
-        elif S < 0:
-            S = 0.
-            q = 0
-        else:
-            q = 0
-        E1 = P - (S - S0) / dt - q
+        Dt = self.dt
+        S0 = self.S_I
+                
+        S, dt1 = self.dt_hit_interception(P0, E0)
+        
         self.S_I = S
-        return q, E1
+        
+        dt1 = min(dt1, Dt)
+        dt2 = max(Dt - dt1, 0)
+
+        if np.isclose(P0, E0):
+            q = 0.
+            E1 = E0
+            
+        if P0 > E0:
+            q = (P0 - E0) * dt2 / Dt
+            E1 = P0 - (S - S0 ) / Dt - q
+            
+        elif P0 < E0:
+            q = 0.
+            E1 = P0 - (S - S0 ) / Dt - q
+            
+        B = P0 - E1 - (S - S0) / Dt - q
+            
+        return q, E1, B
 
         
     # May be overwritten
     @abstractmethod
-    def root_zone(self, P1: float, E1: float)-> float:
-        """Accept P1, E1 and return Sto"""
+    def S_rootzone(self, P: float, E: float, Dt:float)-> float:
+        """Compute the root zone filling at the dt = t - t0."""
         pass
     
+    @abstractmethod    
+    def dt_hit_root_zone(self, P: float, E: float, Dt: float)->float:
+        """Return S, t, point where S hits top or bottom of  root-zone reservoir."""
+        pass
+    
+    
+    def root_zone(self, P: float, E: float)-> float:
+        """Accept P, E and return q, E1
+        
+        Parameters
+        ----------
+        P: float
+            Precipitation
+        E: float
+            Potential evaporation after interception
+
+        Returns                
+        -------
+        q: float
+            downward outflow from root zone
+        E1: float
+            Evapo-transpiration from root zonen reservoir
+        """
+        Dt = self.dt
+        S0 = self.S_R
+                
+        S, dt1 = self.dt_hit_root_zone(P, E, Dt)
+        
+        self.S_R = S # The new value at Dt
+        
+        dt2 = Dt - dt1 # Always >= 0 after dt_hit_root_zone
+        
+        if np.isclose(dt2, 0):
+            q = 0   
+        elif P >= E:            
+            q = (P - E) * dt2 / Dt
+        else:
+            q = 0
+        
+        E1 = P - (S - S0 ) / Dt - q         
+                
+        # Budget:
+        B = P - E1 - (S - S0) - q 
+        
+        return q, E1, B
+
+    
     def check_data(self, PE: pd.DataFrame)-> np.ndarray:
-        """Verify input before simulation."""
+        """Verify input before simulation and prepare Out.
+        
+        Parameters
+        ----------
+        PE: pd.DataFrame with fields ['RH', 'EV24']  in mm/d
+            Meteo input, daily values of precipition and E acc. to Makkink.
+        
+        Returns
+        -------
+        Out: np.ndarray with given dtype
+            See fields in dtype definition.
+            The index of PE is included in the field 't'
+        """
            
         # Checks for data consistency
 
         # Required columns present?
-        missing_columns = {'RH', 'EV24'} - set(pd.columns)
+        missing_columns = {'RH', 'EV24'} - set(PE.columns)
         if missing_columns:
             raise KeyError("Missing columns {missing_columns}")
         
         # index in np.datetime64 time stamp format?
-        if not isinstance(PE.index[0], np.datetime64):
+        if not isinstance(PE.index[0], (pd.Timestamp, np.datetime64)):
             raise TypeError("Index of wheather series should be np.datetime64")
 
         # Data in mm/d?
-        if PE['EV24'].mean() > 0.01: # 1 cm/d
-            raise ValueError("Date probably not in m/d.")
+        # if PE['EV24'].mean() > 0.01: # 1 cm/d
+        #     raise ValueError("Date probably not in m/d.")        
+        if PE['EV24'].mean() < 0.01:
+            raise ValueError("Date probably not in mm/d.")        
        
        # Initialyze the storage
         self.S_I = self.Smax_I
         self.S_R = self.Smax_R / 2.
         
         # Get the time step length in days
-        self.dt = np.diff(PE.index) / np.timedelta64(1, 'D')
+        self.dt = (np.diff(PE.index) / np.timedelta64(1, 'D'))[0]
 
-        PE = PE.loc[:, ['RH']].to_records()
+        PE = PE.loc[:, ['RH', 'EV24']].to_records()
         
-        dtype = np.dtype([('t', np.datatime64), ('RH', float), ('EV24', float), ('STO', float),
-                          ('IC', float), ('EA', float), 'RCH', float]) 
+        # Don't need the index, its kept
+        dtype = np.dtype([('t', 'datetime64[ns]'), ('RH', float), ('EV24', float), ('STO', float),
+                          ('IC', float), ('EA', float), ('RCH', float), ('BI', float), ('BR', float)]) 
        
-        Out = np.zeros(len(PE), dtype=dtype)
-        Out['t']  = PE.index
-        Out['RH'] = PE['RH'].values
-        Out['EV24'] = PE['EV24'].values
+        # Prepare the output array with specified dtype, that also holds the intput and timestamps
+        Out = np.zeros(len(PE), dtype=dtype)  
+        Out['t']  = PE.index      
+        Out['RH'] = PE['RH']
+        Out['EV24'] = PE['EV24']
         return Out
 
     
@@ -131,7 +245,7 @@ class RechargeBase(ABC):
         Convert the index column to np.datetime64.
         Convert the columns 'RH' and 'EV24' to m/d.
                             
-        We assume E0 = EV24 / 0.8
+        We assume E0 = EV24 / 0.8 ??
 
         # Te following columns will be added or replaced:
         PE['STO'] = 0. # Current root-zone zone storage [mm]
@@ -139,87 +253,93 @@ class RechargeBase(ABC):
         PE['EA' ] = 0. # Actual evapotranspiration [mm/d]
         PE['RCH'] = 0. # Actual recharge [mm/d]
         """
-       
         # Out is empty recarray with the proper fields
         Out = self.check_data(PE)
             
         for pe in Out: # dt = datetime
             
             P0 = pe['RH']
-            E0 = pe['EV24'] / 0.8 # Open water evap. during assumed 12h daytime
-
-            P1, E1 = self.interception(P0, E0)
-            rch, ea = self.root_zone(  P1, E1)
+            E0 = pe['EV24']    # Open water evap. during assumed 12h daytime (/0.8?)
+            if P0 > 20:
+                pass
+            P1, E1, BI = self.interception(P0, E0)
+            rch, Ea, BR = self.root_zone(  P1, E0 - E1)
             
-            pe['IC']  = pe['RH'] - P1
-            pe['STO'] = self.S_R
-            pe['EA']  = ea
-            pe['RCH'] = rch
+            pe['IC']  = pe['RH'] - P1  # intercepted
+            pe['STO'] = self.S_R       # Current storage level
+            pe['EA']  = Ea             # Actual expo-transpiration
+            pe['RCH'] = rch            # Recharge (to percolation zone)
+            pe['BI'] = BI              # Budget Interception
+            pe['BR'] = BR              # Budget root zone
                
-        Out = np.DataFrame(Out)
+        Out = pd.DataFrame(data=Out, index=Out['t']).drop(['t'], axis=1)
         return Out
 
+# %% Recharge according to P - Emakkink
 class RchMak(RechargeBase):
         """Compute recharge without interception and rootzone.
-        Given E0  =(Emak / 0.8) as input Emx = 0.8 E0
+        Given E0  =(Emak / 0.8) as input Emx = 0.8 E0 ??
+        The recharge must be P - 0.8 E0 ??
+        Where E0 = E_makkink/0.8. ??
     """
-    
         def __init__(self, Smax_I: float = 2.5, Smax_R: float = 2.5)-> float:
-            super().init(Smax_I, Smax_R)
+            super().__init__(Smax_I, Smax_R)
+            
+        def dt_hit_root_zone(self, P: float, E: float, Dt: float)->float:
+            """Return Smax, dt, does nothing in this model."""
+            return self.Smax_R, Dt
+
+        def S_rootzone(self, P: float, E: float, Dt: float)->float:
+            """Return the rootzone reservoir filling. Does nothing in this model."""
+            S = self.S_R
+            return S
             
         def interception(self, P: float, E0: float)-> float:
             """Return fall through and left over of E0 after interception"""
-            # Just return the intput, no interception used
-            Emak = 0.8 * E0
-            return P, Emak
+            # Just return the intput, no interception used            
+            return P, E0
             
-        def root_zone(self, P: float, E: float)-> float:
-            """Accept P, E and return q and EA"""  
-            # Just return the intput, no root zone used
-            return P, E
-
-    
+# %% Recharge with interception and a root-zone bin without E throttling until empty
 class RchBin(RechargeBase):
     """Compute recharge with interception and root_zone storage assuming
-    that the evapotranspiration is not throttled with S/Sm..
+    that the evapotranspiration is not throttled.
     """
-
-    
     def __init__(self, Smax_I: float = 2.5, Smax_R: float = 2.5)-> float:
-            super().init(Smax_I, Smax_R)
+            super().__init__(Smax_I, Smax_R)
             
-    def root_zone(self, P: float, E: float)-> float:
-        """Accept P, E and return Sto
+    def S_rootzone(self, P: float, E: float, Dt: float)->float:
+        """Return rootzone filling after arbirtrary time Dt"""      
+        return self.S_R + (P- E) * Dt
+    
+    def dt_hit_root_zone(self, P: float, E: float, Dt: float)->float:
+        """Return S, t, point where S hits top or bottom of  root-zone reservoir."""
+        Smin, Smax= 0., self.Smax_R
         
-        Parameters
-        ----------
-        P: float
-            "recharge" (output from the interceptiion model)
-        E: float
-            Potential evaporation (left over from interception model)
+        S0 = self.S_R # current interception storage
+        
+        # New guessed reservoir contents update
+        S1 = self.S_rootzone(P, E, Dt)
 
-        Returns                
-        -------
-        q: float
-            downward outflow of root_zone
-        EA: float
-            Actual evaporation from root zone
-        """
-        S0, Smax = self.S_R, self.Smax_R          
-        dt = self.dt
-        S = S0 + (P- E) * dt
-        if S > Smax:                            
-            q = (S - Smax) / dt
-            S = self.Smax    
-        elif S < 0:
-            S = 0.
-            q = 0
+        # Get S, dt
+        if np.isclose(P, E): # Nothing changes
+            return S1, Dt
+        elif P > E:          # Reservoir fills up and may overflow at Dt < dt
+            dt = (Smax  - S0) / (P - E)
+            if dt <= Dt:     # Moment when reservoir becamse full.
+                return Smax, dt
+            else:
+                return S1, Dt
+        elif P < E:          # Reservoir is emptied
+            dt = (Smin - S0) / (P - E) # Moment when reservoir became empty
+            if dt <= Dt:
+                return Smin, dt
+            else:            # Reservoir neither overflows not empties
+                return S1, Dt 
         else:
-            q = 0
-        Ea = P - (S - S0) / dt - q
-        self.S_R = S
-        return q, Ea
+            raise ValueError("Didn't expect to get here in t_hit")
 
+
+# %% Recharge with interception and linear throttling of E
 class RchEarth(RechargeBase):
     """Compute recharge with interception and root_zone storage assuming
     that the evapotranspiration from th eroot zone is reduced by factor S/Smax.
@@ -233,83 +353,146 @@ class RchEarth(RechargeBase):
     def __init__(self, Smax_I: float = 2.5, Smax_R: float = 2.5)-> float:    
         super().__init__(Smax_I, Smax_R)
         
+    def S_rootzone(self, P: float, E: float, Dt:float)-> float:
+        """Compute the reservoir filling after arabitrary time Dt"""
         
-    def root_zone(self, P, E):
-        """Decay of storage in root zone (during 12 h).
+        S0, Smax = self.S_R, self.Smax_R
+        p, r, x0 = P / Smax, E / Smax, S0 /Smax
         
-        exp(-2 Emax / Sto * 0.5 dtau) = exp(- Emax / Sto * tau)
-        
-        answer is the same for 12 and 24 h
-        
-        decay = np.exp(-(Emax / STOmax) * dtau)
-        
-        Storage decay by evap. during daytime            
-        
-        pe['EA']  = pe['STO'] * (1 - decay) # Actual crop evap.
-        """
-        S0, Smax = self.Smax_R
-        S = Smax * (P / E+ (S0 / Smax - P / E ) * np.exp(- E / Smax * self.dt))
-        if S >Smax:
-            q = (S - Smax) / self.dt
-            S = Smax
-        else:
-            q = 0.
-        Ea = P - (S - S0) / self.dt - q
-        self.S_R = S
-        return q, Ea
-
-
-class RchRoot(RechargeBase):
-    """Compute recharge with interception and root_zone storage assuming
-    that the evapotranspiration is reduced by factor sqrt(S/Smax).
-                
-    Decay of storage in root zone (during 12 h).
-    exp(-2 Emax / Sto * 0.5 dtau) = exp(- Emax / Sto * tau), answer is the same for 12 and 24 h
-    decay = np.exp(-(Emax / STOmax) * dtau) # Storage decay by evap. during daytime            
-    pe['EA']  = pe['STO'] * (1 - decay) # Actual crop evap.
-    """
+        if np.isclose(E, 0):
+            x = x0 + p * Dt
+        else:            
+            x = p / r - (p / r - x0) * np.exp(- r * Dt)
+        return Smax * x
     
+    def dt_hit_root_zone(self, P: float, E: float, Dt:float)->float:
+        """Return S, t, point where S hits top or bottom of  root-zone reservoir."""
+        S0, Smax = self.S_R, self.Smax_R
+        
+        S1 = self.S_rootzone(P, E, Dt)
+        
+        # Get S, dt
+        if np.isclose(P, E): # Nothing changes
+            return S1, Dt
+        elif np.isclose(E, 0):
+            dt = (Smax - S0) / P
+            if dt < Dt:
+                return Smax, dt
+            else:
+                return S1, Dt
+        elif P < E:
+            return S1, Dt
+        else:
+            dt = Smax / E * np.log((P - E * S0 / Smax) / (P - E))
+            if dt < Dt:
+                return Smax, dt
+            else:
+                return S1, Dt
+
+
+# %% Recharge with throttlling of E according to root S/Smax
+    
+class RchLam(RechargeBase):
+    """Compute recharge with interception and root_zone storage assuming
+    that the evapotranspiration is reduced by factor (S/Smax)^lambda.
+    
+    Lambda is set by hand in function self.dt_hit_root_zone).
+    Make sure lambda is not much smaller than 0.5, because the
+    stiffness of the solution near the empty reservoir make the
+    solver fail.
+
+    lambda = 1 yields the same reults as the RchEarth object.
+    """
     def __init__(self, Smax_I: float = 2.5, Smax_R: float = 2.5)-> float:    
         super().__init__(Smax_I, Smax_R)
         
-    def newS(p, e, dt, S0, Sm):
-        x0 = np.sqrt(S0 / Sm)
-        z0 = 1 - (e/p) * np.sqrt(x0)
-        arg = z0 * e ** z0 * np.exp(e ** 2 /(2 * p) * dt)
-        z = scipy.special.lambertw(arg)
-        x = ((p - (1 - z)) / 2) ** 2
+        self.event_hit_one.terminal = True
+        self.event_hit_one.direction = 0
         
-        
-    def root_zone(self, P, E):
-        """Decay of storage in root zone (during 12 h).
-        
-        exp(-2 Emax / Sto * 0.5 dtau) = exp(- Emax / Sto * tau)
-        
-        answer is the same for 12 and 24 h
-        
-        decay = np.exp(-(Emax / STOmax) * dtau)
-        
-        Storage decay by evap. during daytime            
-        
-        pe['EA']  = pe['STO'] * (1 - decay) # Actual crop evap.
+    @staticmethod
+    def rhs(t, x, p, r, lam):
+        return p - r * (x ** lam)
+
+    @staticmethod
+    def event_hit_one(t, x, p, r, lam):
+        return x[0] - 1.0
+
+            
+    def S_rootzone(self, P: float, E:float, Dt: float)->  float:        
+        """Return relative filling of reservoir using exact method.        
         """
-        S0, Smax = self.Smax_R
-        def z(t) = scipy.special.lambertW(z0 * e ** z0 * np.exp(e ** 2 / (2 * p) * dt))
-        x = (p - (1 - z(t)) / e) ** 2
-        S = Smax * (P / E+ (S0 / Smax - P / E ) * np.exp(- E / Smax * self.dt))
-        if S >Smax:
-            q = (S - Smax) / self.dt
-            S = Smax
+        return 0.
+
+    def dt_hit_root_zone(self, P: float, E: float, Dt: float)->float:        
+        """Return t when reservoir hits a target filling x0.
+        """
+        S0, Smax = self.S_R, self.Smax_R        
+        p, r, x0 = P / Smax, E / Smax, S0 / Smax
+        lam = 0.5 # Don't use lambda < 0.5, lambda=1 is the same as Earth
+        small_tol = 0.1 / Smax
+        xbase, xtop = small_tol, 1 - small_tol
+        
+
+        xacc = p - r * x0 ** lam
+        if xacc > 0:
+            pass
+        if xacc <= 0:
+            pass        
+        if x0 > 1 - small_tol and xacc > 0:
+            pass
+        if x0 > 1 - small_tol and xacc < 0:
+            pass
+        if x0 >= xtop and np.isclose(xacc, 0):
+            pass
+        
+        if x0 > xtop:
+            if xacc >=0:
+                return Smax, 0.
+            else:
+                x0 = xtop
+        
+        if x0 < xbase:
+            if xacc <= 0:
+                return 0., Dt
+            else:
+                x0 = xbase
+        
+        sol = solve_ivp(self.rhs, [0, Dt], [x0], method='RK45', args=(p,r,lam),
+                events=self.event_hit_one, dense_output=True)
+        
+        if sol.success:
+            x1 = sol.y.ravel()[-1]
+            dt = sol.t.ravel()[-1]
+            if sol.t_events[0]:                
+                x1 = sol.y_events[0].ravel()[-1]
+                dt = sol.t_events[0].ravel()[-1]
+            S1 = Smax * x1
+            return S1, dt
         else:
-            q = 0.
-        Ea = P - (S - S0) / self.dt - q
-        self.S_R = S
-        return q, Ea
+            raise RuntimeError("Runge Kutta did not finish successfully exit status {soi.status}")
+    
+def change_meteo(meteo):
+    """Meteo is a pd.DataFrame with fields 'RH' and 'EV24', in mm/d."""
+    
+    N = 5
+    E = cycle([0., 1., 0., 2., 0., 3., 0., 4., 0., 5])
+    P = cycle([0., 0., 2., 2., 0., 0., 4., 4., 0., 0.])
+    i1 = 0
+    meteo = meteo.copy()
+    for _ in range(1000):
+        i2 = i1 + 30
+        if i2 > len(meteo):
+            break
+        idx = meteo.index
+        meteo.loc[idx[i1]:idx[i2], 'RH']   = next(P)
+        meteo.loc[idx[i1]:idx[i2], 'EV24'] = next(E)
+        i1 = i2
+    return meteo
+    
 
-
-
-
-def rch_yr_period(PE, period=(10, 7), verbose=False):
+    return meteo
+# %% Recharge over a period in the year
+def rch_yr_period(PE: pd.DataFrame, period: tuple=(10, 7), verbose: bool =False)->pd.DataFrame:
     """Return recharge during given period in year, for subsequent years in the database.
     
     It aims to compare recharge amounts between successive years and find extreme years.
@@ -349,317 +532,53 @@ def rch_yr_period(PE, period=(10, 7), verbose=False):
         
     return r_period
 
-
+# %%
 if __name__ == "__main__":
-    # %% Compute and show recharge computed from De Bilt data with three different methods
-    # This is the main part of the script, which computes recharge and visualizes it.
-    # It is the same as in the main block, but without the `if __name__ == '__main__':` guard.
 
-    Smax_R  = 100 # mm
-    Smax_I  = 2.5
+    # Get the meteodata in a pd.DataFrame
+    meteo_csv = os.path.join(dirs.data, "DeBilt.csv")
+    os.path.isfile(meteo_csv)
+    deBilt = pd.read_csv(meteo_csv, header=0, parse_dates=True, index_col=0)
+    deBilt_short = deBilt.loc[deBilt.index >= np.datetime64("2020-01-01"), :]
     
-    # Get De Bilt weather data (previously stored as a cleaned csv file)
-    stn = 'HilvProxy' # 'De Bilt260'
+    # deBilt_short = change_meteo(deBilt_short)
     
-    PE = pd.read_csv(os.path.join(dirs.weer, stn + ".csv"), index_col=0, parse_dates=True)
+    # Storage capacity
+    Smax_I, Smax_R = 0.5, 100 # mm
+    
+    date_span = (np.datetime64("2020-01-01"), np.datetime64("2021-03-31"))
+    date_span = (deBilt_short.index[0], deBilt_short.index[-1])
+    
+    clrs = cycle('rbgkmcy')
+    
+    title = "Recharge computed by different methods"
+    idx = ((deBilt_short.index >= date_span[0]) &
+                               (deBilt_short.index <= date_span[1]))
 
+    labels = ['Makkink', 'bin', 'earth', 'lambda'][2:4]
+    rchClasses = [RchMak, RchBin, RchEarth, RchLam][2:4]
+    
+    ax1, ax2, ax3 = etc.newfigs(('EV24 and EA', 'P and RCH', 'STO'),
+            'time', ('mm/d', 'mm/d', 'mm' ), figsize=(12, 10))
 
-    # Compute recharge by each of the three methods
-    rchMakkink = RchMak(Smax_I, Smax_R)
-    rchBin     = RchBin(Smax_I, Smax_R)
-    rchEarth   = RchEarth(Smax_R, Smax_I)
+    for rchClass, label in zip(rchClasses, labels):
+        rch_simulator = rchClass(Smax_I=Smax_I, Smax_R=Smax_R)
+        rch = rch_simulator.simulate(deBilt_short)
+        
+        clr = next(clrs)
+        ax2.plot(rch.index[idx], rch['RH'][idx], '-',  lw=0.25, color=next(clrs),  label=label + ' P')
+        ax1.plot(rch.index[idx], rch['EV24'][idx], '-',lw=0.25, color=next(clrs),  label=label + ' EV24')
+        ax1.plot(rch.index[idx], rch['EA' ][idx], '-', lw=0.75, color=next(clrs),  label=label + ' EA')
+        ax2.plot(rch.index[idx], rch['RCH'][idx], '-', lw=0.75, color=next(clrs),  label=label + 'RCH')
+        ax3.plot(rch.index[idx], rch['STO'][idx], '-', lw=0.75, color=next(clrs),  label=label + ' STO')        
+        print(f'Recharge according to method {label}:\n', rch.loc[idx].mean(), '\n')
 
-    rch_mak = rchMakkink.simulate(PE)
-    rch_bin = rchBin.simulate(PE)
-    rch_ear = rchEarth.simulate(PE)
-
-    # Show the results for a given period
-    # Add the measured head in Peilbuis14 near Monnikenberg 
-    start, end = np.datetime64("2020-01-01"), np.datetime64("2024-08-31")
-    index = PE.index[np.logical_and(PE.index >= start, PE.index <= end)]
-
-    fig, axs = plt.subplots(4, 1, sharex=True, sharey=False, gridspec_kw={'hspace': 0.3})
-    fig.set_size_inches(8, 11.5)
-    fig.suptitle(f'\n\nStation {stn}, STOmax = {Smax_R} mm, ICmax = {Smax_I} mm/d')
-
-    methods = ['Makkink', 'Bin', 'Earth']
-    for i, method, rch , df in zip(range(3), methods, [rch_mak, rch_bin, rch_ear]):
-        RH, EV24, EA, STO, RCH, IC = df.loc[index, ['RH', 'EV24', 'EA', 'STO', 'RCH', 'IC']].mean()
-
-        title = (f"\nRecharge, method = {method}\n" + 
-                f"P={RH:.2f}, EM={EV24:.2f} EA={EA:.2f} RCH={RCH:.2f}, IC={IC:.2f} all mm/d, STO={STO:.1f} mm ")
-
-        axs[i].set_title(title)
-        axs[i].set_ylabel("mm/d")
-        axs[i].grid()
-        axs[i].plot(df.index, df['RCH'], label=f"N={RCH:.2f} mm/d")
-        axs[i].plot(df.index, df['STO'], label=f"STO={STO:.1f} mm")
-        axs[i].plot(df.index, df['IC'] , label=f"Ic={IC:.2f} mm/d")
-        axs[i].legend()
-
-    # Add the registered logged head data for Peilbuis 14
-
-    # Load previously pickled head data for all availabel Hilversum piezometers
-    head_data = tools.load_object(os.path.join(dirs.grw, 'head_data'))
-
-    pz_name = 'Peilbuis14'  
-    pz = head_data.piez[pz_name]['log']
-
-    # pz.to_csv(os.path.join(dirs.data,'peilbuis14.csv'))
-
-    # Plot head Peilbuis14 on last axes
-    axs[-1].set_title(f"Grondwaterstandsverloop {pz_name}")
-    axs[-1].set_ylabel("m +NAP")
-    axs[-1].grid()
-    axs[-1].plot(pz.index, pz['LoggerHead'], label=pz_name)
-    axs[-1].legend()
-
-    # Limit view of axes to desired period
-    axs[-1].set_xlim(start, end)
-
-    print('Recharge according to Makkink method:\n', rch_mak.loc[index].mean(), '\n')
-    print('Recharge according to BIN method:\n', rch_bin.loc[index].mean(), '\n')
-    print('Recharge according to EARTH method:\n', rch_ear.loc[index].mean(), '\n')
-
-    fig.savefig(os.path.join(dirs.lyx, f'rch_{stn}.png'))
+    for ax in [ax1, ax2, ax3]:
+        ax.legend(loc='upper right')    
+    
+    # fig.savefig(os.path.join(dirs.images, f'rch_{stn}.png'))
 
     plt.show()
-
-    print('Recharge according to Makkink method:\n', rch_mak.loc[index].mean(), '\n')
-    print('Recharge according to BIN method:\n', rch_bin.loc[index].mean(), '\n')
-    print('Recharge according to EARTH method:\n', rch_ear.loc[index].mean(), '\n')
     
-
-    
-# %%
-
-def f(x, p, r, lam):
-    return p - r * x**lam
-
-def f_derivatives_at_x(x, p, r, lam):
-    # returns f, f1, f2  where
-    # f = f(x), f1 = f'(x), f2 = f''(x)
-    f0 = p - r * x**lam
-    f1 = - r * lam * x**(lam - 1)
-    f2 = - r * lam * (lam - 1) * x**(lam - 2)
-    return f0, f1, f2
-
-def taylor_step3(x0, h, p, r, lam, xmin=1e-6):
-    """
-    third-order Taylor step for dx/dt = p - r x^lambda
-    x0: current x (must be > xmin)
-    h: step
-    returns x1 (approx x(t0+h))
-    """
-    if x0 <= xmin:
-        raise ValueError("x0 too small for safe Taylor expansion; increase xmin or use implicit method")
-    f0, f1, f2 = f_derivatives_at_x(x0, p, r, lam)
-    # time derivatives along solution:
-    x1p = f0                              # x'
-    x2p = f1 * f0                         # x''
-    x3p = f2 * f0**2 + (f1**2) * f0       # x''' (as derived earlier)
-    x1 = x0 + h*x1p + 0.5*h**2 * x2p + (1.0/6.0)*h**3 * x3p
-    return x1
-
-# Example usage:
-p, r, lam = 0.5, 1.2, 0.5
-x0 = 0.2
-h = 0.01
-x1 = taylor_step3(x0, h, p, r, lam, xmin=1e-4)
-print(x1)
-
-# %%
-# Example usage:
-p, r, lam = 0.0, 1.2, 0.5
-x0 = 0.5
-t = np.linspace(0, 1)
-
-fig, ax = plt.subplots()
-for lam in [1, 0.7, 0.5, 0.3, 0.1]:
-    x1 = taylor_step3(x0, t, p, r, lam, xmin=1e-4)
-    ax.plot(t, x1, label=f"lambda = {lam}")
-ax.legend()
-
-# %%
-# Example usage, copute the derivative = p - r * x ** lambda:
-p, r, lam = 0.0, 1.2, 0.5
-x0 = 0.5
-t = np.linspace(0,1)
-dt = 0.001
-
-fig, ax = plt.subplots()
-ax.set_title("$dx/dt = p - e x^\lambda$ and numerically $x(t+dt) - x(t))/ dt$")
-ax.set_xlabel("t")
-ax.set_ylabel('dx/dt')
-ax.grid(True)
-
-clrs = cycle('rbgkmcy')
-for lam in [1, 0.7, 0.5, 0.3, 0.1]:
-    clr = next(clrs)
-    x1 = taylor_step3(x0, t,      p, r, lam, xmin=1e-4)
-    x2 = taylor_step3(x0, t + dt, p, r, lam, xmin=1e-4)
-    
-    ax.plot(t, p - r * x1 ** lam, '-', color=clr, label=fr"$dx/dt = p - e x^\lambda$, $\lambda={lam}$")
-    ax.plot(t, (x2 - x1) / dt,'-.', color=clr,  label=fr"$(x(t + dt) - x(t) / dt, \lambda={lam}$" )
-ax.legend()
-
-
-# %%
-import numpy as np
-import matplotlib.pyplot as plt
-from itertools import cycle
-from scipy.integrate import solve_ivp
-
-# Problem: dx/dt = p - r * x**lam
-def f(t, x, p, r, lam):
-    return p - r * x**lam
-
-# Derivatives of f wrt x at point x (needed for Taylor time-derivs)
-def f_x_derivs(x, p, r, lam):
-    # returns f, f1, f2
-    f0 = p - r * x**lam
-    f1 = - r * lam * x**(lam - 1)
-    f2 = - r * lam * (lam - 1) * x**(lam - 2)
-    return f0, f1, f2
-
-def taylor_step3_single(x0, h, p, r, lam, xmin=1e-12):
-    if x0 <= xmin:
-        raise ValueError("x0 too small for Taylor expansion")
-    f0, f1, f2 = f_x_derivs(x0, p, r, lam)
-    x1p = f0                    # x'
-    x2p = f1 * f0               # x''
-    x3p = f2 * f0**2 + (f1**2) * f0  # x'''
-    x_new = x0 + h*x1p + 0.5*h**2 * x2p + (1.0/6.0)*h**3 * x3p
-    return x_new
-
-def integrate_taylor3(x0, t_span, n_steps, p, r, lam):
-    t0, t1 = t_span
-    ts = np.linspace(t0, t1, n_steps+1)
-    xs = np.empty_like(ts)
-    xs[0] = x0
-    for i in range(n_steps):
-        h = ts[i+1] - ts[i]
-        xs[i+1] = taylor_step3_single(xs[i], h, p, r, lam)
-    return ts, xs
-
-# Example parameters
-p, r = 0.0, 0.25
-x0 = 0.4
-t_span = (0.0, 1.5)
-
-fig, ax = plt.subplots(figsize=(8, 5))
-ax.set_title(r'Comparison: $\dot x = p - r x^\lambda$, $\lambda=0.5$')
-ax.set(xlabel='t', ylabel='x(t)')
-ax.grid(True)
-
-clrs = cycle('rbgkmcy')
-for lam in [1.0, 0.75, 0.5, 0.25, 0.1]:
-    clr = next(clrs)
-    
-    # integrate with Taylor (many small steps)
-    # ts_taylor, xs_taylor = integrate_taylor3(x0, t_span, n_steps=1000, p=p, r=r, lam=lam)
-
-    # integrate with RK45 and BDF
-    sol_rk = solve_ivp(lambda t, x: f(t, x, p, r, lam), t_span, [x0], method='RK45', rtol=1e-8, atol=1e-10, dense_output=True)
-    # sol_bdf = solve_ivp(lambda t, x: f(t, x, p, r, lam), t_span, [x0], method='BDF', rtol=1e-8, atol=1e-10, dense_output=True)
-
-    # compare on a common time grid
-    N = 50
-    t_plot = np.linspace(t_span[0], t_span[1], N)
-
-    x_rk = sol_rk.sol(t_plot)[0]
-    # x_bdf = sol_bdf.sol(t_plot)[0]
-    x_taylor_interp = np.interp(t_plot, ts_taylor, xs_taylor)
-
-    plt.plot(t_plot, x_rk, 'o', color=clr, mfc='none', label=fr'RK45, $\lambda$={lam}')
-    # plt.plot(t_plot, x_bdf, '--', color=clr, label=fr'BDF, $\lambda$={lam}')
-    # plt.plot(t_plot, x_taylor_interp, '.', color=clr, label=fr'Taylor3 ({N} steps), $\lambda$={lam}')
-ax.legend()
-plt.show()
-
-# %%
-
-import numpy as np
-from scipy.special import lambertw
-
-def x_explicit(t, p, r, x0, t0=0.0):
-    """
-    Explicit solution for dx/dt = p - r * sqrt(x).
-    Accepts scalar or numpy array t.
-    Handles p > 0 via Lambert W, and p == 0 via separable formula.
-    """
-    t = np.asarray(t, dtype=float)
-    # trivial constant solution if r == 0 -> x = x0 + p*(t-t0)  (but here r>0 usually)
-    if np.isclose(p, 0.0):
-        # separable solution: sqrt{x}(t) = sqrt{x0} - (r/2)*(t-t0)
-        s = np.sqrt(x0) - 0.5 * r * (t - t0)
-        s = np.maximum(s, 0.0)   # if hit zero, floor at zero
-        return s**2
-
-    # general p > 0 case (Lambert W formula)
-    sqrt_x0 = np.sqrt(x0)
-    y0 = p - r * sqrt_x0
-    # Build A(t) = (y0/p) * exp(-y0/p) * exp(- (r^2/(2p))*(t-t0))
-    A = (y0 / p) * np.exp(-y0 / p) * np.exp(-(r**2 / (2.0 * p)) * (t - t0))
-    arg = -A
-    # lambertw returns complex arrays in general; for our regime principal branch real part suffices
-    W = lambertw(arg, k=0)
-    W = np.real_if_close(W, tol=1000)   # convert small imag parts to real
-    z = -W.real
-    u = (p * (1.0 - z)) / r
-    x = (u ** 2)
-    # numerical safety: ensure non-negative
-    x = np.maximum(x, 0.0)
-    return x
-
-# %%
-p, x0 = 1.0, 0.9
-t = np.linspace(0, 10)
-
-fig, ax = plt.subplots(figsize=(8,6))
-ax.set_title(r'x=S/Smax for different p and r, function with power=0.5')
-ax.set(xlabel='t', ylabel='S/Smax')
-ax.grid(True)
-
-for r in [0., 0.1, 0.2, 0.3, 0.5]:
-    x = x_explicit(t, p, r, x0, t0=0.0)
-    ax.plot(t, x, label=f"p={p}, r={r}")
-ax.legend()
-
-# %%
-
-def implicit_euler_step(xn, dt, p, r, lam, tol=1e-12, maxit=10):
-    # Solve G(x) = x - xn - dt*(p - r*x**lam) = 0
-    x = xn  # initial guess
-    for _ in range(maxit):
-        G = x - xn - dt*(p - r * x**lam)
-        if abs(G) < tol:
-            break
-        Gp = 1 + dt * r * lam * x**(lam - 1)   # derivative of G
-        dx = - G / Gp
-        x += dx
-        if abs(dx) < tol:
-            break
-    return max(x, 0.0)
-
-
-
-# %%
-p, x0 = 0.1, 0.9
-t = np.linspace(0, 30)
-
-fig, ax = plt.subplots(figsize=(8,6))
-ax.set_title(r'x=S/Smax  implicit euler method')
-ax.set(xlabel='t', ylabel='S/Smax')
-ax.grid(True)
-
-for lam in [0.1]:
-    clrs = cycle('rbgkmcy')
-    for r in [0., 0.01, 0.02, 0.05, 0.1, 0.2, 0.3, 0.5]:
-        xt = np.zeros_like(t)
-        for i, dt in enumerate(t):
-            xt[i] = implicit_euler_step(x0, dt, p, r, lam)
-        ax.plot(t, xt, label=f"p={p}, r={r}")
-ax.legend()
 
 # %%
