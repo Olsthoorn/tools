@@ -192,7 +192,127 @@ In which
 \begin_layout Standard
 \begin_inset Formula 
 \[
-\intop\frac{dS}{dt}dt+\intop q_{1}dt=\intop P_{0}dt-\intop E_{0}dt
+\intop\frac{dS}{dt}dt+\intop q_{1}dt=\intop Pdt-\intop Edt
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+For 
+\begin_inset Formula $P>0$
+\end_inset
+
+ it's possible that the reservoir will be full before the time step is over.
+ With maximum storage equal to 
+\begin_inset Formula $S_{max}$
+\end_inset
+
+ and 
+\begin_inset Formula $t_{1}$
+\end_inset
+
+ the time at which the storage is full,
+ so that no overflow has taken place and,
+ therefore,
+ the outflow 
+\begin_inset Formula $q$
+\end_inset
+
+ is still zero,
+ we have the following water budget
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+Pdt-\intop Edt=S_{max}-S_{0}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+From which we have the actual evaporation over this time step which runs from 
+\begin_inset Formula $t_{0}$
+\end_inset
+
+ to 
+\begin_inset Formula $t_{1}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+\int_{t_{0}}^{t_{1}}Edt & =P_{0}\left(t_{1}-t_{0}\right)-\left(S_{t_{1}}-S_{t_{0}}\right)\\
+\int_{t_{0}}^{t_{1}}qdt & =0
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Over the rest of the time step,
+ i.e when 
+\begin_inset Formula $t_{1}-t_{0}<\Delta t$
+\end_inset
+
+,
+ so that 
+\begin_inset Formula $t_{2}=\Delta t-t_{1}$
+\end_inset
+
+>0,
+ we have
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+\int_{t_{1}}^{t_{2}}Edt & =E_{0}\left(t_{2}-t_{1}\right)\\
+\int_{t_{1}}^{t_{2}}qdt & =\int_{0}^{\Delta t}qdt=\left(P_{0}-E_{0}\right)\left(t_{2}-t_{1}\right)
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\int_{t_{0}}^{t_{2}}Edt=P_{0}\left(t_{1}-t_{0}\right)-S_{t_{1}}-S_{t_{0}}+E_{0}\left(t_{2}-t_{1}\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+E=\frac{P_{0}\left(t_{1}-t_{0}\right)-\left(S_{t_{1}}-S_{t_{0}}\right)+E_{0}\left(t_{2}-t_{1}\right)}{t_{2}-t_{0}}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+q=\frac{\left(P_{0}-E_{0}\right)\left(t_{2}-t_{1}\right)}{t_{2}-t_{0}},\,\,\,t_{1}<t_{2}
 \]
 
 \end_inset
@@ -221,6 +341,378 @@ In which
 
 \end_inset
 
+
+\end_layout
+
+\begin_layout Standard
+The same seasoning applies to the root zone.
+\end_layout
+
+\begin_layout Standard
+We have to be able to compute the storage at the end of the time step to see of it predict exceeding the storage capacity,
+ and with a linear reservoir with unthrottled evaporation,
+ also if the storage is completely emptied.
+\end_layout
+
+\begin_layout Standard
+For unthrottled evaporation,
+ we have simply after a time 
+\begin_inset Formula $\Delta t$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+S=S_{0}+\left(P-E\right)\Delta t
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Then the time of hit can be computed as well
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+dt=\frac{S-S_{0}}{P-E}
+\]
+
+\end_inset
+
+where 
+\begin_inset Formula $dt=\infty$
+\end_inset
+
+ if 
+\begin_inset Formula $P=E$
+\end_inset
+
+ and positive and numerator and denominator have the same sign.
+ The target storage can be 
+\begin_inset Formula $S_{max}$
+\end_inset
+
+ or 
+\begin_inset Formula $S_{min}$
+\end_inset
+
+ with the latter being normally 0.
+ Then if 
+\begin_inset Formula $dt>\Delta t$
+\end_inset
+
+ the storage will not overflow or underflow and we can use the already computed storage and the length of the time step directly.
+ If 
+\begin_inset Formula $dt<\Delta t$
+\end_inset
+
+ then 
+\begin_inset Formula $S$
+\end_inset
+
+ has to be set to the chosen limit and water budget evaluation is done in two steps,
+ first over 
+\begin_inset Formula $0...dt$
+\end_inset
+
+ to and second over 
+\begin_inset Formula $dt...\Delta t$
+\end_inset
+
+.
+ When 
+\begin_inset Formula $P>E$
+\end_inset
+
+ there will be no overflow over the time step 
+\begin_inset Formula $dt$
+\end_inset
+
+ and there will be overflow equal to 
+\begin_inset Formula $P-E$
+\end_inset
+
+ over the time between 
+\begin_inset Formula $dt$
+\end_inset
+
+ and 
+\begin_inset Formula $\Delta t$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+In the case when evaporation is throttled linearly like
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+E=E_{0}\frac{S}{S_{max}}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+from which follows
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+x=\frac{S}{S_{max}}=\frac{P}{E}+\left(\frac{S_{0}}{S_{max}}-\frac{P}{E}\right)\exp\left(-\frac{E\left(t-t_{0}\right)}{S_{max}}\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+because 
+\begin_inset Formula $E\ge$
+\end_inset
+
+0 the exponent will always approach 0 for 
+\begin_inset Formula $t\rightarrow\infty$
+\end_inset
+
+.
+ Hence,
+ the steady state solution is
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+x=\frac{P}{E}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+this allows for an easy way to verify whether the relative storage,
+ 
+\begin_inset Formula $x$
+\end_inset
+
+,
+ can become larger than 1.
+ This is obviously always the case if 
+\begin_inset Formula $P>E$
+\end_inset
+
+ and,
+ thus trivial.
+\end_layout
+
+\begin_layout Standard
+If 
+\begin_inset Formula $E=0$
+\end_inset
+
+ we simply have
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+S=S_{0}+P\Delta t
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+For 
+\begin_inset Formula $E>0$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+\frac{dS}{dt} & =P-\frac{S}{S_{max}}E\\
+\frac{dS/S_{max}}{dt} & =\frac{P}{S_{max}}-\frac{E}{S_{max}}\frac{S}{S_{max}}\\
+\frac{dx}{dt} & =p-rx\\
+\frac{dx}{p-rx} & =dt\\
+\frac{d\left(p-rx\right)}{p-rx} & =-rdt\\
+\ln\left(p-rx\right) & =C-rt\\
+C & =\ln\left(p-rx_{0}\right)\\
+\ln\left(\frac{p-rx}{p-rx_{0}}\right) & =-rt\\
+t & =\frac{1}{r}\ln\left(\frac{p-rx_{0}}{p-rx}\right)\\
+\frac{p-rx}{p-rx_{0}} & =\exp\left(-rt\right)\\
+p-rx & =\left(p-rx_{0}\right)\exp\left(-rt\right)\\
+x & =\frac{p}{r}+\left(x_{0}-\frac{p}{r}\right)\exp\left(-rt\right)\\
+\frac{S}{S_{max}} & =\frac{P}{E}+\left(\frac{S_{0}}{S_{max}}-\frac{P}{E}\right)\exp\left(-\frac{t-t_{0}}{S_{max}/E}\right)\\
+\mathtt{Reservoir}\mathtt{constant} & =\frac{S_{max}}{E},E>0,,\mathtt{Steady}\mathtt{state:}\frac{P}{E}
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+For 
+\begin_inset Formula $p>r$
+\end_inset
+
+ there is always an answer when the ceiling is 
+\begin_inset Formula $x=1$
+\end_inset
+
+ and 
+\begin_inset Formula $0\le x_{0}\le x$
+\end_inset
+
+.
+ For 
+\begin_inset Formula $p<r$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Water budget for the period 
+\begin_inset Formula $0...\delta t_{1}$
+\end_inset
+
+ when 
+\begin_inset Formula $S=S_{max}$
+\end_inset
+
+ at 
+\begin_inset Formula $t=\delta t_{1}$
+\end_inset
+
+ from 
+\begin_inset Formula $S=S_{0}$
+\end_inset
+
+ at 
+\begin_inset Formula $t=0$
+\end_inset
+
+:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+P\delta t_{1}=E_{1}\delta t_{1}+S-S_{0},\,\,\,q=0
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Water budget over time 
+\begin_inset Formula $\delta t_{2}=\Delta t-\delta t_{1}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+P\delta t_{2}=E_{0}\delta t_{2}+q\delta t_{2}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Total water budget
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+P\left(\delta t_{1}+\delta t_{2}\right)=E_{1}\delta t_{1}+E_{0}\delta t_{2}+S-S_{0}+q\delta t_{2}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\overline{E}=\frac{E_{1}\delta t_{1}+E_{0}\delta t_{2}}{\delta t_{1}+\delta t_{2}}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+P & =\overline{E}+\frac{S-S_{0}}{\delta t_{1}+\delta t_{2}}+q\frac{\delta t_{2}}{\delta t_{1}+\delta t_{2}}\\
+\overline{E} & =P-\frac{S-S_{0}}{\delta t_{1}+\delta t_{2}}-q\frac{\delta t_{2}}{\delta t_{1}+\delta t_{2}}
+\end{align*}
+
+\end_inset
+
++
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+P & =E+\left(S-S_{0}\right)+q\\
+P\left(\delta t_{1}+\delta t_{2}\right) & =P\delta t_{1}-\left(S-S_{0}\right)+\left(P-E\right)\delta t_{2}\\
+0 & =-\left(S-S_{0}\right)-E\delta t_{2}
+\end{align*}
+
+\end_inset
+
+
+\begin_inset Newline newline
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
 Because we have only daily or per time step data,
  we will just have to assume that 
 \begin_inset Formula $P$
@@ -255,250 +747,11 @@ P_{0}-E_{1} & 0<S_{1}<S_{1,max}\\
 
 \end_inset
 
-So,
- for 
-\begin_inset Formula $P-E_{0}>0$
-\end_inset
 
- we have the following water balance for the interception reservoir,
- integrated over the day equal to
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\begin{align*}
-\intop qdt & =S_{0}+\intop\left(P-E_{0}\right)dt-S_{max}\\
-q_{avg} & =P-E_{0}-\left(\frac{S_{max}-S_{0}}{\Delta t}\right)
-\end{align*}
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\begin{align*}
-\intop Edt & =\intop E_{0}dt\\
-E_{avg} & =E_{0}
-\end{align*}
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-As long as 
-\begin_inset Formula $S$
-\end_inset
-
- is rising but 
-\begin_inset Formula $S<S_{max}$
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\begin{align*}
-\frac{dS}{dt} & =P-E_{0}\rightarrow S=S_{0}+\intop\left(P-E_{0}\right)dt\\
-q & =0\\
-E & =E_{0}
-\end{align*}
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-Before the storage hits the capacity of the reservoir
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\begin{align*}
-\frac{dS}{dt} & =P-E_{0}\\
-E_{1} & =E_{0}\\
-q_{1} & =0
-\end{align*}
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-After hitting the capacity
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\begin{align*}
-\frac{dS}{dt} & =0\\
-E_{1} & =E_{0}\\
-q_{1} & =P-E_{0}
-\end{align*}
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-When 
-\begin_inset Formula $P-E_{0}<0$
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-Before hitting the bottom of the reservoir
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\begin{align*}
-\frac{dS}{dt} & =P-E_{0}\\
-E_{1} & =E_{0}\\
-q_{1} & =0
-\end{align*}
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-After hitting the bottom of the reservoir
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\begin{align*}
-\frac{dS}{dt} & =0\\
-E_{1} & =0\\
-q_{1} & =0
-\end{align*}
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-Setup of the computation as transparent as possible
-\end_layout
-
-\begin_layout Standard
-P
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\[
-\delta t=t-t_{0}=\frac{S-S_{0}}{P_{0}-E_{0}}
-\]
-
-\end_inset
-
-If 
-\begin_inset Formula $\delta t>\Delta$
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-if 
-\begin_inset Formula $P_{0}-E_{0}$
-\end_inset
-
->0 then 
-\begin_inset Formula $S_{1}=S_{1,max}$
-\end_inset
-
- and 
-\begin_inset Formula $E_{1}=E_{0}$
-\end_inset
-
-and 
-\begin_inset Formula $q=(P_{0}-E_{1})\left(1-\frac{\delta t}{\Delta t}\right)$
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-if 
-\begin_inset Formula $P_{0}-E_{0}<0$
-\end_inset
-
- then 
-\begin_inset Formula $S_{0}=0$
-\end_inset
-
- and 
-\begin_inset Formula $E=E_{0}\frac{\delta t}{\Delta t}$
-\end_inset
-
- and 
-\begin_inset Formula $q=0$
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-If 
-\begin_inset Formula $P-E_{0}=0$
-\end_inset
-
- then 
-\begin_inset Formula $E=E_{0}$
-\end_inset
-
- and 
-\begin_inset Formula $q=0$
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-If 
-\begin_inset Formula $\delta t<\Delta t$
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula $S_{1}=S_{0}+\left(P_{0}-E_{0}\right)\Delta t$
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula $E_{1}=E_{0}$
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula $q_{1}$
-\end_inset
-
-=0
 \end_layout
 
 \begin_layout Subsection
-Root zone
+Root zone linearly throttled evaporation (Earth method)
 \end_layout
 
 \begin_layout Standard
@@ -506,12 +759,8 @@ The water balance of the rootzone get inflow from the interception reservoir
 \begin_inset Formula $P_{1}=-q_{1}$
 \end_inset
 
- and loses water from it through actual evapotranspiration 
+ and loses water from it through actual evapo-transpiration 
 \begin_inset Formula $E_{2}$
-\end_inset
-
- with a maximum of 
-\begin_inset Formula $E_{0}-E_{1}$
 \end_inset
 
  and loss 
@@ -523,112 +772,89 @@ The water balance of the rootzone get inflow from the interception reservoir
 \end_layout
 
 \begin_layout Standard
-\begin_inset Formula 
-\begin{align*}
-E_{2}\left(t\right) & =\begin{cases}
-E_{2} & S_{2}=S_{2,max},P_{1}-E_{1}>=0\\
-E_{2} & 0<S_{2}<S_{2,max}\\
-0 & S_{2}=0,P_{1}-E_{1}\le0
-\end{cases}\\
-q_{2}\left(t\right) & =\begin{cases}
-P_{1}-E_{1} & S_{2}=S_{2,max},P_{1}-E_{1}\ge0\\
-0 & S_{2}<S_{2,max}
-\end{cases}\\
-\frac{dS_{2}}{dt}\left(t\right) & =\begin{cases}
-0 & S_{2}=S_{2,max},P_{1}-E_{1}\ge0\\
-P_{1}-E_{1} & 0<S_{2}<S_{2,max}\\
-0 & S_{1}=0,P_{2}-E_{2}\le0
-\end{cases}
-\end{align*}
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-When 
-\begin_inset Formula $P_{1}-E_{1}>0$
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-Before hitting the ceiling
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\begin{align*}
-\frac{dS}{dt} & =q_{1}-E_{2}\\
-E_{2} & =E_{0}-E_{1}\\
-q_{2} & =0
-\end{align*}
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-After hitting the ceiling
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\begin{align*}
-\frac{dS}{dt} & =0\\
-E_{2} & =E_{0}-E1\\
-q_{2} & =q_{1}-E_{2}
-\end{align*}
-
-\end_inset
-
-When 
-\begin_inset Formula $q_{1}-E_{1}<0$
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-Before hitting the botttom
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\begin{align*}
-\frac{dS}{dt} & =q_{1}-E_{0}-E_{1}\\
-E_{2} & =E_{0}-E_{1}\\
-q_{2} & =0
-\end{align*}
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-After hitting the bottom
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\begin{align*}
-\frac{dS}{dt} & =0\\
-E_{2} & =0\\
-q_{2} & =0
-\end{align*}
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
 When throttling the Evaporation linearly with the filling of the root zone 
 \begin_inset Formula $S$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+\frac{dS}{dt} & =P-\frac{S}{S_{max}}E\\
+\frac{dS/S_{max}}{dt} & =\frac{P}{S_{max}}-\frac{E}{S_{max}}\frac{S}{S_{max}}\\
+\frac{dx}{dt} & =p-rx\\
+\frac{dx}{p-rx} & =dt\\
+\frac{d\left(p-rx\right)}{p-rx} & =-rdt\\
+\ln\left(p-rx\right) & =C-rt\\
+C & =\ln\left(p-rx_{0}\right)\\
+\ln\left(\frac{p-rx}{p-rx_{0}}\right) & =-rt\\
+t & =\frac{1}{r}\ln\left(\frac{p-rx_{0}}{p-rx}\right)\\
+\frac{p-rx}{p-rx_{0}} & =\exp\left(-rt\right)\\
+p-rx & =\left(p-rx_{0}\right)\exp\left(-rt\right)\\
+x & =\frac{p}{r}+\left(x_{0}-\frac{p}{r}\right)\exp\left(-rt\right)\\
+\frac{S}{S_{max}} & =\frac{P}{E}+\left(\frac{S_{0}}{S_{max}}-\frac{P}{E}\right)\exp\left(-\frac{t-t_{0}}{S_{max}/E}\right)\\
+\mathtt{Reservoir}\mathtt{constant} & =\frac{S_{max}}{E},E>0,,\mathtt{Steady}\mathtt{state:}\frac{P}{E}
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Note that when 
+\begin_inset Formula $E=0$
+\end_inset
+
+ the differential equation becomes
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+\frac{dx}{dt} & =p\\
+x & =p\left(t-t_{0}\right)+C\\
+C & =x_{0}\\
+x-x_{0} & =p\Delta t\\
+\Delta t & =\frac{x-x_{0}}{p},\,\,p>0
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+If 
+\begin_inset Formula $p=0$
+\end_inset
+
+ and 
+\begin_inset Formula $r=0$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+\frac{dx}{dt} & =0,\,\,\,x=x_{0}\\
+dt & =Dt
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\]
+
 \end_inset
 
 
@@ -650,7 +876,7 @@ When throttling the Evaporation linearly with the filling of the root zone
 \end_layout
 
 \begin_layout Standard
-This is equation is implified by replacing 
+This is equation is simplified by replacing 
 \begin_inset Formula $x=S/S_{max}$
 \end_inset
 

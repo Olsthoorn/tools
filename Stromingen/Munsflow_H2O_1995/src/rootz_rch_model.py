@@ -27,15 +27,12 @@ sys.path.insert(0, os.getcwd())
 
 from abc import ABC, abstractmethod
 import numpy as np
-import math
 import matplotlib.pyplot as plt
-from scipy.special import lambertw
 from scipy.integrate import solve_ivp
 import pandas as pd
 import etc
-from itertools import cycle 
-
-import src.rootzone_nonlin as rzf #noqa
+from itertools import cycle
+from typing import Any
 
 # Project directory namespace
 dirs = etc.Dirs(os.getcwd())
@@ -51,7 +48,7 @@ class RechargeBase(ABC):
 
     month_names = 'jan feb mar apr may jun jul aug sep okt nov dec'.split()
     
-    def __init__(self, Smax_I: float = 2.5, Smax_R: float = 2.5)-> float:
+    def __init__(self, Smax_I: float = 2.5, Smax_R: float = 100., **_: Any)-> None:
         self.Smax_I = Smax_I
         self.Smax_R = Smax_R
         self.S_I = 0.
@@ -265,6 +262,9 @@ class RechargeBase(ABC):
             P1, E1, BI = self.interception(P0, E0)
             rch, Ea, BR = self.root_zone(  P1, E0 - E1)
             
+            if Ea > 15:
+                pass
+            
             pe['IC']  = pe['RH'] - P1  # intercepted
             pe['STO'] = self.S_R       # Current storage level
             pe['EA']  = Ea             # Actual expo-transpiration
@@ -282,7 +282,7 @@ class RchMak(RechargeBase):
         The recharge must be P - 0.8 E0 ??
         Where E0 = E_makkink/0.8. ??
     """
-        def __init__(self, Smax_I: float = 2.5, Smax_R: float = 2.5)-> float:
+        def __init__(self, Smax_I: float = 2.5, Smax_R: float = 100., **_: Any)-> None:
             super().__init__(Smax_I, Smax_R)
             
         def dt_hit_root_zone(self, P: float, E: float, Dt: float)->float:
@@ -304,7 +304,7 @@ class RchBin(RechargeBase):
     """Compute recharge with interception and root_zone storage assuming
     that the evapotranspiration is not throttled.
     """
-    def __init__(self, Smax_I: float = 2.5, Smax_R: float = 2.5)-> float:
+    def __init__(self, Smax_I: float = 2.5, Smax_R: float = 100., **_: Any)-> None:
             super().__init__(Smax_I, Smax_R)
             
     def S_rootzone(self, P: float, E: float, Dt: float)->float:
@@ -350,8 +350,9 @@ class RchEarth(RechargeBase):
     pe['EA']  = pe['STO'] * (1 - decay) # Actual crop evap.
     """
     
-    def __init__(self, Smax_I: float = 2.5, Smax_R: float = 2.5)-> float:    
+    def __init__(self, Smax_I: float = 2.5, Smax_R: float = 100., **_: Any)-> None:    
         super().__init__(Smax_I, Smax_R)
+        return
         
     def S_rootzone(self, P: float, E: float, Dt:float)-> float:
         """Compute the reservoir filling after arabitrary time Dt"""
@@ -403,20 +404,33 @@ class RchLam(RechargeBase):
 
     lambda = 1 yields the same reults as the RchEarth object.
     """
-    def __init__(self, Smax_I: float = 2.5, Smax_R: float = 2.5)-> float:    
+    def __init__(self, Smax_I: float = 2.5, Smax_R: float = 100., lam: float = 0.5, **_: Any)-> None:    
         super().__init__(Smax_I, Smax_R)
         
-        self.event_hit_one.terminal = True
-        self.event_hit_one.direction = 0
+        self.lam = lam
         
+        self.event_y_eq_1.terminal = True
+        self.event_y_eq_0.terminal = True
+        
+        self.event_y_eq_1.direction = +1
+        self.event_y_eq_0.direction = -1
+        
+        self.events = [self.event_y_eq_1, self.event_y_eq_0]
+                
     @staticmethod
     def rhs(t, x, p, r, lam):
         return p - r * (x ** lam)
 
-    @staticmethod
-    def event_hit_one(t, x, p, r, lam):
-        return x[0] - 1.0
+    eps = 1e-6
 
+    @staticmethod
+    def event_y_eq_1(t, y, *_):
+        return y[0] - (1.0 - RchLam.eps)
+    
+    @staticmethod
+    def event_y_eq_0(t, y, *_):
+        return y[0] - RchLam.eps
+    
             
     def S_rootzone(self, P: float, E:float, Dt: float)->  float:        
         """Return relative filling of reservoir using exact method.        
@@ -428,53 +442,108 @@ class RchLam(RechargeBase):
         """
         S0, Smax = self.S_R, self.Smax_R        
         p, r, x0 = P / Smax, E / Smax, S0 / Smax
-        lam = 0.5 # Don't use lambda < 0.5, lambda=1 is the same as Earth
+                
         small_tol = 0.1 / Smax
         xbase, xtop = small_tol, 1 - small_tol
         
 
-        xacc = p - r * x0 ** lam
-        if xacc > 0:
-            pass
-        if xacc <= 0:
-            pass        
-        if x0 > 1 - small_tol and xacc > 0:
-            pass
-        if x0 > 1 - small_tol and xacc < 0:
-            pass
-        if x0 >= xtop and np.isclose(xacc, 0):
-            pass
-        
+        xacc = p - r * x0 ** self.lam
         if x0 > xtop:
-            if xacc >=0:
-                return Smax, 0.
-            else:
-                x0 = xtop
-        
-        if x0 < xbase:
+            if xacc >= 0:
+                return Smax, 0               
+        elif x0 < xbase:
             if xacc <= 0:
                 return 0., Dt
             else:
                 x0 = xbase
         
-        sol = solve_ivp(self.rhs, [0, Dt], [x0], method='RK45', args=(p,r,lam),
-                events=self.event_hit_one, dense_output=True)
+        sol = solve_ivp(self.rhs, [0, Dt], [x0], method='RK45', args=(p,r,self.lam),
+                events=self.events, dense_output=True)
         
         if sol.success:
-            x1 = sol.y.ravel()[-1]
-            dt = sol.t.ravel()[-1]
             if sol.t_events[0]:                
                 x1 = sol.y_events[0].ravel()[-1]
                 dt = sol.t_events[0].ravel()[-1]
-            S1 = Smax * x1
-            return S1, dt
+            else:
+                x1 = sol.y.ravel()[-1]
+                dt = sol.t.ravel()[-1]
+            return Smax * x1, dt                
         else:
             raise RuntimeError("Runge Kutta did not finish successfully exit status {soi.status}")
+
+    @staticmethod        
+    def show_throttling_E_by_lam(lam=[0.1, 0.25, 0.5, 1.0]):
+        """Show the throttling of E by lambda: E = E0 (S/Smax) ** lambda
+        
+        lam = float | iterable of float
+        """
+        
+        x = np.linspace(0., 1.0, 200)
+        lambdas = np.atleast_1d(np.asarray(lam))
+        
+        ax = etc.newfig(r"Efect of throttling E by $\lambda$: ($E = E_0 \cdot x^\lambda$)",
+                        r"$x = S/S_{max}$",
+                        r"$x^\lambda$")
+        
+        for lam in lambdas:
+            ax.plot(x, x ** lam, label=fr"\ambda = {lam:3g}")
+            
+        ax.legend(loc="lower right")
+        return ax
+        
+        
+    def show_effect_of_lam(self, x0=[0.5], PE=((2, 1)), lam=0.5, t=1.0, ax=None):
+        """Show x(t) for different p and r and given lambda
+
+        Parameters
+        ----------
+        t: float
+            Duration of simulation (1 = 1 day) which will be from 0 to t
+        x0: ones-dimensional with len equal to that of PE:
+            initial relative filling of the root zone reservoir, eg 0.5.
+        PE: listlike of 2-tuples with (P, E) in mm/d
+            Given tupbles of precipiation and potential evaporation
+        lam: float
+            power in dS/dt = P/Smax - E/Smax (S/Smax) ** lam, the velocity of reservoir filling
+            
+        rchSimulator = RchLam(deBilt, lam=0.3)      
+        """
+        PE = np.atleast_2d(np.asarray(PE))
+        pr = PE / self.Smax_R
+        if np.isscalar(x0):
+            x0 = x0 * np.ones(len(pr))
+        if len(x0) != len(pr):
+            raise ValueError("Len of x0 must equal len of 2d sequence PE.")
+        
+        sol = solve_ivp(self.rhs, [0, t], x0, method='RK45', args=(pr[:, 0], pr[:, 1], lam),
+                        events=self.event_y_eq_0)
+        
+        if ax is None:
+            ax = etc.newfig(
+            fr"Show effect for $\lambda$ of different $P$ and $E$, [Smax={self.Smax_R} mm]",
+                            "time [d]",
+                            r"$x=S/S_{max}$")
+        
+        if True: # sol.success:
+            events = len(sol.t_events[0]) > 0
+            clrs = cycle("rbgkmcy")
+            for i, ((p, r), (P, E)) in enumerate(zip(pr, PE)):
+                clr = next(clrs)
+                ax.plot(sol.t, sol.y[i], '-.', color=clr,
+                        label=fr"$\lambda$={lam:.1f}, P={P:6.3g} mm/d , E={E:6.3g} mm/d")
+                if events:
+                    ax.plot(sol.t_events, t.y_events[i], 'o', color=clr, mfc='none')
+        else:
+            raise RuntimeError("Runge Kutta did not finish successfully exit status {soi.status}")
+        ax.legend(loc="upper left")
+        return ax
     
 def change_meteo(meteo):
-    """Meteo is a pd.DataFrame with fields 'RH' and 'EV24', in mm/d."""
+    """Meteo is a pd.DataFrame with fields 'RH' and 'EV24', in mm/d.
     
-    N = 5
+    For exploration purposes, to easier see that happens.
+    
+    """
     E = cycle([0., 1., 0., 2., 0., 3., 0., 4., 0., 5])
     P = cycle([0., 0., 2., 2., 0., 0., 4., 4., 0., 0.])
     i1 = 0
@@ -488,6 +557,7 @@ def change_meteo(meteo):
         meteo.loc[idx[i1]:idx[i2], 'EV24'] = next(E)
         i1 = i2
     return meteo
+    
     
 
     return meteo
@@ -544,7 +614,7 @@ if __name__ == "__main__":
     # deBilt_short = change_meteo(deBilt_short)
     
     # Storage capacity
-    Smax_I, Smax_R = 0.5, 100 # mm
+    Smax_I, Smax_R = 1.5, 100 # mm
     
     date_span = (np.datetime64("2020-01-01"), np.datetime64("2021-03-31"))
     date_span = (deBilt_short.index[0], deBilt_short.index[-1])
@@ -555,30 +625,45 @@ if __name__ == "__main__":
     idx = ((deBilt_short.index >= date_span[0]) &
                                (deBilt_short.index <= date_span[1]))
 
-    labels = ['Makkink', 'bin', 'earth', 'lambda'][2:4]
-    rchClasses = [RchMak, RchBin, RchEarth, RchLam][2:4]
+    labels = ['Makkink', 'bin', 'earth', 'lambda'][1:]
+    rchClasses = [RchMak, RchBin, RchEarth, RchLam][1:]
     
-    ax1, ax2, ax3 = etc.newfigs(('EV24 and EA', 'P and RCH', 'STO'),
-            'time', ('mm/d', 'mm/d', 'mm' ), figsize=(12, 10))
+    if True:
+        ax1, ax2, ax3 = etc.newfigs(('EV24 and EA', 'P and RCH', 'STO'),
+                'time', ('mm/d', 'mm/d', 'mm' ), figsize=(12, 10))
 
-    for rchClass, label in zip(rchClasses, labels):
-        rch_simulator = rchClass(Smax_I=Smax_I, Smax_R=Smax_R)
-        rch = rch_simulator.simulate(deBilt_short)
+        lam = 0.25
         
-        clr = next(clrs)
-        ax2.plot(rch.index[idx], rch['RH'][idx], '-',  lw=0.25, color=next(clrs),  label=label + ' P')
-        ax1.plot(rch.index[idx], rch['EV24'][idx], '-',lw=0.25, color=next(clrs),  label=label + ' EV24')
-        ax1.plot(rch.index[idx], rch['EA' ][idx], '-', lw=0.75, color=next(clrs),  label=label + ' EA')
-        ax2.plot(rch.index[idx], rch['RCH'][idx], '-', lw=0.75, color=next(clrs),  label=label + 'RCH')
-        ax3.plot(rch.index[idx], rch['STO'][idx], '-', lw=0.75, color=next(clrs),  label=label + ' STO')        
-        print(f'Recharge according to method {label}:\n', rch.loc[idx].mean(), '\n')
+        for rchClass, label in zip(rchClasses, labels):
+            rch_simulator = rchClass(Smax_I=Smax_I, Smax_R=Smax_R, lam=lam)
+            rch = rch_simulator.simulate(deBilt_short)
+            
+            clr = next(clrs)
+            ax2.plot(rch.index[idx], rch['RH'][idx], '-',  lw=0.25, color=next(clrs),  label=label + ' P')
+            ax1.plot(rch.index[idx], rch['EV24'][idx], '-',lw=0.25, color=next(clrs),  label=label + ' EV24')
+            ax1.plot(rch.index[idx], rch['EA' ][idx], '-', lw=0.75, color=next(clrs),  label=label + ' EA')
+            ax2.plot(rch.index[idx], rch['RCH'][idx], '-', lw=0.75, color=next(clrs),  label=label + 'RCH')
+            ax3.plot(rch.index[idx], rch['STO'][idx], '-', lw=0.75, color=next(clrs),  label=label + ' STO')        
+            print(f'Recharge according to method {label}:\n', rch.loc[idx].mean(), '\n')
 
-    for ax in [ax1, ax2, ax3]:
-        ax.legend(loc='upper right')    
-    
-    # fig.savefig(os.path.join(dirs.images, f'rch_{stn}.png'))
+        for ax in [ax1, ax2, ax3]:
+            ax.legend(loc='upper right')    
+        
+        # fig.savefig(os.path.join(dirs.images, f'rch_{stn}.png'))
 
-    plt.show()
-    
+        plt.show()
+        
+    if False:
+        rchlam = RchLam()
+        
+        rchlam.show_throttling_E_by_lam(lam=[0.1, 0.25, 0.5, 1.0])
+        
+        PE = [(0, 0), (1, 0), (0, 1), (1, 1), (4, 3.5)]
+        
+        ax = None
+        for lam in [0.1, 0.25, 0.5, 1.0]:
+            ax = rchlam.show_effect_of_lam(x0=0.5, PE=PE, lam=lam, t=250.0, ax=ax)
+        
+        plt.show()
 
 # %%
