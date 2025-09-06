@@ -443,6 +443,10 @@ class SoilBase(ABC):
     def S_fr_K(self, k: float | np.ndarray)-> float | np.ndarray:
         """Return S(K), saturation given K (by interpolation) """
         return self.S_fr_lnK(np.log(k))
+    
+    def theta_fr_K(self, k: float | np.ndarray)-> float| np.ndarray:
+        """Return theta(K), theta given K."""
+        return self.theta_fr_S(self.S_fr_K(k))
 
     def get_vD(self, q_avg: float)-> tuple[float, float]:
         """Return v = dK_dtheta(theta_avg)) and D(theta_abg) =k0(theta_avg) h1(theta_avg)"""        

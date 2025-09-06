@@ -344,10 +344,7 @@ class RchEarth(RechargeBase):
     """Compute recharge with interception and root_zone storage assuming
     that the evapotranspiration from th eroot zone is reduced by factor S/Smax.
                 
-    Decay of storage in root zone (during 12 h).
-    exp(-2 Emax / Sto * 0.5 dtau) = exp(- Emax / Sto * tau), answer is the same for 12 and 24 h
-    decay = np.exp(-(Emax / STOmax) * dtau) # Storage decay by evap. during daytime            
-    pe['EA']  = pe['STO'] * (1 - decay) # Actual crop evap.
+    Decay of storage in root zone  is computed analytically.
     """
     
     def __init__(self, Smax_I: float = 2.5, Smax_R: float = 100., **_: Any)-> None:    
@@ -355,12 +352,15 @@ class RchEarth(RechargeBase):
         return
         
     def S_rootzone(self, P: float, E: float, Dt:float)-> float:
-        """Compute the reservoir filling after arabitrary time Dt"""
+        """Compute (predict) the reservoir filling after arabitrary time Dt.
         
+        Don't take into account any reservoir boundaries, just integrate
+        over time Dt keeping P and E constant during Dt
+        """        
         S0, Smax = self.S_R, self.Smax_R
         p, r, x0 = P / Smax, E / Smax, S0 /Smax
         
-        if np.isclose(E, 0):
+        if np.isclose(E, 0): # no evaporation just precipitation
             x = x0 + p * Dt
         else:            
             x = p / r - (p / r - x0) * np.exp(- r * Dt)
@@ -370,6 +370,7 @@ class RchEarth(RechargeBase):
         """Return S, t, point where S hits top or bottom of  root-zone reservoir."""
         S0, Smax = self.S_R, self.Smax_R
         
+        # S1 is the predicted storage after Dt it can be too high of too low
         S1 = self.S_rootzone(P, E, Dt)
         
         # Get S, dt
@@ -397,11 +398,12 @@ class RchLam(RechargeBase):
     """Compute recharge with interception and root_zone storage assuming
     that the evapotranspiration is reduced by factor (S/Smax)^lambda.
     
-    Lambda is set by hand in function self.dt_hit_root_zone).
-    Make sure lambda is not much smaller than 0.5, because the
-    stiffness of the solution near the empty reservoir make the
-    solver fail.
+    Lambda values can be anything between at least 0.25 and 1. It may be that
+    for still smaller lambda, the RK45 integrator may fail.
+    
+    This is the most general method. 
 
+    lambda = 0 yields the same results as the RchBin  object
     lambda = 1 yields the same reults as the RchEarth object.
     """
     def __init__(self, Smax_I: float = 2.5, Smax_R: float = 100., lam: float = 0.5, **_: Any)-> None:    
@@ -473,7 +475,9 @@ class RchLam(RechargeBase):
 
     @staticmethod        
     def show_throttling_E_by_lam(lam=[0.1, 0.25, 0.5, 1.0]):
-        """Show the throttling of E by lambda: E = E0 (S/Smax) ** lambda
+        """Show the throttling of E by lambda: E = E0 (S/Smax) ** lambda.
+
+        This just show the function (S/Smax) ** lambda for 0<S<Smax.
         
         lam = float | iterable of float
         """
@@ -493,7 +497,9 @@ class RchLam(RechargeBase):
         
         
     def show_effect_of_lam(self, x0=[0.5], PE=((2, 1)), lam=0.5, t=1.0, ax=None):
-        """Show x(t) for different p and r and given lambda
+        """Show x(t)=S(t)/Smaxfor different p and r and given lambda
+
+        This is just to show the course of the storage under constant P and E.
 
         Parameters
         ----------
@@ -538,11 +544,14 @@ class RchLam(RechargeBase):
         ax.legend(loc="upper left")
         return ax
     
-def change_meteo(meteo):
+def change_meteo(meteo: pd.DataFrame)-> pd.DataFrame:
     """Meteo is a pd.DataFrame with fields 'RH' and 'EV24', in mm/d.
     
-    For exploration purposes, to easier see that happens.
+    For exploration purposes, one can alter the P and E of the given
+    pd.DataFrame. This way it will be easier to figure out what happens
+    internally when one gets strange results.
     
+    P and E are changed every 30 days and cycled (repeated).
     """
     E = cycle([0., 1., 0., 2., 0., 3., 0., 4., 0., 5])
     P = cycle([0., 0., 2., 2., 0., 0., 4., 4., 0., 0.])
@@ -557,8 +566,6 @@ def change_meteo(meteo):
         meteo.loc[idx[i1]:idx[i2], 'EV24'] = next(E)
         i1 = i2
     return meteo
-    
-    
 
     return meteo
 # %% Recharge over a period in the year
@@ -604,6 +611,14 @@ def rch_yr_period(PE: pd.DataFrame, period: tuple=(10, 7), verbose: bool =False)
 
 # %%
 if __name__ == "__main__":
+    # Demonstration of the use of the rootzone model to convert Precipitation
+    # and Makkink evaporation into a recharge series.
+    # Makkink is used as E0, no changes made.
+    # All data are in mm/d.
+    # The decline (throttling) of E with the decline of the relative storage
+    # may also be regarded as a crop resduction in some sense. Given all
+    # uncertainties, trying to be more sophisticated does not make much sense.
+    # TO 2025-09-05
 
     # Get the meteodata in a pd.DataFrame
     meteo_csv = os.path.join(dirs.data, "DeBilt.csv")
