@@ -8,7 +8,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 from matplotlib.animation import FuncAnimation, FFMpegWriter
-import functools
 import etc
 
 cwd = os.getcwd()
@@ -16,7 +15,7 @@ dirs = etc.Dirs(cwd)
 if cwd not in sys.path:
     sys.path.insert(0, cwd)
 
-from src import NL_soils #noqa
+from src.NL_soils import Soil #noqa
 
 plt.rcParams.update({
     'font.size': 12,
@@ -50,9 +49,9 @@ class Kinematic_wave():
                         ('theta2', '<f8'), # Downstream soil moisture content (m^3/m^3)
                         ])
 
-    z_theta_dtype = np.dtype(('z', '<f8'), ('theta', '<f8'))
+    z_theta_dtype = np.dtype([('z', '<f8'), ('theta', '<f8')])
     
-    def __init__(self, soil: NL_soils.Soil, z_theta: np.ndarray =None)-> None:
+    def __init__(self, soil: Soil, z_theta: np.ndarray =None)-> None:
         """Initialize the kinematic wave profile using props in soil.
         
         Parameters
@@ -114,7 +113,7 @@ class Kinematic_wave():
         
         if not isinstance(z_theta, np.ndarray) \
             or z_theta.dtype != self.__class__.z_theta_dtype:
-            raise TypeError(f"z_theta must be an np.ndarray of dtype: {}")
+            raise TypeError(f"z_theta must be an np.ndarray of dtype: {self.__class__.z_theta_dtype}")
         
         # start with t, tst1 and tst2 all zero        
         prof['t'] = 0.
@@ -147,10 +146,9 @@ class Kinematic_wave():
         -------
         float
             Velocity of the wave profile (m/d).
-        """
-        sl = self.soil
-        theta_s = sl.theta_s
-        theta_r = sl.theta_r
+        """        
+        theta_s = soil.theta_s
+        theta_r = soil.theta_r
         
         th1, th2 = np.atleast_1d(th1, th2)  # Ensure inputs are arrays
         
@@ -164,10 +162,11 @@ class Kinematic_wave():
         L = np.isclose(th1, th2)
 
         # Velocoty of normal points (no sharp fronts)
-        v[L] = self.sl.dK_dtheta(th1[L])
+        v[L] = self.soil.dK_dtheta(th1[L])
 
         # Veolocity of sharp fronts
-        v[~L] = (sl.K_fr_theta(th1[~L]) - sl.K_fr_theta(th2[~L])) / (th1[~L] - th2[~L])
+        v[~L] = (self.soil.K_fr_theta(th1[~L]) - self.soil.K_fr_theta(th2[~L])
+                 ) / (th1[~L] - th2[~L])
                 
         return v.item() if v.size == 1 else v
 
@@ -286,26 +285,19 @@ class Kinematic_wave():
         return t_profile, z_profile, theta_profile
 
 
-    def prepend(self, t, q, Npt=15):
-        sl = self.soil
+    def prepend(self, t, q):
         
-        theta1 = sl.theta_fr_K(q)            
-        theta2 = self.profile[0]['theta1']
-        
-        # if theta2 > theta1:
-        #     theta1 = np.linspace(theta1, theta2, Npt)
-        # theta2 = theta1
-        
-        h = np.zeros(0, self.__class__.profile.dtype)
+        h = np.zeros(1, self.__class__.profile_dtype)
+        h['z']  = self.z0
         h['t' ] = t
         h['tst1'] = t
         h['tst2'] = t        
-        h['theta1'] = sl.theta_fr_K(q)
+        h['theta1'] = max(soil.theta_fc(), soil.theta_fr_K(q))
         h['theta2'] = self.profile[0]['theta1']
         h['v'] = self.point_velocities(h['theta1'], h['theta2'])
-        h['z']      = self.z0
         
-        self.profile = np.prepend(h, self.profile)
+        
+        self.profile =np.concatenate([h, self.profile])
 
         return self.profile
         
@@ -359,7 +351,7 @@ class Kinematic_wave():
         dt = np.diff(time)[0]
         
         # Convert pd.DataFrame to array with dtype of fields
-        recharge = pd.to_records(recharge)        
+        recharge = recharge.to_records()        
         
         # Simulate timestep by timestep, record by record
         for t, pe in zip(time, recharge):
@@ -374,11 +366,11 @@ class Kinematic_wave():
             self.profile = self.update(dt)
             
             # Store profile for later animation
-            self.profiles[t]['profile'] = self.profile.copy()
-            self.profiles[t]['line'] = self.get_profile_line()
+            self.profiles[t]={'profile': self.profile.copy(),
+                                'line': self.get_profile_line()}
             
             # Get flux at water table
-            qwt, i2 = self.q_at_z(z)
+            qwt = self.q_at_z(self.z_gwt)
             pe['qwt'] = qwt
             
             # Truncate profile if more than one point beyond it 
@@ -400,20 +392,25 @@ class Kinematic_wave():
         gain more points.
                 
         """
+        dz = 10. # cm
         prf = self.profile
         
         z, theta = [], []        
         for (p1, p2) in zip(prf[:-1], prf[1:]):
-            N = 2 + np.int(p2['z'] - p1['z']) / 0.1
+            z1, z2 = p1['z'], p2['z']
+            if np.isclose(z1, z2):
+                continue
+            N = 2 + int((z2 - z1) / dz)
             if np.isclose(p1['theta2'], p2['theta1']) or N < 1:
                 z += [p1['z'], p2['z']]
                 theta += [p1['theta2'], p2['theta1']]                
             else:
+                t = p1['t'] # All points have the same (current) t
                 z_ = np.linspace(p1['z'], p2['z'], N)
-                v_avg = z_ / (t - p1['tst_2'])
-                theta_ = self.soil_theta_fr_V(v_avg)
-                z.append(list(z_))
-                theta.append(list(theta_))
+                v_avg = z_ / (t - p1['tst2'])
+                theta_ = self.soil.theta_fr_V(v_avg)
+                z += list(z_)
+                theta += list(theta_)
         return np.array(z), np.array(theta)
     
 
@@ -424,7 +421,7 @@ class Kinematic_wave():
 
         for t in self.fprofiles:
             z, theta = self.profiles[t]['line']
-            ax.plot(z, theta, label=f"t = {:.3g} d")
+            ax.plot(z, theta, label=f"t = {t:.3g} d")
 
 
 def make_animation(profiles):
@@ -452,7 +449,6 @@ def make_animation(profiles):
 
 if __name__ == "__main__":
     
-
     # %% Setup the example usage
     
     # Simulate the flow through the unsaturated zone using the kinematic wave model.
@@ -477,16 +473,18 @@ if __name__ == "__main__":
  
     # %% Second step get the soil and simulate the kinematic wave
 
-    soil = NL_soils('O01')
+    Soil.load_soils(os.path.join(dirs.data, "NL_VG_soilprops.xlsx"))
+    soil = Soil('O01')
     
     # Initialize the Kinematic Wave profile
     z_rz, z_gwt = 80, 2000.  # Water table depth (m)
     
-    z_theta = np.zeros((10, 2))
-    z_theta[:, 0] = np.linspace(z_rz, z_gwt, 10)
-    z_theta[:, 1] = soil.theta_fc()
+    z_theta = np.zeros(10, dtype=Kinematic_wave.z_theta_dtype)
+    z_theta['z'] = np.linspace(z_rz, z_gwt, 10)
+    z_theta['theta'] = soil.theta_fc()
 
     kwave = Kinematic_wave(soil=soil, z_theta=z_theta) # z_GWT ?
+    kwave.z_gwt = z_gwt
     
     kwave.simulate(rch)
     

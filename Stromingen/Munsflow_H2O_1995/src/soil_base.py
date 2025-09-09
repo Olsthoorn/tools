@@ -106,7 +106,7 @@ class SoilBase(ABC):
         """
         theta = np.atleast_1d(theta)
         dS_dth = np.ones_like(theta) / (self.theta_s - self.theta_r)
-        return dS_dth if len(dS_dth > 1) else np.item(dS_dth)
+        return dS_dth if len(dS_dth > 1) else dS_dth.item()
         
     def dtheta_dS(self, S: float | np.ndarray)-> float | np.ndarray:
         """Return dtheta/dS
@@ -116,7 +116,7 @@ class SoilBase(ABC):
         """
         S = np.atleast_1d(S)
         dth_dS = np.ones_like(S) * (self.theta_s - self.theta_r)
-        return dth_dS if len(dth_dS > 1) else np.item(dth_dS)
+        return dth_dS if len(dth_dS > 1) else dth_dS.item()
   
     def psispace(self, N: int = 50)-> np.ndarray:
         """Return a proper psi range for this soil (psi_b <= psi <= 10 ** 4.2)"""
@@ -273,7 +273,7 @@ class SoilBase(ABC):
         rng = (psi >= psi1) & (psi <= psi2)
         alpha[rng] = (psi[rng] - psi1) / (psi2 - psi1)
         if len(alpha) == 1:
-            return np.item(alpha)
+            return alpha.item()
         else:
             return alpha
 
@@ -368,7 +368,7 @@ class SoilBase(ABC):
         alpha[rng] = 1.0 / (1.0 + np.exp((pF[rng] - pF50) / s))
 
         # Return scalar if input was scalar
-        return np.item(alpha) if alpha.size == 1 else alpha
+        return alpha.item() if alpha.size == 1 else alpha
             
     # ET reduction according to Mualem
     def mualem_alpha(self, theta: float | np.ndarray,
@@ -399,7 +399,7 @@ class SoilBase(ABC):
         alpha  *= self.alpha_wet(theta, psi2=psi2)
 
         # Return scalar if input was scalar
-        return np.item(alpha) if alpha.size == 1 else alpha
+        return alpha.item() if alpha.size == 1 else alpha
 
     # ET reducution, blend of Feddes and Mualem
     def alpha_dry_blend(self, theta: float | np.ndarray,
