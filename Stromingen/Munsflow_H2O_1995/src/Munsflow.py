@@ -17,7 +17,6 @@ import etc
 dirs = etc.Dirs(os.getcwd())
 sys.path.insert(0, os.getcwd())
 
-
 from src import NL_soils as nls
 from src.rootz_rch_model import RchLam
 

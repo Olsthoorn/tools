@@ -54,10 +54,7 @@ class Soil(SoilBase):
         # self.props['el'] = 0.5
         # ...
         self.code = soil_code
-        
-        # Interpolator object to get S given ln(K)
-        self.S_fr_lnK  = self.S_fr_lnK_interpolator(S_limit=1e-4)
-  
+          
     
     @classmethod
     def load_soils(cls, wbook):

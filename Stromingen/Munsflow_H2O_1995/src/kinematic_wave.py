@@ -8,6 +8,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 from matplotlib.animation import FuncAnimation, FFMpegWriter
+import functools
 import etc
 
 cwd = os.getcwd()
@@ -15,20 +16,18 @@ dirs = etc.Dirs(cwd)
 if cwd not in sys.path:
     sys.path.insert(0, cwd)
 
+from src import NL_soils #noqa
 
-from src import NL_soils as snl
+plt.rcParams.update({
+    'font.size': 12,
+    'figure.figsize': (10, 6),
+    'axes.grid': True,
+    'grid.alpha': 0.5,
+    'lines.linewidth': 2,
+    'lines.markersize': 5
+})
 
-# %%
-secpd = 86400  # Seconds per day
-K_s = 0.02     # Saturated hydraulic conductivity (m/d)
-theta_s = 0.4  # Saturated soil moisture content (m^3/m^3)
-theta_r = 0.1  # Residual soil moisture content (m^3/m^3)
-lambda_bc = 3.7 # Pore size distribution index (dimensionless)
-epsilon = 3 + 2 / lambda_bc  # epsilon
-z = np.linspace(0, 5, 51)  # Depth from 0 to 5 Meters
-t = np.linspace(0, 100., 51)
-
-class KWprofile():
+class Kinematic_wave():
     """Class to represent the moisture profile using kinematic waves.
     
     The kinematic wave model is used to simulate the movement of moisture through the unsaturated zone.
@@ -43,16 +42,17 @@ class KWprofile():
     
     profile_dtype = np.dtype([
                         ('t', '<f8'),      # Time (d)
+                        ('tst1', '<f8'),   # start time of point (upstream side)
+                        ('tst2', '<f8'),   # start time of point (downstream side)
                         ('z', '<f8'),      # Depth (m)
                         ('v', '<f8'),      # Velocity (m/d)
                         ('theta1', '<f8'), # Upstream soil moisture content (m^3/m^3)
                         ('theta2', '<f8'), # Downstream soil moisture content (m^3/m^3)
                         ])
 
-    # Properties of the soil
-    props = {'K_s': K_s, 'theta_s': theta_s, 'theta_r': theta_r, 'epsilon': epsilon}
-
-    def __init__(self, soil: snl.Soil, z_theta: np.ndarray =None):
+    z_theta_dtype = np.dtype(('z', '<f8'), ('theta', '<f8'))
+    
+    def __init__(self, soil: NL_soils.Soil, z_theta: np.ndarray =None)-> None:
         """Initialize the kinematic wave profile using props in soil.
         
         Parameters
@@ -63,14 +63,10 @@ class KWprofile():
             Initial moisture concent, either one value or an array
         z_theta: np.ndarray of np.dtype([('z', float), ('theta', float)])
             Depth of water table below root zone in cm.
-        """
-        
-        if z < 500.:
-            raise ValueError("z does not seem to be in cm.")
-        
+        """        
+        self.soil = soil
         self.profile = self.set_profile(z_theta)
         self.z0 = self.profile['z'][0]
-        
         self.profiles={} # Store intermediate profiles for later animation
         
         return None
@@ -114,11 +110,20 @@ class KWprofile():
             The wave or point velocities will be computed from soil and
             theta as dK_dtheta(theta).
         """
-        prof = np.zeros(len(z_theta), dtype=KWprofile.profile_dtype)
+        prof = np.zeros(len(z_theta), dtype=self.__class__.profile_dtype)
         
+        if not isinstance(z_theta, np.ndarray) \
+            or z_theta.dtype != self.__class__.z_theta_dtype:
+            raise TypeError(f"z_theta must be an np.ndarray of dtype: {}")
+        
+        # start with t, tst1 and tst2 all zero        
+        prof['t'] = 0.
+        prof['tst1'] = 0.
+        prof['tst2'] = 0.
         prof['z'] = z_theta['z']
         prof['theta1'] = z_theta['theta']
         prof['theta2'] = z_theta['theta']
+        
         prof['v'] = self.soil.dK_dtheta(self.soil.theta_fc())        
         
         return prof            
@@ -166,6 +171,7 @@ class KWprofile():
                 
         return v.item() if v.size == 1 else v
 
+
     def shock_times(self, ztol=1e-6):
         """Return shock times, i.e. times when points overtake the next point.
 
@@ -187,6 +193,7 @@ class KWprofile():
         tshock = prof['t'][0] + np.fmax(prof['z'][1:] - prof['z'][:-1], ztol) / dv                    
         return tshock
     
+
     def update(self, dt):
         """Update the profile based on the time step.
         
@@ -208,21 +215,26 @@ class KWprofile():
             Ip = np.where(np.logical_and(tsh > t0, tsh < t1))[0]
 
             if len(Ip) > 0:  # There are shocks in this time step           
+
                 # Find the first shock time between t0 and t1
                 ip_min = Ip[np.where(tsh[Ip] == tsh[Ip].min())][0]
                       
-                # Update the profile at the shock time
-                # Note that every record of the profile caries its time, which equals global time    
-                # Thus each profile record stands on its own, carries all required point data.
+                # Move points ahead to current shock time
                 self.profile['z'] += (tsh[ip_min] - self.profile['t']) * self.profile['v']
-                self.profile['t'] = tsh[ip_min] # Update record times to current shock time
                 
-                # Set upstream theta of overtaking point to downstream theta of overtaken point               
+                # Update profile records time to this smallest shock time
+                self.profile['t']  =  tsh[ip_min]
+                
+                # Set upstream theta of overtaking point
+                # to downstream theta of overtaken point               
                 self.profile['theta2'][ip_min] = self.profile['theta2'][ip_min + 1]
                 
                 # Update front velocity of shock point
                 self.profile['v'][ip_min] = self.point_velocities(
                     self.profile['theta1'][ip_min], self.profile['theta2'][ip_min])
+                
+                # Update start time of downstream side
+                self.prfofile['tst2'][ip_min] = self.profile['tst2'][ip_min + 1]
                 
                 # Remove the point that was overtaken
                 self.profile = np.delete(self.profile, ip_min + 1)                
@@ -231,8 +243,20 @@ class KWprofile():
                 self.profile['z'] += self.profile['v'] * (t1 - self.profile['t'])
                 self.profile['t'] = t1
                 break
-        # self.profile = self.interpolate_between_profiles()
-        return self.profile.copy()
+        
+        # Update the moisture concent of all points. It's relevant for fronts that
+        # Overtake tails and tails that intersect with downstream points.
+        
+        # The moisture content of each point is constant except at sharp fronts.
+        
+        prf = self.profile
+        v_avg_1 = (prf['z'] - self.z0) / (prf['t'] - prf['tst1'])
+        v_avg_2 = (prf['z'] - self.z0) / (prf['t'] - prf['tst2'])
+        
+        prf['theta1'] = self.soil.theta_fr_V(v_avg_1)
+        prf['theta2'] = self.soil.theta_fr_V(v_avg_2)
+        
+        return self.profile
     
     @ property
     def tztheta(self):
@@ -262,23 +286,28 @@ class KWprofile():
         return t_profile, z_profile, theta_profile
 
 
-    def prepend(self, q, Npt=15):
+    def prepend(self, t, q, Npt=15):
         sl = self.soil
         
         theta1 = sl.theta_fr_K(q)            
-        theta2 = self.profile[0]['theta2']
+        theta2 = self.profile[0]['theta1']
         
-        if theta2 > theta1:
-            theta1 = np.linspace(theta1, theta2, Npt)
-        theta2 = theta1
+        # if theta2 > theta1:
+        #     theta1 = np.linspace(theta1, theta2, Npt)
+        # theta2 = theta1
         
-        head = np.zeros(len(np.atleast_1d[theta1]), dtype=KWprofile.profile_dtype)
-        head['t'] = t
-        head['v'] = self.point_velocities(theta)
-        head['theta1'] = theta1
-        head['theta2'] = theta2
-        head['z']      = self.z0
-        return np.prepend(head, self.profile)
+        h = np.zeros(0, self.__class__.profile.dtype)
+        h['t' ] = t
+        h['tst1'] = t
+        h['tst2'] = t        
+        h['theta1'] = sl.theta_fr_K(q)
+        h['theta2'] = self.profile[0]['theta1']
+        h['v'] = self.point_velocities(h['theta1'], h['theta2'])
+        h['z']      = self.z0
+        
+        self.profile = np.prepend(h, self.profile)
+
+        return self.profile
         
     
     def q_at_z(self, z_gwt):
@@ -319,126 +348,110 @@ class KWprofile():
         recharge: pd.DataFrame with field 'RCH'
             DataFrame with recharge time series.                
         """
-        recharge['qwt'] = 0.
+        
+        # initialize or set column with recharge at the groundwater table
+        recharge['qwt'] = 0.        
+        
+        # get time in days as floats from datetime index        
         time = (recharge.index - recharge.index[0]) / np.timedelta64(1, 'D')
+        
+        # Get time step size
         dt = np.diff(time)[0]
         
+        # Convert pd.DataFrame to array with dtype of fields
         recharge = pd.to_records(recharge)        
         
-        for i, (t, pe) in enumerate(zip(time, recharge)):
+        # Simulate timestep by timestep, record by record
+        for t, pe in zip(time, recharge):
+
             # Next value for flux from root zone
             q0 = pe['RCH']
             
-            # Prepend to profile
-            self.profile = self.prepend(q0)
+            # Gnerate and prepend new record(s) to profile
+            self.profile = self.prepend(t, q0)
             
-            # Update the profile
+            # Update the profile, evluage shocktimes and move points over dt
             self.profile = self.update(dt)
             
             # Store profile for later animation
-            self.profiles[t] = self.profile.copy()
+            self.profiles[t]['profile'] = self.profile.copy()
+            self.profiles[t]['line'] = self.get_profile_line()
             
             # Get flux at water table
             qwt, i2 = self.q_at_z(z)
-            recharge['qwt'] = qwt
+            pe['qwt'] = qwt
             
-            # Truncate profile if more than one point beyond it            
-            if len(self.profile) > i2:
-                self.profile = np.delete(self.profile, slice(i2 + 1, None, 1))
+            # Truncate profile if more than one point beyond it 
+            if False: 
+                if len(self.profile) > i2:
+                    self.profile = np.delete(self.profile, slice(i2 + 1, None, 1))
                 
-
         return pd.DataFrame(recharge)
       
 
-    def interpolate_between_profiles(self, dz_min=0.1):
-        """Interpolate between profiles to get a continuous smooth wave between the profiles.
-        """
-        z = self.profile['z']
-        theta1 = self.profile['theta1']
-        theta2 = self.profile['theta2']        
-        t = self.profile['t']
+    def get_profile_line(self, dz_min=0.1):
+        """Interpolate between profiles to get a continuous smooth wave between the sub profiles.
         
-        # first find the profiles, which are indicated by theta1 != theta2
-
-        profile_indices = np.unique(
-            np.hstack((0, np.where(theta1 != theta2)[0], len(theta1) - 1))
-        )
-        # Loop through the profile indices and interpolate between them
-        new_profile = self.profile[:profile_indices[0] + 1].copy()  # Start with the first profile point
-        for fi1, fi2 in zip(profile_indices[:-1], profile_indices[1:]):
-            if np.max(np.diff(z[fi1:fi2 + 1])) < 2 * dz_min:
-                new_profile = np.append(new_profile, self.profile[fi1 + 1:fi2 + 1])
-                continue
+        We have a single large profile over the total depth of the percolation zone.
+        Subprofiles are parts of the overall profile between sharp fronts. These
+        subprofiles may be long but with only few points to actually define them.
+        Therefore, to keep smooth subprofiles, we use this function to itnerpolate
+        points between them. Perhaps the profile could be inspected for parts to
+        gain more points.
+                
+        """
+        prf = self.profile
+        
+        z, theta = [], []        
+        for (p1, p2) in zip(prf[:-1], prf[1:]):
+            N = 2 + np.int(p2['z'] - p1['z']) / 0.1
+            if np.isclose(p1['theta2'], p2['theta1']) or N < 1:
+                z += [p1['z'], p2['z']]
+                theta += [p1['theta2'], p2['theta1']]                
             else:
-                z2 = np.linspace(z[fi1], z[fi2], int((z[fi2] - z[fi1]) / dz_min) + 1)
-                theta = theta1[fi1:fi2 + 1]
-                theta[0] = theta2[fi1]
-                theta_interp = np.interp(z2, z[fi1:fi2 +1], theta)
-
-                # Interpolate the velocity
-                f = np.zeros(len(z2) - 1, dtype=KWprofile.profile_dtype)
-                f['z'] = z2[1:]
-                f['theta1'] = theta_interp[1:]
-                f['theta2'] = theta_interp[1:]
-                f['t'] = t[fi1]
-                f['v'] = self.point_velocities(theta_interp[1:], theta_interp[1:])
-                f[-1] = self.profile[fi2].copy()
-                new_profile = np.append(new_profile, f)
-        return new_profile
-
-    def fr_update_all(self, t):
-        """Update the profile for all time steps."""
-        self.profile['t'] = t[0]
-        self.profiles = {t[0]: self.profile.copy()}
-        Dt = np.diff(t)
-        for t0, dt in zip(t[:-1], Dt):
-            self.profiles[t0 + dt] = self.update(t0, dt)
-        return self.profiles
+                z_ = np.linspace(p1['z'], p2['z'], N)
+                v_avg = z_ / (t - p1['tst_2'])
+                theta_ = self.soil_theta_fr_V(v_avg)
+                z.append(list(z_))
+                theta.append(list(theta_))
+        return np.array(z), np.array(theta)
     
-
-    def plot_profile(self, profile=None, ax=None):
-        """Plot the profile."""
-        if profile is None:
-            profile = self.profile
-        t = profile['t'][0]
-        z = np.vstack((profile['z'], profile['z'])).T.flatten()
-        theta = np.vstack((profile['theta1'], profile['theta2'])).T.flatten()
-        if ax is None:
-            _, ax = plt.subplots(figsize=(10, 6))
-            ax.set_title('Kinematic Wave Profile')
-            ax.set_xlabel('Depth (m)')
-            ax.set_ylabel('Soil Moisture Content (m^3/m^3)')
-            ax.grid(True)                
-            ax.plot(z, theta, label=f't={t:.3f} d')
-            ax.legend()
-            plt.show()
-        else:
-            ax.plot(z, theta, label=f't={t:.3f} d')
 
     def plot_profiles(self, ax=None):
         """Plot the profiles."""
         if ax is None:
-            _, ax = plt.subplots(figsize=(10, 6))
-        for t, profile in self.profiles.items():
-            self.plot_profile(profile, ax=ax)
-        ax.set_title('Kinematic Wave Profiles')
-        ax.set_xlabel('Depth (m)')
-        ax.set_ylabel('Soil Moisture Content (m^3/m^3)')
-        ax.grid(True)
-        ax.legend()
+            ax = etc.newfig("Profile", "z [cm]", "theta", figsize=(10, 6))
+
+        for t in self.fprofiles:
+            z, theta = self.profiles[t]['line']
+            ax.plot(z, theta, label=f"t = {:.3g} d")
+
+
+def make_animation(profiles):
+    fig, ax = plt.subplots()
+    
+    ax.set_title ='Kinematic Wave Profiles'
+    ax.set(xlabel='z [cm]', ylabel='theta' )
+    
+    # Create the artists inside the factory
+    line, = ax.plot([], [], lw=2)
+    
+    # init_func: set up the initial state
+    def init_func():
+        line.set_data([], [])
+        return (line,)
+    
+    # update_func: uses the closure to access `line` and `profiles`
+    def update_func(frame):
+        z, theta = profiles[frame]['ztheta']
+        line.set_xdata(z)
+        line.set_ydata(theta)
+        return (line,)
+    
+    return fig, init_func, update_func
 
 if __name__ == "__main__":
     
-    import matplotlib.pyplot as plt
-    # Set up the plot style    
-    plt.rcParams.update({
-        'font.size': 12,
-        'figure.figsize': (10, 6),
-        'axes.grid': True,
-        'grid.alpha': 0.5,
-        'lines.linewidth': 2,
-        'lines.markersize': 5
-    })
 
     # %% Setup the example usage
     
@@ -446,70 +459,39 @@ if __name__ == "__main__":
     # The input is a time series of recharge on a daily basis.
     # When this works a root-zone module will be inserted to simulate the storage of water in the root zone.
     
-    # Initialize the Kinematic Wave profile
-    z_gwt = 5.  # Water table depth (m)   
-    z = np.hstack((np.linspace(0,0.1, 51), np.linspace(0.2, z_gwt, 201)))
+    # First step get the recharge (leakage from root zone) from the meteo data.
+    from src.rootz_rch_model  import RchEarth
+
+    meteo_csv = os.path.join(dirs.data, "DeBilt.csv")
+    os.path.isfile(meteo_csv)
+    deBilt = pd.read_csv(meteo_csv, header=0, parse_dates=True, index_col=0)
+    deBilt_short = deBilt.loc[deBilt.index >= np.datetime64("2020-01-01"), :]
     
+    # Storage capacity
+    Smax_I, Smax_R = 1.5, 100 # mm
+    rch_simulator = RchEarth(Smax_I=Smax_I, Smax_R=Smax_R, lam=None)
     
+    date_span = (np.datetime64("2020-01-01"), np.datetime64("2021-03-31"))
         
-     
-    t = rch['t'] # Time steps for the simulation
-    
-    # Animate the profile with time, showing kinematic waves in action
-    fig, ax = plt.subplots(figsize=(6, 10))
-    ax.set_title('Kinematic Wave Profiles')
-    ax.set_ylabel('Depth z (m)')
-    ax.set_xlabel(r'Soil Moisture Content ($m^3 / m^3$)')
-    ax.grid(True)
-    ax.set_xlim(0., 1.25 * kw_profile.props['theta_s'])
-    ax.set_ylim(z[-1], 0)
-    
-    # Remove the first point, it will be replaced by the input from recharge at each time step
-    kw_profile.profile = np.delete(kw_profile.profile, [0])
-    
-    # Get the time, and z, theta of the current profile
-    t, z, theta = kw_profile.tztheta
+    rch = rch_simulator.simulate(deBilt_short)
+ 
+    # %% Second step get the soil and simulate the kinematic wave
 
+    soil = NL_soils('O01')
+    
+    # Initialize the Kinematic Wave profile
+    z_rz, z_gwt = 80, 2000.  # Water table depth (m)
+    
+    z_theta = np.zeros((10, 2))
+    z_theta[:, 0] = np.linspace(z_rz, z_gwt, 10)
+    z_theta[:, 1] = soil.theta_fc()
 
+    kwave = Kinematic_wave(soil=soil, z_theta=z_theta) # z_GWT ?
     
-    # Set up the plot
-    line, = ax.plot(theta, z, '.-', label=f"t={rch['t'][0]:.2f} d")
-    txt = ax.text(0.6, 0.95, f't={0:.3f} d', transform=ax.transAxes)
-    ax.grid(True)
-
-    def update_profile(it):
-        """Update the profile by prepending a new point and updating it to after the time step."""
-        dt = rch['t'][it + 1] - rch['t'][it]
-        kw_profile.prepend(rch['theta'][it], nNew=15)
-        kw_profile.update(rch['t'][it], dt)  # Update the profile for the current time(s)
-        rch['q_out'][it] = kw_profile.recharge(z_gwt=z_gwt)
-        return
-
-    def update(frame):
-        """Animation function, updates artists at every new frame."""
-        update_profile(frame)
-        t, z, theta = kw_profile.tztheta   # Get the new profile
-        line.set_ydata(z)
-        line.set_xdata(theta)
-        txt.set_text(f't={t:.3f} d')
-        return line, txt
-
-    ani = FuncAnimation(fig, update, frames=len(rch) - 1, blit=False)
+    kwave.simulate(rch)
     
-    ani.save('animation.mp4', writer=FFMpegWriter(fps=10))
+    fig, init_func, update_func = make_animation(kwave.profiles)
     
-    # FF = F.fr_update_all(t)  # Update profiles for each time step
-    # F.plot_profiles()
+    ani = FuncAnimation(fig, update_func, frames=50, init_func=init_func, blit=True)
     
-    fig, ax = plt.subplots(figsize=(10, 6))
-    ax.set_title("In- and output of the unsaturated column")
-    ax.set_xlabel('tijd [d]')
-    ax.set_ylabel('flux [m/d]')
-    ax.set_ylim(0., soil.k_from_theta(soil.theta_s))
-    ax.grid(True)
-    
-    ax.plot(rch['t'], rch['q'], label="In: from root zone at z = {z[0]:.3f} m")
-    ax.plot(rch['t'], rch['q_out'], label=f'Uit: recharge at gwt, z={z_gwt:.3f} m')
-    
-    ax.legend(loc='upper right')
     plt.show()

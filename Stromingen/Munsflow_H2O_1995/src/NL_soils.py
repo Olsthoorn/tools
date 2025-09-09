@@ -55,9 +55,6 @@ class Soil(SoilBase):
         # Because we obtain all parameters from HBW, HBW = True is default.
         self.HBW = HBW
         
-        # Interpolator object to get S given ln(K)
-        self.S_fr_lnK  = self.S_fr_lnK_interpolator(S_limit=1e-4)
-                
  
     @classmethod
     def load_soils(cls, wbook: str | Path)-> None:
@@ -369,7 +366,7 @@ if __name__ == "__main__":
     for beta in [1.0]:
            ax.plot(theta, soil.mualem_alpha(theta, beta=beta), '.-', label=f'mualem_alpha, beta={beta}')
     ax.legend()
-    plt.show()
+    # plt.show()
 
     # Add the responsen
 
@@ -438,7 +435,81 @@ if __name__ == "__main__":
             ax.plot(t, soil.BR(soil.SR_PIII, z, t, q_avg), '+', label=f'soil_nm, z={z:.0f} cm, BR_mom')
             
     ax.legend(loc='best')
-    plt.show()
+    # plt.show()
+    
+    # %% Show ratio  dK(theta)/dtheta / K(theta)
+
+    psi = np.logspace(0, 4.2)
+
+    ax = etc.newfig("V/q = (dK(theta)/theta) / K(theta) ",
+                    "S",
+                    "V/q = (dK(theta)/dtheta) / K(theta)",
+                    yscale='log')
+    for code in soil_codes:
+        soil = Soil(code)
+        soil_nm = soil.props['Omschrijving']
+
+        S = soil.S_fr_psi(psi)
+        theta = soil.theta_fr_S(S)
+
+        ax.plot(S, soil.dK_dtheta(theta) / soil.K_fr_theta(theta),
+            label=f"soil {soil.code}, {soil.props['Omschrijving']}")
+    
+    ax.legend()
+
+
+    # %% Show theta_fr_V(v)
+    
+    # The distance travelled from the release time of particles is their speed, which is
+    # always constant, in fact even at a sharp front, but that it hold for the point that
+    # at time t has just reached the shock front.
+    
+    dtype = np.dtype([('t', '<f8'), ('tst', '<f8'), ('z', '<f8'), ('theta', '<f8'), ('v', '<f8')])
+    
+    N = 20
+    profile = np.zeros(N, dtype=dtype).copy()
+    prf = profile
+    
+    Zmax, dzmin, dzmax = 2000., 0.1, 1.
+    dz = np.linspace(dzmin, dzmax, 20)
+    
+    profile['z'] = Zmax * np.cumsum(dz) / np.sum(dz)
+    profile['tst']= np.linspace(0, 101, 20)
+    profile['theta'] = soil.theta_fr_psi(300)
+    profile['v'] = soil.K_fr_theta(profile['theta'])
+    
+    v_avg = np.zeros(N)
+    
+    times = np.linspace(0, 100, 101)
+    
+    ax = etc.newfig("Updating thetas", "z [m]", "theta [-]")
+    
+    for t, dt in zip(times[1:], np.diff(times)):
+        mask = t > prf['tst']
+        if np.all(mask) is False:            
+            continue
+        
+        v_avg[mask] = prf['z'][mask] / (t - prf['tst'][mask])
+        prf['theta'][mask] = soil.theta_fr_V(v_avg[mask])
+        prf['t'] = t
+        ax.plot(prf['z'], prf['theta'], label=f"t={t:.3f} d")
+        
+        prf['z'] += prf['v'] * dt
+        
+        ax.plot(prf['z'], prf['theta'], label=f"t={t}")
+    ax.legend()
+    
+    def f(frame, args=(times, profile)):
+        t = times[frame]
+        mask = t > profile['tst1']
+        if np.all(mask) is False:
+            return line
+        else:
+            v_avg[mask] = profile['z'][mask] / (t - profile['tst1'][mask])
+            profile['theta'][mask] = soil.theta_fr_V(v_avg[mask])
+            profile['t'] = t
+            return line
 
 
     # %%
+    plt.show()

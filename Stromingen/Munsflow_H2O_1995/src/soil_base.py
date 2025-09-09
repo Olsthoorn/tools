@@ -4,6 +4,8 @@ from abc import ABC, abstractmethod
 from pathlib import Path
 import numpy as np
 
+from functools import cached_property
+
 from scipy.stats import norm
 from scipy.special import gammaln, erfc
 from scipy.stats import gamma
@@ -12,7 +14,14 @@ from typing import Callable
 
 
 class SoilBase(ABC):
-    """Abstract base class for soil hydraulic properties."""
+    """Abstract base class for soil hydraulic properties.
+    
+    Note that S is used for reduced saturation where capitial theta is used in most literature.    
+        Theta = S = (theta - theta_r) / (theta_s - theta_r)
+    
+    and that saturation is sat (not S) defined as
+        sat = theta / theta_s    
+    """
 
     def __init__(self, soil_code: str) -> None:
         if not hasattr(self.__class__, 'data'):
@@ -22,7 +31,7 @@ class SoilBase(ABC):
             raise KeyError(f"Soil code {soil_code} not found in database.")
                 
         self.props = self.__class__.data.loc[soil_code].copy()
-        
+            
         return None
         
     # --- Required methods for subclasses ---
@@ -50,6 +59,30 @@ class SoilBase(ABC):
 
     def __repr__(self) -> str:
         return f"Soil('{self.props['code']}')"
+    
+    # --- Common properties ---
+    @property    
+    def theta_r(self) -> float:
+        """Residual water content θr."""
+        return self.props['theta_r']
+
+    @property    
+    def theta_s(self) -> float:
+        """Saturated water content θs."""
+        return self.props['theta_s']
+
+
+    def sat_fr_theta(self, theta: float | np.ndarray) -> float | np.ndarray:
+        """Saturation θ / n = θ / θ_s."""
+        return self.theta / self.theta_s
+    
+    def sat_fr_S(self, S: float | np.ndarray)-> float |  np.ndarray:
+        """Return saturation given S.
+        
+        Note that S = (theta - theta_r) / (theta_s - theta_r)
+        and sat = theta / theta_s
+        """
+        return self.sat_fr_theta(self.theta_fr_S(S))
     
     # === Basic relations S_fr_theta and S_fr_psi ===
     # from defintion of S = (theta - theta_r) / (theta_S - theta_r)
@@ -397,25 +430,9 @@ class SoilBase(ABC):
         # enforce bounds
         alpha = np.clip(alpha, 0.0, 1.0)
         return alpha.item() if alpha.size == 1 else alpha
-
-
-    # --- Common properties ---
-    @property    
-    def theta_r(self) -> float:
-        """Residual water content θr."""
-        return self.props['theta_r']
-
-    @property    
-    def theta_s(self) -> float:
-        """Saturated water content θs."""
-        return self.props['theta_s']
-
-    @property    
-    def saturation(self) -> float:
-        """Saturation degree (θs - θr)."""
-        return self.theta_s - self.theta_r
     
-    def S_fr_lnK_interpolator(self, S_limit: float = 1e-4)-> PchipInterpolator:
+    @cached_property
+    def S_fr_lnK(self)-> None:
         """Return intepolator to get k at given S
         pass
         
@@ -423,9 +440,14 @@ class SoilBase(ABC):
         to get the S for a given K-value
         
         """
+        S_limit = 1e-4      
         S = np.linspace(S_limit, 1, 20)
         # Dummy k
         K = self.K_fr_S(S)
+        
+        # Remove compuational artefacts
+        S = S[K > 0]
+        K = K[K > 0]
         
         # Guarantee that k always rises
         rises = np.ones_like(K, dtype=bool)
@@ -437,12 +459,44 @@ class SoilBase(ABC):
                 rises[i] = False
         K = K[rises]
         S = S[rises]
-            
-        return PchipInterpolator(np.log(K), S)
+        return PchipInterpolator(np.log(K), S)        
 
     def S_fr_K(self, k: float | np.ndarray)-> float | np.ndarray:
         """Return S(K), saturation given K (by interpolation) """
         return self.S_fr_lnK(np.log(k))
+    
+    @cached_property
+    def theta_fr_lnV(self)-> None:
+        """Return theta(v), where V = dK(theta)_dtheta.
+        
+        To compute the theta in the Kinematic Wave approach for given
+        velocity v = dk(theta)/dtheta we generate an interpolator.
+        """        
+        theta = np.linspace(self.theta_r, self.theta_s)
+        V = self.dK_dtheta(theta)
+        
+        # Remove compuatational artefacts
+        theta  = theta[V > 0]
+        V      = V[V > 0]
+        
+        #Guarantee that V always rises
+        rises = np.ones_like(V, dtype=bool)
+        vmax = 0.        
+        for i, v in enumerate(V):
+            if v > vmax:
+                vmax = v
+            else:
+                rises[i] = False
+        V     = V[rises]
+        theta = theta[rises]
+        return PchipInterpolator(np.log(V), theta)
+    
+    def theta_fr_V(self, v: float | np.ndarray)-> float | np.ndarray:
+        """Return theta(V), where V = dK(theta)_dtheta"""
+        if self.theta_fr_lnV is None:
+            self.set_theta_fr_lnV_interpolator()            
+        return self.theta_fr_lnV(np.log(v))
+
     
     def theta_fr_K(self, k: float | np.ndarray)-> float| np.ndarray:
         """Return theta(K), theta given K."""
