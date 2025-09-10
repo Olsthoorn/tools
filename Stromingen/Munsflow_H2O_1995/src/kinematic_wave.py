@@ -162,10 +162,12 @@ class Kinematic_wave():
         L = np.isclose(th1, th2)
 
         # Velocoty of normal points (no sharp fronts)
-        v[L] = self.soil.dK_dtheta(th1[L])
+        if np.any(L):
+            v[L] = self.soil.dK_dtheta(th1[L])
 
         # Veolocity of sharp fronts
-        v[~L] = (self.soil.K_fr_theta(th1[~L]) - self.soil.K_fr_theta(th2[~L])
+        if np.any(~L):
+            v[~L] = (self.soil.K_fr_theta(th1[~L]) - self.soil.K_fr_theta(th2[~L])
                  ) / (th1[~L] - th2[~L])
                 
         return v.item() if v.size == 1 else v
@@ -233,10 +235,10 @@ class Kinematic_wave():
                     self.profile['theta1'][ip_min], self.profile['theta2'][ip_min])
                 
                 # Update start time of downstream side
-                self.prfofile['tst2'][ip_min] = self.profile['tst2'][ip_min + 1]
+                self.profile['tst2'][ip_min] = self.profile['tst2'][ip_min + 1]
                 
                 # Remove the point that was overtaken
-                self.profile = np.delete(self.profile, ip_min + 1)                
+                self.profile = np.delete(self.profile, ip_min + 1)
             else:
                 # No shocks in remaining this time step, just update the profile to t1
                 self.profile['z'] += self.profile['v'] * (t1 - self.profile['t'])
@@ -302,7 +304,7 @@ class Kinematic_wave():
         return self.profile
         
     
-    def q_at_z(self, z_gwt):
+    def q_at_z(self, z_gwt, dz=10):
         """Return the downward flux at z at current time.
         
         Can be used to get the recharge (flux through the water table at z_gwt)
@@ -314,19 +316,22 @@ class Kinematic_wave():
         # Points between which the z_gwt intersects
         i1 = np.where(p['z'] < z_gwt)[0][-1]
         i2 = np.where(p['z'] >=  z_gwt)[ 0][0]
+        p1, p2 = p[i1], p[i2]
 
-        # The moisture content at z_gwt
-        theta = np.interp(z_gwt, (p['z'][i1], p['z'][i2]),
-                          (p['theta2'][i1], p['theta1'][i2]))
+        if np.isclose(p1['theta2'], p2['theta1'], rtol=1e-3):
+            theta_gwt = p1['theta2']            
+        else: # Interpolate the moisture content at z_gwt       
+            z1, z2 = p1['z'], p2['z'] 
+            N = int(2 + (z1  -z1) / dz)
+            z = np.linspace(z1, z2, N)
+            v_avg = (z - self.z0) / (p1['t'] - p1['tst2'])
+            theta = self.soil.theta_fr_V(v_avg)
+            theta_gwt = np.interp(z_gwt, z, theta)
 
-        # The flux at z_Gwt
-        q = self.soil.K_fr_theta(theta)        
-
-        # Truncate the profile beyond i2 + 1
-        if len(self.profile) > i2:
-            self.profile = np.delete(self.profile, slice(i2 + 1, None, 1))
-        return q
-
+        # Flux at z_Gwt = K(theta_gwt)
+        q_gwt = self.soil.K_fr_theta(theta_gwt)
+        return q_gwt
+    
         
     def simulate(self, recharge):
         """Simulate the percolation given the recharge from the rootzone.
@@ -340,6 +345,7 @@ class Kinematic_wave():
         recharge: pd.DataFrame with field 'RCH'
             DataFrame with recharge time series.                
         """
+        mm_per_cm = 10 # for converting cm to mm and vice versa
         
         # initialize or set column with recharge at the groundwater table
         recharge['qwt'] = 0.        
@@ -354,30 +360,33 @@ class Kinematic_wave():
         recharge = recharge.to_records()        
         
         # Simulate timestep by timestep, record by record
-        for t, pe in zip(time, recharge):
+        for ip, (t, pe) in enumerate(zip(time, recharge)):
 
-            # Next value for flux from root zone
-            q0 = pe['RCH']
+            # Next value for flux from root zone (must be in cm/d)
+            q0 = pe['RCH'] / mm_per_cm # mm/d --> cm/d
             
             # Gnerate and prepend new record(s) to profile
             self.profile = self.prepend(t, q0)
             
             # Update the profile, evluage shocktimes and move points over dt
             self.profile = self.update(dt)
-            
-            # Store profile for later animation
-            self.profiles[t]={'profile': self.profile.copy(),
-                                'line': self.get_profile_line()}
-            
+
             # Get flux at water table
             qwt = self.q_at_z(self.z_gwt)
-            pe['qwt'] = qwt
+            pe['qwt'] = qwt * mm_per_cm # cm/d --> mm/d (store as mm/d)
+
+            # clip points below z_gwt
+            z = self.profile['z']
+            Ip = np.arange(len(z))[z > z_gwt]
+            if len(Ip) > 1:
+                self.profile = self.profile[:Ip[1]]
             
-            # Truncate profile if more than one point beyond it 
-            if False: 
-                if len(self.profile) > i2:
-                    self.profile = np.delete(self.profile, slice(i2 + 1, None, 1))
-                
+            # Store profile for later animation
+            self.profiles[ip]={'profile': self.profile.copy(),
+                            't':t,
+                            'date': recharge.index[ip],
+                            'line': self.get_profile_line()}
+                            
         return pd.DataFrame(recharge)
       
 
@@ -419,31 +428,59 @@ class Kinematic_wave():
         if ax is None:
             ax = etc.newfig("Profile", "z [cm]", "theta", figsize=(10, 6))
 
-        for t in self.fprofiles:
-            z, theta = self.profiles[t]['line']
+        for ip in self.profiles:
+            z, theta = self.profiles[ip]['line']
+            t = self.profiles[ip]['t']
             ax.plot(z, theta, label=f"t = {t:.3g} d")
 
 
-def make_animation(profiles):
+def make_animation(profiles, z_gwt):
+    
+    zmin, zmax, theta_min, theta_max = np.inf, -np.inf, np.inf, -np.inf
+    
+    for _, p in profiles.items():
+        z, theta = p['line']
+        zmin = min(zmin, z.min())
+        zmax = max(zmax, z.max())
+        theta_min = min(theta_min, theta.min())
+        theta_max = max(theta_max, theta.max())
+        
+    zmax = z_gwt
+
     fig, ax = plt.subplots()
     
-    ax.set_title ='Kinematic Wave Profiles'
+    ax.set_xlim(zmin, zmax)
+    ax.set_ylim(theta_min, theta_max)
+        
+    ax.set_title('Kinematic Wave Profiles')
     ax.set(xlabel='z [cm]', ylabel='theta' )
     
     # Create the artists inside the factory
     line, = ax.plot([], [], lw=2)
-    
+    txt = ax.text(0.8, 0.3, f"t = {0.:.0f} d",
+                   transform=ax.transAxes,
+                   ha='center', va='center',
+                   bbox=dict(
+                        facecolor="gold",   # background color
+                        edgecolor="black",  # border color
+                        boxstyle="square"
+                   )
+                   )
+
     # init_func: set up the initial state
-    def init_func():
+    def init_func():        
         line.set_data([], [])
-        return (line,)
+        txt.set_text('')
+        return (line, txt)
     
     # update_func: uses the closure to access `line` and `profiles`
     def update_func(frame):
-        z, theta = profiles[frame]['ztheta']
+        p = profiles[frame]
+        (z, theta), date = p['line'], p['date'].astype("datetime64[D]")        
         line.set_xdata(z)
         line.set_ydata(theta)
-        return (line,)
+        txt.set_text(f"{date}")
+        return (line, txt)
     
     return fig, init_func, update_func
 
@@ -486,10 +523,13 @@ if __name__ == "__main__":
     kwave = Kinematic_wave(soil=soil, z_theta=z_theta) # z_GWT ?
     kwave.z_gwt = z_gwt
     
-    kwave.simulate(rch)
+    rch_gwt = kwave.simulate(rch)
     
-    fig, init_func, update_func = make_animation(kwave.profiles)
+    fig, init_func, update_func = make_animation(kwave.profiles, kwave.z_gwt)
     
-    ani = FuncAnimation(fig, update_func, frames=50, init_func=init_func, blit=True)
+    print("Running animation ...")
+    ani = FuncAnimation(fig, update_func, frames=len(kwave.profiles), init_func=init_func,
+                        blit=True, repeat=False)
+    print("Done animation.")
     
     plt.show()
