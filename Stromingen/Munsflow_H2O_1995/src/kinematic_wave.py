@@ -65,8 +65,7 @@ class Kinematic_wave():
             Depth of water table below root zone in cm.
         """        
         self.soil = soil
-        self.profile = self.set_profile(z_theta)
-        self.z0 = self.profile['z'][0]
+        self.profile = self.set_profile(z_theta) # Also sets self.z0        
         self.profiles={} # Store intermediate profiles for later animation
         
         return None
@@ -116,17 +115,20 @@ class Kinematic_wave():
             or z_theta.dtype != self.__class__.z_theta_dtype:
             raise TypeError(f"z_theta must be an np.ndarray of dtype: {self.__class__.z_theta_dtype}")
         
+        self.z0 = z_theta['z'][0]
+        
         # start with t, tst1 and tst2 all zero        
         prof['t'] = 0.
-        prof['tst1'] = 0.
-        prof['tst2'] = 0.
         prof['z'] = z_theta['z']
         prof['theta1'] = self.soil.theta_fc()
-        prof['theta2'] = self.soil.theta_fc()
+        prof['theta2'] = self.soil.theta_fc()        
+        prof['v'] = self.soil.dK_dtheta(self.soil.theta_fc())
         
-        prof['v'] = self.soil.dK_dtheta(self.soil.theta_fc())        
+        # Set tst1 and tst2 such that theta will be compute equal to theta_fc
+        prof['tst1'] = -(prof['z'] - self.z0) / prof['v']
+        prof['tst2'] = -(prof['z'] - self.z0) / prof['v']
         
-        return prof            
+        return prof[1:] # remove first, z=self.z0,  will be prepended in simulation.          
 
     def theta_from_q(self, q):
         """Calculate the soil moisture content from the flux q."""
@@ -297,8 +299,10 @@ class Kinematic_wave():
         h['tst2'] = t        
         h['theta1'] = max(soil.theta_fc(), soil.theta_fr_K(q))
         h['theta2'] = self.profile[0]['theta1']
-        h['v'] = self.point_velocities(h['theta1'], h['theta2'])
+        if h['theta2'] > h['theta1']:
+            h['theta2'] = h['theta1']
         
+        h['v'] = self.point_velocities(h['theta1'], h['theta2'])
         
         self.profile =np.concatenate([h, self.profile])
 
@@ -436,31 +440,36 @@ class Kinematic_wave():
 
 
 def make_animation(profiles: dict, soil: Soil, z_gwt: float)->tuple:
-    
-    zmin, zmax, theta_min, theta_max = np.inf, -np.inf, np.inf, -np.inf
-    
-    for _, p in profiles.items():
-        z, theta = p['line']
-        zmin = min(zmin, z.min())
-        zmax = max(zmax, z.max())
-        theta_min = min(theta_min, theta.min())
-        theta_max = max(theta_max, theta.max())
-        
-    zmax = z_gwt
 
+    # --- determine extent of axes ---    
+    z = profiles[0]['line'][0]
+    zmin = z[0]
+    zmax = z[-1]
+    zmax = z_gwt
+        
+    theta_min = soil.theta_r
+    theta_max = soil.theta_s
+        
     fig, ax = plt.subplots()
     
-    ax.set_xlim(zmin, zmax)
-    ax.set_ylim(theta_min, theta_max)
-    
-    title = fr"Kinematic wave for soil {soil.code} {soil.props['Omschrijving']}\n" \
-        fr"$K_s$={soil.props['Ks']:.3g} cm/d, " \
-        fr"$\theta_{{fc}}$={soil.theta_fc():.3f}, " \
-        fr"$\theta_{{wp}}$={soil.theta_wp():.3f}"
+    # --- axes labels ---
+    title = (f"Kinematic wave for soil {soil.code} {soil.props['Omschrijving']}\n"
+        + fr"$K_s$={soil.props['Ks']:.3g} cm/d, "
+        + fr"$\theta_{{fc}}$={soil.theta_fc():.3f}, "
+        + fr"$\theta_{{wp}}$={soil.theta_wp():.3f}")
     ax.set_title(title)
     ax.set(xlabel='z [cm]', ylabel='theta' )
+
+    # --- extent of plot ---
+    ax.set_xlim(zmin, zmax)
+    ax.set_ylim(theta_min, theta_max)
+
+    # --- static reference lines (drawn once, stay forever) ---    
+    ax.axhline(y=soil.theta_fc(),      color='g', label='field capacity')
+    ax.axhline(y=soil.theta_fr_K(0.1), color='m', label='theta q=1 mm/d')
+    ax.axhline(y=soil.theta_fr_K(0.2), color='r', label='theta q=2 mm/d')
     
-    # Create the artists inside the factory
+    # --- animated artists (updated ech frame) ---
     line, = ax.plot([], [], lw=2)
     txt = ax.text(0.8, 0.3, f"t = {0.:.0f} d",
                    transform=ax.transAxes,
@@ -471,11 +480,12 @@ def make_animation(profiles: dict, soil: Soil, z_gwt: float)->tuple:
                         boxstyle="square"
                    )
                    )
+    ax.legend()
 
     # init_func: set up the initial state
     def init_func():        
         line.set_data([], [])
-        txt.set_text('')
+        txt.set_text('')        
         return (line, txt)
     
     # update_func: uses the closure to access `line` and `profiles`
