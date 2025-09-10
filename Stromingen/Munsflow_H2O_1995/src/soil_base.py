@@ -174,7 +174,7 @@ class SoilBase(ABC):
   
     # K(theta) and K(psi)
     @abstractmethod
-    def K_fr_S(S: float | np.ndarray, S_limit: float = 1e-12)-> float | np.ndarray:
+    def K_fr_S(S: float | np.ndarray, S_limit: float = 1e-8)-> float | np.ndarray:
         pass
     
     def K_fr_theta(self, theta: float | np.ndarray) -> float | np.ndarray:
@@ -196,8 +196,8 @@ class SoilBase(ABC):
     def dK_dtheta(self, theta: float | np.ndarray) -> float | np.ndarray:
         """Return dK/dtheta""" 
         S = self.S_fr_theta(theta)
-        return self.dK_dS(S) * self.dS_dtheta(theta)
-        pass
+        dKdth = self.dK_dS(S) * self.dS_dtheta(theta)
+        return dKdth if len(dKdth) > 1 else dKdth.item()
     
     def dK_dpsi(self, psi: float | np.ndarray) -> float | np.ndarray:
         """Return dK/dpsi"""
@@ -214,7 +214,7 @@ class SoilBase(ABC):
         psi_fc = 10 ** pF # cm
         return self.theta_fr_psi(psi_fc)
 
-    def theta_wp(self, pF: float =2.5)-> float:
+    def theta_wp(self, pF: float =4.2)-> float:
         """Return theta at wilting point (where pF = 4.2). (vdMolen (1973))"""        
         psi_wp = 10 ** pF # cm
         return self.theta_fr_psi(psi_wp)
@@ -225,8 +225,7 @@ class SoilBase(ABC):
     
     def C_fr_psi(self, psi: float) -> float:
         """Specific moisture capacity C(psi) = dθ/dh = -dθ/dpsi."""
-        return -self.dtheta_dpsi(psi)
-        pass
+        return -self.dtheta_dpsi(psi)        
     
     def C_fr_theta(self, theta: float) -> float:
         """Specific moisture capacity C(theta) = -dθ/dpsi."""    
@@ -433,15 +432,10 @@ class SoilBase(ABC):
     
     @cached_property
     def S_fr_lnK(self)-> None:
-        """Return intepolator to get k at given S
-        pass
-        
-        must be in __init__ as it generateds an Interpolator
-        to get the S for a given K-value
-        
+        """Return interpolator to get k at given S
         """
-        S_limit = 1e-4      
-        S = np.linspace(S_limit, 1, 20)
+        log_S_limit = -8
+        S = np.logspace(log_S_limit, 0)
         # Dummy k
         K = self.K_fr_S(S)
         
@@ -471,8 +465,10 @@ class SoilBase(ABC):
         
         To compute the theta in the Kinematic Wave approach for given
         velocity v = dk(theta)/dtheta we generate an interpolator.
-        """        
-        theta = np.linspace(self.theta_r, self.theta_s)
+        """
+        log_S_limit = -8
+        S = np.logspace(log_S_limit, 0)
+        theta = self.theta_fr_S(S)              
         V = self.dK_dtheta(theta)
         
         # Remove compuatational artefacts

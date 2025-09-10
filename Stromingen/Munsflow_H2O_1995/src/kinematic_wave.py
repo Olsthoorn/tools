@@ -26,6 +26,7 @@ plt.rcParams.update({
     'lines.markersize': 5
 })
 
+# %%
 class Kinematic_wave():
     """Class to represent the moisture profile using kinematic waves.
     
@@ -120,8 +121,8 @@ class Kinematic_wave():
         prof['tst1'] = 0.
         prof['tst2'] = 0.
         prof['z'] = z_theta['z']
-        prof['theta1'] = z_theta['theta']
-        prof['theta2'] = z_theta['theta']
+        prof['theta1'] = self.soil.theta_fc()
+        prof['theta2'] = self.soil.theta_fc()
         
         prof['v'] = self.soil.dK_dtheta(self.soil.theta_fc())        
         
@@ -434,7 +435,7 @@ class Kinematic_wave():
             ax.plot(z, theta, label=f"t = {t:.3g} d")
 
 
-def make_animation(profiles, z_gwt):
+def make_animation(profiles: dict, soil: Soil, z_gwt: float)->tuple:
     
     zmin, zmax, theta_min, theta_max = np.inf, -np.inf, np.inf, -np.inf
     
@@ -451,8 +452,12 @@ def make_animation(profiles, z_gwt):
     
     ax.set_xlim(zmin, zmax)
     ax.set_ylim(theta_min, theta_max)
-        
-    ax.set_title('Kinematic Wave Profiles')
+    
+    title = fr"Kinematic wave for soil {soil.code} {soil.props['Omschrijving']}\n" \
+        fr"$K_s$={soil.props['Ks']:.3g} cm/d, " \
+        fr"$\theta_{{fc}}$={soil.theta_fc():.3f}, " \
+        fr"$\theta_{{wp}}$={soil.theta_wp():.3f}"
+    ax.set_title(title)
     ax.set(xlabel='z [cm]', ylabel='theta' )
     
     # Create the artists inside the factory
@@ -484,6 +489,39 @@ def make_animation(profiles, z_gwt):
     
     return fig, init_func, update_func
 
+def test_accuracy(self):
+    """Show the accuracy of K(theta) and theta(K(theta)), dK/dtheta and theta(dK(theta)/dtheta).
+    
+    For any soil:
+        * theta(K(theta))         should return theta
+        * theta(dK(theta)/dtheta) should return theta
+    """
+    Soil.load_soils(os.path.join(dirs.data, "NL_VG_soilprops.xlsx"))
+    
+    codes = ['B01', 'O01', 'B05', 'O05']
+    for code in codes:
+        sl = Soil(code)
+        print(f"{code} fc={sl.theta_fc():.4f}, wp = {sl.theta_wp():.4f}")
+        
+        for theta in [sl.theta_fc(), sl.theta_wp()]:
+            print("{} theta: {:6.4f} ->K(theta): {:8.4g} -> theta(K(theta)): {:6.4f}".format(
+                code,
+                theta,
+                sl.K_fr_theta(theta),
+                sl.theta_fr_K(sl.K_fr_theta(theta))))
+            
+            print("{} theta: {:6.4f} ->V=dK(theta)/dtheta: {:8.4g} -> theta_fr_V(dK(theta)/dtheta): {:6.4f}".format(
+                code,
+                theta,
+                sl.dK_dtheta(theta),
+                sl.theta_fr_V(sl.dK_dtheta(theta))))
+
+
+    
+
+
+# %%
+
 if __name__ == "__main__":
     
     # %% Setup the example usage
@@ -513,6 +551,7 @@ if __name__ == "__main__":
     Soil.load_soils(os.path.join(dirs.data, "NL_VG_soilprops.xlsx"))
     soil = Soil('O01')
     
+    # %%
     # Initialize the Kinematic Wave profile
     z_rz, z_gwt = 80, 2000.  # Water table depth (m)
     
@@ -525,11 +564,23 @@ if __name__ == "__main__":
     
     rch_gwt = kwave.simulate(rch)
     
-    fig, init_func, update_func = make_animation(kwave.profiles, kwave.z_gwt)
+    fig, init_func, update_func = make_animation(kwave.profiles, soil, kwave.z_gwt)
     
     print("Running animation ...")
     ani = FuncAnimation(fig, update_func, frames=len(kwave.profiles), init_func=init_func,
                         blit=True, repeat=False)
+    
+    ani.save(f"Kinematic_wave_soil {soil.code}.mp4", writer="ffmpeg", fps=20)
+
     print("Done animation.")
     
-    plt.show()
+    ax = etc.newfig("qwt", "time", "q cm/d")
+    ax.plot(rch_gwt.index, rch_gwt['RCH'], label='qrtz')
+    ax.plot(rch_gwt.index, rch_gwt['qwt'], label='qwt')
+    ax.legend()
+    ax.figure.savefig(f"qwt_{soil.code}")
+    print("Done")
+    
+    # plt.show()
+    
+    # %%
