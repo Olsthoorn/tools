@@ -67,7 +67,6 @@ class Kinematic_wave():
         self.soil = soil
         self.profile = self.set_profile(z_theta) # Also sets self.z0        
         self.profiles={} # Store intermediate profiles for later animation
-        
         return None
         
     def set_profile(self, z_theta: np.ndarray)->np.ndarray:
@@ -128,7 +127,7 @@ class Kinematic_wave():
         prof['tst1'] = -(prof['z'] - self.z0) / prof['v']
         prof['tst2'] = -(prof['z'] - self.z0) / prof['v']
         
-        return prof[1:] # remove first, z=self.z0,  will be prepended in simulation.          
+        return prof
 
     def theta_from_q(self, q):
         """Calculate the soil moisture content from the flux q."""
@@ -176,7 +175,7 @@ class Kinematic_wave():
         return v.item() if v.size == 1 else v
 
 
-    def shock_times(self, ztol=1e-6):
+    def get_shock_times(self, ztol=1e-6):
         """Return shock times, i.e. times when points overtake the next point.
 
         Negative values imply that no shock can ever occur, the successive points diverge over time.
@@ -213,45 +212,50 @@ class Kinematic_wave():
         t1 = t0 + dt # to start time, t1 end time, dt apart
 
         while True:
-            tsh = self.shock_times() # tsh is the time when the shock occurs
+            tsh = self.get_shock_times() # tsh is the time when the shock occurs
             
-            # Find the indices where shock times are between t0 and t1
+            # --- Find the indices where shock times are between t0 and t1 ---
             Ip = np.where(np.logical_and(tsh > t0, tsh < t1))[0]
 
             if len(Ip) > 0:  # There are shocks in this time step           
 
-                # Find the first shock time between t0 and t1
+                # --- Find the first shock time between t0 and t1
                 ip_min = Ip[np.where(tsh[Ip] == tsh[Ip].min())][0]
+                tshock = tsh[ip_min]
                       
-                # Move points ahead to current shock time
-                self.profile['z'] += (tsh[ip_min] - self.profile['t']) * self.profile['v']
+                # --- Move points ahead to current shock time
+                self.profile['z'] += (tshock - self.profile['t']) * self.profile['v']
                 
-                # Update profile records time to this smallest shock time
-                self.profile['t']  =  tsh[ip_min]
+                # --- Update profile records time to this smallest shock time
+                self.profile['t']  =  tshock
                 
-                # Set upstream theta of overtaking point
-                # to downstream theta of overtaken point               
-                self.profile['theta2'][ip_min] = self.profile['theta2'][ip_min + 1]
+                # --- Set upstream theta of overtaking point
+                # --- to downstream theta of overtaken point               
+                self.profile['theta2'][ip_min] = self.profile['theta1'][ip_min + 1]
                 
-                # Update front velocity of shock point
+                # --- Update front velocity of shock point
                 self.profile['v'][ip_min] = self.point_velocities(
                     self.profile['theta1'][ip_min], self.profile['theta2'][ip_min])
                 
-                # Update start time of downstream side
+                # --- Update start time of downstream side
                 self.profile['tst2'][ip_min] = self.profile['tst2'][ip_min + 1]
                 
-                # Remove the point that was overtaken
+                # --- Remove the point that was overtaken
                 self.profile = np.delete(self.profile, ip_min + 1)
             else:
-                # No shocks in remaining this time step, just update the profile to t1
+                # --- No shocks in remaining part of this time step
+                # --- just update the profile to t1
                 self.profile['z'] += self.profile['v'] * (t1 - self.profile['t'])
                 self.profile['t'] = t1
+                
+                # --- leave the while loop
                 break
         
-        # Update the moisture concent of all points. It's relevant for fronts that
-        # Overtake tails and tails that intersect with downstream points.
+        # --- Update the moisture content of all points.
+        # --- this is relevant for fronts that
+        # --- overtake tails and tails that intersect with downstream points.
         
-        # The moisture content of each point is constant except at sharp fronts.
+        # --- The moisture content of each point is constant except at sharp fronts.
         
         prf = self.profile
         v_avg_1 = (prf['z'] - self.z0) / (prf['t'] - prf['tst1'])
@@ -262,48 +266,54 @@ class Kinematic_wave():
         
         return self.profile
     
-    @ property
-    def tztheta(self):
-        """Return t, z, and theta of the current profile.
+
+    def prepend(self, t, q, tol = 0.005):
+        """Generate a new point and prepend it to the profile.
         
-        A profile exists at a certain time and changes with time.
-        
-        Returns
-        -------
-        tuple (t, z, theta)
-            t: float
-                Time of the profile
-            z: (float, float)
-                z of the current points of the profile,
-                double to match theta1 and theta2 of each point
-            theta: (float, float)
-                theta along the profile, for each point (same z) theta1 and theta2
+        If the q of this time step is less than that of the previoous time step
+        then two points are prepended, one with the previous theta (finishing that
+        time step with its q) and one with the new and lower theta, starting the
+        new time step with the lower q. This way these two points can and will
+        wander with in ever growing gap between them, representing the tail of
+        the previous time step.
+        If the q of this time step is larger than that of the previous time step,
+        then one new point is generated with the higher theta at it's upstream side
+        and lower theta at it's downstream side, thus reprsenting a shock.
         """
-        z_profile = np.vstack((self.profile['z'],
-                               self.profile['z'])).T.flatten()
         
-        theta_profile = np.vstack((self.profile['theta1'],
-                                   self.profile['theta2'])).T.flatten()
-        
-        t_profile = np.mean(self.profile['t'])
-        
-        return t_profile, z_profile, theta_profile
-
-
-    def prepend(self, t, q):
-        
-        h = np.zeros(1, self.__class__.profile_dtype)
+        previous = self.profile[0]
+        theta1 = max(soil.theta_fc(), soil.theta_fr_K(q))        
+                       
+        if self.q0_prev > q + tol:     # tol in cm tol =0.005 cm = 0.05 mm
+            # --- tail ----
+            h = np.zeros(2, self.__class__.profile_dtype)
+            
+            theta2 = previous['theta1']
+            
+            h['theta1'] = np.array([theta1, theta2])
+            h['theta2'] = np.array([theta1, theta2])
+            h['tst1'] = t
+            h['tst2'] = t
+        elif self.q0_prev < q - tol:
+            # --- shock ---
+            h = np.zeros(1, self.__class__.profile_dtype)
+            h['theta1'] = theta1
+            h['theta2'] = previous['theta1']
+            h['tst1']   = t
+            h['tst2']   = previous['tst1']
+        else:
+            # --- normal points when q0_prev == q ---
+            h = np.zeros(1, self.__class__.profile_dtype)
+            h['theta1'] = theta1
+            h['theta2'] = theta1
+            h['tst1'] = t
+            h['tst2'] = t
+            
         h['z']  = self.z0
         h['t' ] = t
-        h['tst1'] = t
-        h['tst2'] = t        
-        h['theta1'] = max(soil.theta_fc(), soil.theta_fr_K(q))
-        h['theta2'] = self.profile[0]['theta1']
-        if h['theta2'] > h['theta1']:
-            h['theta2'] = h['theta1']
-        
         h['v'] = self.point_velocities(h['theta1'], h['theta2'])
         
+        # --- prepend h
         self.profile =np.concatenate([h, self.profile])
 
         return self.profile
@@ -336,7 +346,15 @@ class Kinematic_wave():
         # Flux at z_Gwt = K(theta_gwt)
         q_gwt = self.soil.K_fr_theta(theta_gwt)
         return q_gwt
+
     
+    def get_profiles_obj(self, t: float, date: np.datetime64)-> dict:
+        """Return dict that is added to the profiles for later plotting."""
+        return {'profile': self.profile.copy(),
+                    't':t,
+                    'date': date,
+                    'line': self.get_profile_line()}
+
         
     def simulate(self, recharge):
         """Simulate the percolation given the recharge from the rootzone.
@@ -352,50 +370,63 @@ class Kinematic_wave():
         """
         mm_per_cm = 10 # for converting cm to mm and vice versa
         
-        # initialize or set column with recharge at the groundwater table
+        # --- initialize or set column with recharge at the groundwater table
         recharge['qwt'] = 0.        
         
-        # get time in days as floats from datetime index        
+        # --- get time in days as floats from datetime index        
         time = (recharge.index - recharge.index[0]) / np.timedelta64(1, 'D')
         
-        # Get time step size
+        # --- Get time step size
         dt = np.diff(time)[0]
+
+        # --- Initial storage of first profile (for later animation)
+        self.profiles[0]=self.get_profiles_obj(time[0], date=recharge.index[0])
         
-        # Convert pd.DataFrame to array with dtype of fields
-        recharge = recharge.to_records()        
+        # --- Convert pd.DataFrame to array with dtype of fields
+        recharge = recharge.to_records()
+
+        # --- remember first rootzone outflow
+        self.q0_prev = recharge['RCH'][0]  / mm_per_cm # from mm/d --> cm/d    
         
-        # Simulate timestep by timestep, record by record
+        # --- Simulate timestep by timestep, record by record
         for ip, (t, pe) in enumerate(zip(time, recharge)):
-
-            # Next value for flux from root zone (must be in cm/d)
-            q0 = pe['RCH'] / mm_per_cm # mm/d --> cm/d
-            
-            # Gnerate and prepend new record(s) to profile
-            self.profile = self.prepend(t, q0)
-            
-            # Update the profile, evluage shocktimes and move points over dt
+        
+            # --- Update the profile
+            # --- evaluate shocktimes
+            # --- move points over dt
             self.profile = self.update(dt)
-
-            # Get flux at water table
+            
+            # --- next flux from root zone
+            # --- (must be in cm/d)
+            q0 = pe['RCH'] / mm_per_cm
+            
+            # --- Generate and prepend new record(s) to profile
+            # if not np.isclose(q0, self.q0_prev, atol=0.005) or ip==0:
+            self.profile = self.prepend(t + dt, q0)
+            
+            # --- Store curent profile for later animation ---
+            self.profiles[ip + 1]=self.get_profiles_obj(
+                            t + dt, date=pe['index'] + np.timedelta64(1, 'D'))
+            
+            # --- Get flux at water table
             qwt = self.q_at_z(self.z_gwt)
             pe['qwt'] = qwt * mm_per_cm # cm/d --> mm/d (store as mm/d)
 
-            # clip points below z_gwt
+            # --- clip points below z_gwt
             z = self.profile['z']
             Ip = np.arange(len(z))[z > z_gwt]
             if len(Ip) > 1:
                 self.profile = self.profile[:Ip[1]]
             
-            # Store profile for later animation
-            self.profiles[ip]={'profile': self.profile.copy(),
-                            't':t,
-                            'date': recharge.index[ip],
-                            'line': self.get_profile_line()}
+            if self.q0_prev != q0:
+                pass
+            # --- remember previous q0
+            self.q0_prev = q0
                             
         return pd.DataFrame(recharge)
       
 
-    def get_profile_line(self, dz_min=0.1):
+    def get_profile_line(self, dz=10):
         """Interpolate between profiles to get a continuous smooth wave between the sub profiles.
         
         We have a single large profile over the total depth of the percolation zone.
@@ -406,24 +437,28 @@ class Kinematic_wave():
         gain more points.
                 
         """
-        dz = 10. # cm
-        prf = self.profile
+        # --- line points       
+        z, theta = [], []
         
-        z, theta = [], []        
-        for (p1, p2) in zip(prf[:-1], prf[1:]):
+        # --- consecutive profile records     
+        for (p1, p2) in zip(self.profile[:-1], self.profile[1:]):
             z1, z2 = p1['z'], p2['z']
-            if np.isclose(z1, z2):
-                continue
+            t = p1['t'] # all records have he same t
+
+            # --- number of points to be interpolated (>= dz cm apart)
             N = 2 + int((z2 - z1) / dz)
-            if np.isclose(p1['theta2'], p2['theta1']) or N < 1:
-                z += [p1['z'], p2['z']]
-                theta += [p1['theta2'], p2['theta1']]                
+
+            if np.isclose(p1['theta2'], p2['theta1']) or N < 3:
+                # --- no interpolation needed
+                z     += [z1, z2]
+                theta += [p1['theta2'], p2['theta1']]
+                # theta1, theta2 = self.soil.theta_fr_V((z1 - self.z0) / (t - p1['tst2'])), self.soil.theta_fr_V((z2 - self.z0) / (t - p2['tst1']))
             else:
-                t = p1['t'] # All points have the same (current) t
-                z_ = np.linspace(p1['z'], p2['z'], N)
-                v_avg = z_ / (t - p1['tst2'])
+                # --- interpolate N points including ends                
+                z_ = np.linspace(z1, z2, N)
+                v_avg  = (z_ - self.z0) / (t - p1['tst2'])
                 theta_ = self.soil.theta_fr_V(v_avg)
-                z += list(z_)
+                z     += list(z_)
                 theta += list(theta_)
         return np.array(z), np.array(theta)
     
@@ -481,6 +516,8 @@ def make_animation(profiles: dict, soil: Soil, z_gwt: float)->tuple:
                    )
                    )
     ax.legend()
+    
+    print("Progress:")
 
     # init_func: set up the initial state
     def init_func():        
@@ -491,10 +528,15 @@ def make_animation(profiles: dict, soil: Soil, z_gwt: float)->tuple:
     # update_func: uses the closure to access `line` and `profiles`
     def update_func(frame):
         p = profiles[frame]
-        (z, theta), date = p['line'], p['date'].astype("datetime64[D]")        
+        (z, theta), date = p['line'], p['date']       
         line.set_xdata(z)
         line.set_ydata(theta)
-        txt.set_text(f"{date}")
+        txt.set_text(f"{np.datetime64(date).astype('datetime64[D]')}")
+        # --- show progress
+        if np.mod(frame, 100) == 0:
+            print('.', end="")
+        if np.mod(frame, 1000) == 0:
+            print(frame)
         return (line, txt)
     
     return fig, init_func, update_func
@@ -527,9 +569,21 @@ def test_accuracy(self):
                 sl.theta_fr_V(sl.dK_dtheta(theta))))
 
 
+def change_meteo_for_testing(meteo: pd.DataFrame)-> pd.DataFrame:
+    """Return meteo with adapted 'RCH' for easier testing and checking."""
     
-
-
+    qrz = meteo['RCH'].values
+    qrz = np.zeros(len(meteo), dtype=float)
+    
+    # --- Make five 10-day blocks of continuous q alternating between 0 and 1 mm/d ---
+    N = 180
+    for i in np.arange(0, len(meteo), 2 * N):
+        qrz[i    :i + 1 * N] = 0.
+        qrz[i + N:i + 2 * N] = 2. # mm/d
+        
+    meteo.loc[:, 'RCH'] = qrz
+    return meteo
+    
 # %%
 
 if __name__ == "__main__":
@@ -547,7 +601,7 @@ if __name__ == "__main__":
     os.path.isfile(meteo_csv)
     deBilt = pd.read_csv(meteo_csv, header=0, parse_dates=True, index_col=0)
     deBilt_short = deBilt.loc[deBilt.index >= np.datetime64("2020-01-01"), :]
-    
+        
     # Storage capacity
     Smax_I, Smax_R = 1.5, 100 # mm
     rch_simulator = RchEarth(Smax_I=Smax_I, Smax_R=Smax_R, lam=None)
@@ -555,11 +609,15 @@ if __name__ == "__main__":
     date_span = (np.datetime64("2020-01-01"), np.datetime64("2021-03-31"))
         
     rch = rch_simulator.simulate(deBilt_short)
- 
+    
+    # --- replace rch DataFrame field ['RCH'] with a testing pattern
+    if True:
+        rch = change_meteo_for_testing(rch)
+
     # %% Second step get the soil and simulate the kinematic wave
 
     Soil.load_soils(os.path.join(dirs.data, "NL_VG_soilprops.xlsx"))
-    soil = Soil('O01')
+    soil = Soil('O05')
     
     # %%
     # Initialize the Kinematic Wave profile
@@ -589,6 +647,7 @@ if __name__ == "__main__":
     ax.plot(rch_gwt.index, rch_gwt['qwt'], label='qwt')
     ax.legend()
     ax.figure.savefig(f"qwt_{soil.code}")
+
     print("Done")
     
     # plt.show()
