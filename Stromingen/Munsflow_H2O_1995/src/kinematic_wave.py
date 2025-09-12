@@ -14,6 +14,8 @@ cwd = os.getcwd()
 dirs = etc.Dirs(cwd)
 if cwd not in sys.path:
     sys.path.insert(0, cwd)
+    
+dirs.add_dir('videos')
 
 from src.NL_soils import Soil #noqa
 
