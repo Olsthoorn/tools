@@ -233,7 +233,7 @@ class Kinematic_wave():
                 
                 # --- Set upstream theta of overtaking point
                 # --- to downstream theta of overtaken point               
-                self.profile['theta2'][ip_min] = self.profile['theta1'][ip_min + 1]
+                self.profile['theta2'][ip_min] = self.profile['theta2'][ip_min + 1]
                 
                 # --- Update front velocity of shock point
                 self.profile['v'][ip_min] = self.point_velocities(
@@ -259,12 +259,12 @@ class Kinematic_wave():
         
         # --- The moisture content of each point is constant except at sharp fronts.
         
-        prf = self.profile
-        v_avg_1 = (prf['z'] - self.z0) / (prf['t'] - prf['tst1'])
-        v_avg_2 = (prf['z'] - self.z0) / (prf['t'] - prf['tst2'])
+        # prf = self.profile
+        # v_avg_1 = (prf['z'] - self.z0) / (prf['t'] - prf['tst1'])
+        # v_avg_2 = (prf['z'] - self.z0) / (prf['t'] - prf['tst2'])
         
-        prf['theta1'] = self.soil.theta_fr_V(v_avg_1)
-        prf['theta2'] = self.soil.theta_fr_V(v_avg_2)
+        # prf['theta1'] = self.soil.theta_fr_V(v_avg_1)
+        # prf['theta2'] = self.soil.theta_fr_V(v_avg_2)
         
         return self.profile
     
@@ -284,25 +284,23 @@ class Kinematic_wave():
         """
         
         previous = self.profile[0]
-        theta1 = max(soil.theta_fc(), soil.theta_fr_K(q))        
+        theta1 = max(soil.theta_fc(), soil.theta_fr_K(q))
+        theta2 = previous['theta1']    
                        
-        if self.q0_prev > q + tol:     # tol in cm tol =0.005 cm = 0.05 mm
-            # --- tail ----
-            h = np.zeros(2, self.__class__.profile_dtype)
-            
-            theta2 = previous['theta1']
-            
-            h['theta1'] = np.array([theta1, theta2])
-            h['theta2'] = np.array([theta1, theta2])
-            h['tst1'] = t
-            h['tst2'] = t
-        elif self.q0_prev < q - tol:
-            # --- shock ---
+        if q > self.q0_prev + tol:     # tol in cm tol =0.005 cm = 0.05 mm
+            # --- shock, sharp front ----
             h = np.zeros(1, self.__class__.profile_dtype)
             h['theta1'] = theta1
-            h['theta2'] = previous['theta1']
+            h['theta2'] = theta2
+            h['tst1'] = t
+            h['tst2'] = previous['tst1']
+        elif q < self.q0_prev - tol:
+            # --- tail, two new points at same z---
+            h = np.zeros(2, self.__class__.profile_dtype)
+            h['theta1'] = [theta1, theta2]
+            h['theta2'] = [theta1, theta2]
             h['tst1']   = t
-            h['tst2']   = previous['tst1']
+            h['tst2']   = t
         else:
             # --- normal points when q0_prev == q ---
             h = np.zeros(1, self.__class__.profile_dtype)
@@ -393,6 +391,9 @@ class Kinematic_wave():
         # --- Simulate timestep by timestep, record by record
         for ip, (t, pe) in enumerate(zip(time, recharge)):
         
+            if ip == 180:
+                pass
+        
             # --- Update the profile
             # --- evaluate shocktimes
             # --- move points over dt
@@ -453,8 +454,10 @@ class Kinematic_wave():
             if np.isclose(p1['theta2'], p2['theta1']) or N < 3:
                 # --- no interpolation needed
                 z     += [z1, z2]
-                theta += [p1['theta2'], p2['theta1']]
-                # theta1, theta2 = self.soil.theta_fr_V((z1 - self.z0) / (t - p1['tst2'])), self.soil.theta_fr_V((z2 - self.z0) / (t - p2['tst1']))
+                # theta += [p1['theta2'], p2['theta1']]
+                theta += [self.soil.theta_fr_V((z1 - self.z0) / (t - p1['tst2'])),
+                          self.soil.theta_fr_V((z2 - self.z0) / (t - p2['tst1']))
+                          ]
             else:
                 # --- interpolate N points including ends                
                 z_ = np.linspace(z1, z2, N)
@@ -579,7 +582,8 @@ def change_meteo_for_testing(meteo: pd.DataFrame)-> pd.DataFrame:
     
     # --- Make five 10-day blocks of continuous q alternating between 0 and 1 mm/d ---
     N = 180
-    for i in np.arange(0, len(meteo), 2 * N):
+    # for i in np.arange(0, len(meteo), 2 * N):
+    for i in np.arange(0, 2 * N, 2 * N):    
         qrz[i    :i + 1 * N] = 0.
         qrz[i + N:i + 2 * N] = 2. # mm/d
         
@@ -623,7 +627,7 @@ if __name__ == "__main__":
     
     # %%
     # Initialize the Kinematic Wave profile
-    z_rz, z_gwt = 80, 2000.  # Water table depth (m)
+    z_rz, z_gwt = 80, 580.  # Water table depth (m)
     
     z_theta = np.zeros(10, dtype=Kinematic_wave.z_theta_dtype)
     z_theta['z'] = np.linspace(z_rz, z_gwt, 10)
@@ -644,11 +648,21 @@ if __name__ == "__main__":
 
     print("Done animation.")
     
-    ax = etc.newfig("qwt", "time", "q cm/d")
+    # --- plot RCH and qwt
+    ax = etc.newfig("qwt", "time", "q mm/d")
     ax.plot(rch_gwt.index, rch_gwt['RCH'], label='qrtz')
     ax.plot(rch_gwt.index, rch_gwt['qwt'], label='qwt')
+    ax.grid(True)
     ax.legend()
     ax.figure.savefig(f"qwt_{soil.code}")
+
+    # --- plot integrated curve of RCH and qwt
+    ax = etc.newfig("qrz and qwt integrated over time", "time", "integral(q) mm")
+    ax.plot(rch_gwt.index, rch_gwt['RCH'].cumsum(), label='qrtz')
+    ax.plot(rch_gwt.index, rch_gwt['qwt'].cumsum(), label='qwt')
+    ax.grid(True)
+    ax.legend()
+    ax.figure.savefig(f"qwt_{soil.code}_cumsum")
 
     print("Done")
     

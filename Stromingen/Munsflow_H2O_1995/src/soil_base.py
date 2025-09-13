@@ -503,8 +503,8 @@ class SoilBase(ABC):
         k0 = q_avg
         S = self.S_fr_K(k0).item()        
         v = self.dK_dtheta(self.theta_fr_S(S))
-        D = self.D_fr_S(S)
-        return v.item() if len(v) == 1 else v, D.item() if len(D) == 1 else D
+        D = self.D_fr_S(S).item()
+        return v, D
     
     
     def IR(self, z: float | np.ndarray, tau: np.ndarray, q_avg: float =None)-> float | np.ndarray:

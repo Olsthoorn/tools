@@ -158,7 +158,7 @@ literal "false"
 
 .
  Het hart van Munsflow berekent de passage van neerslagoverschot door de onverzadigde zone beneden de wortelzone.
- Het modelconcept gebuikt voor projecten van KIWA en door Gehrels (1998) bij modellering van de onverzazigde zone in zijn model van de Veluwe.
+ Het modelconcept gebuikt voor projecten van KIWA en door Gehrels (1998) bij modellering van de onverzadigde zone in zijn model van de Veluwe.
  De aandacht gaat hier uit naar de onverzadigde zone tussen de wortelzone en het freatisch vlak,
  die we met percolatiezone zullen noemen.
 \end_layout
@@ -166,9 +166,9 @@ literal "false"
 \begin_layout Abstract
 Munsflow lineariseert de Richards-vergelijking voor de onverzadigde zone.
  Dit maakt het mogelijk de onverzadigde zone als een transferfunctie te modelleren.
- Dit werkt handig en de berekeningen zijn vooral heel snel omdat de onverzadigde hiermee een hele tijdeeks met neerslagoverschot in een slag middels convolutie kan worden gesimuleerd.
+ Dit werkt handig en de berekeningen zijn vooral heel snel omdat de onverzadigde hiermee een hele tijdreeks met neerslagoverschot in een slag middels convolutie kan worden gesimuleerd.
  Het probleem met de linearisatie van de Richardsvergelijking is echter,
- dat de lineaire transfer-functie tot een gedrag van vertikaal vochttransport leidt dat substantieel afwijkt van modellering met de niet-lineaire Richards-vergelijking en hierdoor vaak ook van de realiteit.
+ dat de lineaire transfer-functie tot een gedrag van verticaal vochttransport leidt dat substantieel afwijkt van modellering met de niet-lineaire Richards-vergelijking en hierdoor vaak ook van de realiteit.
 \end_layout
 
 \begin_layout Abstract
@@ -177,16 +177,17 @@ Hieronder wordt de basisvergelijking van Munsflow afgeleid,
 \end_layout
 
 \begin_layout Section
-Linearisatie van de Richards-vergelijking voor verticale stroming door de percolatiezone
+Linearisatie van de Richardsvergelijking voor verticale stroming door de percolatiezone
 \end_layout
 
 \begin_layout Standard
-De Richards vergelijking die verticaal transport beschrijft door de percolatiezone (zonder bronterm) is als volgt,
- waarbij de verticale coördinaat 
+De Richardsvergelijking die verticale percolatie beschrijft (zonder bronterm),
+ met de verticale coördinaat 
 \begin_inset Formula $z$
 \end_inset
 
- [L] positief omlaag is genomen:
+ [L] positief omlaag,
+ luidt:
 \end_layout
 
 \begin_layout Standard
@@ -224,7 +225,7 @@ Waarin
 \end_layout
 
 \begin_layout Standard
-Dit is de gemengde form van de Richards-vergelijking omdat zowel de 
+Dit is de gemengde form van de Richardsvergelijking omdat zowel de 
 \begin_inset Formula $\theta$
 \end_inset
 
@@ -554,7 +555,7 @@ Met de volgende linearisaties
 \end_layout
 
 \begin_layout Standard
-Levert dit volgende vorm van de Richards-vergelijking op
+Levert dit volgende vorm van de Richardsvergelijking op
 \end_layout
 
 \begin_layout Standard
@@ -1147,8 +1148,6 @@ K\left(\theta\right) & =K_{s}\left(\frac{\theta-\theta_{r}}{\theta_{s}-\theta_{r
 \end_inset
 
 
-\backslash
-fra
 \end_layout
 
 \begin_layout Standard
@@ -1162,7 +1161,7 @@ Dit maakt duidelijk dat
 \end_inset
 
  is een vormfactor.
- Hieruit volgt dat volgens BC
+ Hieruit volgt volgens BC
 \end_layout
 
 \begin_layout Standard
@@ -1214,7 +1213,7 @@ En
 \begin_inset Formula $d\theta/d\psi$
 \end_inset
 
- is just de reciproke van 
+ is just de reciproque van 
 \begin_inset Formula $d\psi/d\theta$
 \end_inset
 

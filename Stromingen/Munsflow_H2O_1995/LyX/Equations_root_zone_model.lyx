@@ -135,15 +135,99 @@
 \begin_body
 
 \begin_layout Title
-Recharge-Interception-Recharge model
+Recharge-Interception-root-zone model
+\end_layout
+
+\begin_layout Author
+T.N.
+ Olsthoorn
+\end_layout
+
+\begin_layout Date
+September 12,
+ 2025
 \end_layout
 
 \begin_layout Section
 Intro
 \end_layout
 
-\begin_layout Section
-Equations
+\begin_layout Standard
+Water is channeled first through the interception reservoir and then through the root zone.
+ Equations the model the water budget and flow-through of these two reservoirs are derived next.
+\end_layout
+
+\begin_layout Standard
+The interception reservoir is a reservoir from which water can evaporate freely as long as there remains water in it.
+ It's a container with a minimum of 0 and a maximum of 
+\begin_inset Formula $S_{max}$
+\end_inset
+
+ that is filled to some level at any time,
+ maybe full or empty.
+ It is emptied to the atmosphere by evaporation as long as it's wet and it's overflow is channeled to the root zone below.
+ Note that leaf area index is omitted.
+ It can be added,
+ but we will treat it as part of the size of the interception reservoir.
+ If the leaf area index is less than 1,
+ then the interception reservoir will be smaller in proportion to the leaf area index,
+ so that precipitation water will overflow faster into the root zone.
+\end_layout
+
+\begin_layout Standard
+The root zone reservoir is similar,
+ except that the evaporation,
+ in fact evapo-transpiration,
+ may be throttled more as the filling of the root zone gets less.
+ The throttling function is an important aspect of the root zone.
+ The capacity of the root zone varies between a lowest value 
+\begin_inset Formula $\theta_{wp}$
+\end_inset
+
+ and 
+\begin_inset Formula $\theta_{fc}$
+\end_inset
+
+ i.e.
+ the wilting point and field capacity.
+ As soon as 
+\begin_inset Formula $\theta_{fc}$
+\end_inset
+
+ is attained in the root zone,
+ it can no longer hold additional water,
+ which is then channeled downward into the percolation zone.
+ Not that the evaporation from the root zone can never be larger than 
+\begin_inset Formula $E_{0}$
+\end_inset
+
+ minus the evaporation from the interception zone.
+\end_layout
+
+\begin_layout Standard
+Modeling of the percolation zone is outside the scope of this document.
+ It's described by 
+\begin_inset Quotes eld
+\end_inset
+
+Munsflow
+\begin_inset Quotes erd
+\end_inset
+
+ and the 
+\begin_inset Quotes eld
+\end_inset
+
+kinematic wave
+\begin_inset Quotes erd
+\end_inset
+
+ approach and ditto projects.
+\end_layout
+
+\begin_layout Standard
+Ponding and surface runoff are ignored as considering a root zone as a model between precipitation,
+ potential evaporation and the water table is only relevant for sandy areas with deep water tables where ponding may be regarded negligible on the longer run.
 \end_layout
 
 \begin_layout Subsection
@@ -151,7 +235,7 @@ Interception reservoir
 \end_layout
 
 \begin_layout Standard
-The continuous water balance of the interception reservoir,
+The water budget of the interception reservoir,
  using 1,
  is
 \end_layout
@@ -205,8 +289,20 @@ For
 \begin_inset Formula $P>0$
 \end_inset
 
- it's possible that the reservoir will be full before the time step is over.
- With maximum storage equal to 
+ it's possible that the reservoir will be full at 
+\begin_inset Formula $t_{1}$
+\end_inset
+
+ before the end of the time step 
+\begin_inset Formula $\Delta t$
+\end_inset
+
+ for which 
+\begin_inset Formula $t_{0}<t<t_{2}=t_{0}+\Delta t$
+\end_inset
+
+,
+ with maximum storage equal to 
 \begin_inset Formula $S_{max}$
 \end_inset
 
@@ -214,21 +310,30 @@ For
 \begin_inset Formula $t_{1}$
 \end_inset
 
- the time at which the storage is full,
- so that no overflow has taken place and,
+ the time at which the storage is full with 
+\begin_inset Formula $t_{0}\le t_{1}\le t_{2}$
+\end_inset
+
+,
+ so that overflow has not yet taken place during the time step and,
  therefore,
  the outflow 
 \begin_inset Formula $q$
 \end_inset
 
- is still zero,
- we have the following water budget
+ of the interception reservoir is still zero.
+ We thus have the following water budget,
+ with outflow 
+\begin_inset Formula $q_{t}=0$
+\end_inset
+
+
 \end_layout
 
 \begin_layout Standard
 \begin_inset Formula 
 \[
-Pdt-\intop Edt=S_{max}-S_{0}
+P\left(t_{1}-t_{0}\right)-\intop_{t_{0}}^{t_{1}}Edt=S_{max}-S_{0}
 \]
 
 \end_inset
@@ -272,7 +377,8 @@ Over the rest of the time step,
 \end_inset
 
 >0,
- we have
+ the interception reservoir is full.
+ Over this part of the time step we have the following water budget
 \end_layout
 
 \begin_layout Standard
@@ -324,13 +430,14 @@ q=\frac{\left(P_{0}-E_{0}\right)\left(t_{2}-t_{1}\right)}{t_{2}-t_{0}},\,\,\,t_{
 \begin_inset Formula $P$
 \end_inset
 
- is independent of all other parameter.s This is not the case for the other parameters;
- they depend on on each other and on 
+ is independent of all other parameters,
+ but this is not the case for the other parameters,
+ which depend on on each other and on 
 \begin_inset Formula $P_{0}$
 \end_inset
 
 .
- We may write show these dependences as 
+ We may write show these dependencies as 
 \end_layout
 
 \begin_layout Standard
@@ -344,18 +451,251 @@ q=\frac{\left(P_{0}-E_{0}\right)\left(t_{2}-t_{1}\right)}{t_{2}-t_{0}},\,\,\,t_{
 
 \end_layout
 
-\begin_layout Standard
-The same seasoning applies to the root zone.
+\begin_layout Subsection
+Root-zone reservoir
 \end_layout
 
 \begin_layout Standard
-We have to be able to compute the storage at the end of the time step to see of it predict exceeding the storage capacity,
- and with a linear reservoir with unthrottled evaporation,
- also if the storage is completely emptied.
+The same seasoning applies to the root zone,
+ except for the fact that the root zone does not receive precipitation but rather the overflow of the interception reservoir.
+ Moreover,
+ the on the one hand,
+ evaporation from the root zone is limited by the potential evaporation minus the actual evaporation from the interception reservoir,
+ on the other hand,
+ evaporation from the root zone is also limited as a function of the relative filling of root zone.
+ Is water budget is
 \end_layout
 
 \begin_layout Standard
-For unthrottled evaporation,
+\begin_inset Formula 
+\[
+\frac{dS}{dt}=P_{i}-E_{A}-Q_{r}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+with 
+\begin_inset Formula $S$
+\end_inset
+
+ now the total water content of the root zone,
+ 
+\begin_inset Formula $P_{I}=q_{I}$
+\end_inset
+
+ the overflow from the interception reservoir,
+ 
+\begin_inset Formula $E_{A}$
+\end_inset
+
+ the actual evaporation from the root zone and 
+\begin_inset Formula $Q_{r}$
+\end_inset
+
+ the overflow from the root zone when its reservoir is at field capacity,
+ 
+\begin_inset Formula $S=S_{fc}=S_{max}$
+\end_inset
+
+.
+ The actual evaporation is throttled in relation to the actual filling of the reservoir.
+ With 
+\begin_inset Formula $E=E_{0}-E_{i}$
+\end_inset
+
+,
+ the potential evaporation left over after the actual evaporation from the interception reservoir
+\begin_inset Formula 
+\[
+E_{A}=f\left(\frac{S}{S_{max}}\right)E
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+In the practical model we take 
+\begin_inset Formula $f\left(S/S_{max}\right)=\left(S/S_{max}\right)^{\lambda}$
+\end_inset
+
+ where 
+\begin_inset Formula $\lambda=0$
+\end_inset
+
+ represents a reservoir without throttling until it's empty.
+ 
+\begin_inset Formula $\lambda=1$
+\end_inset
+
+ represents a root zone in which 
+\begin_inset Formula $E$
+\end_inset
+
+ is throttled linearly with the relative reservoir filling and,
+ in general 
+\begin_inset Formula $0\le\lambda\le1$
+\end_inset
+
+ to represent root zones in which evaporation is throttled relatively little,
+ less than the linear reservoir,
+ as long as the relative filling is high declining more when the relative filling approach the bottom of the reservoir.
+ A good value of 
+\begin_inset Formula $\lambda$
+\end_inset
+
+ could be 0.25.
+ Anyway,
+ the values 0 and 1 represent mutual extremes that make sense conceptually.
+ As long as the reservoir is not full,
+ we have overflow 
+\begin_inset Formula $Q=0$
+\end_inset
+
+,
+ so that the water budget then becomes
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+\frac{dS}{dt} & =P_{i}-\left(\frac{S}{S_{max}}\right)^{\lambda}E\\
+\frac{dx}{dt} & =p_{i}-x^{\lambda}r
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+in which 
+\begin_inset Formula $x=S/S_{max}$
+\end_inset
+
+,
+ 
+\begin_inset Formula $p_{i}=P_{i}/S_{max}$
+\end_inset
+
+ and 
+\begin_inset Formula $r=E/S_{max}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+To compute the overflow of the reservoir to percolation,
+ we have to compute the time 
+\begin_inset Formula $t_{1}$
+\end_inset
+
+ at which the reservoir overflows.
+ If 
+\begin_inset Formula $t_{1}>t_{0}+\Delta t$
+\end_inset
+
+,
+ no overflow occurs during the time step and 
+\begin_inset Formula $Q=0$
+\end_inset
+
+.
+ If 
+\begin_inset Formula $t_{0}\le t_{1}\le t_{2}=t_{0}+\Delta t$
+\end_inset
+
+ then the reservoir does overflow.
+ We then have a period 
+\begin_inset Formula $t_{0}<t<t_{1}$
+\end_inset
+
+without overflow,
+ Q=0,
+ and a period 
+\begin_inset Formula $t_{1}<t<t_{2}=t_{0}+\Delta t$
+\end_inset
+
+ where there is overflow and 
+\begin_inset Formula $Q>0$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+In the case the evaporation is not throttled,
+ the reservoir may also become empty during the time step.
+ In that case,
+ evaporation suddenly becomes zero and remains zero during the remainder of the time step.
+ For this type of reservoir we also have to compute the time at which it becomes empty.
+ In the reservoir with linear throttling the reservoir never becomes fully empty because of the throttling of the evaporation from it.
+ When 
+\begin_inset Formula $\lambda<1$
+\end_inset
+
+ the decline of the evaporation when the reservoir filling approaches its empty state,
+ becomes infinitely rapid.
+ There too is a possibility that the reservoir gets empty,
+ at least numerically,
+ as in the case with 
+\begin_inset Formula $\lambda=0$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+The computation in which the root zone evaporation is throttled linearly can be analyzed analytically and we will do that below.
+ The case where 
+\begin_inset Formula $\lambda=0.5$
+\end_inset
+
+ can also be handled analytically,
+ however more complex math is needed.
+ All other cases can only be handled numerically.
+ Our implementation uses analytic analysis for both 
+\begin_inset Formula $\lambda=0$
+\end_inset
+
+ and 
+\begin_inset Formula $\lambda=1$
+\end_inset
+
+ and will use the numerical approach with Runge-Kutta integration for any other value of 
+\begin_inset Formula $\lambda$
+\end_inset
+
+.
+ The latter approach is the more general one,
+ which leads to the two analytically derived cases when 
+\begin_inset Formula $\lambda$
+\end_inset
+
+ is chosen 0 and 1.
+\end_layout
+
+\begin_layout Subsection
+Case 
+\begin_inset Formula $\lambda=0$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+For unthrottled evaporation (i.e.
+ 
+\begin_inset Formula $\lambda=0$
+\end_inset
+
+),
  we have simply after a time 
 \begin_inset Formula $\Delta t$
 \end_inset
@@ -386,7 +726,8 @@ dt=\frac{S-S_{0}}{P-E}
 
 \end_inset
 
-where 
+Here,
+ 
 \begin_inset Formula $dt=\infty$
 \end_inset
 
@@ -394,13 +735,19 @@ where
 \begin_inset Formula $P=E$
 \end_inset
 
- and positive and numerator and denominator have the same sign.
- The target storage can be 
-\begin_inset Formula $S_{max}$
+ and 
+\begin_inset Formula $dt>0$
+\end_inset
+
+ otherwise because both the numerator and the denominator have the same sign.
+ The extreme storage,
+ i.e.
+ 
+\begin_inset Formula $S=S_{max}$
 \end_inset
 
  or 
-\begin_inset Formula $S_{min}$
+\begin_inset Formula $S=S_{min}$
 \end_inset
 
  with the latter being normally 0.
@@ -408,7 +755,12 @@ where
 \begin_inset Formula $dt>\Delta t$
 \end_inset
 
- the storage will not overflow or underflow and we can use the already computed storage and the length of the time step directly.
+ the storage will neither overflow nor underflow.
+ We can then use the already computed storage and the length of the time step 
+\begin_inset Formula $dt$
+\end_inset
+
+ directly at the hit time.
  If 
 \begin_inset Formula $dt<\Delta t$
 \end_inset
@@ -417,13 +769,14 @@ where
 \begin_inset Formula $S$
 \end_inset
 
- has to be set to the chosen limit and water budget evaluation is done in two steps,
- first over 
-\begin_inset Formula $0...dt$
+ has to be set to the chosen limit and the evaluation of the water budget has to be done in two steps.
+ First over the period 
+\begin_inset Formula $t_{0}<t<t_{1}=t_{0}+dt$
 \end_inset
 
- to and second over 
-\begin_inset Formula $dt...\Delta t$
+,
+ and second over the period 
+\begin_inset Formula $t_{1}<t<t_{2}=t+\Delta t$
 \end_inset
 
 .
@@ -450,6 +803,14 @@ where
 .
 \end_layout
 
+\begin_layout Subsection
+Case 
+\begin_inset Formula $\lambda=1$
+\end_inset
+
+
+\end_layout
+
 \begin_layout Standard
 In the case when evaporation is throttled linearly like
 \end_layout
@@ -472,7 +833,7 @@ from which follows
 \begin_layout Standard
 \begin_inset Formula 
 \[
-x=\frac{S}{S_{max}}=\frac{P}{E}+\left(\frac{S_{0}}{S_{max}}-\frac{P}{E}\right)\exp\left(-\frac{E\left(t-t_{0}\right)}{S_{max}}\right)
+x=\frac{S}{S_{max}}=\frac{P}{E}+\left(\frac{S_{0}}{S_{max}}-\frac{P}{E}\right)\exp\left(-\frac{t-t_{0}}{T}\right),\,\,\,\mathtt{where}\,\,\,T=\frac{S_{max}}{E}
 \]
 
 \end_inset
@@ -481,7 +842,7 @@ x=\frac{S}{S_{max}}=\frac{P}{E}+\left(\frac{S_{0}}{S_{max}}-\frac{P}{E}\right)\e
 \end_layout
 
 \begin_layout Standard
-because 
+Because 
 \begin_inset Formula $E\ge$
 \end_inset
 
@@ -491,7 +852,7 @@ because
 
 .
  Hence,
- the steady state solution is
+ the steady-state solution is
 \end_layout
 
 \begin_layout Standard
@@ -506,19 +867,22 @@ x=\frac{P}{E}
 \end_layout
 
 \begin_layout Standard
-this allows for an easy way to verify whether the relative storage,
+This allows for an easy way to verify whether the relative storage,
  
 \begin_inset Formula $x$
 \end_inset
 
 ,
- can become larger than 1.
- This is obviously always the case if 
+ can become larger than 1,
+ which is,
+ obviously,
+ always the case if 
 \begin_inset Formula $P>E$
 \end_inset
 
  and,
- thus trivial.
+ therefore,
+ trivial.
 \end_layout
 
 \begin_layout Standard
@@ -545,7 +909,13 @@ For
 \begin_inset Formula $E>0$
 \end_inset
 
+,
+ the full derivation for reservoir storage with linearly throttled 
+\begin_inset Formula $E$
+\end_inset
 
+ is as follows:
+ 
 \end_layout
 
 \begin_layout Standard
@@ -586,11 +956,10 @@ For
 \end_inset
 
 .
- For 
-\begin_inset Formula $p<r$
-\end_inset
+\end_layout
 
-
+\begin_layout Subsection
+Water budget
 \end_layout
 
 \begin_layout Standard
@@ -603,7 +972,7 @@ Water budget for the period
 \end_inset
 
  at 
-\begin_inset Formula $t=\delta t_{1}$
+\begin_inset Formula $t=t_{0}+\delta t_{1}$
 \end_inset
 
  from 
@@ -682,23 +1051,6 @@ P & =\overline{E}+\frac{S-S_{0}}{\delta t_{1}+\delta t_{2}}+q\frac{\delta t_{2}}
 
 \end_inset
 
-+
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\begin{align*}
-P & =E+\left(S-S_{0}\right)+q\\
-P\left(\delta t_{1}+\delta t_{2}\right) & =P\delta t_{1}-\left(S-S_{0}\right)+\left(P-E\right)\delta t_{2}\\
-0 & =-\left(S-S_{0}\right)-E\delta t_{2}
-\end{align*}
-
-\end_inset
-
-
-\begin_inset Newline newline
-\end_inset
-
 
 \end_layout
 
@@ -713,7 +1065,7 @@ P\left(\delta t_{1}+\delta t_{2}\right) & =P\delta t_{1}-\left(S-S_{0}\right)+\l
 \end_layout
 
 \begin_layout Standard
-Because we have only daily or per time step data,
+Because we have only daily data or data per time step,
  we will just have to assume that 
 \begin_inset Formula $P$
 \end_inset
@@ -723,7 +1075,7 @@ Because we have only daily or per time step data,
 \end_inset
 
  are constant values during the time step.
- Then we may write these mutual dependences as follows:
+ Then we may write these mutual dependencies as follows:
 \end_layout
 
 \begin_layout Standard
@@ -751,15 +1103,15 @@ P_{0}-E_{1} & 0<S_{1}<S_{1,max}\\
 \end_layout
 
 \begin_layout Subsection
-Root zone linearly throttled evaporation (Earth method)
+Evaporation from the root zone is linearly throttled (Earth method)
 \end_layout
 
 \begin_layout Standard
-The water balance of the rootzone get inflow from the interception reservoir 
+The water balance of the root zone get inflow from the interception reservoir 
 \begin_inset Formula $P_{1}=-q_{1}$
 \end_inset
 
- and loses water from it through actual evapo-transpiration 
+ and loses water from it through actual evapotranspiration 
 \begin_inset Formula $E_{2}$
 \end_inset
 
@@ -779,143 +1131,9 @@ When throttling the Evaporation linearly with the filling of the root zone
 
 \end_layout
 
-\begin_layout Standard
-\begin_inset Formula 
-\begin{align*}
-\frac{dS}{dt} & =P-\frac{S}{S_{max}}E\\
-\frac{dS/S_{max}}{dt} & =\frac{P}{S_{max}}-\frac{E}{S_{max}}\frac{S}{S_{max}}\\
-\frac{dx}{dt} & =p-rx\\
-\frac{dx}{p-rx} & =dt\\
-\frac{d\left(p-rx\right)}{p-rx} & =-rdt\\
-\ln\left(p-rx\right) & =C-rt\\
-C & =\ln\left(p-rx_{0}\right)\\
-\ln\left(\frac{p-rx}{p-rx_{0}}\right) & =-rt\\
-t & =\frac{1}{r}\ln\left(\frac{p-rx_{0}}{p-rx}\right)\\
-\frac{p-rx}{p-rx_{0}} & =\exp\left(-rt\right)\\
-p-rx & =\left(p-rx_{0}\right)\exp\left(-rt\right)\\
-x & =\frac{p}{r}+\left(x_{0}-\frac{p}{r}\right)\exp\left(-rt\right)\\
-\frac{S}{S_{max}} & =\frac{P}{E}+\left(\frac{S_{0}}{S_{max}}-\frac{P}{E}\right)\exp\left(-\frac{t-t_{0}}{S_{max}/E}\right)\\
-\mathtt{Reservoir}\mathtt{constant} & =\frac{S_{max}}{E},E>0,,\mathtt{Steady}\mathtt{state:}\frac{P}{E}
-\end{align*}
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-Note that when 
-\begin_inset Formula $E=0$
-\end_inset
-
- the differential equation becomes
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\begin{align*}
-\frac{dx}{dt} & =p\\
-x & =p\left(t-t_{0}\right)+C\\
-C & =x_{0}\\
-x-x_{0} & =p\Delta t\\
-\Delta t & =\frac{x-x_{0}}{p},\,\,p>0
-\end{align*}
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-If 
-\begin_inset Formula $p=0$
-\end_inset
-
- and 
-\begin_inset Formula $r=0$
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\begin{align*}
-\frac{dx}{dt} & =0,\,\,\,x=x_{0}\\
-dt & =Dt
-\end{align*}
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\[
-\]
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\begin{align*}
-\frac{dS}{dt} & =P-\frac{S}{S_{max}}E\\
-\frac{d\left(P-\frac{S}{S_{max}}E\right)}{P-\frac{S}{S_{max}}E} & =-\frac{E}{S_{max}}dt\\
-\ln\left(P-\frac{S}{S_{max}}E\right) & =-\frac{E}{S_{max}}\left(t-t_{0}\right)+\ln\left(P-\frac{S_{0}}{S_{max}}E\right)\\
-\frac{P-\frac{E}{S_{max}}S}{P-\frac{E}{S_{max}}S_{0}} & =\exp\left(-\frac{E}{S_{max}}\left(t-t_{0}\right)\right)\\
-\frac{S}{S_{max}} & =\frac{P}{E}+\left(\frac{S_{0}}{S_{max}}-\frac{P}{E}\right)\exp\left(-\frac{E\left(t-t_{0}\right)}{S_{max}}\right)
-\end{align*}
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-This is equation is simplified by replacing 
-\begin_inset Formula $x=S/S_{max}$
-\end_inset
-
- and 
-\begin_inset Formula $p=P/S_{max}$
-\end_inset
-
- and 
-\begin_inset Formula $r=E/S_{max}$
-\end_inset
-
-:
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\[
-\frac{dx}{dt}=p-rx^{\lambda}
-\]
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-For 
-\begin_inset Formula $\lambda=1$
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\[
-x=p+(x_{0}-p)\exp\left(-r\left(t-t_{0}\right)\right)
-\]
-
+\begin_layout Subsection
+Case 
+\begin_inset Formula $\lambda=0.5$
 \end_inset
 
 
@@ -926,7 +1144,12 @@ For
 \begin_inset Formula $\lambda=0.5$
 \end_inset
 
- there is an explicit solution using the Lambert function (scipy.special.lambert)
+,
+ there exists an explicit solution that uses the Lambert function obtainable from 
+\series bold
+scipy.special.lambert
+\series default
+.
 \end_layout
 
 \begin_layout Standard
@@ -934,7 +1157,7 @@ For
 \begin_inset Formula $p>0$
 \end_inset
 
-
+ this solution is as follows:
 \end_layout
 
 \begin_layout Standard
@@ -954,7 +1177,8 @@ For
 \begin_inset Formula $p=0$
 \end_inset
 
- use the separable solution
+,
+ the solution is separable
 \end_layout
 
 \begin_layout Standard
@@ -986,131 +1210,6 @@ Compute
 \end_layout
 
 \begin_layout Subsection
-Cheap implicit euler for 
-\begin_inset Formula $\lambda=0.5$
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-There is also a cheap and fast iterative solution that is always stable.
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\[
-\frac{dx}{dt}=p-r\sqrt{x}
-\]
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-with time step 
-\begin_inset Formula $\Delta t$
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\[
-x_{n+1}=x_{n}+\Delta t\left(p-r\sqrt{x}\right)
-\]
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-Using 
-\begin_inset Formula $u=\sqrt{x}$
-\end_inset
-
- so that 
-\begin_inset Formula $u^{2}=x$
-\end_inset
-
- we get
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\[
-u_{n+1}^{2}=u_{n}^{2}+\Delta t\left(p-ru_{n+1}\right)
-\]
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-Rearrange to a quadratic in 
-\begin_inset Formula $u_{n+1}$
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\[
-u_{n+1}^{2}+\left(r\Delta t\right)u_{n+1}-\left(u_{n}^{2}+r\Delta t\right)=0
-\]
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\[
-D=\left(r\Delta t\right)^{2}+4\left(u_{n}^{2}+p\Delta t\right)>0
-\]
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\[
-u_{n+1}=\frac{-r\Delta t\pm\sqrt{D}}{2}
-\]
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\[
-u_{n+1}=\frac{-r\Delta t+\sqrt{\left(r\Delta t\right)^{2}+4\left(u_{n}^{2}+p\Delta t\right)}}{2}
-\]
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-In our physical regime the 
-\begin_inset Formula $\sqrt{D}>r\Delta t$
-\end_inset
-
- so this is always positive.
-\end_layout
-
-\begin_layout Subsection
 Compute the hitting 
 \begin_inset Formula $\left(t\left(x=1\right)\right)$
 \end_inset
@@ -1120,6 +1219,16 @@ Compute the hitting
 \end_inset
 
 
+\end_layout
+
+\begin_layout Standard
+The analytic solution for 
+\begin_inset Formula $\lambda=0.5$
+\end_inset
+
+ exists and is given below,
+ but it was not implemented,
+ because it didn't seem to work properly.
 \end_layout
 
 \begin_layout Standard
@@ -1134,19 +1243,24 @@ Compute the hitting
 \end_layout
 
 \begin_layout Standard
-We want the continuous time hitting time 
+We want the the time 
 \begin_inset Formula $T$
 \end_inset
 
- to reach 
+ in which the root-zone storage reaches its maximum 
 \begin_inset Formula $x=1$
 \end_inset
 
- starting from 
-\begin_inset Formula $x_{0}<1$
+,
+ where 
+\begin_inset Formula $x_{0}$
 \end_inset
 
-.
+at 
+\begin_inset Formula $t=t_{0}$
+\end_inset
+
+ is smaller than 1.
 \end_layout
 
 \begin_layout Subsubsection*
@@ -1210,7 +1324,7 @@ Compute the integral
 \end_layout
 
 \begin_layout Standard
-A convenient antiderivative is
+A convenient anti-derivative is
 \end_layout
 
 \begin_layout Standard
@@ -1259,7 +1373,7 @@ T=\frac{2p}{r^{2}}\ln\left(\frac{p-r\sqrt{x_{0}}}{p-r}\right)-\frac{2}{r}\left(1
 \end_layout
 
 \begin_layout Subsubsection*
-Existance conditions
+Existence conditions
 \end_layout
 
 \begin_layout Itemize
@@ -1271,7 +1385,7 @@ Existance conditions
 \begin_inset Formula $p-ru$
 \end_inset
 
- stays positivie on 
+ stays positive on 
 \begin_inset Formula $\left[u_{0},1\right]$
 \end_inset
 
@@ -1301,7 +1415,7 @@ if
 \end_inset
 
 ,
- but only reaches it asynptotically at 
+ but only reaches it asymptotically at 
 \begin_inset Formula $T=+\infty$
 \end_inset
 
@@ -1378,7 +1492,7 @@ In conclusion.
 \begin_inset Formula $t\le\Delta t$
 \end_inset
 
- the timestep.
+ the time-step.
  If so,
  
 \begin_inset Formula $x=1$
@@ -1391,6 +1505,86 @@ In conclusion.
 \end_inset
 
  and continue.
+\end_layout
+
+\begin_layout Subsection
+Case 
+\begin_inset Formula $0\le\lambda\le1$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The general case for 
+\begin_inset Formula $0\le\lambda\le1$
+\end_inset
+
+,
+ defined the rate of change of the storage 
+\begin_inset Formula $S$
+\end_inset
+
+ in the root zone by
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\frac{dS}{dt}=P-\left(\frac{S}{S_{max}}\right)^{\lambda}E
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+so that with 
+\begin_inset Formula $0\le x=S/S_{max}\le1$
+\end_inset
+
+,
+ 
+\begin_inset Formula $p=P/S_{max}$
+\end_inset
+
+ and 
+\begin_inset Formula $r=E/S_{max}$
+\end_inset
+
+ we have
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\frac{dx}{dt}=p-x^{\lambda}r
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+So that the required integration
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+x_{t}=p\left(t-t_{0}\right)-r\intop_{t_{0}}^{t}x^{\lambda}dt
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+is carried out numerically using the Runge-Kutta method.
+ This numerical method also allows recording the times at which given thresholds are met.
 \end_layout
 
 \end_body
