@@ -617,7 +617,7 @@ if __name__ == "__main__":
     rch = rch_simulator.simulate(deBilt_short)
     
     # --- replace rch DataFrame field ['RCH'] with a testing pattern
-    if True:
+    if False:
         rch = change_meteo_for_testing(rch)
 
     # %% Second step get the soil and simulate the kinematic wave
@@ -627,7 +627,7 @@ if __name__ == "__main__":
     
     # %%
     # Initialize the Kinematic Wave profile
-    z_rz, z_gwt = 80, 580.  # Water table depth (m)
+    z_rz, z_gwt = 80, 1580.  # Water table depth (m)
     
     z_theta = np.zeros(10, dtype=Kinematic_wave.z_theta_dtype)
     z_theta['z'] = np.linspace(z_rz, z_gwt, 10)
@@ -637,6 +637,7 @@ if __name__ == "__main__":
     kwave.z_gwt = z_gwt
     
     rch_gwt = kwave.simulate(rch)
+    rch_gwt.index = deBilt_short.index
     
     fig, init_func, update_func = make_animation(kwave.profiles, soil, kwave.z_gwt)
     
@@ -649,7 +650,7 @@ if __name__ == "__main__":
     print("Done animation.")
     
     # --- plot RCH and qwt
-    ax = etc.newfig("qwt", "time", "q mm/d")
+    ax = etc.newfig(f"q at the water table, z0={z_rz} cm, z_gwt={z_gwt} cm", "time", "q mm/d")
     ax.plot(rch_gwt.index, rch_gwt['RCH'], label='qrtz')
     ax.plot(rch_gwt.index, rch_gwt['qwt'], label='qwt')
     ax.grid(True)
@@ -657,7 +658,8 @@ if __name__ == "__main__":
     ax.figure.savefig(f"qwt_{soil.code}")
 
     # --- plot integrated curve of RCH and qwt
-    ax = etc.newfig("qrz and qwt integrated over time", "time", "integral(q) mm")
+    ax = etc.newfig(f"Flux q integrated over time from rootzone and at the water table, z_rz={z_rz}, z_gwt={z_gwt} cm",
+                    "time", "integral(q) mm")
     ax.plot(rch_gwt.index, rch_gwt['RCH'].cumsum(), label='qrtz')
     ax.plot(rch_gwt.index, rch_gwt['qwt'].cumsum(), label='qwt')
     ax.grid(True)
