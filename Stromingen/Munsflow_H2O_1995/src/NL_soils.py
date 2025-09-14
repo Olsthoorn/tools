@@ -164,16 +164,27 @@ class Soil(SoilBase):
         K = Ks * S ** (lambda_ + 2) * (S ** (-1) - (S ** (-1 / m) - 1) ** (1 - 1 / n)) ** 2
         return K.item() if K.size == 1 else K
     
-    def dK_HBW_dS(self, S: float | np.ndarray, S_limit: float = 1e-12)-> float | np.ndarray:
-        """Return K(S) according to Heinen, Bakker and Wösten (2018)"""
-        Ks, n, m, lambda_ = self.props['Ks'], self.props['n'], self.props['m'], self.props['lambda']        
-        S = np.atleast_1d(S).clip(S_limit, 1.0)
+    # def dK_HBW_dS(self, S: float | np.ndarray, S_limit: float = 1e-12)-> float | np.ndarray:
+    #     """Return K(S) according to Heinen, Bakker and Wösten (2018)"""
+    #     Ks, n, m, lambda_ = self.props['Ks'], self.props['n'], self.props['m'], self.props['lambda']        
+    #     S = np.atleast_1d(S).clip(S_limit, 1.0)
 
-        A = S ** (-1) - (S ** (-1/m) - 1) ** (1-1/n)
-        dAdS = -S ** (-2) - (1 - 1/n) * (S ** (-1/m) - 1) ** (-1/n) * (-1/m) * S ** (-1-1/m)
-        dKdS = Ks * ((lambda_ + 2) * S ** (lambda_ + 1) * A ** 2 +
-                     S ** (lambda_ + 2) * A * dAdS
-        )                                                 
+    #     A = S ** (-1) - (S ** (-1/m) - 1) ** (1-1/n)
+    #     dAdS = -S ** (-2) - (1 - 1/n) * (S ** (-1/m) - 1) ** (-1/n) * (-1/m) * S ** (-1-1/m)
+    #     dKdS = Ks * ((lambda_ + 2) * S ** (lambda_ + 1) * A ** 2 +
+    #                  S ** (lambda_ + 2) * A * dAdS
+    #     )                                                 
+    #     return dKdS.item() if dKdS.size == 1 else dKdS
+
+    def dK_HBW_dS(self, S: float | np.ndarray, S_limit: float = 1e-12)-> float | np.ndarray:
+        """Return K(S) according to Heinen, Bakker and Wösten (2018)
+        
+        Numeric implementation        
+        """
+        dS = 1e-8
+        S = np.atleast_1d(S).clip(S_limit, 1.0)
+        dKdS = (self.K_HBW_fr_S(S + 0.5 * dS) - self.K_HBW_fr_S(S - 0.5 * dS)) / dS
+        dKdS = np.atleast_1d(dKdS)
         return dKdS.item() if dKdS.size == 1 else dKdS
 
     

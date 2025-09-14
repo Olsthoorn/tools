@@ -106,5 +106,32 @@ ax1.legend(fontsize=6)
 ax2.legend(fontsize=6)
 
 
-# %%
+# %% Verify dK/dtheta
 
+# --- set up fig with two axes
+title = ("V = dK/dtheta")
+ax = etc.newfig(title, "theta", "K [cm/d]")
+ax.set_yscale('log')
+
+dtheta = 1e-4
+
+# --- run for all soil codes
+clrs = cycle('rbgkmcy')
+for code in codes:
+    clr = next(clrs)
+    soil = Soil(code)
+    theta = soil.theta_fr_psi(table4["psi"])
+    V_analytic = soil.dK_dtheta(theta)
+    
+    V_numeric  = (soil.K_fr_theta(theta + 0.5 * dtheta) -
+                  soil.K_fr_theta(theta - 0.5 * dtheta)) / dtheta
+    
+    ax.plot(theta, V_analytic, color=clr, label=f"{code} V analytic")
+    ax.plot(theta, V_numeric,  'o', color=clr, label=f"{code} V numeric")
+ax.legend(fontsize=8)
+
+
+
+
+
+# %%
