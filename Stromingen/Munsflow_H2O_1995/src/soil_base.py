@@ -489,6 +489,7 @@ class SoilBase(ABC):
     
     def theta_fr_V(self, v: float | np.ndarray)-> float | np.ndarray:
         """Return theta(V), where V = dK(theta)_dtheta"""
+        v = np.fmax(1e-30, v)
         if self.theta_fr_lnV is None:
             self.set_theta_fr_lnV_interpolator()            
         return self.theta_fr_lnV(np.log(v))
