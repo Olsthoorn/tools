@@ -2,7 +2,8 @@
 
 # # Kinematic water budget
 
-# The aim is to demonstrate the water budget of a percolating wave of moisture
+# The aim is to demonstrate the water budget of a percolating wave of moisture.
+# The aim succeeds.
 
 # %% --- imports
 
@@ -29,11 +30,13 @@ if not os.path.isfile(wbook):
 
 Soil.load_soils(wbook=wbook)
 
-
-# %% functions
+# %% --- functions (plot the profile)
 
 def plot_profile(t_tail=None, t_inf=None, soil=None, q=None, ax=None, color=None, lw=None):    
     """Plot the block-wave of moisture.
+    
+    Easy to plot for single t_inf and serveral t_tail to show the development of the
+    front and the tail.
     
     Parameters
     ---------
@@ -62,36 +65,52 @@ def plot_profile(t_tail=None, t_inf=None, soil=None, q=None, ax=None, color=None
     xe = vtail  * (t_tail + t_inf)  # head when t_front were t_tail
     
     # --- the entire tail    
-    x = np.linspace(0, xt, 200)            # tail points
+    x = np.linspace(0, xt, 50)            # tail points
     v_avg = x / t_tail                # velocity of tail points
     theta_t = soil.theta_fr_V(v_avg)  # theta of tail points
 
-    x = np.hstack((x, xf, xf, xe))
-    y = np.hstack((theta_t, theta, theta_fc, theta_fc))
+    # --- Verify the water budget
+
+    # --- Total volume of water infiltrated
+    s1 = f"Total infiltrated: {t_inf * q:.2f} cm, "
+
+    # --- Compute total volume present within the profile:
+    Vol = simpson(theta_t - theta_fc, x=x) + (xf - xt) * (theta - theta_fc)
     
-    print(f"Volume at t = {t_inf + t_tail:.1f} d = {simpson(y - theta_fc, x=x):.2f} cm")
+    # --- Issue total volume in profile.
+    s2 = f"Volume in profile={Vol:.2f} cm at t={t_inf + t_tail:.1f} d"
+    print(s1 + s2)
     
-    ax.plot(x, y, '-', color=color, lw=lw,
+    # --- Show the profile, tail first, block and front next
+    ax.plot(x, theta_t, '-', color=color, lw=lw,
             label=fr"$t$={t_tail + t_inf:.1f} d, $t_{{inf}}$={t_inf:.1f} d, $q$={q:.2} cm/d")
+    ax.plot([xt, xf, xf, xe], [theta, theta, theta_fc, theta_fc], '-', color=color, lw=lw)
     
 # %% -- Choose one soil to check the water budget with
 
 soil = Soil('O05')                # Coarse sand
 q = 0.2 # cm/d                    # Constant infiltration rate cm/d
-t_inf, t_tail = 30, 5 # d         # Infiltration duration and time since infiltration stopped
+t_inf, t_tail = 60, 10 # d        # Infiltration duration and time since infiltration stopped
 theta = soil.theta_fr_K(q)        # Theta pertaining to q
 theta_fc = soil.theta_fc()        # Field capacity for this soil
 theta_s  = soil.theta_s           # porosity
 
-vtail  = soil.dK_dtheta(theta)    # Moisture point velocity pertaining to q = same as vtail
+# --- Moisture point velocity pertaining to q = same as vtail
+vtail  = soil.dK_dtheta(theta)
+
+# --- Sharp front velocity
 vfront = (soil.K_fr_theta(theta) - soil.K_fr_theta(theta_fc)) / (theta - theta_fc)
 
-soil.K_fr_theta(soil.theta_fr_K(q))
-soil.dK_dtheta(soil.theta_fr_V(vtail))
+# --- Verify consistency of implementation of soil relations
+q_     = soil.K_fr_theta(soil.theta_fr_K(q))          # should yield q
+vtail_ = soil.dK_dtheta(soil.theta_fr_V(vtail))       # should yield vtail
+print("--- Verify consistency of implementation of soil formulas")
+print(f"q     = {q:.3f} cm/d --> q_out  = {q_:.3f} cm/d")
+print(f"vtail = {vtail:.3f} cm   --> vtail_ = {vtail_:.3f} cm")
+print("---")
 
-
-# %% --- show the profiles
-
+# --- show the profiles
+t_inf = 20.
 print(f"q={q}, theta={theta:.3f}, theta_fc={theta_fc:.3f}, vtail={vtail:.3f}, vfront={vfront:.3f}")
 
 title = (f"Situation after infitration. Soil = {soil.code} = '{soil.props['Omschrijving']}', " +
@@ -105,7 +124,7 @@ lws  = cycle([4, 2, 1, .5])
 # --- time at which the tail hits the moisture front
 t_last = t_inf * vfront / (vtail - vfront)
 
-for t_tail in [1, 2, 4, 6, 8, 10, 12, 14, t_last]:
+for t_tail in [1e-8, 4.5, t_last]:
     clr = next(clrs)
     lw  = next(lws)
     plot_profile(t_tail=t_tail, t_inf=t_inf, soil=soil, q=q, ax=ax, color=clr, lw=lw)    
@@ -115,7 +134,8 @@ ax.legend()
 
 # %% --- construct a moisture tail at t=t_tail after stopping the infiltration
 
-t_tail = 10
+q = 0.2 # cm/d
+t_inf,  t_tail = 20., 4.5
 theta = soil.theta_fr_K(q)        # Theta pertaining to q
 vtail = soil.dK_dtheta(theta)
 xt = vtail * t_tail                    # Progress of the first tail point over time t
@@ -147,7 +167,7 @@ x_front = (t_inf + t_tail) * vfront
 x_tail  = t_tail * vtail
 ax.plot([x_tail, x_tail, x_front, x_front], [theta_fc, theta, theta, theta_fc], label="infiltrate" )
 
-# %% ---  Budget verification
+# ---  Budget verification
 
 # --- Verfiy the water budget of the tail
 # --- compute volume in the tail and in the air above the tail
@@ -162,12 +182,12 @@ Vol_lost = t_tail * (vtail - vfront) * (theta - theta_fc)
 # --- Volume of the progressing front (has V=vfront)
 Vol_prog = t_tail *  vfront          * (theta - theta_fc)
 
-# Vol_lost must equal V_tail
-# Vol_prog must equal V_air
+# --- Vol_lost (from theretical head) must equal V_tail
+# --- Vol_prog must equal V_air
 print(f"Vol_lost = {Vol_lost:.2f} should equal V_tail = {Vol_tail:.2f}")
 print(f"Vol_prog = {Vol_prog:.2f} should equal V_air  = {Vol_air :.2f}")
 
-# The sum of the latter two volumes must equal the total volume infiltrated
+# --- The sum of the latter two volumes must equal the total volume infiltrated
 Vol_sum2 = t_tail *  vtail           * (theta - theta_fc)
 
 print(f"Vol_tail = {Vol_tail:.2f} cm, Vol_air   = {Vol_air :.2f} cm, Vol_sum={Vol_sum1:.2f} cm")

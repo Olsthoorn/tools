@@ -455,8 +455,10 @@ class SoilBase(ABC):
         S = S[rises]
         return PchipInterpolator(np.log(K), S)        
 
-    def S_fr_K(self, k: float | np.ndarray)-> float | np.ndarray:
+    def S_fr_K(self, k: float | np.ndarray, tol: float = 1e-8)-> float | np.ndarray:
         """Return S(K), saturation given K (by interpolation) """
+        if k < tol:            
+            k = np.fmax(tol, k)            
         return self.S_fr_lnK(np.log(k))
     
     @cached_property
