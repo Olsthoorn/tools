@@ -491,9 +491,14 @@ class SoilBase(ABC):
     
     def theta_fr_V(self, v: float | np.ndarray)-> float | np.ndarray:
         """Return theta(V), where V = dK(theta)_dtheta"""
+        # --- Capture extremely low v and even nan as v
         v = np.fmax(1e-30, v)
+        
+        # --- Generate interpolator at first call
         if self.theta_fr_lnV is None:
-            self.set_theta_fr_lnV_interpolator()            
+            self.set_theta_fr_lnV_interpolator()
+            
+        # ---  Use the interpolator          
         return self.theta_fr_lnV(np.log(v))
 
     
