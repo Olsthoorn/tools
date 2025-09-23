@@ -174,7 +174,7 @@ class SoilBase(ABC):
   
     # K(theta) and K(psi)
     @abstractmethod
-    def K_fr_S(S: float | np.ndarray, S_limit: float = 1e-8)-> float | np.ndarray:
+    def K_fr_S(S: float | np.ndarray)-> float | np.ndarray:
         pass
     
     def K_fr_theta(self, theta: float | np.ndarray) -> float | np.ndarray:
@@ -187,7 +187,6 @@ class SoilBase(ABC):
         S = self.S_fr_psi(psi)
         return self.K_fr_S(S)
         
-    # ddK/dS, K/dtheta and dK/psi    
     @abstractmethod
     def dK_dS(S: float | np.ndarray)-> float | np.ndarray:
         """Return dK/dS"""
@@ -219,7 +218,7 @@ class SoilBase(ABC):
         psi_wp = 10 ** pF # cm
         return self.theta_fr_psi(psi_wp)
 
-    # C(psi) and C(theta), moisture capacity
+    # --- C(psi) and C(theta), moisture capacity
     def C_fr_S(self, S: float | np.ndarray)-> float | np.ndarray:        
         return -self.dtheta_dpsi(self.psi_fr_S(S))
     
@@ -231,7 +230,7 @@ class SoilBase(ABC):
         """Specific moisture capacity C(theta) = -dθ/dpsi."""    
         return -self.dtheta_dpsi(self.psi_fr_theta(theta))
     
-    # D(psi) and D(theta): Diffusivity
+    # --- D(psi) and D(theta): Diffusivity
     def D_fr_S(self, S: float | np.ndarray)-> float | np.ndarray:
         """Return diffusivity as a function of S"""
         return self.K_fr_S(S) / self.C_fr_S(S)
@@ -246,8 +245,8 @@ class SoilBase(ABC):
         S = self.theta_fr_S(theta)       
         return self.D_fr_S(S)
 
-    # Throttling function that limit ET in rootmodel
-    # ET reduction due to wet circumstances
+    # --- Throttling function that limit ET in rootmodel
+    # --- ET reduction due to wet circumstances
     def alpha_wet(self, theta: float | np.ndarray,
                   psi1: float=10.0,
                   psi2: float=25.0) -> float | np.ndarray:
@@ -276,7 +275,7 @@ class SoilBase(ABC):
         else:
             return alpha
 
-    # ET reduction according to Feddes
+    # --- ET reduction according to Feddes
     def feddes_alpha(self, theta: float | np.ndarray,
                      psi1: float=10, psi2: float=25,
                      psi3:float =400, psi_w: float=16000) -> float | np.ndarray:
@@ -324,7 +323,7 @@ class SoilBase(ABC):
             return alpha.item()
         return alpha
 
-    # Smooth ET reduction, pratically same as Feddes
+    # --- Smooth ET reduction, pratically same as Feddes
     def smooth_alpha(self, theta: float | np.ndarray,
                      s:    float = 0.2,
                      pF50: float = 3.6,
@@ -369,7 +368,7 @@ class SoilBase(ABC):
         # Return scalar if input was scalar
         return alpha.item() if alpha.size == 1 else alpha
             
-    # ET reduction according to Mualem
+    # --- ET reduction according to Mualem
     def mualem_alpha(self, theta: float | np.ndarray,
                      beta: float =1.0,
                      psi2: float =25,
@@ -400,7 +399,7 @@ class SoilBase(ABC):
         # Return scalar if input was scalar
         return alpha.item() if alpha.size == 1 else alpha
 
-    # ET reducution, blend of Feddes and Mualem
+    # --- ET reducution, blend of Feddes and Mualem
     def alpha_dry_blend(self, theta: float | np.ndarray,
                         beta: float=1.0,
                         w: float =0.6,
@@ -431,19 +430,20 @@ class SoilBase(ABC):
         return alpha.item() if alpha.size == 1 else alpha
     
     @cached_property
-    def S_fr_lnK(self)-> None:
+    def _S_fr_K_cached(self)-> None:
         """Return interpolator to get k at given S
         """
-        log_S_limit = -8
-        S = np.logspace(log_S_limit, 0)
-        # Dummy k
+        log10_S_limit = -8
+        
+        # --- Get S and K values
+        S = np.logspace(log10_S_limit, 0)        
         K = self.K_fr_S(S)
         
-        # Remove compuational artefacts
+        # --- Remove computational artefacts
         S = S[K > 0]
         K = K[K > 0]
         
-        # Guarantee that k always rises
+        # --- Guarantee that k always rises        
         rises = np.ones_like(K, dtype=bool)
         kmax = 0
         for i, k in enumerate(K):
@@ -453,31 +453,35 @@ class SoilBase(ABC):
                 rises[i] = False
         K = K[rises]
         S = S[rises]
-        return PchipInterpolator(np.log(K), S)        
+        s_fr_lnK = PchipInterpolator(np.log(K), S)       
+
+        def f(K):
+            return s_fr_lnK(np.log(K))
+        
+        return f
 
     def S_fr_K(self, k: float | np.ndarray, tol: float = 1e-8)-> float | np.ndarray:
         """Return S(K), saturation given K (by interpolation) """
         if k < tol:            
             k = np.fmax(tol, k)            
-        return self.S_fr_lnK(np.log(k))
+        return self._S_fr_K_cached(k)
     
     @cached_property
-    def theta_fr_lnV(self)-> None:
+    def _theta_fr_V_cached(self)-> None:
         """Return theta(v), where V = dK(theta)_dtheta.
         
         To compute the theta in the Kinematic Wave approach for given
         velocity v = dk(theta)/dtheta we generate an interpolator.
-        """
-        log_S_limit = -8
-        S = np.logspace(log_S_limit, 0)
+        """        
+        S = np.logspace(np.log10(self.Slim), 0, 100)
         theta = self.theta_fr_S(S)              
         V = self.dK_dtheta(theta)
         
-        # Remove compuatational artefacts
+        # --- Remove computational artefacts
         theta  = theta[V > 0]
         V      = V[V > 0]
         
-        #Guarantee that V always rises
+        # --- Guarantee that V always rises
         rises = np.ones_like(V, dtype=bool)
         vmax = 0.        
         for i, v in enumerate(V):
@@ -487,21 +491,18 @@ class SoilBase(ABC):
                 rises[i] = False
         V     = V[rises]
         theta = theta[rises]
-        return PchipInterpolator(np.log(V), theta)
+        
+        thfr_lnV = PchipInterpolator(np.log(V), theta)
+        
+        def f(V):
+            return thfr_lnV(np.log(V))
+        return f
     
     def theta_fr_V(self, v: float | np.ndarray)-> float | np.ndarray:
         """Return theta(V), where V = dK(theta)_dtheta"""
-        # --- Capture extremely low v and even nan as v
-        v = np.fmax(1e-30, v)
-        
-        # --- Generate interpolator at first call
-        if self.theta_fr_lnV is None:
-            self.set_theta_fr_lnV_interpolator()
-            
-        # ---  Use the interpolator          
-        return self.theta_fr_lnV(np.log(v))
+        return self._theta_fr_V_cached(np.clip(v, 1e-30, None))
 
-    
+
     def theta_fr_K(self, k: float | np.ndarray)-> float| np.ndarray:
         """Return theta(K), theta given K."""
         return self.theta_fr_S(self.S_fr_K(k))

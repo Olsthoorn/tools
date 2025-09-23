@@ -10,6 +10,8 @@ import matplotlib.pyplot as plt
 import pandas as pd
 from itertools import cycle
 from importlib import reload
+from functools import cached_property
+from scipy.interpolate import PchipInterpolator
 
 import etc
 reload(sys.modules['etc'])
@@ -54,6 +56,7 @@ class Soil(SoilBase):
         # according to Vn Genughten and Mualem (1980) using "el" l=0.5.
         # Because we obtain all parameters from HBW, HBW = True is default.
         self.HBW = HBW
+        self.Slim = 1e-12
         
  
     @classmethod
@@ -123,7 +126,6 @@ class Soil(SoilBase):
         """Return dpsi/dS"""    
         alpha, n, m = self.props['alpha'], self.props['n'], self.props['m']
         return -(1 / (alpha * n * m)) *(S ** (-1/m) - 1) ** (-1 + 1/n) * S ** (-1 - 1/m)  
-        #return -(1 / (alpha * n * m)) *(S ** (-1/m) - 1) ** (1/n - 1) * S ** (-1/m - 1)
         
     # Van Genughten and Mualem
     def K_VGM_fr_S(self, S: float | np.ndarray, S_limit: float = 1e-12)-> float | np.ndarray:
@@ -135,39 +137,29 @@ class Soil(SoilBase):
         K = Ks * S ** el * B ** 2
         return K.item() if K.size == 1 else K
         
-    def dK_VGM_dS(self, S: float | np.ndarray, S_limit: float = 1e-22)-> float | np.ndarray:
+    def dK_VGM_dS(self, S: float | np.ndarray)-> float | np.ndarray:
         """Return dK/dS"""
         Ks, el, m = self.props['Ks'], self.props['el'], self.props['m']        
-        S = np.atleast_1d(S).clip(S_limit, 1.0)        
+        S = np.atleast_1d(S).clip(self.Slim, 1.0)        
 
         B = 1 - ((1 - S) ** (1/m)) ** m
         dBdS = (1 - S ** (1 / m)) ** (m - 1) * S ** (-1 + 1 / m)
         dKdS = Ks * (el * S ** (el -1) * B ** 2 + 2 * S ** el * B * dBdS)
         return dKdS.item() if dKdS.size == 1 else dKdS
     
-    # Heinen, Bakker and Wösten (2018):
-    # def K_HBW_fr_S(self, S: float | np.ndarray, S_limit: float = 1e-12)-> float | np.ndarray:
-    #     """Return K(S) according to Heinen, Bakker and Wösten (2018)"""
-    #     Ks = self.props['Ks']
-    #     n, m, lambda_ =self.props['n'], self.props['m'], self.props['lambda']
-        
-    #     S = np.atleast_1d(S).clip(S_limit, 1.0)        
-    #     K = Ks * S ** (lambda_ + 2) * (S ** (-1) - (S ** (-1 / m) - 1) ** (1 - 1 / n)) ** 2        
-    #     return K.item() if K.size == 1 else K
-
-    def K_HBW_fr_S(self, S: float | np.ndarray, S_limit: float = 1e-4)-> float | np.ndarray:
+    def K_HBW_fr_S(self, S: float | np.ndarray)-> float | np.ndarray:
         """Return K(S) according to Heinen, Bakker and Wösten (2018)"""
         Ks = self.props['Ks']
         n, m, lambda_ =self.props['n'], self.props['m'], self.props['lambda']
         
-        S = np.atleast_1d(S).clip(S_limit, 1.0)
+        S = np.atleast_1d(S).clip(self.Slim, 1.0)
         K = Ks * S ** (lambda_ + 2) * (S ** (-1) - (S ** (-1 / m) - 1) ** (1 - 1 / n)) ** 2
         return K.item() if K.size == 1 else K
     
-    def dK_HBW_dS(self, S: float | np.ndarray, S_limit: float = 1e-12)-> float | np.ndarray:
+    def dK_HBW_dS(self, S: float | np.ndarray)-> float | np.ndarray:
         """Return K(S) according to Heinen, Bakker and Wösten (2018)"""
         Ks, n, m, lambda_ = self.props['Ks'], self.props['n'], self.props['m'], self.props['lambda']        
-        S = np.atleast_1d(S).clip(S_limit, 1.0)
+        S = np.atleast_1d(S).clip(self.Slim, 1.0 - 1e-16)
 
         A = S ** (-1) - (S ** (-1/m) - 1) ** (1-1/n)
         dAdS = -S ** (-2) - (1 - 1/n) * (S ** (-1/m) - 1) ** (-1/n) * (-1/m) * S ** (-1-1/m)
@@ -176,31 +168,51 @@ class Soil(SoilBase):
         )                                                 
         return dKdS.item() if dKdS.size == 1 else dKdS
 
-    # def dK_HBW_dS(self, S: float | np.ndarray, S_limit: float = 1e-12)-> float | np.ndarray:
-    #     """Return K(S) according to Heinen, Bakker and Wösten (2018)
         
-    #     Numeric implementation        
-    #     """
-    #     dS = 1e-8
-    #     S = np.atleast_1d(S).clip(S_limit, 1.0)
-    #     dKdS = (self.K_HBW_fr_S(S + 0.5 * dS) - self.K_HBW_fr_S(S - 0.5 * dS)) / dS
-    #     dKdS = np.atleast_1d(dKdS)
-    #     return dKdS.item() if dKdS.size == 1 else dKdS
+    def K_fr_S(self, S:float | np.ndarray)->float | np.ndarray:
+        return self._K_fr_S_cached(S)
 
-    
-    def K_fr_S(self, S: float | np.ndarray, S_limit: float = 1e-12)-> float | np.ndarray:
-        """Return K(S) according HBW or VGM"""
-        if self.HBW is True:
-            return self.K_HBW_fr_S(S, S_limit=S_limit)
+    @cached_property
+    def _K_fr_S_cached(self):
+        if self.HBW:
+            K_fr_S_exact = self.K_HBW_fr_S
         else:
-            return self.K_VGM_fr_S(S, S_limit-S_limit)
+            K_fr_S_exact = self.K_VGM_fr_S
+            
+        S = np.linspace(self.Slim, 1, 100)
         
-    def dK_dS(self, S: float | np.ndarray, S_limit: float = 1e-12)-> float | np.ndarray:
-        """Return dK_dS according to HBW or VGM"""
-        if self.HBW is True:
-            return self.dK_HBW_dS(S, S_limit=S_limit)
+        KfrS = K_fr_S_exact(S=S)
+                        
+        ln_KfrS = PchipInterpolator(S, np.log(KfrS))
+        
+        def f(S):
+            return np.exp(ln_KfrS(S))
+        
+        return f
+
+
+    def dK_dS(self, S:float | np.ndarray)->float | np.ndarray:        
+        return self._dK_dS_cached(S)
+
+   
+    @cached_property
+    def _dK_dS_cached(self):
+        if self.HBW:
+            dK_dS_exact = self.dK_HBW_dS
         else:
-            return self.dK_VGM_dS(S, S_limit=S_limit)
+            dK_dS_exact = self.dK_VGM_dS
+            
+        S = np.linspace(self.Slim, 1, 100)
+        
+        dKdS = dK_dS_exact(S)
+            
+        ln_dKdS = PchipInterpolator(S, np.log(dKdS))
+        
+        def f(S):
+            return np.exp(ln_dKdS(S))
+        
+        return f
+
 
 
 # -------------------------------------------
