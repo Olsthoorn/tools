@@ -500,7 +500,7 @@ class SoilBase(ABC):
     
     def theta_fr_V(self, v: float | np.ndarray)-> float | np.ndarray:
         """Return theta(V), where V = dK(theta)_dtheta"""
-        return self._theta_fr_V_cached(np.clip(v, 1e-30, None))
+        return self._theta_fr_V_cached(np.clip(v, 1e-16, None))
 
 
     def theta_fr_K(self, k: float | np.ndarray)-> float| np.ndarray:

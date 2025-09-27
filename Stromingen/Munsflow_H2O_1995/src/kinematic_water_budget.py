@@ -86,13 +86,36 @@ def plot_profile(t_tail=None, t_inf=None, soil=None, q=None, ax=None, color=None
             label=fr"$t$={t_tail + t_inf:.1f} d, $t_{{inf}}$={t_inf:.1f} d, $q$={q:.2} cm/d")
     ax.plot([xt, xf, xf, xe], [theta, theta, theta_fc, theta_fc], '-', color=color, lw=lw)
     
+    
+# %% ==== Plot V vs v
+    
+soil = Soil('O05')
+theta = np.linspace(soil.theta_fc(), 0.98 * soil.theta_s, 200)
+V = soil.dK_dtheta(theta)
+v = soil.K_fr_theta(theta) / theta
+ratio = V / v
+
+title1 = f"Staringreeks Grond {soil.code}, {soil.props['Omschrijving']}\n"
+title2 = r"Vochtprofielpunten: $V = dK(\theta)\,/\,d\theta$. Waterdeeltjes $v = q\, /\, \theta = K(\theta)\,/\,\theta$"
+ylabel = r'$dK(\theta)\, /\, d\theta$ [cm/d], $K(\theta)\, /\, \theta$ [cm/d]'
+
+ax = etc.newfig(title1 + title2, r'--- \theta ---', ylabel, fontsize=15,
+                yscale='log')
+
+ax.plot(theta, V, label=r'$V = dK(\theta)/d\theta$')
+ax.plot(theta, v, label=r'$v = q / \theta = K(\theta)/\theta$')
+ax.plot(theta, ratio, label=r'ratio = $V / v$')
+ax.legend(fontsize=15)
+
+ax.figure.savefig(os.path.join(dirs.home, '../Kinematic_wave/LyX', "V_v_ratio.png"))
+
 # %% -- Choose one soil to check the water budget with
 
 soil = Soil('O05')                # Coarse sand
 q = 0.2 # cm/d                    # Constant infiltration rate cm/d
 t_inf, t_tail = 60, 10 # d        # Infiltration duration and time since infiltration stopped
 theta = soil.theta_fr_K(q)        # Theta pertaining to q
-theta_fc = soil.theta_fc()        # Field capacity for this soil
+theta_fc = soil.theta_r        # Field capacity for this soil
 theta_s  = soil.theta_s           # porosity
 
 # --- Moisture point velocity pertaining to q = same as vtail
@@ -110,26 +133,73 @@ print(f"vtail = {vtail:.3f} cm   --> vtail_ = {vtail_:.3f} cm")
 print("---")
 
 # --- show the profiles
-t_inf = 20.
+t_inf = 40.
 print(f"q={q}, theta={theta:.3f}, theta_fc={theta_fc:.3f}, vtail={vtail:.3f}, vfront={vfront:.3f}")
 
 title = (f"Situation after infitration. Soil = {soil.code} = '{soil.props['Omschrijving']}', " +
         fr"$\theta_s$={theta_s:.3g}, $\theta$={theta:.3g}, $\theta_{{fc}}$={theta_fc:.3g}")
-ax = etc.newfig(title, r"$x$ [cm]", r"--- $\theta$ ---")
+ax = etc.newfig(title, r"$x$ [cm]", r"--- $\theta$ ---", fontsize=15)
 fig = ax.figure
 
 clrs = cycle('brgkmcy')
-lws  = cycle([4, 2, 1, .5])
+lws  = cycle([2, 2, 2, 2])
 
 # --- time at which the tail hits the moisture front
 t_last = t_inf * vfront / (vtail - vfront)
+ts_tail = [1e-8, t_last * 0.5]
 
-for t_tail in [1e-8, 4.5, t_last]:
+xA, xB, xC = np.array([0, 0.5, 1.0]) * t_inf * vfront
+
+for t_tail in ts_tail:
     clr = next(clrs)
     lw  = next(lws)
-    plot_profile(t_tail=t_tail, t_inf=t_inf, soil=soil, q=q, ax=ax, color=clr, lw=lw)    
-ax.legend()
-# fig.savefig(os.path.join(dirs.images, "infiltrated_block_movement.png"))
+    plot_profile(t_tail=t_tail, t_inf=t_inf, soil=soil, q=q, ax=ax,color=clr, lw=lw)
+    xa, xb, xc = np.array([xA, xB, xC]) + t_tail * vtail
+    
+    ax.plot(xa, theta, 'o', color=clr)    
+    ax.plot(xb, theta, 'o', color=clr)
+    ax.plot(xc, theta, 'o', color=clr)
+
+    ax.text(xa, theta + 0.001, 'A', va='bottom', fontsize=15)
+    ax.text(xb, theta + 0.001, 'B', va='bottom', fontsize=15)
+    ax.text(xc, theta + 0.001 ,'C', va='bottom', fontsize=15)
+    
+ax.set_ylim(0, 0.12)
+ax.legend(loc='center right', fontsize=15)
+
+fig.savefig(os.path.join(dirs.home, '../Kinematic_wave/LyX', "infiltrated_block_movement.png"))
+
+
+# %% === Growing tail ===
+
+q = 0.2 # cm/d
+theta_q = soil.theta_fr_K(q)
+theta_a = np.linspace(soil.theta_r, theta_q, 5)
+theta_s = np.linspace(soil.theta_r, theta_q,200)
+Va = soil.dK_dtheta(theta_a)
+Vs = soil.dK_dtheta(theta_s)
+time = [1, 2, 4, 8, 16, 32, 64, 128, 256, 512]
+ax = etc.newfig(f"Ontwikkeling van een tail, grondsoort {soil.code} {soil.props['Omschrijving']}, q={q:.1f} cm/d cm/d", "z [cm]", r"--- $\theta$ ---",
+                fontsize=15)
+
+clrs = cycle('brgkmcy')
+for t in time:
+    clr = next(clrs)
+    xs, xa = Vs * t, Va * t
+    ax.plot(xs, theta_s, color=clr, label=f't = {t:.0f} d')
+    ax.plot([xa.max(), xa.max() + 200], [theta_a.max(), theta_a.max()], '-', color=clr)    
+    ax.plot(xa, theta_a, 'o', color=clr)
+ax.legend(fontsize=15)
+
+for x, th in zip(xa[1:], theta_a[1:]):
+    V = soil.dK_dtheta(th)
+    ax.text(x, th - 0.001, f"V({th:.2f})={V:.2f} cm/d", va='top', ha='left', fontsize=12)
+ax.set_xlim(None, 4000)
+ax.set_ylim(None, 0.12)
+
+ax.figure.savefig(os.path.join(dirs.home, '../Kinematic_wave/LyX', "tail_development.png"))
+
+
 
 
 # %% --- construct a moisture tail at t=t_tail after stopping the infiltration

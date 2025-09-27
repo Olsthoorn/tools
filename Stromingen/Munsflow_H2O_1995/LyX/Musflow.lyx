@@ -193,6 +193,141 @@ De Richardsvergelijking die verticale percolatie beschrijft (zonder bronterm),
 \begin_layout Standard
 \begin_inset Formula 
 \[
+\frac{\partial\theta}{\partial t}=-\frac{\partial}{\partial z}\left[K(h)\left(\frac{\partial\phi}{\partial z}\right)\right],\,\,\,\phi=\zeta+h
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Waarin 
+\begin_inset Formula $\zeta$
+\end_inset
+
+ de hoogte boven een referentie niveau is.
+ De afstand 
+\begin_inset Formula $z$
+\end_inset
+
+ beneden de bodem van de wortelzone is dan
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\zeta=\zeta_{0}-z\rightarrow z=\zeta_{0}-\zeta
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+\frac{\partial\theta}{\partial t} & =-\frac{\partial}{\partial z}\left[K(h)\left(\frac{\partial\left(\zeta_{0}-z+h\right)}{\partial z}\right)\right]\\
+\frac{\partial\theta}{\partial t} & =-\frac{\partial}{\partial z}\left[K(h)\left(\frac{\partial h}{\partial z}-1\right)\right]\\
+\frac{\partial\theta}{\partial t} & =\frac{\partial}{\partial z}\left[K(h)\left(-\frac{\partial h}{\partial z}+1\right)\right]\\
+\frac{\partial\theta}{\partial t} & =\frac{\partial}{\partial z}\left[K(h)\left(\frac{\partial\psi}{\partial z}+1\right)\right]
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Of gewoon 
+\begin_inset Formula $q$
+\end_inset
+
+ met 
+\begin_inset Formula $q$
+\end_inset
+
+ en 
+\begin_inset Formula $z$
+\end_inset
+
+ in dezelfde richting wijzend
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+q_{z} & =-K\frac{\partial\phi}{\partial z}\\
+q_{z} & =-K\frac{\partial\left(\zeta_{0}-z+h\right)}{\partial z}\\
+q_{z} & =K\left(-\frac{\partial h}{\partial z}+1\right)\\
+q_{z} & =K\left(\frac{\partial\psi}{\partial z}+1\right)\\
+q_{z} & =K\frac{\partial\psi}{\partial z}+K
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\frac{\partial\theta}{\partial t}=\frac{\partial}{\partial z}\left[K\left(\frac{\partial\psi}{\partial z}+1\right)\right]
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\frac{\partial\theta}{\partial t}=\frac{\partial\theta}{\partial\psi}\frac{\partial\psi}{\partial t}=-S\frac{\partial\psi}{\partial t}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+-S\frac{\partial\psi}{\partial t}=\frac{\partial}{\partial z}\left[K\left(\frac{\partial\psi}{\partial z}+1\right)\right]
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\frac{\partial\psi}{\partial t}=-\frac{\partial}{\partial z}\left[\frac{K}{S}\left(\frac{\partial\psi}{\partial z}+1\right)\right]
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\frac{\partial\psi}{\partial t}=-\frac{\partial}{\partial z}\left[D\left(\frac{\partial\psi}{\partial z}+1\right)\right]
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
 \frac{\partial\theta}{\partial t}=\frac{\partial}{\partial z}\left[K(h)\left(\frac{\partial h}{\partial z}-1\right)\right]
 \]
 
