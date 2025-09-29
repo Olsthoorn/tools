@@ -8,7 +8,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 from matplotlib.animation import FuncAnimation  # , FFMpegWriter
-from scipy.integrate import simpson
 import etc
 
 import cProfile
@@ -17,27 +16,31 @@ import pstats
 import warnings
 warnings.filterwarnings("error")
 
-cwd = os.getcwd()
-dirs = etc.Dirs(cwd)
-print("Project directory (cwd): `{wd}` ")
+dirs = etc.Dirs(os.getcwd())
+print("Project directory: `{dirs.home}` ")
     
 dirs.add_dir('videos')
 
 # --- Local modules
 sys.path.insert(0, "")
 
-from src.rootz_rch_model  import RchEarth # noqa
+from src.rootz_rch_model  import get_deBilt_recharge # noqa
 from src.NL_soils import Soil #noqa
+
+from src.Munsflow import simulate_munsflow
+
 
 # --- update figure settings
 plt.rcParams.update({
-    'font.size': 12,
+    'font.size': 15,
     'figure.figsize': (10, 6),
     'axes.grid': True,
     'grid.alpha': 0.5,
     'lines.linewidth': 2,
     'lines.markersize': 5
 })
+
+
 
 # %%
 class Kinematic_wave():
@@ -837,37 +840,22 @@ if __name__ == "__main__":
     
     # %% --- Setup the example usage
     
+    meteo = get_deBilt_recharge(Smax_I=0.5, Smax_R=100, lam=0.25, datespan=("1985-01-01", None))
+
 
     # Simulate the flow through the unsaturated zone using the kinematic wave model.
     # The input is a time series of recharge on a daily basis.
     # When this works a root-zone module will be inserted to simulate the storage of water in the root zone.
     
-    with cProfile.Profile() as pr:
-        # --- Get weather data for De Bilt
-        meteo_csv = os.path.join(dirs.data, "DeBilt.csv")
-        os.path.isfile(meteo_csv)
-        deBilt = pd.read_csv(meteo_csv, header=0, parse_dates=True, index_col=0)
-
+    with cProfile.Profile() as pr: # --- Profiling the computation time
         # --- Shorten the series for convenience
-        deBilt_short = deBilt.loc[deBilt.index >= np.datetime64("2020-01-01"), :]
-            
-        # --- Set storage capacities of Interception and Rootzone reservoirs
-        Smax_I, Smax_R = 1.5, 100 # mm
-
-        date_span = (np.datetime64("2020-01-01"), np.datetime64("2021-03-31"))
-
-        # --- Get the recharge simulator
-        rch_simulator = RchEarth(Smax_I=Smax_I, Smax_R=Smax_R, lam=None)
-
-        # --- Compute the recharge
-        rch = rch_simulator.simulate(deBilt_short)
-
-        # --- If True, replace rch DataFrame field ['RCH'] with a testing pattern
+ 
+        # --- If True, replace meteo DataFrame field ['RCH'] with a testing pattern
         if False:
-            rch = change_meteo_for_testing(rch, N=50, m=1)[rch.index < rch.index[0] + np.timedelta64(300, 'D')]
+            meteo = change_meteo_for_testing(meteo, N=50, m=1)[meteo.index < meteo.index[0] + np.timedelta64(300, 'D')]
             
             # --- Continuous infiltration from day 0
-            # rch.loc[rch.index <= rch.index[0] + np.timedelta64(50, 'D'), 'RCH'] = 2 # mm/d
+            # meteo.loc[meteo.index <= meteo.index[0] + np.timedelta64(50, 'D'), 'RCH'] = 2 # mm/d
 
         # --- Second step get the soil and simulate the kinematic wave
         Soil.load_soils(os.path.join(dirs.data, "NL_VG_soilprops.xlsx"))
@@ -888,7 +876,7 @@ if __name__ == "__main__":
         kwave.profile['thetaR'] = kwave.soil.theta_fr_K(0.1)
 
         # --- Simulate the kinematic wave
-        rch_gwt = kwave.simulate(rch)
+        rch_gwt = kwave.simulate(meteo)
 
         # --- Setup of the animation    
         fig, init_func, update_func = make_animation(kwave.profiles, soil, kwave.zwt)
@@ -900,35 +888,51 @@ if __name__ == "__main__":
                                 blit=True, repeat=False)
 
             # --- Save anaimation
-            ani.save(f"Kinematic_wave_soil {soil.code}.mp4", writer="ffmpeg", fps=20)
+            ani.save(
+                os.path.join(dirs.home, '../Kinematic_wave/LyX',
+                    f"Kinematic_wave_soil {soil.code}.mp4"), writer="ffmpeg", fps=20)
 
             plt.close(fig)
 
             print("Done animation.")
 
+        tspan = (np.datetime64("1995-01-01"), np.datetime64("2015-01-01"))
+        tspstr = str(tspan[0])[2:4] + '-' + str(tspan[1])[2:4]
+
         # --- plot RCH and qwt
         ax = etc.newfig(f"q at the water table, z0={kwave.z0} cm, zwt={kwave.zwt} cm", "time", "q mm/d")
-        ax.plot(rch_gwt.index, rch_gwt['RCH'], label='qrtz')
-        ax.plot(rch_gwt.index, rch_gwt['qwt'], label='qwt')
+        # ax.plot(meteo.index, rch_gwt['RCH'], label='qrtz')
+        ax.plot(meteo.index, rch_gwt['qwt'], label='qwt, Kinematic wave')
+        qSeries = simulate_munsflow(meteo, soil=soil, z=zwt - z0, q_avg_cm=0.1)
+        ax.plot(qSeries.index, qSeries.values * 10, label='qwt_Munsflow (q_avg=0.1 cm/d)')
+
         ax.grid(True)
         ax.legend()
-        ax.figure.savefig(f"qwt_{soil.code}")
+        ax.set_xlim(tspan)
+        ax.figure.savefig(f"qwt_{soil.code}__{tspstr}")
+        ax.figure.savefig(os.path.join(dirs.home, '../Kinematic_wave/LyX', f"qwt_{soil.code}_{tspstr}"))
+        
 
         # --- plot integrated curve of RCH and qwt
         ax = etc.newfig(f"Flux q integrated over time from rootzone and at the water table, z_rz={kwave.z0}, zwt={kwave.zwt} cm",
                         "time", "integral(q) mm")
-        ax.plot(rch_gwt.index, rch_gwt['RCH'].cumsum(), label='qrtz')
-        ax.plot(rch_gwt.index, rch_gwt['qwt'].cumsum(), label='qwt')
+        ax.plot(meteo.index, rch_gwt['RCH'].cumsum(), label='qrtz')
+        ax.plot(meteo.index, rch_gwt['qwt'].cumsum(), label='qwt')
+        ax.plot(qSeries.index, qSeries.values.cumsum() * 10, label='qwt_Munsflow')
+        ax.set_xlim(tspan)
         ax.grid(True)
         ax.legend()
-        ax.figure.savefig(f"qwt_{soil.code}_cumsum")
+        ax.figure.savefig(f"qwt_{soil.code}_cumsum_{tspstr}")
+        ax.figure.savefig(os.path.join(dirs.home, '../Kinematic_wave/LyX',f"qwt_{soil.code}_cumsum_{tspstr}"))
 
         # --- plot the volume under the profile
         vol = kwave.get_Vol()
         ax = etc.newfig("Volume above fc [cm]", "time", "volume [cm]")
-        #ax = plt.gca()
-        ax.plot(rch_gwt.index, 10 * vol['V'], label="Volume")
+        # ax.plot(rch_gwt.index, 10 * vol['V'], label="Volume")
+        ax.plot(meteo.index, 10 * vol['V'], label="Volume")
         ax.grid(True)
+        ax.figure.savefig(f"vol_in_profile_{soil.code}")
+        ax.figure.savefig(os.path.join(dirs.home, '../Kinematic_wave/LyX', f"vol_in_profile_{soil.code}"))
 
         print("Done")
 
@@ -936,5 +940,6 @@ if __name__ == "__main__":
 
     stats = pstats.Stats(pr)
     stats.sort_stats("cumtime").print_stats(20)
+    
     
     # %%

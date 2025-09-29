@@ -15,88 +15,139 @@ from scipy.signal import lfilter
 import etc
 
 dirs = etc.Dirs(os.getcwd())
-sys.path.insert(0, os.getcwd())
+print(f"Project directory (cwd): {dirs.home} ")
 
-from src import NL_soils as nls
-from src.rootz_rch_model import RchLam
+if "" not in sys.path:
+    sys.path.insert(0, "")
 
-# %%
-wbook = os.path.join(dirs.data, 'NL_VG_soilprops.xlsx')
-nls.Soil.load_soils(wbook)
-sand = nls.Soil('O05')
+sys.path = sorted(sys.path)
+sys.path.insert(1, str(dirs.home))
 
-# %% Importing the recharge data
+from src.NL_soils import Soil # noqa
+from src.rootz_rch_model import get_deBilt_recharge # noqa
 
-# Get the meteodata in a pd.DataFrame
-meteo_csv = os.path.join(dirs.data, "DeBilt.csv")
-os.path.isfile(meteo_csv)
-deBilt = pd.read_csv(meteo_csv, header=0, parse_dates=True, index_col=0)
-meteo = deBilt
-meteo = deBilt.loc[deBilt.index >= np.datetime64("1985-01-01"), :]
 
-rchSim = RchLam(Smax_I=2.5, Smax_R=100, lam=0.25)
-rch = rchSim.simulate(meteo)
+# --- update figure settings
+plt.rcParams.update({
+    'font.size': 15,
+    'figure.figsize': (10, 6),
+    'axes.grid': True,
+    'grid.alpha': 0.5,
+    'lines.linewidth': 2,
+    'lines.markersize': 5
+})
 
-q_avg_cm = rch['RCH'].mean() / 10. # cm/d
+mmpcm = 10 # mm per cm
 
-tau = np.asarray(meteo.index - meteo.index[0]) / np.timedelta64(1, 'D')
-tau[0] = 1e-6
 
-# %%
-
-title=f"Block respsonse and Impulse reponse for soil={sand.code}, [{sand.props['Omschrijving']}]"
-ax = etc.newfig(title, "time [d]", "Block response of q [sm/d]")
-
-zs = [500., 1000., 2000.]
-BR, IR, SR, q = dict(), dict(), dict(), dict()
-
-title=f"Step respsonse for soil={sand.code}, [{sand.props['Omschrijving']}]"
-ax = etc.newfig(title, "time [d]", "Step response of (q = 1.0 [cm/d])")
-
-tau_i = dict()
-for i, z in enumerate(zs):    
-    SR[i] = sand.SR_erfc(z, tau, q_avg_cm)    
-    mask = SR[i] < 0.999
-    tau_i[i] = tau[mask]
-    SR[i] = SR[i][mask]
-
-    ax.plot(tau_i[i], SR[i], label=f"z={z} cm, soil={sand.code}")
-
-title=f"Impulse and block response for soil={sand.code}, [{sand.props['Omschrijving']}]"
-ax = etc.newfig(title, "time [d]", "Block response of (q = 1, dt = 1 D) [cm/d]")
-
-for i, z in enumerate(zs):
-    # 
-    BR[i] = sand.BR(sand.SR_erfc, z, tau_i[i], q_avg_cm)
-    IR[i] = sand.IR(z, tau_i[i], q_avg_cm)
-
-    ax.plot(tau_i[i], BR[i], '-',  label=f"Block response:   z={z} cm, soil={sand.code}")
-    ax.plot(tau_i[i], IR[i], '--', label=f"Impulse response: z={z} cm, soil={sand.code}")
+def simulate_munsflow(meteo, soil, z, q_avg_cm):
+    """Simulate Munsflow using 'RCH' column in meteo.
     
-ax.legend()
+    Parameters
+    ----------
+    meteo: pd.DataFrame with meteo data having column 'RCH'
+        Meteo data in mm/d.
+    z: float
+        depth of the water table.
+    q_avg: float
+        average long-term moisture content in profile
+    
+    Returns
+    -------
+    pd.Series
+        q values at water table, index is that of meteo
+    """
+    tau = (meteo.index - meteo.index[0]) / np.timedelta64(1, 'D')
+    BR = soil.BR(soil.SR_erfc, z, tau, q_avg_cm)
+    q_cmpd = lfilter(BR, 1., meteo['RCH'].values / mmpcm)
+    return pd.Series(q_cmpd, index=meteo.index)
+
+# %%
+if __name__ == '__main__':
+
+    # %% --- load the Soil properties ---
     
 
-ax.legend()
-# %%
-#  simulation of recharge
-title=f"q root_zone and recharge at depth z for [{sand.props['Omschrijving']}]"
-ax = etc.newfig(title, "time [d]", "recharge q [cm/d]")
+    
+    soil = Soil('O05')
 
-#ax.plot(meteo.index, rch['RCH'] / 10., label = "From root zone [cm/d]")
-for i, z in enumerate(zs):
-    if i < 2:
-        continue
-    q[i] = lfilter(BR[i], 1., rch['RCH'] / 10.)
-    ax.plot(meteo.index, q[i], label=f"z={z}")
+    #  --- Importing the recharge data
+    meteo = get_deBilt_recharge(Smax_I=0.5, Smax_R=100, lam=0.25,
+                                datespan=("2020-01-01", None))
 
-ax.set_xlim(np.datetime64("1990-01-01"), np.datetime64("1995-01-01"))
-ax.legend()
+    q_avg_cm = 2 * meteo['RCH'].mean() / 10. # cm/d
 
-plt.show()
+    tau = np.asarray(meteo.index - meteo.index[0]) / np.timedelta64(1, 'D')
+    tau[0] = 1e-6
 
-# Balance
 
-for i, z in enumerate(zs):    
-    print(f"z = {z} cm, q = {q[i].sum():.3g} cm, rch = {rch['RCH'].sum() / 10.: .3g} cm")
+    # %% === Compute and show the step, block and impulse responses ====
+
+    title=f"Block respsonse and Impulse reponse for soil={soil.code}, [{soil.props['Omschrijving']}]"
+    ax = etc.newfig(title, "time [d]", "Block response of q [sm/d]")
+
+    zs = [250, 500., 1000., 2000.]
+    BR, IR, SR, q = dict(), dict(), dict(), dict()
+
+    title=f"Step respsonse for soil={soil.code}, [{soil.props['Omschrijving']}]"
+    ax = etc.newfig(title, "time [d]", "Step response of (q = 1.0 [cm/d])")
+
+    tau_i = dict()
+    for i, z in enumerate(zs):    
+        SR[i] = soil.SR_erfc(z, tau, q_avg_cm)    
+        mask = SR[i] < 0.999
+        tau_i[i] = tau[mask]
+        SR[i] = SR[i][mask]
+
+        ax.plot(tau_i[i], SR[i], label=f"z={z} cm, soil={soil.code}")
+
+    title=f"Impulse and block response for soil={soil.code}, [{soil.props['Omschrijving']}]"
+    ax = etc.newfig(title, "time [d]", "Block response of (q = 1, dt = 1 D) [cm/d]")
+
+    for i, z in enumerate(zs):
+        # 
+        BR[i] = soil.BR(soil.SR_erfc, z, tau_i[i], q_avg_cm)
+        IR[i] = soil.IR(z, tau_i[i], q_avg_cm)
+
+        ax.plot(tau_i[i], BR[i], '-',  label=f"Block response:   z={z} cm, soil={soil.code}")
+        ax.plot(tau_i[i], IR[i], '--', label=f"Impulse response: z={z} cm, soil={soil.code}")
+        
+    ax.legend()
+
+    # %% === Simulation of recharge ===
+    title=fr"$q$ from root_zone and recharge at depth z for [{soil.props['Omschrijving'].capitalize()}]"
+
+    ax = etc.newfig(title, "time [d]", r"recharge $q$ [cm/d]")
+
+    #ax.plot(meteo.index, meteo['RCH'] / 10., label = "From root zone [cm/d]")
+    q = dict()
+
+    for i, z in enumerate(zs):
+        print(f"Running for i={i} ...")
+        q[i] = lfilter(BR[i], 1., meteo['RCH'].values / mmpcm)
+        ax.plot(meteo.index, q[i], label=f"z={z:.0f} cm")
+        print(f"z = {z} cm, q = {q[i].sum():.3g} cm, rch = {meteo['RCH'].sum() / 10.: .3g} cm")
+    print("... done.")
+
+    # ax.set_xlim(np.datetime64("1990-01-01"), np.datetime64("1995-01-01"))
+    ax.legend(loc='best')
+    ax.grid(True)
+    plt.show()
+
+    # --- Balance
+
+    for i, z in enumerate(zs):    
+        print(f"z = {z} cm, q = {q[i].sum():.3g} cm, rch = {meteo['RCH'].sum() / 10.: .3g} cm")
+        
+        
+
+    # %%
+
+    qSeries = simulate_munsflow(meteo=meteo, soil=soil, z=2000, q_avg_cm=0.1)
+
+    title = (f"Simulated recharge. Soil = {soil.code}, {soil.props['Omschrijving'].capitalize()}, z={z:.0f} cm, q_avg={q_avg_cm} cm/d")
+
+    ax = etc.newfig(title, "time [d]", "q at water table [cm/d]")
+    ax.plot(qSeries.index, qSeries.values, label=f"recharge at z={z:.0f} cm")
 
 # %%

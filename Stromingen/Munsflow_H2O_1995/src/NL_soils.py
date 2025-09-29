@@ -214,6 +214,10 @@ class Soil(SoilBase):
         return f
 
 
+# %% --- load the Soil properties ---
+wbook = os.path.join(dirs.data, 'NL_VG_soilprops.xlsx')
+Soil.load_soils(wbook)
+
 
 # -------------------------------------------
 # Minimal tests — only run if you call python soil.py

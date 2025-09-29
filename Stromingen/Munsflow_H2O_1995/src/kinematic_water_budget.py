@@ -265,3 +265,11 @@ print(f"Vol_lost = {Vol_lost:.2f} cm, Vol_front = {Vol_prog:.2f} cm, Vol_sum={Vo
 
 # %%
 plt.show()
+
+# --- Decending of the front in d/m at different q [cm/d]
+for q in [0.05, 0.1, 0.2, 0.4]:
+    theta = soil.theta_fr_K(q)
+    V = soil.dK_dtheta(theta)
+    print(f"q={q:.2f} cm/d, V={V:.3f} cm/d, days/m={100/V:.1f}")
+
+# %%

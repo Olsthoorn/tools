@@ -421,7 +421,7 @@ class RchLam(RechargeBase):
                 
     @staticmethod
     def rhs(t, x, p, r, lam):
-        return p - r * (x ** lam)
+        return p - r * (np.clip(x, 0, None) ** lam)
 
     eps = 1e-6
 
@@ -463,7 +463,7 @@ class RchLam(RechargeBase):
                 events=self.events, dense_output=True)
         
         if sol.success:
-            if sol.t_events[0]:                
+            if len(sol.t_events[0]) > 0:                
                 x1 = sol.y_events[0].ravel()[-1]
                 dt = sol.t_events[0].ravel()[-1]
             else:
@@ -567,7 +567,44 @@ def change_meteo(meteo: pd.DataFrame)-> pd.DataFrame:
         i1 = i2
     return meteo
 
-    return meteo
+# %%
+# --- Get weather data for De Bilt
+def get_deBilt_recharge(Smax_I=0.5, Smax_R=100, lam=0.25, datespan=("2020-01-01", None)):
+    """Return leak from rootzone for de Bilt within datespan.
+    
+    Parameters
+    ----------
+    Smax_I: float
+        Capacity of interception reservoir [mm].
+    Smax_R: float
+        Capacity of root zone reservoir [mm].
+    datespan: 2-tuple of datetime strings
+        start and end date for simulation.
+    lam: float  0.1 < lam <= 1
+        Power in reduction of evaporation from root zone
+        Ea = E (S/Smax)^lam
+        
+    Returns
+    -------
+    pd.DataFrame with fields in deBilt with field 'RCH' added.
+    """
+    meteo_csv = os.path.join(dirs.data, "DeBilt.csv")
+    os.path.isfile(meteo_csv)
+    deBilt = pd.read_csv(meteo_csv, header=0, parse_dates=True, index_col=0)
+
+    # --- Shorten the series for convenience
+    if datespan[0]:
+        deBilt = deBilt.loc[deBilt.index >= np.datetime64(datespan[0])]
+    if datespan[1]:
+        deBilt = deBilt.loc[deBilt.index <= np.datetime64(datespan[1])]
+
+    # --- Get the recharge simulator
+    # rch_simulator = RchEarth(Smax_I=Smax_I, Smax_R=Smax_R, lam=None)
+    rch_simulator = RchLam(Smax_I=Smax_I, Smax_R=Smax_R, lam=lam)
+
+    # --- Compute the recharge, see field 'RCH'
+    return rch_simulator.simulate(deBilt)
+
 # %% Recharge over a period in the year
 def rch_yr_period(PE: pd.DataFrame, period: tuple=(10, 7), verbose: bool =False)->pd.DataFrame:
     """Return recharge during given period in year, for subsequent years in the database.
