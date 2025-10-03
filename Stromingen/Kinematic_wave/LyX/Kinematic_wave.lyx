@@ -134,7 +134,8 @@
 \begin_body
 
 \begin_layout Title
-Kinematic Waves
+Percolatie door dikke onverzadigde zones,
+ Munsflow versus Kinematic Waves
 \end_layout
 
 \begin_layout Author
@@ -147,7 +148,7 @@ Sep 12,
 \end_layout
 
 \begin_layout Section
-Bij dikke onverzadigde zones Neerslagoverschot 
+Inleiding
 \end_layout
 
 \begin_layout Standard
@@ -339,7 +340,7 @@ status open
 
 \begin_layout Plain Layout
 \begin_inset Graphics
-	filename q_fr_root_zone.png
+	filename ../images/q_fr_root_zone.png
 	width 80text%
 
 \end_inset
@@ -1389,7 +1390,7 @@ status open
 
 \begin_layout Plain Layout
 \begin_inset Graphics
-	filename SR_munsflow_1mmpd.png
+	filename ../images/SR_munsflow_1mmpd.png
 	width 80text%
 
 \end_inset
@@ -1399,7 +1400,7 @@ status open
 
 \begin_layout Plain Layout
 \begin_inset Graphics
-	filename BR_munsflow_1mmpd.png
+	filename ../images/BR_munsflow_1mmpd.png
 	width 80text%
 
 \end_inset
@@ -1501,7 +1502,7 @@ status open
 
 \begin_layout Plain Layout
 \begin_inset Graphics
-	filename SR_munsflow_afh_q.png
+	filename ../images/SR_munsflow_afh_q.png
 	width 80text%
 
 \end_inset
@@ -1761,7 +1762,7 @@ status open
 
 \begin_layout Plain Layout
 \begin_inset Graphics
-	filename tail_development.png
+	filename ../images/tail_development.png
 	width 70text%
 
 \end_inset
@@ -1942,7 +1943,7 @@ status open
 
 \begin_layout Plain Layout
 \begin_inset Graphics
-	filename infiltration_block.png
+	filename ../images/infiltration_block.png
 	width 70text%
 
 \end_inset
@@ -2011,7 +2012,7 @@ status open
 
 \begin_layout Plain Layout
 \begin_inset Graphics
-	filename vochtfront.png
+	filename ../images/vochtfront.png
 
 \end_inset
 
@@ -2299,7 +2300,7 @@ status open
 
 \begin_layout Plain Layout
 \begin_inset Graphics
-	filename V_v_ratio.png
+	filename ../images/V_v_ratio.png
 	width 80text%
 
 \end_inset
@@ -2952,7 +2953,7 @@ status open
 
 \begin_layout Plain Layout
 \begin_inset Graphics
-	filename frame1998-11-11.png
+	filename ../images/frame1998-11-11.png
 	lyxscale 35
 	width 80text%
 
@@ -2963,7 +2964,7 @@ status open
 
 \begin_layout Plain Layout
 \begin_inset Graphics
-	filename fream1999-30-01.png
+	filename ../images/fream1999-30-01.png
 	lyxscale 35
 	width 80text%
 
@@ -2974,7 +2975,7 @@ status open
 
 \begin_layout Plain Layout
 \begin_inset Graphics
-	filename frame1999-11-03.png
+	filename ../images/frame1999-11-03.png
 	lyxscale 35
 	width 80text%
 
@@ -3093,7 +3094,7 @@ status open
 
 \begin_layout Plain Layout
 \begin_inset Graphics
-	filename qwt_O05.png
+	filename ../images/qwt_O05.png
 	width 80text%
 
 \end_inset
@@ -3183,7 +3184,7 @@ status open
 
 \begin_layout Plain Layout
 \begin_inset Graphics
-	filename GehrelsFig720p166.png
+	filename ../images/GehrelsFig720p166.png
 	lyxscale 40
 	width 70text%
 
