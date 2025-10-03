@@ -600,7 +600,7 @@ class Kinematic_wave():
         
         # --- Simulate timestep by timestep, record by record
         # --- The very first record has z=self.z0, t=0, tstL=0, tstR=0, than theta_fc, theta_fc
-        for ip, (t, pe) in enumerate(zip(time, recharge)):
+        for ip, (t, pe) in zip(etc.show_progress(len(recharge)), zip(time, recharge)):
         
             if np.mod(ip, 74) == 0:
                 pass
@@ -840,7 +840,7 @@ if __name__ == "__main__":
     
     # %% --- Setup the example usage
     
-    meteo = get_deBilt_recharge(Smax_I=0.5, Smax_R=100, lam=0.25, datespan=("1985-01-01", None))
+    meteo = get_deBilt_recharge(Smax_I=0.5, Smax_R=100, lam=0.25, datespan=("1987-01-01", "2010-01-01"))
 
 
     # Simulate the flow through the unsaturated zone using the kinematic wave model.
@@ -896,7 +896,7 @@ if __name__ == "__main__":
 
             print("Done animation.")
 
-        tspan = (np.datetime64("1995-01-01"), np.datetime64("2015-01-01"))
+        tspan = (np.datetime64("1990-01-01"), np.datetime64("2005-01-01"))
         tspstr = str(tspan[0])[2:4] + '-' + str(tspan[1])[2:4]
 
         # --- plot RCH and qwt
@@ -940,6 +940,15 @@ if __name__ == "__main__":
 
     stats = pstats.Stats(pr)
     stats.sort_stats("cumtime").print_stats(20)
+    
+    # --- Gehrels (1999), Digitized
+    gswap = pd.read_csv(os.path.join(dirs.home, '../Kinematic_wave/data', 'GehrelsFig720_SWAP.csv'))
+    gearth = pd.read_csv(os.path.join(dirs.home, '../Kinematic_wave/data', 'GehrelsFig720_EARTH.csv'))
+    gobs = pd.read_csv(os.path.join(dirs.home, '../Kinematic_wave/data', 'GehrelsFig720_Obs.csv'))
+    
+    gswap.index  = etc.decimal_year_to_datetime64(gswap['x'].values)
+    gearth.index  = etc.decimal_year_to_datetime64(gearth['x'].values)
+    gobs.index  = etc.decimal_year_to_datetime64(gobs['x'].values)
     
     
     # %%

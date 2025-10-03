@@ -12,6 +12,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 from scipy.signal import lfilter
+from scipy.integrate import quad, simpson
 import etc
 
 dirs = etc.Dirs(os.getcwd())
@@ -30,8 +31,8 @@ from src.rootz_rch_model import get_deBilt_recharge # noqa
 # --- update figure settings
 plt.rcParams.update({
     'font.size': 15,
-    'figure.figsize': (10, 6),
-    'axes.grid': True,
+    'figure.figsize': (10, 6),    
+    'figure.titlesize': 15,
     'grid.alpha': 0.5,
     'lines.linewidth': 2,
     'lines.markersize': 5
@@ -66,31 +67,39 @@ def simulate_munsflow(meteo, soil, z, q_avg_cm):
 if __name__ == '__main__':
 
     # %% --- load the Soil properties ---
-    
-
-    
+        
     soil = Soil('O05')
 
     #  --- Importing the recharge data
     meteo = get_deBilt_recharge(Smax_I=0.5, Smax_R=100, lam=0.25,
-                                datespan=("2020-01-01", None))
+                                datespan=("1992-01-01", "2012-01-01"))
 
-    q_avg_cm = 2 * meteo['RCH'].mean() / 10. # cm/d
+    q_avg_cm = 1 * meteo['RCH'].mean() / 10. # cm/d
 
     tau = np.asarray(meteo.index - meteo.index[0]) / np.timedelta64(1, 'D')
     tau[0] = 1e-6
 
+    # %% --- show the recharge for De Bilt
+
+    ax = etc.newfig("De Bilt, outflow root zone, $S_I$=0.5 mm, $S_R$=100 mmm, $\lambda$=0.25", "time", "mm/d")
+    mask = np.logical_and(meteo.index >= np.datetime64("1990-01-01"), meteo.index <= np.datetime64("2005-01-01"))
+    ax.plot(meteo.index[mask], meteo.loc[mask, 'RCH'], label=r'$q$ from root zone')
+    ax.grid(True)
+    ax.legend()
+    
+    ax.figure.savefig(os.path.join(dirs.home, '../Kinematic_wave/LyX', "q_fr_root_zone.png"))
+
 
     # %% === Compute and show the step, block and impulse responses ====
 
-    title=f"Block respsonse and Impulse reponse for soil={soil.code}, [{soil.props['Omschrijving']}]"
-    ax = etc.newfig(title, "time [d]", "Block response of q [sm/d]")
-
+    # --- specify the cases
     zs = [250, 500., 1000., 2000.]
     BR, IR, SR, q = dict(), dict(), dict(), dict()
 
-    title=f"Step respsonse for soil={soil.code}, [{soil.props['Omschrijving']}]"
-    ax = etc.newfig(title, "time [d]", "Step response of (q = 1.0 [cm/d])")
+    q_avg_cm = 0.1
+
+    title=f"Step respsonse for soil={soil.code}, [{soil.props['Omschrijving']}], q_avg={q_avg_cm} cm/d"
+    ax = etc.newfig(title, "time [d]", "SR", figsize=(10, 5), fontsize=15)
 
     tau_i = dict()
     for i, z in enumerate(zs):    
@@ -99,20 +108,59 @@ if __name__ == '__main__':
         tau_i[i] = tau[mask]
         SR[i] = SR[i][mask]
 
-        ax.plot(tau_i[i], SR[i], label=f"z={z} cm, soil={soil.code}")
+        ax.plot(tau_i[i], SR[i], label=f"z={z:.0f} cm")
+    ax.grid(True)
+    ax.legend()
+    
+    ax.figure.savefig(os.path.join(dirs.home, '../Kinematic_wave/LyX', f'SR_munsflow_{q_avg_cm * 10:.0f}mmpd'))
 
-    title=f"Impulse and block response for soil={soil.code}, [{soil.props['Omschrijving']}]"
-    ax = etc.newfig(title, "time [d]", "Block response of (q = 1, dt = 1 D) [cm/d]")
+    title=f"Impulse and block response for soil={soil.code}, [{soil.props['Omschrijving']}, q_avg = {q_avg_cm} cm/d]"
+    ax = etc.newfig(title, "time [d]", "IR and BR for (dt=1 d)", figsize=(10, 5), fontsize=15)
 
     for i, z in enumerate(zs):
         # 
         BR[i] = soil.BR(soil.SR_erfc, z, tau_i[i], q_avg_cm)
         IR[i] = soil.IR(z, tau_i[i], q_avg_cm)
-
-        ax.plot(tau_i[i], BR[i], '-',  label=f"Block response:   z={z} cm, soil={soil.code}")
-        ax.plot(tau_i[i], IR[i], '--', label=f"Impulse response: z={z} cm, soil={soil.code}")
         
+        # Check volume below IR
+        yBr = BR[i]
+        volBr = simpson(BR[i], x=tau_i[i])
+        yIr = IR[i]
+        volIr = simpson(IR[i], x=tau_i[i])
+        print(f"{i}, volIr={volIr:.5f}, volBr={volBr:.5f}")
+        
+
+        ax.plot(tau_i[i], BR[i], '-',  label=f"BR:   z={z:.0f} cm")
+        ax.plot(tau_i[i], IR[i], '--', label=f"IR: z={z:.0f} cm")
+        
+    ax.grid(True)
+    ax.legend(fontsize=12)
+    
+    ax.figure.savefig(os.path.join(dirs.home, '../Kinematic_wave/LyX', f'BR_munsflow_{q_avg_cm * 10:.0f}mmpd'))
+    
+    
+    # %% --- Voor verchillende q_avg
+    zs = [1000., 1000., 1000., 1000.]
+    BR, IR, SR, q = dict(), dict(), dict(), dict()
+
+    q_avg_cms = [0.1, 0.2, 0.3, 0.5]
+
+    title=f"Step respsonse for soil={soil.code}, [{soil.props['Omschrijving']}], afh van q_avg"
+    ax = etc.newfig(title, "time [d]", "SR", figsize=(10, 5), fontsize=15)
+
+    tau_i = dict()
+    for i, (z, qavg) in enumerate(zip(zs, q_avg_cms)):    
+        SR[i] = soil.SR_erfc(z, tau, qavg)    
+        mask = SR[i] < 0.999
+        tau_i[i] = tau[mask]
+        SR[i] = SR[i][mask]
+
+        ax.plot(tau_i[i], SR[i], label=f"z={z:.0f} cm, q_avg={qavg:.1f} cm/d")
+    ax.grid(True)
     ax.legend()
+    
+    ax.figure.savefig(os.path.join(dirs.home, '../Kinematic_wave/LyX', 'SR_munsflow_afh_q'))
+
 
     # %% === Simulation of recharge ===
     title=fr"$q$ from root_zone and recharge at depth z for [{soil.props['Omschrijving'].capitalize()}]"

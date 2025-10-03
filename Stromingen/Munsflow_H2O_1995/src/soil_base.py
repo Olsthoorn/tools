@@ -535,7 +535,7 @@ class SoilBase(ABC):
         q_avg: average recharge (passage through the percolation zone) [L/T]
         """
         v, D = self.get_vD(q_avg)  
-        arg = np.clip((z -  v * tau) ** 2 / (2 * D * tau), -50, 50)
+        arg = np.clip((z -  v * tau) ** 2 / (4 * D * tau), -50, 50)
         return z / np.sqrt(4 * np.pi * D * tau ** 3) * np.exp(-arg)
 
 

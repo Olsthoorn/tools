@@ -86,11 +86,10 @@
 \use_package stackrel 1
 \use_package stmaryrd 1
 \use_package undertilde 1
-\cite_engine biblatex
-\cite_engine_type authoryear
+\cite_engine basic
+\cite_engine_type default
+\biblio_style plain
 \biblio_options hyperref=true, backref=true, backrefstyle=three,backreffloats=true,indexing=bib,date=year
-\biblatex_bibstyle authoryear
-\biblatex_citestyle authoryear
 \use_bibtopic false
 \use_indices false
 \paperorientation portrait
@@ -153,39 +152,88 @@ Bij dikke onverzadigde zones Neerslagoverschot
 
 \begin_layout Standard
 Neerslagoverschot heeft behoorlijk wat tijd nodig om een dikke onverzadigde zone te passeren.
- Een meter per maand wordt wel als vuistregel aangehouden,
- wat bij een percolatiezone van 20 m dikte neerkomt op bijna twee jaar,
+ Een meter per maand wordt wel als vuistregel aangehouden.
+ Dit komt bij een percolatiezone van 20 m dikte neer op bijna twee jaar,
  waardoor het grondwater in zulke gevallen zeer vertraagd reageert op natte en droge perioden.
- Bovendien verandert het signaal,
- de vorm van het vochtfront dat de onderzijde van de wortelzone verlaat aanzienlijk voordat het bij het verzadigde grondwater aankomt en daar als neerslagoverschot telt.
- Hier geen rekening mee houden kan voor behoorlijke afwijkingen leiden tussen het berekende en gemeten grondwaterverloop.
- Voor een ruimtelijk model zoals dat van De Veluwe (Gehrels,1999) waarin de afstand tussen maaiveld en grondwaterniveau ruimtelijk uiteenloopt van praktisch nul aan de randen tot ruim 20 m in het centrum ontstaat zo een ruimtelijke vertekening van het gedrag van het grondwater ten opzichte van de tijdsvariatie van het neerslagoverschot dat de wortelzone verlaat en het neerslagoverschot dat bij het grondwatervlak arriveert,
- waar zij het verzadigde grondwater voedt en het niveau daarvan beïnvloedt.
- Het is daarom vaak zinvol en zelfs noodzakelijk om met de percolatiezone rekening te houden in een model.
- Ook bij tijdreeksanalyse.
+ Bovendien verandert de vorm van het vochtfront aanzienlijk tussen wortelzone en het freatisch vlak,
+ waar het pas als neerslagoverschot telt.
+ Wanneer met zulke vertraging en vervorming geen rekening wordt gehouden,
+ kunnen alleen al hierdoor behoorlijke afwijkingen optreden tussen het berekende en gemeten verloop van de grondwaterstand.
+ Voor een ruimtelijk model als dat van De Veluwe 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "Gehrels99"
+literal "false"
+
+\end_inset
+
+,
+ verloopt de dikte van de percolatiezone ruimtelijk van praktisch nul aan de randen tot ruim 20 m in het centrum.
+ Hierdoor ontstaat een ruimtelijke vertekening van het gedrag van het grondwater ten opzichte van de tijdsvariatie van enerzijds het neerslagdeel dat de wortelzone verlaat en anderzijds het neerslagoverschot dat bij het grondwatervlak arriveert,
+ en pas dan het niveau daarvan beïnvloedt.
+ Het is daarom soms noodzakelijk om in een ruimtelijk grondwatermodel,
+ maar evenzeer bij tijdreeksanalyse,
+ rekening te houden met de dikte van de percolatiezone.
+ We zullen hierna twee met elkaar methoden vergelijken,
+ waarmee de vervorming en vertraging van de percolatie in diepe onverzadigde zones wordt berekend.
+ Het gaat hier om Munsflow 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "Zwamb95,Zwamb95a"
+literal "false"
+
+\end_inset
+
+ en de kinematische golf (
+\begin_inset Quotes pld
+\end_inset
+
+kinematic wave
+\begin_inset Quotes prd
+\end_inset
+
+,
+ verder afgekort tot KW,
+ 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "Charb00,NIsw06"
+literal "false"
+
+\end_inset
+
+).
+ Beide methoden baseren zich op een vereenvoudiging van de onderliggende Richards-vergelijking (zie vgl.
+ 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "eq:Rechargds-verg"
+plural "false"
+caps "false"
+noprefix "false"
+nolink "false"
+
+\end_inset
+
+),
+ maar geven door de gemaakte aannames een totaal verschillend beeld,
+ dat we in dit artikel willen onderzoeken.
+\end_layout
+
+\begin_layout Section
+Lek uit de wortelzone
 \end_layout
 
 \begin_layout Standard
-Vegetatie in een gebied met diepe grondwaterstand kunnen geen grondwater capillair aanzuigen,
- zodat in zulke situaties neerslagoverschot modelleren als neerslag minus Makkink verdamping niet opgaat.
- Het berekenen van de flux die vanuit de wortelzone de percolatiezone binnendringt zal apart moeten worden gemodelleerd.
- Dit kan met een geavanceerd model zoals SWAP,,
- maar kan ook met een eenvoudiger aanpak met een model voor interceptie gevolgd door een model voor de wortelzone.
- De laatste twee doorgaans als bakjes met een bepaalde capaciteit,
- waarvan alleen sprake is van lek als de bakjes hun bergend volume hebben bereikt.
- Verdamping uit de wortelzone vindt plaats voor zolang er na verdamping van het water uit het interceptie-reservoir nog potentiële verdamping over is.
- Bovendien wordt de verdamping geremd naarmate de wortelzone leger raakt.
- Dit knijpen van de verdamping simuleert de moeite die planten moeten doen naarmate de zuigspanning in de wortelzone door uitdroging toeneemt.
- Dit knijpen is een functie die men normaliter laat afhangen van de verhouding tussen de werkelijke vulling van de wortel 
-\begin_inset Formula $S$
-\end_inset
-
- zone en de maximale vulling 
-\begin_inset Formula $S_{max}$
-\end_inset
-
-.
- De 
+De vegetatie in een gebied met diepe grondwaterstand kan geen grondwater capillair aanzuigen.
+ In zulke situaties gaat het modelleren van het neerslagoverschot als neerslag minus Makkink-verdamping niet op.
+ De neerwaartse flux vanuit de wortelzone zal apart moeten worden gemodelleerd.
+ Dit kan met een geavanceerd model zoals SWAP of ONZAT,
+ maar kan evenzeer met een eenvoudiger bakjesmodel voor interceptie en wortelzone.
+ De wortelzone lekt dan alleen wanneer zijn bergend volume (veldkcapaciteit) is bereikt.
+ Verdamping uit de wortelzone vindt plaats voor zover er na verdamping uit het interceptie-reservoir nog potentiële verdamping over is.
+ Omdat transpiratie moeilijker wordt naarmate de wortelzone meer uitdroogt wordt de verdamping geknepen naar rato van de de verhouding tussen de actuele vulling en de maximale vulling van de wortelzone,
+ 
 \begin_inset Formula $E_{a}=\left(\frac{S}{S_{max}}\right)^{\lambda}E$
 \end_inset
 
@@ -212,29 +260,118 @@ Vegetatie in een gebied met diepe grondwaterstand kunnen geen grondwater capilla
 \end_inset
 
  geschiedt het afknijpen lineair.
- Omdat het afknijpen van de verdamping aanvankelijk langzaam toeneemt en later bij verder leegraken van de wortelzone sneller,
- kan een waarde van 
-\begin_inset Formula $\lambda$
+ Omdat het afknijpen bij een hogere vulling van de wortelzone relatief gering is,
+ heb ik in de berekeningen 
+\begin_inset Formula $\lambda=0.25$
 \end_inset
 
- van 0.5 of 0.25 zinvol zijn.
+ genomen.
 \end_layout
 
 \begin_layout Standard
-Het behoeft eigenlijk geen betoog dat een leeg reservoir van de wortelzone overeenkomt met het verwelkingspunt (pf=4.2) en het volle reservoir met de veldcapaciteit (pF=2.5) van de bodem in kwestie.
- Alleen als het vochtgehalte boven de veldcapaciteit uitkomt sijpelt water door naar beneden.
+Het behoeft eigenlijk geen betoog dat een leeg reservoir van de wortelzone overeenkomt met het verwelkingspunt (pF=4.2) en het volle reservoir met de veldcapaciteit (pF=2.5) van de bodem in kwestie.
+ Alleen wanneer het vochtgehalte boven de veldcapaciteit uitkomt,
+ sijpelt water door naar beneden.
  Deze aanpak is natuurlijk niet exact,
  een model als SWAP zal dat preciezer doen,
  maar als we naar de doorlatendheid van zand kijken bij veldcapaciteit,
  dan blijkt die zodanig laag te zijn,
  dat die in de praktijk zonder meer gelijk aan nul kan worden genomen.
  Er zal ook altijd wel wat variatie in het vochtgehalte over de hoogte van de wortelzone bestaan,
- maar een goed doorwortelde zone stelt de vegetatie zonder meer in staat deze over de gehele hoogte goed droog te trekken bij gebrek aan verse neerslag.
- In de praktijk kan daarom prima met een uniforme wortelzone als reservoir worden gerekend.
+ maar een goed doorwortelde zone stelt de vegetatie in staat deze over de gehele hoogte ervan goed droog te trekken.
+ Hierdoor kunnen we in de praktijk prima met een uniforme wortelzone als reservoir rekenen.
 \end_layout
 
 \begin_layout Standard
-In elk geval levert een model voor de wortelzone een lek naar beneden op die sterk afwijkt van neerslag minus Makkink verdamping en tegelijk veel beter past bij het grondwaterverloop in zandgebieden waar de grondwaterstand niet zo diep staat en de capillaire aanzuiging beperkt is en van vertraging in de percolatiezone nauwelijks iets te merken is.
+In elk geval levert een model voor de wortelzone een lek naar beneden op die sterk afwijkt van neerslag minus Makkink-verdamping,
+ een lek die veel beter past bij het grondwaterverloop in zandgebieden met een niet al te diepe grondwaterstand,
+ waarin de percolatie snel het grondwater bereikt,
+ maar de capillaire aanzuiging desondanks verwaarloosbaar is.
+ Fig.
+ 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Berekende-lek-uit-wortelzone"
+plural "false"
+caps "false"
+noprefix "false"
+nolink "false"
+
+\end_inset
+
+ geeft de berekende lek uit de wortelzone op basis van de meteo-gegevens van De Bilt.
+ De periode is gekozen van 1990-2005 om overlap te hebben met 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "Gehrels99"
+literal "false"
+
+\end_inset
+
+ die de periode 1990-1995 beschouwde.
+ Verder is de periode voldoende lang om een aantal wat extremere jaren daarin mee te nemen,
+ en kort genoeg om het verloop van jaar tot jaar goed te kunnen onderscheiden.
+ Het berekende neerslagoverschot dat aankomt bij het freatisch vlak (zie verderop) varieert veel minder;
+ namelijk rond het gemiddelde van ca.
+ 1 mm/d,
+ waardoor de weergave daarvan een andere verticale schaal vergt (zie verderop).
+ Kenmerkend voor het zo berekende lek vanuit de wortelzone is de concentratie in de winter,
+ wanneer de wortelzone 
+\begin_inset Quotes pld
+\end_inset
+
+vol
+\begin_inset Quotes prd
+\end_inset
+
+ is.
+ In de zomer is er vaak lange tijd geen lek.
+ Neerslag minus Makkink verdamping geeft een heel ander patroon.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+placement document
+alignment document
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\begin_inset Graphics
+	filename q_fr_root_zone.png
+	width 80text%
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:Berekende-lek-uit-wortelzone"
+
+\end_inset
+
+Berekende lek uit de wortelzone voor de meteogegevens van De Bilt.
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+
+
 \end_layout
 
 \begin_layout Section
@@ -243,17 +380,78 @@ De percolatiezone
 
 \begin_layout Standard
 Stroming door de onverzadigde zone beneden de wortelzone,
- de percolatie zone genaamd,
- voldoet aan de Richards-vergelijking en kan prima worden gemodelleerd met een model als SWAP of ONZAT.
- Het probleem is alleen dat voor een nauwkeurige simulatie de lange percolatiezone moet worden verdeeld in kleine plakjes met een dikte in de orde van 1 cm en dat tegelijkertijd de tijdstap in het rekenproces klein moet zijn,
- in de orde van seconden.
+ de percolatie,
+ voldoet aan de Richards-vergelijking (vgl.
+ 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "eq:Rechargds-verg"
+plural "false"
+caps "false"
+noprefix "false"
+nolink "false"
+
+\end_inset
+
+,
+ 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "Charb00"
+literal "false"
+
+\end_inset
+
+,
+ zie verderop).
+ Deze differentiaalvergelijking is volstrekt niet-lineair door het niet-lineaire verband tussen vooral het vochtgehalte,
+ vochtspanning en de doorlatendheid van de onverzadigde zone.
+ Deze onverzadigde zone kan desondanks prima worden gemodelleerd met een model als SWAP of ONZAT.
+ Echter,
+ voor een nauwkeurige simulatie moet de dikke percolatiezone worden verdeeld in plakjes van hoogstens enkele cm dikte en moet tegelijkertijd de tijdstap in het rekenproces in de orde van van seconden worden gekozen 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "Gehrels99"
+literal "false"
+
+\end_inset
+
+.
  Dit gaat dus heel veel rekentijd kosten en is niet doenlijk voor een regionaal model.
- Kees Maas heeft in 1995 voorgesteld om zeer niet-lineaire Richards vergelijking te lineariseren.
+\end_layout
+
+\begin_layout Standard
+Kees Maas heeft in 1995 voorgesteld de zeer niet-lineaire Richards-vergelijking te lineariseren (
+\begin_inset CommandInset citation
+LatexCommand cite
+key "Zwamb95,Zwamb95a"
+literal "false"
+
+\end_inset
+
+).
  De gelineariseerde vergelijking geldt dan rond een bepaald gekozen gemiddeld vochtgehalte.
- En omdat de in de praktijk gemeten vochtgehaltes in percolatiezones nauwelijks blijken te variëren zou dat een werkbare aanpak zijn voor de praktijk.
- Het werd een afstudeerwerk van Marette Zwamborn dat in 1995 als onderzoeksrapport van het Kiwa is uitgekomen (Zwamborn e.a.,1995a).
- Er is ook een artikel over verschenen in H2O (Zwamborn e.a.
- 1995b).
+ En omdat de in de praktijk gemeten vochtgehaltes in percolatiezones nauwelijks blijken te variëren,
+ zou dat een werkbare aanpak zijn voor de praktijk.
+ Dit leverde een stevig afstudeerwerk op van Marette Zwamborn,
+ dat in 1995 als onderzoeksrapport van het Kiwa is uitgekomen 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "Zwamb95a"
+literal "false"
+
+\end_inset
+
+.
+ Er is ook een artikel over verschenen in H2O 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "Zwamb95"
+literal "false"
+
+\end_inset
+
+.
  De aanpak kreeg de naam 
 \begin_inset Quotes pld
 \end_inset
@@ -262,21 +460,42 @@ Munsflow
 \begin_inset Quotes prd
 \end_inset
 
-.
- Het rekenkundige voordeel van Munflow is dat de percolatie ter plaatse van het grondwatervlak,
+ en is in verschillende projecten van het Kiwa en in het proefschrift van 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "Gehrels99"
+literal "false"
+
+\end_inset
+
+ toegepast.
+\end_layout
+
+\begin_layout Standard
+Het rekenkundige voordeel van Munflow is dat de percolatie ter plaatse van het grondwatervlak,
  op bijv.
  20 m diepte,
- hiermee in een impuls respons kan worden omgezet en daarmee met standaard convolutie in een stap kan worden berekend en dus direct past in de aanpak van de bekende tijdreeksanalyse in Menyanthes of Pastas.
- Dat kost nauwelijks extra rekentijd.
- Nadeel is dat de niet-lineariteit niet wordt meegenomen,
- waardoor de passage van de percolatiezone altijd even lang is en de vervorming van het percolatiefront altijd hetzelfde,
+ als een standaard convolutie (dus met impuls-respons) in een enkele rekenstap kan worden becijferd en dus direct past in de aanpak van de bekende tijdreeksanalyse in Menyanthes of Pastas.
+ Musnflow kost nauwelijks extra rekentijd.
+ Nadeel is dat de niet-lineariteit van de onverzadide zone niet wordt meegenomen,
+ waardoor de passage van de percolatiezone altijd even lang duurt,
+ en de vervorming van het percolatiefront altijd hetzelfde is,
  wat in de praktijk duidelijk niet het geval is.
 \end_layout
 
 \begin_layout Standard
 Er bestaan diverse andere manieren om de onverzadigde stroming door de percolatiezone te simuleren.
- Zwamborn (1995) beschrijft een aantal daarvan in haar afstudeerwerk.
- De methode die daar echter ontbreekt is die van de zogenoemde 
+ 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "Zwamb95a"
+literal "false"
+
+\end_inset
+
+ beschrijft een aantal daarvan in haar afstudeerwerk.
+ De methode die daarin echter ontbreekt,
+ is die van de zogenoemde 
 \begin_inset Quotes pld
 \end_inset
 
@@ -285,41 +504,155 @@ Kinematic Wave
 \end_inset
 
 .
- De aanpak van de Kinematic Wave is een methode van karakteristieken,
- we bewegen daarin met dalende vochtfront mee.
- Maar dat vochtfront heeft bepaalde unieke karakteristieken.
- Zo is de snelheid daarvan direct afhankelijk van het lokale vochtgehalte.
- Dat betekent dat een achteropkomend vochtfront met hoger vochtgehalte vooroplopend vochtfront inhaalt en opslokt.
- Bij een dagelijks variërende lek uit de wortelzone met grote dagelijks vochtvariaties als gevolg zien we de vochtfronten boven in de percolatiezones over elkaar heen buitelen,
- terwijl onderaan de percolatie zone er nog maar een over is dat met eigen snelheid uiteindelijk het grondwatervlak bereikt.
- Zo krijg je ook dat dat het water dat de wortelzone verlaat in een nat jaar ruim eerder onderaan arriveert dan in een droog jaar.
+ De aanpak van de kinematische golf is een methode van karakteristieken;
+ dat wil zeggen dat we daarin met het dalende vochtprofiel meebewegen.
+ Maar dat vochtprofiel heeft bepaalde unieke karakteristieken.
+ Zo is de snelheid van punten in het vochtprofiel direct afhankelijk van het lokale vochtgehalte.
+ Dat betekent dat een achteropkomende punten van het vochtprofiel,
+ met hoger vochtgehalte,
+ vooroplopende punten inhaalt en daarbij dan vochtfronten vormt.
+ Bij grote dagelijks variaties van de lek uit de wortelzone in een winterperiode,
+ buitelen de vochtfronten bovenin de percolatiezone als het ware over elkaar heen,
+ slokken elkaar op,
+ waarna,
+ meer onderin de wortelzone,
+ een veel rustiger beeld ontstaat met nog hoogstens enkele vochtfronten.
+ Doordat de snelheid van punten van het vochtprofiel direct van het lokale vochtgehalte afhangt,
+ arriveert water dat in een nat jaar vanuit de wortelzone de percolatiezone instroomt eerder bij het grondwatervlak,
+ dan dat dit in een droog jaar het geval is.
  De verblijftijd in de percolatiezone is daarom niet constant.
- Deze aspecten neemt de Kinematic Wave mee,
+ Deze niet-lineaire aspecten neemt de kinematische golf mee,
  maar laat Munsflow links liggen.
 \end_layout
 
 \begin_layout Standard
-De Kinematic Wave in de onverzadigde zone is onder andere beschrijven door Charbeneau (2000).
- Hij is ook beschreven door Niswonger et al,
+De Kinematic Wave (verder KW) in de onverzadigde zone is onder andere beschreven door 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "Charb00"
+literal "false"
+
+\end_inset
+
+.
+ De KW is ook beschreven door 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "NIsw06"
+literal "false"
+
+\end_inset
+
+,
  die de methode hebben geïmplementeerd in het pakket 
 \begin_inset Quotes pld
 \end_inset
 
-UNSAT
+UZF1
 \begin_inset Quotes prd
 \end_inset
 
  voor Modflow 5.
- De beschrijving in de handleiding van dit pakket is even uitvoerig als het artikel.
- Het is dus mogelijk om de methode toe te passen binnen een MODFLOW model.
 \end_layout
 
 \begin_layout Standard
-Ik wil in dit artikel op beide methoden,
- Munsflow en Kinematic Wave ingaan.
- Munsflow omdat de afleiding in Zwamborn (1995a,
- 1995b) niet helemaal compleet zijn en ik er dus moeite mee had.
- En de Kinematic wave omdat een interessante methode is die juist andere aspecten van de percolatie benadrukt en omdat ik de methode aanvankelijk helemaal niet makkelijk vond maar nu wel begrijp en eigenlijk heel elegant vind.
+Ik wil in dit artikel beide methoden naast elkaar zetten en ook afleiden omdat de afleiding in 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "Zwamb95a,Zwamb95"
+literal "false"
+
+\end_inset
+
+ niet helemaal compleet is en ik er daardoor moeite mee had en omdat de aanpak met KW interessant is omdat die A) juist de niet-lineaire aspecten van de percolatie benadrukt zonder dat de percolatiezone in dunne plakjes te verdelen en B) omdat ik de methode aanvankelijk helemaal niet makkelijk vond maar na enige studie eigenlijk heel elegant vind en voor mij het inzicht in de stroming door de percolatiezone belangrijk heeft vergroot.
+\end_layout
+
+\begin_layout Section
+De Staringreeks
+\end_layout
+
+\begin_layout Standard
+Bij de feitelijke modellering maak ik gebruik van bodems uit de Staringreeks.
+ 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "Hei20"
+literal "false"
+
+\end_inset
+
+ hebben de parameters gepubliceerd waarmee voor alle 36 bodems van de Staringreeks de bodemeigenschappen via de Van Genughten-relaties voor elk vochtgehalte of vochspanning.
+ Mijn bodem-module 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "Olst25"
+literal "false"
+
+\end_inset
+
+ leest de eigenschappen van alle 36 bodems van de Staringreeks in,
+ waarna voor elk van de bodems kunnen alle eigenschappen direct kunnen worden berekend bij gegevens zuigspanning of vochtgehalte.
+ Ook kan het vochtgehalte worden opgevraagd bij gegeven doorlatendheid of snelheid van het vochtfront.
+ Bij de afleidingen die hieronder volgen is er hierdoor geen enkele noodzaak om de Van Genughten formules expliciet te tonen:
+ als ik 
+\begin_inset Formula $K\left(\theta\right)$
+\end_inset
+
+ of 
+\begin_inset Formula $dK\left(\theta\right)/d\theta$
+\end_inset
+
+ wil dan kan ik die altijd direct aan de de bodemodule vragen voor elke 
+\begin_inset Formula $\theta$
+\end_inset
+
+.
+ De afleidingen zonder expliciete mathematische bodemrelaties werkt een stuk inzichtelijker dan wat 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "Charb00"
+literal "false"
+
+\end_inset
+
+ en 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "NIsw06"
+literal "false"
+
+\end_inset
+
+ doen,
+ door de onderliggende wiskundige bodemrelaties expliciet in de door hen afgeleide formules te verwerken.
+ In mijn bodemodule kan ik even gemakkelijk Amerikaanse als Nederlandse bodems gebruiken;
+ de Amerikaanse gebruiken de Brooks en Corey relaties 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "Charb00,NIsw06"
+literal "false"
+
+\end_inset
+
+ en de Nederlands de Van Genughten relaties zoals gegeven door 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "Hei20"
+literal "false"
+
+\end_inset
+
+.
+ U zult deze bodemrelaties in dit artikel dan ook niet expliciet tegenkomen.
+ (De bodemodule is beschikbaar op 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "Olst25"
+literal "false"
+
+\end_inset
+
+)
 \end_layout
 
 \begin_layout Section
@@ -327,7 +660,16 @@ Munsflow
 \end_layout
 
 \begin_layout Standard
-De Richards-vergelijking voor onverzadigde volgt uit een combinatie van continuïteit en de wet van Darcy:
+Voor toekomstige referentie zal ik Munsflow hier afleiden op een wat algemenere manier dan in 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "Zwamb95a"
+literal "false"
+
+\end_inset
+
+.
+ De Richards-vergelijking voor onverzadigde stroming volgt uit een combinatie van continuïteit en de wet van Darcy:
 \end_layout
 
 \begin_layout Standard
@@ -361,7 +703,7 @@ q=-K\frac{\partial\phi}{\partial z}
 \end_layout
 
 \begin_layout Standard
-waarin 
+Hierin is 
 \family roman
 \series medium
 \shape up
@@ -416,7 +758,7 @@ q & =-K\frac{\partial}{\partial z}\left(\zeta_{0}-z+h\right)\\
 \end_layout
 
 \begin_layout Standard
-en met 
+Met 
 \begin_inset Formula $h=-\psi$
 \end_inset
 
@@ -428,7 +770,7 @@ en met
 \begin_inset Formula $h$
 \end_inset
 
-
+ krijgen we
 \end_layout
 
 \begin_layout Standard
@@ -443,19 +785,38 @@ q=K\left(\frac{\partial\psi}{\partial z}+1\right)
 \end_layout
 
 \begin_layout Standard
-De differentiaalvergelijking combineert de continuïteit met de flux tot
-\begin_inset Newline newline
-\end_inset
+Ik vind het werken met zuigspanning in de onverzadigde zone een stuk intuïtiever dan met drukhoogte;
+ de zuigspanning is altijd positief in de onverzadigde zone.
+\end_layout
 
-
+\begin_layout Standard
+De differentiaalvergelijking combineert de continuïteit met de flux tot de Richards-vergelijking:
 \begin_inset Formula 
-\[
-\frac{\partial\theta}{\partial t}=-\frac{\partial}{\partial z}\left[K\left(\frac{\partial\psi}{\partial z}+1\right)\right]
-\]
+\begin{equation}
+\frac{\partial\theta}{\partial t}=-\frac{\partial}{\partial z}\left[K\left(\frac{\partial\psi}{\partial z}+1\right)\right]\label{eq:Rechargds-verg}
+\end{equation}
 
 \end_inset
 
 
+\end_layout
+
+\begin_layout Standard
+De Richards-vergelijking en is volstrekt niet-lineair door de niet-lineariteit van de onverzadigde doorlatendheid 
+\begin_inset Formula $K$
+\end_inset
+
+,
+ die zowel als 
+\begin_inset Formula $K\left(\psi\right)$
+\end_inset
+
+ als als 
+\begin_inset Formula $K\left(\theta\right)$
+\end_inset
+
+ kan worden genoteerd.
+ 
 \end_layout
 
 \begin_layout Standard
@@ -470,10 +831,15 @@ We zoeken naar een vergelijking in
 
 .
  De rechte d's in 
-\begin_inset Formula $d\phi/d\theta$
+\begin_inset Formula $d\psi/d\theta$
 \end_inset
 
- drukken uit dat differentie niet van andere parameters afhangt
+ geven aan dat deze differentie niet van andere parameters afhangt.
+ Aldus is 
+\begin_inset Formula $\partial\psi/\partial z$
+\end_inset
+
+ als volgt te schrijven
 \end_layout
 
 \begin_layout Standard
@@ -488,11 +854,11 @@ We zoeken naar een vergelijking in
 \end_layout
 
 \begin_layout Standard
-waarin 
+Hierin vervult 
 \begin_inset Formula $S=-\frac{d\theta}{d\psi}$
 \end_inset
 
- de rol vervult van bergingscoëfficiënt.
+ de rol van bergingscoëfficiënt.
  Ingevuld krijgen we
 \end_layout
 
@@ -521,7 +887,7 @@ In de literatuur wordt
 \end_inset
 
 ] heeft.
- Dus
+ Hiermee hebben we
 \end_layout
 
 \begin_layout Standard
@@ -536,7 +902,9 @@ In de literatuur wordt
 \end_layout
 
 \begin_layout Standard
-We kunnen nu not 
+We kunnen nu nog,
+ en dat is essentieel,
+ 
 \begin_inset Formula $\partial\theta/\partial z$
 \end_inset
 
@@ -556,7 +924,7 @@ We kunnen nu not
 
 \begin_layout Standard
 De factor 
-\begin_inset Formula $\partial K/\partial\theta$
+\begin_inset Formula $dK/d\theta$
 \end_inset
 
  is een bodemeigenschap maar is ook gelijk aan de snelheid van het vochtfront.
@@ -565,12 +933,12 @@ De factor
 \begin_inset Formula $\theta$
 \end_inset
 
- afhankelijk is (zie Kinematic Wave verderop).
+ afhankelijk is (zie afleiding van de Kinematic Wave verderop).
  We schrijven dus 
 \begin_inset Formula $\frac{dK}{d\theta}=V$
 \end_inset
 
- en krijgen uiteindelijk onze differentiaalvergelijking in 
+ en krijgen uiteindelijk onze differentiaalvergelijking geheel in 
 \begin_inset Formula $\theta$
 \end_inset
 
@@ -606,15 +974,15 @@ De linearisatie in Munsflow impliceert dat
 \begin_inset Formula $\overline{\theta}$
 \end_inset
 
-,
- dus 
+.
+ Aldus geldt voor Munsflow:
 \end_layout
 
 \begin_layout Standard
 \begin_inset Formula 
-\[
-\frac{\partial\theta}{\partial t}\approx-V\left(\overline{\theta}\right)\frac{\partial\theta}{\partial z}+D\left(\overline{\theta}\right)\frac{\partial^{2}\theta}{\partial z^{2}}
-\]
+\begin{equation}
+\frac{\partial\theta}{\partial t}\approx-V\left(\overline{\theta}\right)\frac{\partial\theta}{\partial z}+D\left(\overline{\theta}\right)\frac{\partial^{2}\theta}{\partial z^{2}}\label{eq:AD-theta}
+\end{equation}
 
 \end_inset
 
@@ -622,7 +990,15 @@ De linearisatie in Munsflow impliceert dat
 \end_layout
 
 \begin_layout Standard
-In Zwamborn (1995) ziet deze vergelijking er als volgt uit
+In 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "Zwamb95a"
+literal "false"
+
+\end_inset
+
+ ziet deze vergelijking er als volgt uit
 \end_layout
 
 \begin_layout Standard
@@ -637,13 +1013,34 @@ In Zwamborn (1995) ziet deze vergelijking er als volgt uit
 \end_layout
 
 \begin_layout Standard
-Waaruit direct blijkt dat Zwamborn e.a.
- (1995) bij hun linearisatie de snelheid en de diffusiviteit constant nemen.
+Waaruit direct blijkt dat 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "Zwamb95a,Zwamb95"
+literal "false"
+
+\end_inset
+
+ bij hun linearisatie de snelheid 
+\begin_inset Formula $V$
+\end_inset
+
+ en de diffusiviteit 
+\begin_inset Formula $D$
+\end_inset
+
+ constant nemen.
 \end_layout
 
 \begin_layout Standard
-Zwamborn e.a.
- (1995) schrijven deze vergelijking nog om in termen van 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "Zwamb95a,Zwamb95"
+literal "false"
+
+\end_inset
+
+ schrijven deze vergelijking nog om in termen van 
 \begin_inset Formula $q$
 \end_inset
 
@@ -652,19 +1049,16 @@ Zwamborn e.a.
 \end_inset
 
 .
- Dit blijkt bij nader inzien in enkele eenvoudige stappen te doen.
+ De afleiding hiervan ontbreekt in beide referenties,
+ maar blijkt bij nader inzien in enkele eenvoudige stappen te doen.
 \end_layout
 
 \begin_layout Standard
-Pas de ketting regel toe om 
-\begin_inset Formula $\partial\theta/\partial K$
-\end_inset
-
- af te splitsen (in feite 
+Pas daartoe de kettingregel toe om 
 \begin_inset Formula $d\theta/dK$
 \end_inset
 
- want deze differentie is een bodemeigenschap die niet van andere parameters afhankelijk is).
+ af te splitsen.
  Dit levert
 \end_layout
 
@@ -684,11 +1078,12 @@ Omdat
 \begin_inset Formula $d\theta/dK$
 \end_inset
 
-is niet afhankelijk van 
+ niet afhankelijk is van 
 \begin_inset Formula $z$
 \end_inset
 
- en kan deze factor dus buiten de haken van de meest rechtse term worden gebracht.
+,
+ kan deze factor buiten de haken van de meest rechtse term worden gebracht.
  Vervolgens kunnen alle termen door 
 \begin_inset Formula $d\theta/dK$
 \end_inset
@@ -700,7 +1095,7 @@ is niet afhankelijk van
 \begin_layout Standard
 \begin_inset Formula 
 \[
-\frac{\partial K}{\partial t}\approx-V\left(\overline{\theta}\right)\frac{\partial K}{\partial z}+D\left(\overline{\theta}\right)\frac{\partial}{\partial z}\left(\frac{\partial K}{\partial z}\right)
+\frac{\partial K}{\partial t}\approx-V\left(\overline{\theta}\right)\frac{\partial K}{\partial z}+D\left(\overline{\theta}\right)\frac{\partial^{2}K}{\partial z^{2}}
 \]
 
 \end_inset
@@ -709,26 +1104,39 @@ is niet afhankelijk van
 \end_layout
 
 \begin_layout Standard
-Maar aangezien bij verticale stroming rond het gemiddelde geldt dat 
-\begin_inset Formula $q=K$
+Maar aangezien bij verticale onverzadigde stroming,
+ bij verwaarloosbare 
+\begin_inset Formula $\partial\theta/\partial z$
+\end_inset
+
+ (
+\begin_inset Quotes pld
+\end_inset
+
+vochtgehalte in lange percolatiezones varieert nauwelijks
+\begin_inset Quotes prd
+\end_inset
+
+) geldt dat 
+\begin_inset Formula $,q=K$
 \end_inset
 
  kunnen we de 
 \begin_inset Formula $K$
 \end_inset
 
- in de vergelijking door 
+ in de voorgaande vergelijking door 
 \begin_inset Formula $q$
 \end_inset
 
- vervangen:
+ vervangen en krijgen we:
 \end_layout
 
 \begin_layout Standard
 \begin_inset Formula 
-\[
-\frac{\partial q}{\partial t}\approx-V\left(\overline{\theta}\right)\frac{\partial q}{\partial z}+D\left(\overline{\theta}\right)\frac{\partial}{\partial z}\left(\frac{\partial q}{\partial z}\right)
-\]
+\begin{equation}
+\frac{\partial q}{\partial t}\approx-V\left(\overline{\theta}\right)\frac{\partial q}{\partial z}+D\left(\overline{\theta}\right)\frac{\partial^{2}q}{\partial z^{2}}\label{eq:AD-q}
+\end{equation}
 
 \end_inset
 
@@ -737,19 +1145,38 @@ Maar aangezien bij verticale stroming rond het gemiddelde geldt dat
 
 \begin_layout Standard
 Dit is het uiteindelijke resultaat dat in Munsflow wordt toegepast.
+ De Richards-vergelijking is nu omgevormd naar een advectie-diffusievergelijking met daarin constante coëfficiënten.
 \end_layout
 
 \begin_layout Standard
-Voor de voorgaande advectie-diffusievergelijking bestaat een exacte oplossing voor de situatie waarbij uitgaand van een initiële waarde nul in het hele vochtprofiel op 
-\begin_inset Formula $z=0$
+Voor deze advectie-diffusievergelijking vgl.
+ 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "eq:AD-theta"
+plural "false"
+caps "false"
+noprefix "false"
+nolink "false"
+
 \end_inset
 
- en 
+ bestaat een exacte oplossing die geldt voor de situatie waarbij vanuit een initiële waarde,
+ 
+\begin_inset Formula $\theta\left(t_{0},z\right)=\overline{\theta}$
+\end_inset
+
+ in het hele vochtprofiel,
+ het vochtgehalte op 
 \begin_inset Formula $t=0$
 \end_inset
 
- het vochtgehalte plotseling wordt verhoogd tot een vaste waarde,
- zet 
+ en 
+\begin_inset Formula $z=0$
+\end_inset
+
+ wordt verhoogd tot een vaste waarde,
+ zeg 
 \begin_inset Formula $\theta_{0}$
 \end_inset
 
@@ -758,9 +1185,9 @@ Voor de voorgaande advectie-diffusievergelijking bestaat een exacte oplossing vo
 
 \begin_layout Standard
 \begin_inset Formula 
-\[
-\theta\left(z,t\right)-\overline{\theta}=\frac{\left(\theta_{0}-\overline{\theta}\right)}{2}\mathtt{erfc}\left(\frac{z-Vt}{2\sqrt{Dt}}\right)-\frac{1}{2}\exp\left(\frac{zV}{D}\right)\mathtt{erfc}\left(\frac{z+Vt}{2\sqrt{Dt}}\right)
-\]
+\begin{equation}
+\theta\left(z,t\right)-\overline{\theta}=\frac{\left(\theta_{0}-\overline{\theta}\right)}{2}\mathtt{erfc}\left(\frac{z-Vt}{2\sqrt{Dt}}\right)-\frac{1}{2}\exp\left(\frac{zV}{D}\right)\mathtt{erfc}\left(\frac{z+Vt}{2\sqrt{Dt}}\right)\label{eq:SR-theta}
+\end{equation}
 
 \end_inset
 
@@ -768,7 +1195,19 @@ Voor de voorgaande advectie-diffusievergelijking bestaat een exacte oplossing vo
 \end_layout
 
 \begin_layout Standard
-De exacte oplossing voor de differentiaalvergelijking uitgedrukt is 
+De exacte oplossing voor de advectie-diffusievergelijking vgl.
+ 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "eq:AD-q"
+plural "false"
+caps "false"
+noprefix "false"
+nolink "false"
+
+\end_inset
+
+ uitgedrukt is 
 \begin_inset Formula $q$
 \end_inset
 
@@ -776,7 +1215,9 @@ De exacte oplossing voor de differentiaalvergelijking uitgedrukt is
 \begin_inset Formula $\theta$
 \end_inset
 
- is precies hetzelfde mits we 
+.
+ Deze vergelijking is precies hetzelfde,
+ mits we 
 \begin_inset Formula $\theta-\overline{\theta}$
 \end_inset
 
@@ -797,9 +1238,9 @@ De exacte oplossing voor de differentiaalvergelijking uitgedrukt is
 
 \begin_layout Standard
 \begin_inset Formula 
-\[
-q\left(z,t\right)-\overline{q}=\frac{\left(q_{0}-\overline{q}\right)}{2}\mathtt{erfc}\left(\frac{x-vt}{2\sqrt{Dt}}\right)-\frac{1}{2}\exp\left(\frac{xv}{D}\right)\mathtt{erfc}\left(\frac{x+vt}{2\sqrt{Dt}}\right)
-\]
+\begin{equation}
+q\left(z,t\right)-\overline{q}=\frac{\left(q_{0}-\overline{q}\right)}{2}\mathtt{erfc}\left(\frac{x-vt}{2\sqrt{Dt}}\right)-\frac{1}{2}\exp\left(\frac{xv}{D}\right)\mathtt{erfc}\left(\frac{x+vt}{2\sqrt{Dt}}\right)\label{eq:SR-q}
+\end{equation}
 
 \end_inset
 
@@ -816,8 +1257,17 @@ respectievelijk
 \end_inset
 
  is dit een staprespons.
- De afgeleide hiervan is de impuls respons en we kunnen door de staprespons van 1 tijdstap terug af te trekken van de staprespons ook de blokrespons berekenen voor tijdstappen van willekeurige lengte.
- Door toepassen van standaard convolutie kunnen we 
+ De afgeleide hiervan is de impuls respons en we kunnen door de staprespons die start op 
+\begin_inset Formula $t=t_{0}+dt$
+\end_inset
+
+ af te trekken van de staprespons op 
+\begin_inset Formula $t=t_{0}$
+\end_inset
+
+ ook de blokrespons berekenen voor tijdstappen van willekeurige lengte.
+ Door toepassen van standaard convolutie of ,filteren met de blokrespons als gewicht,
+ kunnen we 
 \begin_inset Formula $\theta$
 \end_inset
 
@@ -842,8 +1292,8 @@ respectievelijk
 \begin_inset Formula $q$
 \end_inset
 
-,
- immers 
+.
+ Immers 
 \begin_inset Formula $q=K\left(\theta\right)$
 \end_inset
 
@@ -869,35 +1319,263 @@ respectievelijk
 
 \begin_layout Standard
 Beide oplossingen zijn interessant.
- Die voor het vochtgehalte omdat dat vergeleken kan worden met metingen en die voor de flux omdat dat is wat we willen weten.
+ Die voor het vochtgehalte omdat dat vergeleken kan worden met vochtmetingen in de percolatiezone en die voor de flux omdat dat is wat we willen weten.
+ In fig.
+ 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Stap-respons-en-block-response"
+plural "false"
+caps "false"
+noprefix "false"
+nolink "false"
+
+\end_inset
+
+ de berekende stapresponse en de impuls- and blokresponse gegeven.
+ Deze gelden altijd voor eenheidsinput en worden in gebruik met de werkelijke in put vermenigvuldigd;
+ zij zijn daarom gelijk voor vergelijking 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "eq:SR-theta"
+plural "false"
+caps "false"
+noprefix "false"
+nolink "false"
+
+\end_inset
+
+ en 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "eq:SR-q"
+plural "false"
+caps "false"
+noprefix "false"
+nolink "false"
+
+\end_inset
+
+ voor respectievelijk 
+\begin_inset Formula $\theta$
+\end_inset
+
+ en 
+\begin_inset Formula $q$
+\end_inset
+
+.
+ Het oppervlak onder de impuls response en de blok response is 1 de blok rsponse is ietsjes naar rechts verschoven omdat zijn gemiddelde niet op 
+\begin_inset Formula $t=0$
+\end_inset
+
+ maar 
+\begin_inset Formula $t=0.5d$
+\end_inset
+
+ ligt,
+ maar het oppervlak is gelijk aan dat van de impuls respons,
+ nl.
+ 1.0.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+placement document
+alignment document
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\begin_inset Graphics
+	filename SR_munsflow_1mmpd.png
+	width 80text%
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Graphics
+	filename BR_munsflow_1mmpd.png
+	width 80text%
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:Stap-respons-en-block-response"
+
+\end_inset
+
+Stap respons en blok respons (dt=1 d) voor gemiddelde flux van 0.1 cm/d
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Deze grafieken zijn berekend voor 
+\begin_inset Formula $q=K\left(\overline{\theta}\right)=0..1$
+\end_inset
+
+ cm/d,
+ het bijbehorende vochtgehalte is dan 
+\begin_inset Formula $\theta=9.1\%$
+\end_inset
+
+ voor bodem 
+\begin_inset Formula $O05$
+\end_inset
+
+ ('grof zand') van de Staringreeks en de bij behorende daalsnelheid 
+\begin_inset Formula $V=dK\left(\theta=0.91\right)/d\theta=3.9$
+\end_inset
+
+ cm/d of ca.
+ 1 m/maand.
+ Maar let wel,
+ de uitkomsten hangen sterk af van de gemiddelde 
+\begin_inset Formula $q$
+\end_inset
+
+ of 
+\begin_inset Formula $\theta$
+\end_inset
+
+ waarvoor de responsen zijn berekend:
+ hoe hoger de gemiddelde 
+\begin_inset Formula $q$
+\end_inset
+
+ of 
+\begin_inset Formula $\theta$
+\end_inset
+
+ hoe groter de doorlatendheid en daarmee tevens de snelheid waarmee een vochtfront in de percolatiezone afdaalt.
+ Figuur 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Doorbraak-krommen-afh-van-qavg"
+plural "false"
+caps "false"
+noprefix "false"
+nolink "false"
+
+\end_inset
+
+ laat dat zien aan de hand van de stapresponsen (doorbraakkrommen) voor een 10 m dikke pecolatiezone.
+ Bij een hoger gemiddeld vochtgehalte is de daalsnelheid duidelijk veel groter dan bij een lage waarde.
+ Dit impliceert dat het voor Munsflow heel veel uitmaakt welk gemiddeld vochtgehalte in de percolatiezone wordt verondersteld.
+ Deze verschillen zijn uiteraard volledig het gevolg van de niet-lineairiteit van de eigenschappen van de onverzadigde bodem.
+\end_layout
+
+\begin_layout Standard
+Voor de toepassing zie verderop,
+ waar de simulatie met Munsflow wordt vergeleken wordt met die van de KW methode.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+placement document
+alignment document
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\begin_inset Graphics
+	filename SR_munsflow_afh_q.png
+	width 80text%
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:Doorbraak-krommen-afh-van-qavg"
+
+\end_inset
+
+Doorbraak krommen (stapresponsen) voor een 10 m diepe percolatiezone afhankelijk van de gemiddelde flux door de zone.
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+
+
 \end_layout
 
 \begin_layout Section
-Kinematic Wave
+Kinematic Wave (KW)
 \end_layout
 
 \begin_layout Standard
-Waar Munsflow de diffusiviteit en de vochtsnelheid constant neemt,
- maar de differentiaalvergelijking verder niet aantast is de aanpak bij de Kinematic Wave een geheel andere.
- Daar wordt aangenomen op basis van het nauwelijks variërende vochtgehalte dat bovendien duidelijk boven veldcapaciteit ligt (want anders stroomt er niets),
- dat in de lange percolatiezone de capillaire spanningen geen rol spelen.
- De Richardsvergelijking
-\begin_inset Newline newline
+Waar Munsflow de diffusiviteit en de snelheid van punten van het vochtprofiel 
+\begin_inset Formula $V$
 \end_inset
 
+ constant neemt,
+ maar de differentiaalvergelijking verder niet aantast,
+ is de aanpak bij de KW een geheel andere.
+ Op basis van het 
+\begin_inset Quotes pld
+\end_inset
 
-\begin_inset Formula 
-\[
-\frac{\partial\theta}{\partial t}=-\frac{\partial}{\partial z}\left[K\left(\frac{\partial\psi}{\partial z}+1\right)\right]
-\]
+nauwelijks
+\begin_inset Quotes prd
+\end_inset
+
+ variërende vochtgehalte in de percolatiezone,
+ dat bovendien duidelijk boven veldcapaciteit ligt (want anders stroomt er niets),
+ wordt voor de dikke percolatiezone aangenomen dat de capillaire vochtspanning 
+\begin_inset Formula $\psi$
+\end_inset
+
+ geen rol speelt.
+ De Richards-vergelijking (vgl.
+ 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "eq:Rechargds-verg"
+plural "false"
+caps "false"
+noprefix "false"
+nolink "false"
 
 \end_inset
 
-
-\end_layout
-
-\begin_layout Standard
-reduceert dan tot
+) reduceert dan tot
 \end_layout
 
 \begin_layout Standard
@@ -927,7 +1605,19 @@ ofwel
 \end_layout
 
 \begin_layout Standard
-Deze vergelijking kan gezien worden als een totale differentiaal
+Deze vergelijking kan gezien worden als een totale differentiaal die de verandering aangeeft als gevolg van de verandering van alle parameters waar in dit geval 
+\begin_inset Formula $\theta$
+\end_inset
+
+ van afhangt (
+\begin_inset Formula $t$
+\end_inset
+
+ en 
+\begin_inset Formula $z$
+\end_inset
+
+)
 \end_layout
 
 \begin_layout Standard
@@ -954,8 +1644,8 @@ Beide vergelijkingen zijn hetzelfde wanneer
 \begin_inset Formula $d\theta$
 \end_inset
 
-=0 opvatten.
- Dus wanneer we met een snelheid
+=0 zetten.
+ Dit impliceert dat wanneer we met een snelheid
 \end_layout
 
 \begin_layout Standard
@@ -981,22 +1671,56 @@ door de percolatiezone bewegen,
 \end_inset
 
  is dan nul.
- Deze snelheid van punten van het vochtprofiel hangt dus af van het vochtgehalte zodat punten met een hoger vochtgehalte punten met een lager vochtgehalte inhalen en opslokken.
- Stel nu dat na een lange periode met constante infiltratie en dus constante 
+ Hier komt dus de boven bij Munsflow al aangekondigde relatie 
+\begin_inset Formula $V=dK/d\theta$
+\end_inset
+
+ vandaan.
+\end_layout
+
+\begin_layout Standard
+Deze snelheid van punten van het vochtprofiel hangt dus af van het lokale vochtgehalte.
+ Hierdoor halen punten met een hoger vochtgehalte punten met een lager vochtgehalte in en slokken die op,
+ waarbij 
+\begin_inset Quotes pld
+\end_inset
+
+scherpe
+\begin_inset Quotes prd
+\end_inset
+
+ vochtfronten ontstaan.
+ Stel nu dat,
+ na een lange periode met constante infiltratie,
+ en dus constante 
 \begin_inset Formula $\theta$
 \end_inset
 
- de watertoevoer plotseling stagneert en het vochtgehalte op 
+ de watertoevoer aan de bovenrand van de percolatiezone plotseling stagneert en het vochtgehalte op 
 \begin_inset Formula $z=0$
 \end_inset
 
  dus plotseling daalt.
- Je kan je het vochtverloop aan het einde van het infiltratieblok op 
+ Het vochtverloop aan het einde van het infiltratieblok op 
 \begin_inset Formula $z=0$
 \end_inset
 
- en pal achter het moment dat dit gebeurt,
- voorstellen als bestaande uit een heleboel puntjes allemaal met een eigen vochtgehalte tussen de nieuwe 
+ (zie fig.
+ 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:infiltratie_blok"
+plural "false"
+caps "false"
+noprefix "false"
+nolink "false"
+
+\end_inset
+
+),
+ pal na het moment waarop dit gebeurt,
+ kan je je voorstellen als bestaande uit een heleboel puntjes,
+ elk met een eigen vochtgehalte tussen de nieuwe 
 \begin_inset Formula $\theta$
 \end_inset
 
@@ -1006,40 +1730,28 @@ door de percolatiezone bewegen,
 
  tijdens de voorgaande infiltratieperiode.
  Al deze puntjes gaan nu in de percolatiezone afdalen,
- allemaal met hun eigen snelheid die alleen afhangt van het vochtgehalte.
+ allemaal met hun eigen snelheid,
+ die alleen afhangt van het vochtgehalte van elke puntje.
  De puntjes met hoger vochtgehalte lopen harder dan die met lager vochtgehalte en het puntje met vochtgehalte gelijk aan veldcapaciteit beweegt helemaal niet.
- Het puntje met het vochtgehalte gelijk aan dat van het voorgaande infiltratieblok loopt met de snelheid van alle punten in het infiltratieblok.
- Zo ontstaat tussen de wortelzone en het infiltratieblok een gebogen staart die met het verloop van de tijd steeds verder wordt opgerekt.
+ Het puntje met het vochtgehalte gelijk aan dat van het voorgaande infiltratieblok loopt met dezelfde snelheid als alle punten in het infiltratieblok die hetzelfde vochtgehalte hebben.
+ Zo ontstaat tussen de wortelzone en het infiltratieblok een gebogen staart die met het verlopen van de tijd steeds verder wordt opgerekt (zie fig.
+ 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:punt_snelheid_staart"
+plural "false"
+caps "false"
+noprefix "false"
+nolink "false"
+
+\end_inset
+
+).
  De snelheid en het vochtgehalte van elk van de puntjes blijven altijd hetzelfde.
  In zo'n staart halen puntjes elkaar dus nooit in.
 \end_layout
 
 \begin_layout Standard
-Dit ligt heel anders aan de voorzijde van zo'n infiltratieblok,
- althans wanneer het vochtgehalte voor dit blok lager is dan van het infiltratieblok.
- Deze voorzijde vormt dan een front,
- dat puntjes die er voor bewegen een voor een inhaalt en opslokt.
-\end_layout
-
-\begin_layout Standard
-Een bijzonder elegante manier om de beweging van zo'n vochtfront te analyseren zonder dat je precies hoeft te weten hoe scherp dit is of hoe dat front er nu precies uitziet gaat als volgt (Charbeneau (2000),
- p124-125).
- De situatie is weergegeven in fig.
- 
-\begin_inset CommandInset ref
-LatexCommand ref
-reference "fig:Progressie-vochtfront"
-plural "false"
-caps "false"
-noprefix "false"
-nolink "false"
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
 \begin_inset Float figure
 placement document
 alignment document
@@ -1049,273 +1761,7 @@ status open
 
 \begin_layout Plain Layout
 \begin_inset Graphics
-	filename vochtfront.png
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Plain Layout
-\begin_inset Caption Standard
-
-\begin_layout Plain Layout
-\begin_inset CommandInset label
-LatexCommand label
-name "fig:Progressie-vochtfront"
-
-\end_inset
-
-Progressie van een vochtfront.
-\end_layout
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Plain Layout
-
-\end_layout
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-Fig.
- 
-\begin_inset CommandInset ref
-LatexCommand ref
-reference "fig:Progressie-vochtfront"
-plural "false"
-caps "false"
-noprefix "false"
-nolink "false"
-
-\end_inset
-
- geeft een vochtfront weer tussen dieptes 
-\begin_inset Formula $z_{1}$
-\end_inset
-
- en 
-\begin_inset Formula $z_{2}$
-\end_inset
-
- waarbij 
-\begin_inset Formula $z_{2}>z_{1}$
-\end_inset
-
- het vochtgehalte 
-\begin_inset Formula $\theta_{1}$
-\end_inset
-
- boven 
-\begin_inset Formula $z_{1}$
-\end_inset
-
- is constant en groter dan het eveneens constante vochtgehalte 
-\begin_inset Formula $\theta_{2}$
-\end_inset
-
- beneden 
-\begin_inset Formula $z_{2}$
-\end_inset
-
-.
- De flux 
-\begin_inset Formula $q_{1}$
-\end_inset
-
- bij 
-\begin_inset Formula $z_{1}$
-\end_inset
-
- is eveneens groter dan de flux 
-\begin_inset Formula $q_{2}$
-\end_inset
-
- bij 
-\begin_inset Formula $z_{2}$
-\end_inset
-
-.
- De verandering van de hoeveelheid vocht tussen de dieptes 
-\begin_inset Formula $z_{1}$
-\end_inset
-
- en 
-\begin_inset Formula $z_{2}$
-\end_inset
-
- is dan,
- en dit zonder de vorm van het front 
-\begin_inset Formula $\theta_{f}\left(z)\right)$
-\end_inset
-
- te specificeren:
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\[
-\frac{d}{dt}\intop_{z_{1}}^{z_{2}}\theta dz=q_{z_{1}}-q_{z_{2}}=K\left(\theta_{1}\right)-K\left(\theta_{2}\right)
-\]
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-Nu kan de integraal worden geschreven als een scherp front
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\[
-\intop_{z_{1}}^{z_{2}}\theta dz=\theta_{1}\left(z_{f}-z_{1}\right)+\theta_{2}\left(z_{2}-z_{f}\right)
-\]
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-zodat de afgeleide naar de tijd hiervan gelijk is aan
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\[
-\frac{d}{dt}\left(\intop_{z_{1}}^{z_{2}}\theta dz\right)=\left(\theta_{1}-\theta_{2}\right)\frac{dz_{f}}{dt}
-\]
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-Beide afgeleiden aan elkaar gelijk stellen geeft
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\[
-\left(\theta_{1}-\theta_{2}\right)\frac{dz_{f}}{dt}=K\left(\theta_{1}\right)-K\left(\theta_{2}\right)
-\]
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-Zodat de snelheid van het als scherp veronderstelde vochtfront gelijk is aan
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\begin{equation}
-\frac{dz_{f}}{dt}=V_{f}=\frac{K\left(\theta_{1}\right)-K\left(\theta_{2}\right)}{\theta_{1}-\theta_{2}}\label{eq:v_front}
-\end{equation}
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-Aldus geldt voor de snelheid van een vochtfront waarbinnen het vochtgehalte overgaat van 
-\begin_inset Formula $\theta_{2}$
-\end_inset
-
- naar 
-\begin_inset Formula $\theta_{1}$
-\end_inset
-
- de zojuist afgeleide snelheid,
- terwijl voor alle andere punten van het vochtprofiel de eerder afgeleide snelheid geldt 
-\begin_inset Formula $V=dK\left(\theta\right)/d\theta$
-\end_inset
-
-.
- Het zal duidelijk zijn dat beide snelheden op natuurlijke wijze in elkaar overgaan.
- Immers voor een gewoon punt geldt de definitie van de afgeleide:
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\[
-\frac{dK}{d\theta}=\frac{K\left(\theta+\delta\theta\right)-K\left(\theta-\delta\theta\right)}{\left(\theta+\delta\theta\right)-\left(\theta-\delta\theta\right)}
-\]
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-De snelheid 
-\begin_inset Formula $V=dK\left(\theta\right)/d\theta$
-\end_inset
-
- van punten in het vochtprofiel is heel wat anders dan de snelheid 
-\begin_inset Formula $v$
-\end_inset
-
- van de waterdeeltjes.
- De laatste is gelijk aan 
-\begin_inset Formula $v=q/\theta=K\left(\theta\right)/\theta$
-\end_inset
-
-.
- De volgende grafiek geeft dit weer voor grof zand uit de Staringreeks met code 'O05'.
- De ratio van 
-\begin_inset Formula $V/v$
-\end_inset
-
- voor deze grondsoort is iets onder de 4.
- Het vochtgehalte bij een verticale flux van 0.1 cm/d voor dit dit grove zand blijkt 9.2%,
- d.w.z 
-\begin_inset Formula $q=K\left(9.2\%\right)\approx0.1$
-\end_inset
-
- cm/d.
- De snelheid 
-\begin_inset Formula $v=q/\theta$
-\end_inset
-
- is dan 
-\begin_inset Formula $v=0.1/0.92=1.1$
-\end_inset
-
- cm/d dus ca.
- 33 cm/maand,
- terwijl punten van het vochtprofiel bij deze vochtigheid een snelheid hebben van 
-\begin_inset Formula $V=4.0$
-\end_inset
-
- cm/d ofwel ca.
- 1.2 m/maand.
- Dit laatste getal past bij het globale beeld dat we kennen van de percolatiesnelheid voor gebieden met diepe grondwaterstanden zoals de Veluwe.
-\end_layout
-
-\begin_layout Standard
-\begin_inset Float figure
-placement document
-alignment document
-wide false
-sideways false
-status open
-
-\begin_layout Plain Layout
-\begin_inset Graphics
-	filename V_v_ratio.png
+	filename tail_development.png
 	width 70text%
 
 \end_inset
@@ -1329,11 +1775,18 @@ status open
 \begin_layout Plain Layout
 \begin_inset CommandInset label
 LatexCommand label
-name "fig:Snelheid-van-punten"
+name "fig:punt_snelheid_staart"
 
 \end_inset
 
-Snelheid van punten van het vochtprofiel en snelheid van waterdeeltjes als functie van het vochtgehalte
+De snelheid van de punten in het vochtprofiel dat ontstond toen op 
+\begin_inset Formula $t=0$
+\end_inset
+
+ de infiltratie plotseling daalde van 2 mm/d naar 0.
+ Elk puntje van deze staart heeft de snelheid die hoort bij zijn vochtgehalte.
+ De puntjes behouden hun vochtgehalte en hun daarbij horende snelheid,
+ zodat de staart steeds verder en evenredig in de tijd naar rechts wordt opgerekt.
 \end_layout
 
 \end_inset
@@ -1344,6 +1797,21 @@ Snelheid van punten van het vochtprofiel en snelheid van waterdeeltjes als funct
 \end_inset
 
 
+\end_layout
+
+\begin_layout Standard
+Dit zit heel anders aan de voorzijde van zo'n infiltratieblok,
+ althans wanneer het vochtgehalte vóór dit blok lager is dan erbinnen.
+ Deze voorzijde vormt dan een vochtfront dat puntjes die er voor bewegen één voor één inhaalt en opslokt.
+ Uiteraard is dit proces continu en dienen de 
+\begin_inset Quotes pld
+\end_inset
+
+puntjes
+\begin_inset Quotes prd
+\end_inset
+
+ van het vochtprofiel alleen om het ons wat makkelijker voor te stellen.
 \end_layout
 
 \begin_layout Standard
@@ -1359,37 +1827,33 @@ nolink "false"
 
 \end_inset
 
- laat een rechthoekig vochtprofiel zien dat is ontstaan door continue constante infiltratie.
- Zodra de infiltratie stop ontstaat er een staart.
- De punten binnen het rechthoekige infiltratieprofiel lopen alle even snel behalve het front;
- dat loopt veel langzamer.
- Dus na zekere tijd heeft punt B het front ingehaald (B'),
- maar is de afstand A'B' nog gelijk aan de afstand AB.
- Punt C is opgeslokt door het front en bestaat dan niet meer,
- samen met alle punten tussen B en C.
- Het getekende rechter vlak A bestaat ontbreekt op dat moment aan het oorspronkelijke rechthoekige profile.
- Daarvoor is de staart A in de plaats genomen.
- Het oppervlak van beide vlakken A is dus hetzelfde.
- In de nieuwe situatie is het oorspronkelijke Blok ACDF uitgebreid met CB'E'D met oppervlak B.
- Dit oppervlak is gelijk aan het oppervlak links,
- dat aangeeft hoeveel vocht op dat moment uit het oorspronkelijke blok ACDF is verdwenen.
- Beide vlakken B zijn dus eveneens aan elkaar gelijk.
- De snelheid van de punten in het vochtprofiel wordt alleen bepaald door het vochtgehalte en dus is die van punt A en B gelijk.
- Dus is de snelheid van punt A gelijk aan die van punt A',
- ook al is punt A' het laatste punt van een staart.
- Alleen op een vochtfront wordt de snelheid bepaald door het vochtgehalte aan beide zijden van het vochtfront,
- dus volgens formule 
-\begin_inset CommandInset ref
-LatexCommand ref
-reference "eq:v_front"
-plural "false"
-caps "false"
-noprefix "false"
-nolink "false"
-
+ illustreert dit in meer detail.
+ De figuur laat op 
+\begin_inset Formula $t=0$
 \end_inset
 
-.
+ een rechthoekig (blauw getekend) vochtprofiel zien dat is ontstaan door continue constante infiltratie.
+ Zodra de infiltratie stopt,
+ ontstaat er een staart.
+ De punten binnen het rechthoekige infiltratieprofiel lopen alle even snel,
+ behalve het front;
+ dat loopt veel langzamer.
+ Dus na zekere tijd heeft punt B het front ingehaald en is punt B' geworden.
+ Echter,
+ de afstand A'B' is nog gelijk aan de afstand AB.
+ Punt C is inmiddels opgeslokt door het front en bestaat dan niet meer,
+ samen met alle punten tussen B en C.
+ Het getekende rechter vlak met grote letter A ontbreekt op dat moment aan het oorspronkelijke rechthoekige profiel.
+ Daarvoor is de staart A in de plaats genomen.
+ Het oppervlakken van beide vlakken A zijn dus aan elkaar gelijk.
+ In de nieuwe situatie is het oorspronkelijke blok ACDF dan uitgebreid met CB'E'D met oppervlak B.
+ Dit oppervlak B is gelijk aan het oppervlak B links,
+ dat aangeeft hoeveel vocht op dat moment uit het oorspronkelijke blok ACDF is verdwenen.
+ Beide vlakken B zijn dus eveneens aan elkaar gelijk.
+ De snelheid van de punten in het vochtprofiel wordt alleen bepaald door het vochtgehalte en dus is die van punten A en B gelijk.
+ Ook is de snelheid van punt A gelijk aan die van punt A',
+ ook al is punt A' het laatste punt van een staart.
+ Alleen op een vochtfront wordt de snelheid bepaald door het vochtgehalte aan beide zijden van het vochtfront.
 \end_layout
 
 \begin_layout Standard
@@ -1424,7 +1888,7 @@ nolink "false"
 \begin_inset Formula $\theta_{1}$
 \end_inset
 
- maximum is gelijk aan de snelheid van het vochtfront zelf.
+ het maximum is gelijk aan de snelheid van het vochtfront zelf.
  De flux naar rechts over de gehele staart tussen F en A' in fig.
  
 \begin_inset CommandInset ref
@@ -1496,28 +1960,75 @@ name "fig:infiltratie_blok"
 
 \end_inset
 
- Een rechthoekig vochtprofiel (ACDF) dat ontstond door constante infiltratie (vlakken B,
- A,
- C),
- en zijn verschuiving over een bepaalde tijd nadat de infiltratie is gestopt,
- waarbij de vorm ontstaat die is aangegeven met de vlakken A,
- C en B.
- De breedte is afgenomen,
- het punt B heeft het front ingehaald,
- punt C is opgeslokt.
- Het vlak A rechts ontbreekt nu omdat de snelheid van het front (B'E') veel kleiner is dan dat van de punten achter het front (A en B).
- Het opprvlak B'C'D'E',
- vlak A rechts,
- waarmee het breedte van het oorspronkelijke blok is afgenomen,
- is gelijk aan het oppervlak van de staart,
- vlak A links.
- Het oppervlak B rechts,
- waarmee het front naar rechts is verschoven,
- is gelijk aan het oppervlak B links,
- het afgenomen vochtgehalte binnen het oorspronkelijke infiltratieblok.
- Het totale oppervlak van het infiltratieblok,
- BAC is gelijk gebleven ACB.
- Het rechter vlak A ontbreekt aan het profiel.
+ Blauw:
+ rechthoekig vochtprofiel (ACDF) dat ontstond door constante infiltratie.
+ A'B'E'F,
+ rood is hetzeflde block enige tijd nadat de infiltratie is gestaakt.
+ Het vochtfront B'E' loopt langzamer dan de punten er achter,
+ zodat het vlak B'C'D'E' op dat moment ontbreekt.
+ Voor vlak met oppervlak A is nu de staart met hetzelde oppervlak in de plaats gekomen.
+ De verschuiving van het,
+ CB'E'D met oppervlak B ontbreekt nu aan de achterzijde waar een droge porieruimte is ontstaan met eveneens oppervlak B.
+ Punten A,
+ B,
+ A' en B' beweten even snel,
+ zodat de afstand A-B gelijk is aan de afstand A'-B'.
+ Deze punten halen het front in.
+ Punt C wordt al direct opgeslokt.
+ Tijdens de verschuiving tussen het blauwe en het rode blok worden ook alle punten tussen B en C opgeslokt door het front.
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Een bijzonder elegante manier om de beweging van zo'n vochtfront te analyseren,
+ zonder dat je precies hoeft te weten hoe scherp dit is of hoe dat front er nu precies uitziet,
+ gaat als volgt 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "Charb00"
+literal "false"
+
+\end_inset
+
+,
+ p124-125).
+ 
+\begin_inset Float figure
+placement document
+alignment document
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\begin_inset Graphics
+	filename vochtfront.png
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:Progressie-vochtfront"
+
+\end_inset
+
+Progressie van een vochtfront.
 \end_layout
 
 \end_inset
@@ -1539,7 +2050,7 @@ Fig.
  
 \begin_inset CommandInset ref
 LatexCommand ref
-reference "fig:Snelheid-van-punten"
+reference "fig:Progressie-vochtfront"
 plural "false"
 caps "false"
 noprefix "false"
@@ -1547,19 +2058,190 @@ nolink "false"
 
 \end_inset
 
- heeft de ontwikkeling van een staart met de tijd.
- De snelheid van elk punt wordt uitsluitend bepaald door zijn vochtgehalte en dat is constant in de tijd.
- De staart vervormt dus door uitrekken naar rechts.
- Het punt links blijft op zijn plek,
- want na het stoppen van de infiltratie is de vochtsituatie daar gelijk aan veldcapaciteit met bijbehorende snelheid nul.
- De berekende snelheid is bij een aantal punten genoteerd samen met het vochtgehalte.
- Een achterop komend vochtfront kan punten van de staart inhalen en vervolgens opslokken,
- maar dat maakt niets uit de beweging van de andere staartpunten.
- Op het moment dat infiltratie stop ontstaat ontstaat op 
-\begin_inset Formula $z=0$
+ geeft een vochtfront weer tussen dieptes 
+\begin_inset Formula $z_{1}$
 \end_inset
 
- een staart die vervolgens gaat vervormen zoals in fig.
+ en 
+\begin_inset Formula $z_{2}$
+\end_inset
+
+ waarbij 
+\begin_inset Formula $z_{2}>z_{1}.$
+\end_inset
+
+ Het vochtgehalte 
+\begin_inset Formula $\theta_{1}$
+\end_inset
+
+ boven 
+\begin_inset Formula $z_{1}$
+\end_inset
+
+ is praktisch constant en groter dan het eveneens praktisch constante vochtgehalte 
+\begin_inset Formula $\theta_{2}$
+\end_inset
+
+ beneden 
+\begin_inset Formula $z_{2}$
+\end_inset
+
+.
+ De flux 
+\begin_inset Formula $q_{1}$
+\end_inset
+
+ bij 
+\begin_inset Formula $z_{1}$
+\end_inset
+
+ is eveneens groter dan de flux 
+\begin_inset Formula $q_{2}$
+\end_inset
+
+ bij 
+\begin_inset Formula $z_{2}$
+\end_inset
+
+.
+ De verandering van de hoeveelheid vocht tussen de dieptes 
+\begin_inset Formula $z_{1}$
+\end_inset
+
+ en 
+\begin_inset Formula $z_{2}$
+\end_inset
+
+ is dan,
+ en dit zonder de vorm van het front 
+\begin_inset Formula $\theta_{f}\left(z)\right)$
+\end_inset
+
+ te specificeren:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\frac{d}{dt}\intop_{z_{1}}^{z_{2}}\theta dz=q_{z_{1}}-q_{z_{2}}=K\left(\theta_{1}\right)-K\left(\theta_{2}\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Nu kan de integraal worden geschreven als een scherp front
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\intop_{z_{1}}^{z_{2}}\theta dz=\theta_{1}\left(z_{f}-z_{1}\right)+\theta_{2}\left(z_{2}-z_{f}\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Waarvan de afgeleide naar de tijd kan worden genomen
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\frac{d}{dt}\left(\intop_{z_{1}}^{z_{2}}\theta dz\right)=\left(\theta_{1}-\theta_{2}\right)\frac{dz_{f}}{dt}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Beide afgeleiden aan elkaar gelijk stellen geeft
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\left(\theta_{1}-\theta_{2}\right)\frac{dz_{f}}{dt}=K\left(\theta_{1}\right)-K\left(\theta_{2}\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Zodat de snelheid van het als scherp veronderstelde vochtfront gelijk is aan
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{equation}
+\frac{dz_{f}}{dt}=V_{f}=\frac{K\left(\theta_{1}\right)-K\left(\theta_{2}\right)}{\theta_{1}-\theta_{2}}\label{eq:v_front}
+\end{equation}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Aldus geldt voor de snelheid van een vochtfront met een sprong van 
+\begin_inset Formula $\theta_{1}$
+\end_inset
+
+ naar 
+\begin_inset Formula $\theta_{2}$
+\end_inset
+
+ de zojuist afgeleide snelheid,
+ terwijl voor alle gewone punten van het vochtprofiel de eerder afgeleide snelheid 
+\begin_inset Formula $V=dK\left(\theta\right)/d\theta$
+\end_inset
+
+ geldt.
+ De snelheid van een vochtfront gaat op natuurlijke wijze over in die van gewone punten zonder sprong in het vochtgehalte.
+ Immers voor een gewoon punt geldt de definitie van de afgeleide:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\frac{dK}{d\theta}=V=\frac{K\left(\theta+\delta\theta\right)-K\left(\theta-\delta\theta\right)}{\left(\theta+\delta\theta\right)-\left(\theta-\delta\theta\right)}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Deze formule is feitelijk gelijk aan die voor een vochtfront.
+\end_layout
+
+\begin_layout Standard
+De snelheid 
+\begin_inset Formula $V=dK\left(\theta\right)/d\theta$
+\end_inset
+
+ van punten in het vochtprofiel is heel wat anders dan de snelheid 
+\begin_inset Formula $v$
+\end_inset
+
+ van de waterdeeltjes.
+ De laatste is gelijk aan 
+\begin_inset Formula $v=q/\theta=K\left(\theta\right)/\theta$
+\end_inset
+
+.
+ De volgende grafiek,
+ fig.
  
 \begin_inset CommandInset ref
 LatexCommand ref
@@ -1571,26 +2253,40 @@ nolink "false"
 
 \end_inset
 
-.
- De plotselinge daling van de infiltratieflux veroorzaakt een momentane daling van het vochtgehalte op 
-\begin_inset Formula $z=0$
+,
+ geeft dit weer voor grof zand uit de Staringreeks met code 'O05'.
+ De ratio van 
+\begin_inset Formula $V/v$
 \end_inset
 
-,
- Deze moet worden gezien als een overgang bestaande uit oneindig veel puntjes met elk een eigen vochtgehalte,
- die vervolgens elk met hun eigen vaste snelheid aan de wandel gaan.
- Het kenmerkende van een staart is dat alle puntjes daarin op hetzelfde moment zijn ontstaan.
- Wanneer we punten van een vochtprofiel in de tijd volgen,
- kunnen we herkennen of twee punten tot dezelfde staart behoren,
- namelijk door te checken of zij op hetzelfde moment zijn ontstaan.
- Wat er sinds het ontstaan van een punt ook is gebeurd,
- hoe vaak en hoeveel de infiltratie sindsdien ook is veranderd,
- we kennen de snelheid van het punt aan de hand van zijn vochtgehalte en die snelheid is sinds zijn ontstaan nooit veranderd.
- Omgekeerd,
- en dat is belangrijk,
- volgt uit de positie van een punt op een bepaald moment en zijn ouderdom wat de snelheid altijd is geweest en dus wat zijn vochtgehalte is,
- want snelheid en vochtgehalte zijn twee zijden van de dezelfde medaille.
- Dat betekent wel dat we van punten van het profiel die we in de tijd volgens ook het moment onthouden waarop ze zijn ontstaan.
+ voor deze grondsoort is iets onder de 4.
+ Het vochtgehalte bij een verticale flux van 
+\begin_inset Formula $q=0.1$
+\end_inset
+
+ cm/d in dit grove zand blijkt 9.1%,
+ d.w.z 
+\begin_inset Formula $q=K\left(9.1\%\right)\approx0.1$
+\end_inset
+
+ cm/d.
+ De snelheid 
+\begin_inset Formula $v=q/\theta$
+\end_inset
+
+ is dan 
+\begin_inset Formula $v=0.1/0.91=1.1$
+\end_inset
+
+ cm/d dus ca.
+ 33 cm/maand,
+ terwijl punten van het vochtprofiel bij deze vochtigheid een snelheid hebben van 
+\begin_inset Formula $V=3.9$
+\end_inset
+
+ cm/d ofwel ca.
+ 120 cm/maand.
+ Dit laatste getal past bij het globale beeld dat we kennen van de percolatiesnelheid voor gebieden met diepe grondwaterstanden zoals de Veluwe.
 \end_layout
 
 \begin_layout Standard
@@ -1603,8 +2299,8 @@ status open
 
 \begin_layout Plain Layout
 \begin_inset Graphics
-	filename tail_development.png
-	width 70text%
+	filename V_v_ratio.png
+	width 80text%
 
 \end_inset
 
@@ -1617,19 +2313,15 @@ status open
 \begin_layout Plain Layout
 \begin_inset CommandInset label
 LatexCommand label
-name "fig:punt_snelheid_staart"
+name "fig:Snelheid-van-punten"
 
 \end_inset
 
-
+Snelheid van punten van het vochtprofiel en snelheid van waterdeeltjes als functie van het vochtgehalte
 \end_layout
 
 \end_inset
 
-
-\end_layout
-
-\begin_layout Plain Layout
 
 \end_layout
 
@@ -1640,12 +2332,12 @@ name "fig:punt_snelheid_staart"
 
 \begin_layout Standard
 Punten kunnen worden ingehaald en opgeslokt door een achterop komend vochtfront.
- Punten die zelf een vochtfront vormen dragen twee vochgehaltes met zich mee,
+ Punten die zelf een vochtfront vormen dragen daarom twee vochtgehaltes met zich mee,
  een aan de bovenstroomse en een aan de benedenstroomse zijde.
- Dat aan de benedenstroomse zijde is steeds gelijk aan dat van het punt dat net wordt ingehaald en opgeslokt.
+ Het vochtgehalte aan de benedenstroomse zijde is steeds gelijk aan dat van het punt dat net wordt ingehaald en opgeslokt.
  Dat aan de benedenstroomse zijde is gelijk aan dat van het achteropkomende punt waardoor het vochtfront zelf wordt ingehaald.
  In het geval van constante infiltratie is het vochtgehalte bovenstrooms constant,
- als in figuur 
+ zoals aangegeven in figuur 
 \begin_inset CommandInset ref
 LatexCommand ref
 reference "fig:infiltratie_blok"
@@ -1660,8 +2352,8 @@ nolink "false"
  waarvan we al geconcludeerd hadden dat punten A en B even snel bewegen en het tragere vochtfront zullen inhalen.
  Op een gegeven moment heeft punt A het vochtfront bereikt en is er stroomopwaarts van het front alleen een staart.
  De punten van de staart bewegen ook sneller dan het vochtfront omdat het vochtgehalte aan de benedenstroomse zijde van het vochtfront veel lager is.
- De opeenvolgende punten van de staart die het vochtfront vervolgens inhalen verlagen het vochtgehalte van de bovenzijde van dit front waardoor de snelheid van het vochtfront afneemt.
- Omgekeerd dan een vochtfront is benedenstroomse staart inhalen en daardoor sneller gaan stromen.
+ De opeenvolgende punten van de staart die het vochtfront vervolgens inhalen verlagen het vochtgehalte van de bovenstroomse kant van dit vochtfront waardoor de snelheid van het vochtfront afneemt.
+ Omgekeerd kan een vochtfront een benedenstroomse staart inhalen en daardoor sneller gaan stromen.
  Kortom,
  de snelheid van een vochtfront is zelden of nooit constant.
  Bij het volgen van de punten van het vochtprofiel moet hier rekening mee worden gehouden.
@@ -1669,132 +2361,200 @@ nolink "false"
 
 \begin_layout Standard
 Bij het programmeren van de Kinematic Wave gaat het er dus om om punten van het vochtfront te volgen,
- bij te houden wanneer ze elkaar inhalen en opslokken;
- maar ook moet de voortdurend veranderende snelheid van alle vochtfronten worden bijgehouden.
- Om dit te kunnen onthouden we van elk punt van het vochtprofiel de beide vochtgehalten en de beide ontstaanstijden.
- Voor gewone punten van het vochtprofiel die zelf geen vochtfront zijn,
- zijn beide vochtgehalten en ontstaanstijden hetzelfde.
- Bij punten die zelf vochtfront zijn is het vochtgehalte en de starttijd aan de bovenstroomse zijde gelijk aan die van het laatste punt waardoor het vochtfrontpunt werd ingehaald;
- aan de benedenstroomse zijde zijn vochtgehalte en starttijd van dit vochtfrontpunt gelijk aan die van het laatste punt dat door het vochtfront werd ingehaald.
- Hoever twee opeenvolgende punten van het vochtprofiel ook uit elkaar liggen,
- de lijn ertussen kan altijd met willekeurige precisie worden geconstrueerd op basis van de positie van de punten en hun ontstaanstijden.
+ bij te houden wanneer ze elkaar inhalen en opslokken en moet het vochtgehalte van het ingehaalde punt of inhalende punt worden overgenomen.
+ Ook moet de voortdurend veranderende snelheid van alle vochtfronten worden bijgehouden.
+ Om dit te kunnen,
+ bestaat elk punt van het vochtprofiel uit de volgende gegevens
 \end_layout
 
 \begin_layout Standard
-Overigens hoeven we maar weinige punten van een vochtprofiel te onthouden ook al is de percolatiezone heel diep.
- We kunnen met twee punten starten,
- een aan de onderzijde van de wortelzone een een aan de onderzijde van de percolatiezone,
- waarmee het initiële vochtgehalte in de gehele percoloatiezone is vastgelegd.
- Tijdens de simulatie verandert de infiltratie en dus het vochtgehalte aan de onderzijde van de wortelzone voortdurend,
- per dag.
- Elke verandering veroorzaakt een nieuw vochtfront of een nieuwe staart het wilde beeld van over elkaar heen buitelende vochtfronten vlak onder de wortel zone wordt al snel rustig omdat zij elkaar inhalen en opslokken.
- En telkens wanneer een punt wordt opgeslokt door een vochtfront verdwijnt het uit het profiel,
- waardoor in het profiel al snel maar enkele vochtfronten overblijven en het aantal te traceren punten,
- ongeacht de dikte van de percolatiezone,
- maar zeer beperkt blijft.
- In langere perioden met droogte gebeurt er helemaal niets behalve dat het profiel zeer traag zijn vocht verliest.
- Helemaal droog kan het profiel nooit worden omdat bij veldcapaciteit de snelheid nul wordt en geen vocht meer het profiel uit kan stromen.
- Om een profiel in detail met veel punten te tekenen berekenen we het verloop van het vochtgehalte tussen elk paar profielpunten aan de hand van hun snelheid,
- dat wil zeggen uit hun positie en de tijd is verstreken sinds zij zijn ontstaan op 
-\begin_inset Formula $z=0$
+\begin_inset Formula 
+\[
+\left(\begin{array}{ccccccccc}
+t & t_{stL} & t_{stR} & z & \text{\ensuremath{\theta_{L}}} & \theta_{R} & V & V_{p} & F\end{array}\right)
+\]
+
 \end_inset
 
-.
+
 \end_layout
 
 \begin_layout Standard
-Om gewone en frontpunten goed te kunnen volgen is het essentieel de eerstvolgende schoktijd uit te rekenen.
- Dat wil zeggen het moment dat een punt een front inhaalt of omgekeerd een front een punt inhaalt.
- De enige moeilijkheid hierbij is dat de snelheid van vochtfronten voortdurend verandert,
- terwijl die van de gewone punten constant is.
- De verplaatsing van een remmend of versnellend vochtfront wordt met een Runge-Kutta benadering bepaald.
- De nauwkeurigheid hiervan is niet absoluut waardoor een inhalend punt soms het front op een mm voorbij schiet.
- Dit is gemakkeijk te controleren en is zo weinig dat het gemiddelde van de twee punten kan worden genomen.
-\end_layout
-
-\begin_layout Standard
-Om de flux door het freatisch vlak te berekenen dienen we het vochtprofiel te snijden met de lijn 
-\begin_inset Formula $z=z_{wt}$
+Het vochtprofiel bestaat uit een array van zulke records.
+ 
+\begin_inset Formula $t$
 \end_inset
 
- met 
-\begin_inset Formula $z_{wt}$
+ is de actuele tijd.
+ Deze is voor alle punten in het profiel altijd hetzelfde.
+ 
+\begin_inset Formula $t_{stL}$
 \end_inset
 
- de diepte van de watertafel.
- Dit snijden gebeurt door het vochtprofiel te construeren tussen het profielpunt dat zich het dichtst boven 
-\begin_inset Formula $z_{wt}$
+ is de tijd dat het punt werd 
+\begin_inset Quotes pld
 \end_inset
 
- bevindt en het punt dat zich het dichtst daaronder bevindt en die profiel te interpoleren op het punt 
-\begin_inset Formula $z_{wt}$
+geboren
+\begin_inset Quotes prd
 \end_inset
 
-.
- Dit gebeurt dynamisch en het is dus geen probleem om 
-\begin_inset Formula $z_{wt}$
+ (stroomopwaartse zijde),
+ 
+\begin_inset Formula $t_{stR}$
 \end_inset
 
- zelf in de tijd te laten fluctueren met de werkelijke grondwaterstand,
- mits die bekend is.
-\end_layout
-
-\begin_layout Standard
-Op basis van het beschreven gedrag mag men verwachten dat dikke percolatiezones op voldoende diepte een gemiddeld vochtgehalte hebben dan past bij het jaargemiddelde neerslagoverschot,
- met in de winter bovenin wat meer dan in de zomer,
- maar erg veel gaat het niet verschillen.
-\end_layout
-
-\begin_layout Subsection
-Hoe verloopt een simulatie?
-\end_layout
-
-\begin_layout Standard
-Neerslag en potentiële verdamping (of Makkinkverdamping) op dagbasis worden gevoed aan een interceptie-wortelzone (bakjes) model.
- Het resultaat daarvan een lek uit de wortelzone op dagbasis die bovenaan de percolatiezone wordt gevoed.
- Deze percolatiezone bestaat initieel uit twee punten,
- een aan de onderzijde van de wortelzone 
-\begin_inset Formula $z_{0}$
+ idem voor de benedenstroomse zijde.
+ 
+\begin_inset Formula $z$
 \end_inset
 
- en een op de diepte van het grondwaterniveau 
-\begin_inset Formula $z_{wt}$
+ is de diepte van het vochtprofielpunt onder de wortelzone in cm.
+ 
+\begin_inset Formula $\theta_{L}$
+\end_inset
+
+ en 
+\begin_inset Formula $\theta_{R}$
+\end_inset
+
+ zijn het vochtgehalte aan respectievelijk de boven- en benedenstroomse zijde van het profielpunt,
+ 
+\begin_inset Formula $V$
+\end_inset
+
+is de snelheid aan het eind van de tijdstap en 
+\begin_inset Formula $V_{p}$
+\end_inset
+
+ de snelheid aan het eind van de voorgaande tijdstap.
+ Beide snelheden worden onthouden om de versnelling tijdens de volgende tijdstap goed te kunnen voorspellen.
+ 
+\begin_inset Formula $F$
 \end_inset
 
 ,
- waarmee het initiële vochtgehalte voor de gehele percolatiezone vast is gelegd.
- Aan het begin van elke tijdstap verandert de lek uit de wortelzone en daarmee het vochtgehalte op die plek.
-\end_layout
-
-\begin_layout Standard
-Aan het begin van een nieuwe dag,
- zijn alle punten sinds de voorgaande dag verplaatst rekening houdend met hun snelheden en de mogelijkheid dat zij elkaar inhalen (zie verderop).
-\end_layout
-
-\begin_layout Standard
-Aan het begin van de nieuwe dag worden een of twee profielpunten gecreëerd:
-\end_layout
-
-\begin_layout Itemize
-Gaat de lek,
- en dus het vochtgehalte,
- ten opzichte van de voorgaande dag omhoog,
- dan is het punt op 
-\begin_inset Formula $z=0$
+ tenslotte,
+ is een vlag die zegt of een punt wel of geen frontpunt is.
+ Of dat het geval is volgt natuurlijk direct uit de vraag of 
+\begin_inset Formula $\text{\ensuremath{\theta_{L}}}$
 \end_inset
 
- een vochtfront en krijgt aam de benendenstroomse zijde het vochtgehalte van de voorgaande dag en aan de bovenstroomse zijde dat van de nieuwe dag.
- Bovendien krijgt dit punt aan beide zijden de huidige tijd als ontstaanstijd mee en krijgt het punt een vlag mee die signaleert dat dit punt een vochtfront is.
+ en 
+\begin_inset Formula $\theta_{R}$
+\end_inset
+
+ van elkaar verschillen,
+ maar een aparte vlag is soms wat efficiënter.
 \end_layout
 
-\begin_layout Itemize
-Gaat de lek uit de wortelzone omlaag ten opzichte van de voorgaande dag,
- dan worden twee nieuwe punten gecreëerd op 
-\begin_inset Formula $z=0$
+\begin_layout Standard
+Elke regel in het vochtprofiel stelt dus een punt van het vochtprofiel voor.
+ Haalt zo'n punt een ander punt in,
+ dan neemt het aan zijn benedenstroomse zijde de 
+\begin_inset Formula $\theta_{R}$
+\end_inset
+
+ en de 
+\begin_inset Formula $t_{stR}$
+\end_inset
+
+ van het ingehaalde punt over en wordt het ingehaalde punt uit het profiel verwijderd.
+ Een dat wordt ingehaald is hetzelfde als dat het achterliggende punt het punt inhaal,
+ zodat we die situatie niet hoeven te onderscheiden.
+\end_layout
+
+\begin_layout Standard
+We kunnen ten alle tijde het volledige vochtprofiel van punten tussen de expliciet onthouden profielpunten berekenen.
+ Hiervoor zijn de ontstaanstijden of 
+\begin_inset Quotes pld
+\end_inset
+
+geboortetijden van de profielpunten essentieel.
+ Punten van dezelfde staart zijn altijd 
+\begin_inset Quotes pld
+\end_inset
+
+op hetzelfde moment geboren
+\begin_inset Quotes prd
 \end_inset
 
 .
- Het eerste punt krijgt aan beide zijden het vochtgehalte van de voorgaande dag (overeenkomend met punt A' in fig.
+ Dus wanneer 
+\begin_inset Formula $t_{stR}$
+\end_inset
+
+ van het bovenstroomse punt gelijk is aan 
+\begin_inset Formula $t_{stL}$
+\end_inset
+
+van het benedenstroomse punt dan behoren zij tot dezelfde staart,
+ en dat geldt dus ook voor alle (niet onthouden) punten daartussen.
+ Van elk van deze punten weten we de positie,
+ de huidige tijd en de geboortetijd.
+ We weten dus ook hun snelheid want die was altijd constant,
+ sinds hun geboorte.
+ En daarmee weten we hun vochtgehalte want dat is eenduidig gekoppeld aan de snelheid.
+ Voor 
+\begin_inset Formula $\theta\left(V\right)$
+\end_inset
+
+,
+ de reciproque relatie van 
+\begin_inset Formula $V\left(\theta\right)$
+\end_inset
+
+,
+ bestaat geen direct mathematisch verband,
+ maar dat verband kan makkelijk bepaald worden door interpolatie in de grafiek 
+\begin_inset Formula $\theta-V\left(\theta\right)$
+\end_inset
+
+ met 
+\begin_inset Formula $V\left(\theta\right)=dK\left(\theta\right)/d\theta$
+\end_inset
+
+.
+ Met andere woorden,
+ om een zeer gedetailleerd profiel te kunnen construeren tussen deze twee profielpunten die willekeurig ver uit elkaar liggen,
+ berekenen we eerste de snelheid van een willekeurig aantal tussenpunten uit 
+\begin_inset Formula $V=z/\left(t-t_{st}\right)$
+\end_inset
+
+ en vervolgens hun vochtgehalte 
+\begin_inset Formula $\theta=\theta\left(V\right)$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+Wanneer twee opeenvolgende profielpunten niet tot dezelfde staart behoren was de geboorte van de benedenstroomse zijde later dan van het stroomafwaartse punt.
+ Bij dagelijks constante infiltratie ontstaat bij toename van de flux op 
+\begin_inset Formula $z=0$
+\end_inset
+
+ direct al een vochtfront.
+ De voorzijde daarvan krijgt het vochtgehalte 
+\begin_inset Formula $\theta_{E}$
+\end_inset
+
+ van de voorgaande dag maar als starttijd 
+\begin_inset Formula $t_{stR}$
+\end_inset
+
+ de huidige dag.
+ Achteropkomende en inhalende profielpunten zijn in een profiel dus altijd herkenbaar aan dezelfde 
+\begin_inset Formula $\theta$
+\end_inset
+
+ aan de benedenstroomse zijde maar een latere geboortedatum.
+ De latere geboortedatum van het stroomopwaartse profielpunt impliceert altijd een blok infiltratie met constante 
+\begin_inset Formula $\theta$
+\end_inset
+
+,
+ als in fig.
  
 \begin_inset CommandInset ref
 LatexCommand ref
@@ -1807,52 +2567,126 @@ nolink "false"
 \end_inset
 
 .
- Het tweede punt krijgt aan beide zijden het nieuwe vochtgehalte (overeenkomend met punt F in fig.
- 
-\begin_inset CommandInset ref
-LatexCommand ref
-reference "fig:infiltratie_blok"
-plural "false"
-caps "false"
-noprefix "false"
-nolink "false"
+ Het profiel tussen opeenvolgende punten die hieraan voldoen is dus altijd een rechte lijn met het vochtgehalte 
+\begin_inset Formula $\theta_{R}$
+\end_inset
 
+ van het stroomopwaartse punt,
+ en is gelijk aan 
+\begin_inset Formula $\theta_{L}$
+\end_inset
+
+ van het benedenstroomse punt.
+\end_layout
+
+\begin_layout Standard
+Met deze regels kunnen we elk deel van het vochtprofiel in willekeurige precisie construeren tussen elk paar onthouden profielpunten,
+ ook al liggen die vele meters uit elkaar.
+ We kunnen dus de simulatie starten met een enkel profielpunt op 
+\begin_inset Formula $z=0$
+\end_inset
+
+ of met tevens een profielpunt op 
+\begin_inset Formula $z=z_{gwt}$
+\end_inset
+
+,
+ om direct ook een punt aan de onderzijde van de percolatiezone te hebben,
+ om daar de flux naar het verzadigde grondwater te kunnen uitrekenen.
+\end_layout
+
+\begin_layout Standard
+We starten de simulatie daarom in de regel met een initieel profiel bestaande uit slechts twee vochtpunten,
+ een bovenin en een onderdaan de percolatiezone.
+ Het vochtgehalte in deze twee punten bepaalt het initiële vochtgehalte in het hele profiel.
+ Dit vochtgehalte is belangrijk,
+ want als die laag wordt gekozen,
+ bijvoorbeeld op veldcapaciteit,
+ dan is de snelheid in het vochtprofiel overal zo goed als nul.
+ De infiltratie bovenin begint dan met een scherp contrast waardoor de daalsnelheid heel gering is en het jaren kan duren vooraleer het eerste vochtfront beneden aankomt.
+ Het is daarom veel beter om te starten met een vochtgehalte dat overeenkomt met de gemiddelde flux van zeg 
+\begin_inset Formula $q=0.1$
+\end_inset
+
+ cm/d.
+\end_layout
+
+\begin_layout Standard
+Tijdens de simulatie wordt het profiel dag voor dag aangepast.
+ Bovenin komt er steeds een of twee nieuwe vochtpunten bij.
+ Wanneer de flux omhoog gaat is dit punt direct al een vochtfront en krijgt daardoor direct twee vochtgehaltes mee.
+ Dat aan de benedenstroomse zijde is dat hete vochtgehalte van de voorgaande dag en aan de bovenzijde dat van de huidige dag.
+ Wanneer de infiltratieflux omlaag gaat ontstaat er een nieuwe staart.
+ In dat geval worden twee nieuwe punten bovenaan het vochtfront toegevoegd.
+ Het benedenstroomse punt van die twee krijgt aan beide zijden de 
+\begin_inset Formula $\theta$
+\end_inset
+
+ van de vorige dag,
+ het bovenstroomse punt van de twee krijgt aan beide zijden de 
+\begin_inset Formula $\theta$
+\end_inset
+
+ van de huidige dag.
+ Deze twee punten zullen vervolgens steeds verder uit elkaar bewegen omdat het benedenstroomse punt sneller beweegt.
+\end_layout
+
+\begin_layout Standard
+Blijft de infiltratie gelijk aan die van de voorgaande dag,
+ dan hoeven we helemaal geen punten toe te voegen.
+ Dat scheelt in drogere perioden zonder infiltratie honderden punten die niet meegenomen hoeven te worden.
+\end_layout
+
+\begin_layout Standard
+Vervolgens worden alle profielpunten over een tijdstap verplaatst.
+ Dat gaat niet zomaar.
+ We zullen onderweg steeds moeten kijken of er misschien ergens een vochtpunt wordt ingehaald.
+ Als dat binnen de tijdstap het geval blijkt,
+ dan worden de vochtpunten verplaatst over deze fractie van de tijdstap.
+ Vervolgens wordt het ingehaalde punt afgehandeld (opgeslokt).
+ Dat wil zeggen het inhalende punt krijgt aan de benedenstroomse zijde de 
+\begin_inset Formula $\theta_{R}$
+\end_inset
+
+ en 
+\begin_inset Formula $t_{stR}$
+\end_inset
+
+ van het benedenstroomse punt en het ingelopen punt wordt uit het profiel verwijderd.
+ Dan wordt opnieuw de volgende 
+\begin_inset Quotes pld
+\end_inset
+
+schoktijd
+\begin_inset Quotes prd
+\end_inset
+
+ berekend en wordt de procedure herhaald tot er geen punten meer zijn die binnen de tijdstap worden overlopen.
+ De punten worden tenslotte verplaatst over het restant van de tijdstap.
+ Enzovoorts.
+\end_layout
+
+\begin_layout Standard
+Een complicatie bij de verplaatsing van de vochtpunten is dat de snelheid van frontpunten niet constant is.
+ De snelheid van frontpunten hangt af van zowel hun 
+\begin_inset Formula $\theta_{R}$
+\end_inset
+
+ als hun 
+\begin_inset Formula $\theta_{L}$
 \end_inset
 
 .
- Bovendien krijgen beide punten de huidige simulatietijd als ontstaanstijd mee plus een vlak die signaleert dat het geen vochtfrontpunten zijn.
- Deze twee punten vormen het begin van een nieuwe staart,
- die immers altijd ontstaat wanneer het vochtgehalte daalt.
- Beide punten worden vervolgens in de tijd verplaatst en gaan dus overeenkomstig hun verschillende vochtgehalte uit elkaar lopen.
-\end_layout
+ We kunnen bij gegeven 
+\begin_inset Formula $\theta_{L}$
+\end_inset
 
-\begin_layout Itemize
-Verandert de lek uit de wortelzone niet,
- dan hoeven we helemaal geen nieuw vochtpunt te genereren.
- Dit is overigens over lange perioden in de zomer het geval.
-\end_layout
+ en 
+\begin_inset Formula $\theta_{R}$
+\end_inset
 
-\begin_layout Standard
-Het profiel is nu bijgewerkt voor het begin van de nieuwe simulatiedag.
- Vervolgens worden alle vochtpunten van het profiel verplaatst.
- Dat gaat als volgt.
- Eerst worden de kortste tijd berekend waarop een punt en volgend punt inhaalt.
- Dit is de shock-time.
- Als deze tijd binnen de hudige simulatiedag valt moet deze situatie apart worden verwerkt.
- Alle punten worden dan verplaatst tot de schoktijd.
- Dan neemt het inhalende punt zijn benedenstroomse zijde het vochtgehalte en de ontstaanstijd over van het ingehaalde punt en wordt het laatste uit het profiel verwijderd.
- (De situatie dat een punt van de bovenstroomse zijde wordt ingelopen hoeft niet apart te worden beschouwd,
- want die is equivalent aan de situatie dat het achteropkomende punt een benedenstrooms punt inhaalt).
- Dan wordt de nieuwe schoktijd berekend en wordt de procedure herhaald,
- totdat er binnen de tijdstap geen schoktijden meer zijn.
- Daarna worden alle profielpunten verder verplaatst over het restant van de tijdstap.
-\end_layout
-
-\begin_layout Standard
-Bij de verplaatsing van de punten moet er rekening mee worden gehouden dat de snelheid van frontpunten in de regel verandert gedurende elke tijdstap.
- Dit komt omdat het vochtgehalte aan beide zijden van een frontpunt verandert wanneer zich daar een staart bevindt,
- wat gedurende de simulatie meestal het geval is.
- De snelheid van een frontpunt volgt direct uit zijn boven- en benedenstrooms het vochtgehalte (zie formule 
+ deze snelheid op elk moment berekenen met vgl.
+ 
 \begin_inset CommandInset ref
 LatexCommand ref
 reference "eq:v_front"
@@ -1863,14 +2697,122 @@ nolink "false"
 
 \end_inset
 
-).
- Het vochtgehalte zelf volgt altijd eenduidig uit de positie van het frontpunt en de ontstaanstijd aan beide zijden van het frontpunt.
- Het vochtgehalte aan beide zijden van het vochtfront is dus op elk moment exact te berekenen en daarmee ook de snelheid van het vochtpunt,
- die tijdens de tijdsdtap veranderdt.
- In het model wordt de verplaatsing van vochtpunten berekend met een 2e orde Runge-Kutta stap.
- Hiermee wordt een kleine fout gemaakt die ertoe kan leiden dat een achteropkomend punt tot aan de schoktijd het voorgaande punt net voorbij schiet.
- Het verschil is echter hoogstens in de orde van een mm.
- Dit rekenkundige euvel is gemakkelijk vast te stellen waarna de gemiddelde positie van de twee punten wordt genomen om het schokpunt (inhaalpunt) te bepalen.
+.
+ Maar daarvoor moeten we eerst 
+\begin_inset Formula $\theta_{R}$
+\end_inset
+
+ en 
+\begin_inset Formula $\theta_{L}$
+\end_inset
+
+ van het frontpunt zelf berekenen.
+ Dat kan door de snelheid van de bovenstroomse zijde te berekenen uit 
+\begin_inset Formula $V_{L}=z/\left(t-t_{stR}\right)$
+\end_inset
+
+ en de snelheid aan de benedenstroomse zijde uit 
+\begin_inset Formula $V_{R}=z/\left(t-t_{stL}\right)$
+\end_inset
+
+.
+ Deze snelheden bepalen direct 
+\begin_inset Formula $\theta_{L}$
+\end_inset
+
+ en 
+\begin_inset Formula $\theta_{R}$
+\end_inset
+
+ uit de eerder genoemde relatie 
+\begin_inset Formula $\theta\left(V\right)$
+\end_inset
+
+.
+ Deze snelheden zijn absoluut,
+ zodat we op elk willekeurig moment de 
+\begin_inset Formula $\theta_{L}$
+\end_inset
+
+ en 
+\begin_inset Formula $\theta_{r}$
+\end_inset
+
+ van frontpunten kunnen berekenen en daarmee ook hun voortdurend veranderende snelheid.
+\end_layout
+
+\begin_layout Standard
+Bij de verplaatsing van frontpunten passen we een Runge-Kutta 2e orde benadering toe om hun veranderende snelheid tijdens een tijdstap in rekening te brengen.
+ Op basis van de snelheid en positie van een frontpunt aan het eind van voorgaande tijdstap voorspellen we de positie aan het eind van de huidige tijdstap.
+ Op dat nieuwe punt bepalen we exact de nieuwe 
+\begin_inset Formula $\theta_{L}$
+\end_inset
+
+ en 
+\begin_inset Formula $\theta_{R}$
+\end_inset
+
+ en de nieuw snelheid.
+ Vervolgens nemen we het gemiddelde van de nieuwe en de voorgaande snelheid en gebruiken deze om het punt te verplaatsen.
+ Tenslotte berekenen we op deze gecorrigeerde nieuwe positie de nieuwe 
+\begin_inset Formula $\theta_{L}$
+\end_inset
+
+,
+ 
+\begin_inset Formula $\theta_{R}$
+\end_inset
+
+ en snelheid 
+\begin_inset Formula $V$
+\end_inset
+
+.
+ Door steeds de snelheid op het voorgaande punt te onthouden 
+\begin_inset Formula $\left(V_{P}\right)$
+\end_inset
+
+ dan deze Runge-Kutta-stap redelijk efficiënt worden uitgevoerd.
+ Deze Runge-Kutta-stap heeft wel een enigszins beperkte nauwkeurigheid.
+ Hierdoor kan het voorkomen dat gedurende een tijdsdtap een stroomopwaarts punt het stroomafwaartse punt net inhaalt.
+ Het blijkt daarbij om (fracties van) een mm te gaan.
+ Wanneer het gebeurt,
+ worden de 
+\begin_inset Formula $z$
+\end_inset
+
+-coördinaten van deze twee punten eenvoudig omgedraaid.
+ De fout is verwaarloosbaar,
+ de oorzaak bekend en het probleem definitief opgelost.
+\end_layout
+
+\begin_layout Standard
+De vochtpunten wandelen voortdurend verder de percolatiezone af en passeren daarbij ook het veronderstelde grondwatervlak.
+ Dit vlak speelt geen enkele rol in de simulatie.
+ We willen echter wel weten hoe groot de flux daar is.
+ Om deze te bepalen wordt steeds tussen het laatste punt boven het grondwatervlak en het eerste eronder een gedetailleerd vochtprofiel geconstrueerd en wordt vervolgen het vochtgehalte op de diepte van het grondwatervlak geïnterpoleerd en omgezet naar de flux,
+ de grondwateraanvulling.
+ Om het profiel niet nodeloos lang te maken,
+ wordt het eerste punt onder het grondwatervlak met aanpassing van 
+\begin_inset Formula $\theta_{L}$
+\end_inset
+
+ en 
+\begin_inset Formula $t_{stL}$
+\end_inset
+
+ verschoven naar de diepte van het grondwatervlak en wordt de rest van het profiel daaronder verwijderd.
+\end_layout
+
+\begin_layout Standard
+De simulatie is niet bijster snel omdat er best heel wat moet gebeuren onderweg.
+ Maar bij het ontwikkelen wil ik ook graag een video maken om te zien hoe de simulatie verloopt en hoe het profiel met zijn over elkaar buitelende vochtfronten zich gedurende de simulatie gedraagt.
+ Dat geeft steeds een bijzonder aardig beeld,
+ waar ook het een en ander van te leren valt.
+ Alleen om de video te kunnen maken wordt per tijdstap van 1 dag het gehele vochtprofiel (dus zeg over 20 m diepte) op basis van de onthouden profielpunten geconstrueerd met een resolutie van 10 cm.
+ Elk profiel wordt vervolgens in volle resolutie bewaard in een dictionary.
+ Dat vergt het een en ander en is mooi voor de video maar niet noodzakelijk voor de eigenlijke simulatie.
+ Zonder video valt het allemaal best mee.
 \end_layout
 
 \begin_layout Subsection
@@ -1891,23 +2833,42 @@ nolink "false"
 \end_inset
 
  toont 3 frames uit de simulatievideo die loopt van januari 2000 tot augustus 2024.
- De horizontale lijnen dienen als houvast het geven het vochtgehalte bij veldcapaciteit,
- bij een neerwaartse flux van 1 mm/d en van 2 mm/d (zie legenda in de figuur).
+ De horizontale lijnen dienen als houvast.
+ Zij geven het vochtgehalte bij veldcapaciteit en bij een neerwaartse flux van 1 mm/d en van 2 mm/d (zie legenda in de figuur).
  De getrokken blauwe lijn is het berekende vochtprofiel op de bewuste dag.
  De rode punten geven voor elk vochtpunt in het profiel het vochtgehalte links en rechts tegen het punt.
  Als het punt een frontpunt is,
- en dat zijn ze allemaal,
- zijn beide vochtgehalten verschillend en zijn beide gehalten aangeduid.
- Alleen de profielpunten met rode punten worden onthouden,
- de blauwe profiellijn ertussen wordt dynamisch berekend en hoeft niet te worden opgeslagen.
+ en dat zijn ze praktisch allemaal,
+ dan verschillen beide vochtgehalten en zijn beide vochtgehalten aangeduid met een rode punt.
+ Alleen de profielpunten met rode punten worden tijdens de simulatie onthouden;
+ de blauwe profiellijn ertussen wordt dynamisch berekend met een resolutie van 10 cm en hoeft feitelijk niet te worden opgeslagen en behalve voor de video zelfs niet te worden berekend.
 \end_layout
 
 \begin_layout Standard
-De eerste figuur geeft het vochtprofiel aan het begin van de herfst.
- Bovenin (link) tekent zich de hogere vochtigheid van de herst af,
- maar onderin verloopt de vochtigheid zeer geleidelijk en weerspiegelt dit nog de zomer,
- waarin over langere periode geen lek uit de wortelzone optrad.
- Bovenin droogt het profiel in de zomer uit maar onderin niet.
+In de figuren is 
+\begin_inset Formula $z$
+\end_inset
+
+ diepte,
+ dus naar rechts is naar beneden,
+ maar dat zal voor het begrijpen weinig moeilijkheden opleveren.
+\end_layout
+
+\begin_layout Standard
+Het eerste videoframe in figuur 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Frame-van-het-profiel"
+plural "false"
+caps "false"
+noprefix "false"
+nolink "false"
+
+\end_inset
+
+ geeft het vochtprofiel aan het begin van de herfst.
+ Bovenin het profiel (dus links in de grafiek) tekent zich de hogere vochtigheid van de herfst af,
+ maar onderin verloopt de vochtigheid meer geleidelijk en weerspiegelt dit nog de voorafgaande zomer.
  De tweede grafiek van fig.
  
 \begin_inset CommandInset ref
@@ -1920,28 +2881,50 @@ nolink "false"
 
 \end_inset
 
- geeft het vochtprofiel in januari 2004.
- De natte winterperiode manifesteert zich boven in het profiel met sterk variërende vochtgehaltes en vochtfronten die elkaar steeds inhalen,
- waardoor er op grotere diepte nog maar weinig vochtfronten overblijven.
- De derde grafiek geeft de situatie aan het eind van de winter weer,
- wanneer door de voorafgaande natte winterperiode het vochtgehalte over de eerste 10 m van het profiel het grootst is,
- net als voor de snelheid waarmee het front zich omlaag verplaatst.
+ geeft het vochtprofiel eind januari 1999.
+ De natte winterperiode manifesteert zich bovenin het profiel met sterk variërende vochtgehaltes en vochtfronten die elkaar steeds inhalen.
+ Door dit inhalen blijven er op grotere diepte nog maar weinig vochtfronten over.
+ De derde grafiek geeft de situatie aan in de droge herfst van 1999 weer.
+ Tijdens de droge zomer is het profiel bovenin sterkt uitgedroogd,
+ maar onderin niet.
+ De hoge waarden onderin het profiel zijn nog het residu van de natte winter van 1998,
+ maar door het elkaar inhalen van de verschillende vochtfronten is het profiel onderin glad gestreken en is het feitelijk een lange 
+\begin_inset Quotes pld
+\end_inset
+
+staart
+\begin_inset Quotes prd
+\end_inset
+
+ geworden.
+ Door het hogere vochtgehalte is de stroming onderin het profiel dan veel groter dan bovenin.
+\end_layout
+
+\begin_layout Standard
+De horizontale lijnen geven houvast.
  De daalsnelheid 
 \begin_inset Formula $V$
 \end_inset
 
- van vochtprofielpunten bij bodem O05 (Grof zand) is 3.9 cm/d bij q = 1 mm/d en 6.4 cm/d bij q = 2 mm/d,
- wat wil zeggen de daling in d/m bedraagt resp.
- 25.5 d/m bij 
+ van punten in het vochtprofiel bij grondsoort 'O05' (Grof zand) is 3.9 cm/d bij 
 \begin_inset Formula $q=1$
 \end_inset
 
- mm/d en 15.6 d/m bij 
+ mm/d en 6.4 cm/d bij 
+\begin_inset Formula $q=2$
+\end_inset
+
+ mm/d,
+ dus 25.5 dag/m bij 
+\begin_inset Formula $q=1$
+\end_inset
+
+ mm/d en 15.6 dag/m bij 
 \begin_inset Formula $q=2$
 \end_inset
 
  mm/d.
- Hoe lang het neerslagoverschot onderweg is in de percolatiezone hangt dus duidelijk af van de vraag hoe nat een bepaalde winter was.
+ Hoe lang het neerslagoverschot in de percolatiezone onderweg is hangt dus duidelijk af van de vraag hoe nat een bepaalde winter was.
  Dit is duidelijk te zien in de bovenste grafiek in fig.
  
 \begin_inset CommandInset ref
@@ -1956,7 +2939,7 @@ nolink "false"
 
 .
  De afstand tussen de jaarlijkse piek die de aankomst op 20 m diepte markeert is elk jaar anders.
- De afstand tussen de pieken in simulatiejaar 3 is duidelijk veel korter dan die in de andere jaren.
+ De afstand tussen de pieken tussen 2003 en 2004 is duidelijk korter dan die tussen 2004 en 2005.
 \end_layout
 
 \begin_layout Standard
@@ -1969,7 +2952,7 @@ status open
 
 \begin_layout Plain Layout
 \begin_inset Graphics
-	filename still_simulatie_1055d.png
+	filename frame1998-11-11.png
 	lyxscale 35
 	width 80text%
 
@@ -1980,7 +2963,7 @@ status open
 
 \begin_layout Plain Layout
 \begin_inset Graphics
-	filename still_simulatie_1467d.png
+	filename fream1999-30-01.png
 	lyxscale 35
 	width 80text%
 
@@ -1991,7 +2974,7 @@ status open
 
 \begin_layout Plain Layout
 \begin_inset Graphics
-	filename still_simulatie_1558d.png
+	filename frame1999-11-03.png
 	lyxscale 35
 	width 80text%
 
@@ -2010,7 +2993,8 @@ name "fig:Frame-van-het-profiel"
 
 \end_inset
 
-Frame van het 20 m diepe vochtprofiel op dag 1467 en 1558 van de video van de simulatie vanaf Jan 2020.
+Frame van het 20 m diepe vochtprofiel op 28-11-1998,
+ 30-01-1999 en 01-11–1999 van de video van de simulatie vanaf 1987.
  De horizontale lijnen zijn ter oriëntatie (zie legenda in de figuur).
  Een gemiddelde flux van 1-2 mm/d mag worden verwacht gezien het gemiddelde neerslagoverschot.
  De dikke rode punten zijn het stroomopwaartse en stroomafwaartse vochtgehalte van de profielpunten.
@@ -2018,9 +3002,9 @@ Frame van het 20 m diepe vochtprofiel op dag 1467 en 1558 van de video van de si
 \begin_inset Formula $z=0)$
 \end_inset
 
- en het elkaar inhalen van punt zijn de facto alle profielpunten frontpunten geworden.
+ en het elkaar inhalen van punten zijn de facto alle profielpunten frontpunten geworden.
  Alleen de punten met de rode stippen worden onthouden,
- de blauwe profielijnen ertussen zijn daaruit berekend voor de weergave in de video.
+ de blauwe profiellijnen ertussen zijn daaruit berekend voor de weergave in de video.
 \end_layout
 
 \end_inset
@@ -2037,6 +3021,10 @@ Frame van het 20 m diepe vochtprofiel op dag 1467 en 1558 van de video van de si
 
 \end_layout
 
+\begin_layout Section
+Munsflow versus de kinematische golf
+\end_layout
+
 \begin_layout Standard
 Fig.
  
@@ -2050,19 +3038,49 @@ nolink "false"
 
 \end_inset
 
- laat het verloop zien van de flux aan de boven- en aan de onderzijde van de 20 m dikke percolatiezone.
- In het eerste jaar is deze flux redelijk constant omdat een initieel vochtgehalte is toegepast dat overeen komt met een flux van 1 mm/d,
- ongeveer het gemiddelde neerslagoverschot.
- Pas nadat de nieuwe vochtfronten de onderzijde van de percolatiezone hebben bereikt na ca.
- 350 d,
- verandert dat.
- Opvallend is dat bij deze dikke percolatiezone het winterse neerslagoverschot als een enkel scherp front bij het freatisch vlak aankomt en daarna langzaam maar gestaag daalt tot de volgende piek die de aankomt van het vochtfront van de volgende winter markeert.
- In hoeverre de waterbalans klopt is zo moeilijk te zien.
- Om deze reden is de over de tijd van de simulatie geïntegreerde flux boven- en onderaan de percolatiezone weergegeven in de onderste figuur.
- Het over langere perioden gelijk opgaan van beide lijnen tonen deze waterbalans voldoende aan.
- In de bovenste grafiek valt ook op dat de flux door het freatisch vlak altijd positief is,
- gemiddeld rond de 1 mm/d terwijl die bovenaan de percolatiezone 's zomers over langere perioden nul is.
+ laat het verloop zien van de flux aan de bovenkant van de 20 m dikke percolatiezone zoals berekend met het bakjesmodel voor de wortelzone.
+ De pieken van het vochtgehalte aan de bovenzijde zijn veel groter dan het maximale waarden van uitgedempte signaal aan de onderzijde van de percolatiezone.
+ Om deze reden is het voor de weergave van de flux over het grondwatervlak beter een aparte,
+ meer gedetailleerde verticale schaal te gebruiken.
+ Dit is gedaan in figuur 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:qrtz-qwt"
+plural "false"
+caps "false"
+noprefix "false"
+nolink "false"
+
+\end_inset
+
+.
+ Deze figuur geeft de met Munsflow en de KW berekende flux over het freatisch vlak op 20 m onder de wortelzone voor de infiltratie zoals weergegeven in fig.
  
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Berekende-lek-uit-wortelzone"
+plural "false"
+caps "false"
+noprefix "false"
+nolink "false"
+
+\end_inset
+
+.
+ De signalen blijken volstrekt verschillend.
+ De flux door de KW wordt gedomineerd door de scherpe vochtfronten die onderweg ontstaan,
+ die flux berekend met Munsflow wordt gekenmerkt door het uitsmeren in de tijd.
+ Dit uitsmeren is het gevolg van de capillaire zuigspanning die Munsflow laat werken,
+ maar die niet in de KW zit.
+ In Munsflow duurt de passage van de percolatiezone altijd even lang,
+ terwijl die bij de KW sterk afhangt van hoe nat een voorgaande winterseizoen was.
+ Bij Munsflow hangt het resultaat sterk af van het gemiddelde vochtgehalte waaromheen wordt gelineariseerd.
+ Munsflow rekent ontzettend snel,
+ de KW heeft duidelijk meer tijd nodig en is een stuk complexer in zijn implementatie.
+ Maar voor beide geldt dat het niet nodig is om de percolatiezone op te delen in afzonderlijke plakken laat staan dunne plakken.
+ Voor beide geldt ook,
+ dat met de gebruikelijke tijdstap van 1 dag (of desnoods meerderde dagen) kan worden gewerkt en geen onderverdeling nodig is.
+ KW moet alleen vaak tussenstappen nemen om de momenten te berekenen en af te handelen waarop punten elkaar inhalen.
 \end_layout
 
 \begin_layout Standard
@@ -2084,8 +3102,90 @@ status open
 \end_layout
 
 \begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:qrtz-qwt"
+
+\end_inset
+
+Flux boven- en onderaan de 20 m dikke percolatiezone..
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+Hoe goed is Munsflow vergeleken met de KW of omgekeerd?
+\end_layout
+
+\begin_layout Standard
+Daar valt verschillend over te denken.
+ Voor een objectief oordeel hebben we vergelijkingsbasis nodig.
+ Deze kan komen van meer geavanceerde modellering zoals met SWAP en ONZAT die de verschillende vereenvoudigende aannamen niet nodig hebben.
+ Of door vergelijking met metingen uit het veld.
+\end_layout
+
+\begin_layout Standard
+Wanneer we met vertrouwen veronderstellen dat een wereldvermaard geavanceerd model als SWAP een goed vergelijkingscriterium biedt,
+ dan moeten we constateren dat KW het echt een stuk beter doet dan Munsflow.
+ Daarvoor zij verwezen naar figuur 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Gehrels7.20"
+plural "false"
+caps "false"
+noprefix "false"
+nolink "false"
+
+\end_inset
+
+ uit
+\begin_inset CommandInset citation
+LatexCommand cite
+key "Gehrels99"
+literal "false"
+
+\end_inset
+
+.
+ De grafiek laat zien dat het resultaat van de simulatie met SWAP bijzonder goed lijkt op dat van de KW.
+ EARTH dat volgens 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "Gehrels99"
+literal "false"
+
+\end_inset
+
+ de percolatiezone op de Munsflow manier doorrekent,
+ zou wat gladder moeten zijn,
+ tenzij het resultaat is gecorrigeerd voor de dagelijks fluctuerende grondwaterstand.
+ Zonder deze correctie moet het verloop glad zijn door de uitsmering die Munsflow veroorzaakt.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+placement document
+alignment document
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
 \begin_inset Graphics
-	filename qwt_O05_cumsum.png
+	filename GehrelsFig720p166.png
+	lyxscale 40
+	width 70text%
 
 \end_inset
 
@@ -2098,13 +3198,38 @@ status open
 \begin_layout Plain Layout
 \begin_inset CommandInset label
 LatexCommand label
-name "fig:qrtz-qwt"
+name "fig:Gehrels7.20"
 
 \end_inset
 
-Flux boven- en onderaan de 20 m dikke percolatiezone.
- Boven flux,
- onder geïntegreerd over de tijd om de balans tussen beide te illustreren.
+Fig.
+ 7.20 uit 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "Gehrels99"
+literal "false"
+
+\end_inset
+
+.
+ Neerslagoverschot bij Radio Kootwijk onderaan een 20 m dikke percolatiezone gesimuleerd met SWAP,
+ EARTH (
+\begin_inset Formula $\approx$
+\end_inset
+
+Munsflow) en afgeleid uit de fluctuatie van het grondwateroppervlak.
+ Deze grafiek vertoont overlap met figuur 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:qrtz-qwt"
+plural "false"
+caps "false"
+noprefix "false"
+nolink "false"
+
+\end_inset
+
+ maar heeft niet per se gelijke infiltratie aan de bovenzijde van de percolatiezone.
 \end_layout
 
 \end_inset
@@ -2119,6 +3244,196 @@ Flux boven- en onderaan de 20 m dikke percolatiezone.
 \end_inset
 
 
+\end_layout
+
+\begin_layout Standard
+Dan is er de vergelijking met metingen.
+ Bepaling van het neerslagoverschot uit de fluctuatie van de grondwaterstand is behoorlijk lastig door de ruis.
+ Maar we kunnen natuurlijk de grondwaterstand simuleren met het neerslagoverschot dat hier is bepaald met Munsflow en de KW.
+ In figuur 
+\begin_inset Formula $7.18$
+\end_inset
+
+van 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "Gehrels99"
+literal "false"
+
+\end_inset
+
+ is dat ook gebeurd.
+ Dan blijken de verschillende methoden het geen van alle slecht te doen.
+ Maar vooral zien we de scherpe pieken die SWAP (en dus de KW) veroorzaakt niet echt terug in het verloop van de grondwaterstand.
+ Daar zijn verschillende redenen voor aan te voeren,
+ zoals ook 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "Gehrels99"
+literal "false"
+
+\end_inset
+
+ doet.
+ Je kan altijd zeggen dat de dikke percolatiezone niet uit een enkele grondsoort bestaat.
+ Maar dat overtuigt mij veel minder dan het argument dat de percolatiezone ruimtelijk en regionaal A) niet uit een en dezelfde grondlaag bestaat en dat B) de dikte van de percolatiezone ruimtelijk en regionaal niet overal gelijk is.
+ Deze laatste aspecten zorgen er voor dat de passagetijd ruimtelijk niet overal gelijk is,
+ dat zodat een vochtpiek op een ene plek op een ander moment bij het grondwater arriveert dan op een andere plek.
+ Hierdoor is de verandering van de grondwaterstand op geen enkele dag ruimtelijk hetzelfde en zullen de bobbels en dalen die dat veroorzaakt in het grondwatervlak zich ruimtelijk voortdurend vereffenen.
+ Hierdoor is de variatie in de grondwaterstand op een willekeurige plek minder is dan je zou verwachten op basis van de pieken in het met SWAP of KW berekende neerslagoverschot.
+\end_layout
+
+\begin_layout Standard
+Munsflow kan het in de praktijk prima blijken te doen,
+ misschien om de verkeerde reden,
+ maar na calibratie kom je een heel eind en het werkt bijzonder efficiënt,
+ zo efficiënt dat het ook ruimtelijk inpasbaar zal zijn,
+ en altijd toepasbaar in een tijdreeksanalyse,
+ vooropgesteld dat de lek uit de wortelzone ongeveer juist is.
+\end_layout
+
+\begin_layout Standard
+KW is gewoon heel elegant omdat het de niet-lineariteit van de onverzadigde zone meeneemt en uiteindelijk toch goed begrijpen kan worden en inzicht verschaft in het gedrag van percolatie door dikke onverzadigde zones.
+ De messcherpe fronten zijn kenmerkend voor de KW.
+ Deze zijn het gevolg van het verwaarlozen van de capillaire spanningen.
+ Juist op een vochtfront kan de capillaire spanning natuurlijk niet echt worden verwaarloosd.
+ De werkelijke fronten zullen daardoor wat minder scherp zijn dan de KW ons wil doen geloven,
+ alhoewel ook SWAP hele scherpe vochtfronten blijkt te berekenen.
+ 
+\end_layout
+
+\begin_layout Bibliography
+\begin_inset CommandInset bibitem
+LatexCommand bibitem
+label "Charbeneau (2000)"
+key "Charb00"
+literal "false"
+
+\end_inset
+
+Charbeneau R.J.
+ (2000) Groundwater Hydraulics and Pollutant Transport.
+ Prentice Hill,
+ ISBN 0-13-975616-7.
+ 593p.
+\end_layout
+
+\begin_layout Bibliography
+\begin_inset CommandInset bibitem
+LatexCommand bibitem
+label "Gherels (1999)"
+key "Gehrels99"
+literal "false"
+
+\end_inset
+
+Gehrels J.C.
+ (1999) Groundwater Level Fluctuations.
+ Separation of natural from anthropogenic influences and determination of groundwater recharge in the Veluwe area,
+ the Netherlands.
+ PhD,
+ Free Unviersity,
+ Amsterdam.
+ ISBN 90-75739-04-4.
+ 271p.
+\end_layout
+
+\begin_layout Bibliography
+\begin_inset CommandInset bibitem
+LatexCommand bibitem
+label "Heinen et al. (2020)"
+key "Hei20"
+literal "false"
+
+\end_inset
+
+Heinen,
+ M.,
+ Bakker G.,
+ Wösten J.M.H.
+ (2020) Waterretentie en Doorlatendheidskarakteristieken van boven- en ondergronden in Nederland:
+ de Staringreeks.
+ Update 2018.
+ Wageningen,
+ Wageingen Environmental Research.
+ Rapport 2978,
+ 78p.,
+ ISSN 1566-7197.
+\end_layout
+
+\begin_layout Bibliography
+\begin_inset CommandInset bibitem
+LatexCommand bibitem
+label "Niswonger et al. (2006)"
+key "NIsw06"
+literal "false"
+
+\end_inset
+
+Niswonger,
+ R.G.,
+ Prudic,
+ D.E.,
+ and Regan,
+ R.S.,
+ 2006,
+ Documentation of the Unsaturated-Zone Flow (UZF1) Package for modeling unsaturated flow between the land surface and the water table with MODFLOW-2005:
+ U.S.
+ Geological Survey Techniques and Methods 6-A19,
+ 62 p.
+\end_layout
+
+\begin_layout Bibliography
+\begin_inset CommandInset bibitem
+LatexCommand bibitem
+label "Olsthoorn (2025)"
+key "Olst25"
+literal "false"
+
+\end_inset
+
+Olsthoorn T.N.
+ (2025) Bodemmodule.
+ Github.
+\end_layout
+
+\begin_layout Bibliography
+\begin_inset CommandInset bibitem
+LatexCommand bibitem
+label "Zwamborn (1995)"
+key "Zwamb95a"
+literal "false"
+
+\end_inset
+
+Zwamborn M.H.
+ (1995) Modellering van de onverzadigde zone ten behoeven van grondwatermodellen.
+ KiwaSWI 95.142.
+ Kiwa Nieuwegein,
+ 91pp.
+\end_layout
+
+\begin_layout Bibliography
+\begin_inset CommandInset bibitem
+LatexCommand bibitem
+label "Zwamborn et al. (1995)"
+key "Zwamb95"
+literal "false"
+
+\end_inset
+
+Zwamborn M.H.,
+ Athmer,
+ W.
+ H.G.J.,
+ Maas,
+ C.
+ (1995) Model voor de berekening van grondwateraanvulling in gebieden met dikke onverzadigde zones.
+ H2O (28) 1995,
+ Nor.
+ 20.
+ 604-606,
+ 609.
 \end_layout
 
 \end_body

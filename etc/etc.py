@@ -9,9 +9,50 @@ import os
 import sys
 import numpy as np
 import pandas as pd
+import calendar
 import matplotlib.pyplot as plt
 import itertools
 from pathlib import Path
+
+# %%
+
+def show_progress(nloops, step=10, bar_length=40):
+    """Show progress bar. (Generator)
+    
+    Usage
+    -----
+    put show_progress in front of a loop.
+    """
+    for ip in range(1, nloops + 1):        
+        yield ip - 1 # --- let return value start at 0
+        if ip % step == 0:
+            progress = ip / nloops
+            filled = int(bar_length * progress)
+            bar = '#' * filled + '-' * (bar_length - filled)
+            sys.stdout.write(f"\r[{bar}] {progress:.0%}")
+            sys.stdout.flush()
+
+    print(flush=True)  # newline at end
+
+
+# %% # --- convert decimal years to datetime64 objects with day accuracy
+
+def decimal_year_to_datetime64(years):
+    years = np.asarray(years)
+    whole = years.astype(int)
+    frac = years - whole
+    
+    dates = []
+    for y, f in zip(whole, frac):
+        # number of days in this year
+        days = 366 if calendar.isleap(y) else 365
+        # start of year
+        start = np.datetime64(f"{y}-01-01")
+        # offset in days
+        offset = int(round(f * days))
+        dates.append(start + np.timedelta64(offset, "D"))
+    return np.array(dates, dtype="datetime64[D]")
+
 
 #%%
 
