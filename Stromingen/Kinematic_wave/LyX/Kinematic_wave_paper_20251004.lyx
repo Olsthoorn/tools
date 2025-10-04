@@ -231,7 +231,7 @@ De vegetatie in een gebied met diepe grondwaterstand kan geen grondwater capilla
  De neerwaartse flux vanuit de wortelzone zal apart moeten worden gemodelleerd.
  Dit kan met een geavanceerd model zoals SWAP of ONZAT,
  maar kan evenzeer met een eenvoudiger bakjesmodel voor interceptie en wortelzone.
- De wortelzone lekt dan alleen wanneer zijn bergend volume (veldkcapaciteit) is bereikt.
+ De wortelzone lekt dan alleen wanneer zijn bergend volume (veldcapaciteit) is bereikt.
  Verdamping uit de wortelzone vindt plaats voor zover er na verdamping uit het interceptie-reservoir nog potentiële verdamping over is.
  Omdat transpiratie moeilijker wordt naarmate de wortelzone meer uitdroogt wordt de verdamping geknepen naar rato van de de verhouding tussen de actuele vulling en de maximale vulling van de wortelzone,
  
@@ -473,12 +473,12 @@ literal "false"
 \end_layout
 
 \begin_layout Standard
-Het rekenkundige voordeel van Munflow is dat de percolatie ter plaatse van het grondwatervlak,
+Het rekenkundige voordeel van Munsflow is dat de percolatie ter plaatse van het grondwatervlak,
  op bijv.
  20 m diepte,
  als een standaard convolutie (dus met impuls-respons) in een enkele rekenstap kan worden becijferd en dus direct past in de aanpak van de bekende tijdreeksanalyse in Menyanthes of Pastas.
- Musnflow kost nauwelijks extra rekentijd.
- Nadeel is dat de niet-lineariteit van de onverzadide zone niet wordt meegenomen,
+ Munsflow kost nauwelijks extra rekentijd.
+ Nadeel is dat de niet-lineariteit van de onverzadigde zone niet wordt meegenomen,
  waardoor de passage van de percolatiezone altijd even lang duurt,
  en de vervorming van het percolatiefront altijd hetzelfde is,
  wat in de praktijk duidelijk niet het geval is.
@@ -582,7 +582,7 @@ literal "false"
 
 \end_inset
 
- hebben de parameters gepubliceerd waarmee voor alle 36 bodems van de Staringreeks de bodemeigenschappen via de Van Genughten-relaties voor elk vochtgehalte of vochspanning.
+ hebben de parameters gepubliceerd waarmee voor alle 36 bodems van de Staringreeks de bodemeigenschappen via de Van Genughten-relaties voor elk vochtgehalte of vochtspanning.
  Mijn bodem-module 
 \begin_inset CommandInset citation
 LatexCommand cite
@@ -1333,7 +1333,7 @@ nolink "false"
 
 \end_inset
 
- de berekende stapresponse en de impuls- and blokresponse gegeven.
+ de berekende staprespons en de impuls- en blokrespons gegeven.
  Deze gelden altijd voor eenheidsinput en worden in gebruik met de werkelijke in put vermenigvuldigd;
  zij zijn daarom gelijk voor vergelijking 
 \begin_inset CommandInset ref
@@ -1366,7 +1366,7 @@ nolink "false"
 \end_inset
 
 .
- Het oppervlak onder de impuls response en de blok response is 1 de blok rsponse is ietsjes naar rechts verschoven omdat zijn gemiddelde niet op 
+ Het oppervlak onder de impuls response en de blok response is 1 de blokrespons is ietsjes naar rechts verschoven omdat zijn gemiddelde niet op 
 \begin_inset Formula $t=0$
 \end_inset
 
@@ -1481,10 +1481,10 @@ nolink "false"
 
 \end_inset
 
- laat dat zien aan de hand van de stapresponsen (doorbraakkrommen) voor een 10 m dikke pecolatiezone.
+ laat dat zien aan de hand van de stapresponsen (doorbraakkrommen) voor een 10 m dikke percolatiezone.
  Bij een hoger gemiddeld vochtgehalte is de daalsnelheid duidelijk veel groter dan bij een lage waarde.
  Dit impliceert dat het voor Munsflow heel veel uitmaakt welk gemiddeld vochtgehalte in de percolatiezone wordt verondersteld.
- Deze verschillen zijn uiteraard volledig het gevolg van de niet-lineairiteit van de eigenschappen van de onverzadigde bodem.
+ Deze verschillen zijn uiteraard volledig het gevolg van de niet-lineariteit van de eigenschappen van de onverzadigde bodem.
 \end_layout
 
 \begin_layout Standard
@@ -1964,15 +1964,15 @@ name "fig:infiltratie_blok"
  Blauw:
  rechthoekig vochtprofiel (ACDF) dat ontstond door constante infiltratie.
  A'B'E'F,
- rood is hetzeflde block enige tijd nadat de infiltratie is gestaakt.
+ rood is hetzelfde blok enige tijd nadat de infiltratie is gestaakt.
  Het vochtfront B'E' loopt langzamer dan de punten er achter,
  zodat het vlak B'C'D'E' op dat moment ontbreekt.
- Voor vlak met oppervlak A is nu de staart met hetzelde oppervlak in de plaats gekomen.
+ Voor vlak met oppervlak A is nu de staart met hetzelfde oppervlak in de plaats gekomen.
  De verschuiving van het,
  CB'E'D met oppervlak B ontbreekt nu aan de achterzijde waar een droge porieruimte is ontstaan met eveneens oppervlak B.
  Punten A,
  B,
- A' en B' beweten even snel,
+ A' en B' bewegen even snel,
  zodat de afstand A-B gelijk is aan de afstand A'-B'.
  Deze punten halen het front in.
  Punt C wordt al direct opgeslokt.
@@ -2013,6 +2013,7 @@ status open
 \begin_layout Plain Layout
 \begin_inset Graphics
 	filename ../images/vochtfront.png
+	width 50text%
 
 \end_inset
 
@@ -2301,7 +2302,7 @@ status open
 \begin_layout Plain Layout
 \begin_inset Graphics
 	filename ../images/V_v_ratio.png
-	width 80text%
+	width 60text%
 
 \end_inset
 
@@ -2775,7 +2776,7 @@ Bij de verplaatsing van frontpunten passen we een Runge-Kutta 2e orde benadering
 
  dan deze Runge-Kutta-stap redelijk efficiënt worden uitgevoerd.
  Deze Runge-Kutta-stap heeft wel een enigszins beperkte nauwkeurigheid.
- Hierdoor kan het voorkomen dat gedurende een tijdsdtap een stroomopwaarts punt het stroomafwaartse punt net inhaalt.
+ Hierdoor kan het voorkomen dat gedurende een tijdstap een stroomopwaarts punt het stroomafwaartse punt net inhaalt.
  Het blijkt daarbij om (fracties van) een mm te gaan.
  Wanneer het gebeurt,
  worden de 
@@ -2955,7 +2956,7 @@ status open
 \begin_inset Graphics
 	filename ../images/frame1998-11-11.png
 	lyxscale 35
-	width 80text%
+	width 60text%
 
 \end_inset
 
@@ -2966,7 +2967,7 @@ status open
 \begin_inset Graphics
 	filename ../images/fream1999-30-01.png
 	lyxscale 35
-	width 80text%
+	width 60text%
 
 \end_inset
 
@@ -2977,7 +2978,7 @@ status open
 \begin_inset Graphics
 	filename ../images/frame1999-11-03.png
 	lyxscale 35
-	width 80text%
+	width 60text%
 
 \end_inset
 
@@ -3277,7 +3278,7 @@ literal "false"
 
  doet.
  Je kan altijd zeggen dat de dikke percolatiezone niet uit een enkele grondsoort bestaat.
- Maar dat overtuigt mij veel minder dan het argument dat de percolatiezone ruimtelijk en regionaal A) niet uit een en dezelfde grondlaag bestaat en dat B) de dikte van de percolatiezone ruimtelijk en regionaal niet overal gelijk is.
+ Maar dat overtuigt mij veel minder dan het argument dat de percolatiezone ruimtelijk en regionaal A) niet uit een en dezelfde grondlaag bestaat en dat B) de dikte van de percolatiezone ruimtelijk en regionaal niet overal gelijk is en data C) het de neerslag zelf niet overal dezelfde is.
  Deze laatste aspecten zorgen er voor dat de passagetijd ruimtelijk niet overal gelijk is,
  dat zodat een vochtpiek op een ene plek op een ander moment bij het grondwater arriveert dan op een andere plek.
  Hierdoor is de verandering van de grondwaterstand op geen enkele dag ruimtelijk hetzelfde en zullen de bobbels en dalen die dat veroorzaakt in het grondwatervlak zich ruimtelijk voortdurend vereffenen.
