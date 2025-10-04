@@ -1,6 +1,8 @@
 # Plot kwargs and plot kwarg text for convenience.
 # See __all__ at the bottom.
 
+import types
+
 plot_kw = {
   'agg_filter': "a filter function, which takes a (m, n, 3) float array and a dpi value, and returns a (m, n, 3) array",
   'alpha': "scalar or None",
@@ -114,5 +116,5 @@ text_kw = {
 }
 
 
-__all__ =[name for name in locals() if callable(locals()[name])
+__all__ =[name for name, obj in globals().items() if isinstance(obj, types.FunctionType)
            and not name.startswith('_')]

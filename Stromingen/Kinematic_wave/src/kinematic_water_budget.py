@@ -1,34 +1,26 @@
 # %% [markdown]
-
 # # Kinematic water budget
-
+#
 # The aim is to demonstrate the water budget of a percolating wave of moisture.
+#
 # The aim succeeds.
-
+#
+# TO 2025-09-20
 # %% --- imports
 
 import os
-import sys
 import numpy as np
 import matplotlib.pyplot as plt
-import pandas as pd
 from itertools import cycle
 from scipy.integrate import simpson
+from pathlib import Path
 
 import etc
 
-dirs = etc.Dirs(os.getcwd())
-sys.path.insert(0, "")
+# --- Load the Dutch soils
+from soils.src.NL_soils import Soil # noqa
 
-from src.NL_soils import Soil # noqa
-
-# %%  --- load the Dutch soils and import table 4.
-
-wbook = os.path.join(dirs.data, 'NL_VG_soilprops.xlsx')
-if not os.path.isfile(wbook):
-    raise FileNotFoundError(f"Can't find file `{wbook}`")
-
-Soil.load_soils(wbook=wbook)
+images_folder = os.path.join(Path('__file__').resolve().parent, 'images')
 
 # %% --- functions (plot the profile)
 
@@ -95,7 +87,7 @@ V = soil.dK_dtheta(theta)
 v = soil.K_fr_theta(theta) / theta
 ratio = V / v
 
-title1 = f"Staringreeks Grond {soil.code}, {soil.props['Omschrijving']}\n"
+title1 = f"Staringreeks soil {soil.code}, {soil.props['Omschrijving']}\n"
 title2 = r"Vochtprofielpunten: $V = dK(\theta)\,/\,d\theta$. Waterdeeltjes $v = q\, /\, \theta = K(\theta)\,/\,\theta$"
 ylabel = r'$dK(\theta)\, /\, d\theta$ [cm/d], $K(\theta)\, /\, \theta$ [cm/d]'
 
@@ -107,7 +99,7 @@ ax.plot(theta, v, label=r'$v = q / \theta = K(\theta)/\theta$')
 ax.plot(theta, ratio, label=r'ratio = $V / v$')
 ax.legend(fontsize=15)
 
-ax.figure.savefig(os.path.join(dirs.home, '../Kinematic_wave/LyX', "V_v_ratio.png"))
+ax.figure.savefig(os.path.join(images_folder, "V_v_ratio.png"))
 
 # %% -- Choose one soil to check the water budget with
 
@@ -134,7 +126,9 @@ print("---")
 
 # --- show the profiles
 t_inf = 40.
+print("--- Properties:")
 print(f"q={q}, theta={theta:.3f}, theta_fc={theta_fc:.3f}, vtail={vtail:.3f}, vfront={vfront:.3f}")
+print("---")
 
 title = (f"Situation after infitration. Soil = {soil.code} = '{soil.props['Omschrijving']}', " +
         fr"$\theta_s$={theta_s:.3g}, $\theta$={theta:.3g}, $\theta_{{fc}}$={theta_fc:.3g}")
@@ -167,7 +161,7 @@ for t_tail in ts_tail:
 ax.set_ylim(0, 0.12)
 ax.legend(loc='center right', fontsize=15)
 
-fig.savefig(os.path.join(dirs.home, '../Kinematic_wave/LyX', "infiltrated_block_movement.png"))
+fig.savefig(os.path.join(images_folder, "infiltrated_block_movement.png"))
 
 
 # %% === Growing tail ===
@@ -197,9 +191,7 @@ for x, th in zip(xa[1:], theta_a[1:]):
 ax.set_xlim(None, 4000)
 ax.set_ylim(None, 0.12)
 
-ax.figure.savefig(os.path.join(dirs.home, '../Kinematic_wave/LyX', "tail_development.png"))
-
-
+ax.figure.savefig(os.path.join(images_folder, "tail_development.png"))
 
 
 # %% --- construct a moisture tail at t=t_tail after stopping the infiltration
@@ -254,22 +246,24 @@ Vol_prog = t_tail *  vfront          * (theta - theta_fc)
 
 # --- Vol_lost (from theretical head) must equal V_tail
 # --- Vol_prog must equal V_air
+print("--- Verify volumes:")
 print(f"Vol_lost = {Vol_lost:.2f} should equal V_tail = {Vol_tail:.2f}")
 print(f"Vol_prog = {Vol_prog:.2f} should equal V_air  = {Vol_air :.2f}")
-
 # --- The sum of the latter two volumes must equal the total volume infiltrated
 Vol_sum2 = t_tail *  vtail           * (theta - theta_fc)
 
 print(f"Vol_tail = {Vol_tail:.2f} cm, Vol_air   = {Vol_air :.2f} cm, Vol_sum={Vol_sum1:.2f} cm")
 print(f"Vol_lost = {Vol_lost:.2f} cm, Vol_front = {Vol_prog:.2f} cm, Vol_sum={Vol_sum2:.2f} cm")
+print("---")
 
 # %%
 plt.show()
-
 # --- Decending of the front in d/m at different q [cm/d]
+print("--- Print q and V for the current soil:")
 for q in [0.05, 0.1, 0.2, 0.4]:
     theta = soil.theta_fr_K(q)
     V = soil.dK_dtheta(theta)
     print(f"q={q:.2f} cm/d, V={V:.3f} cm/d, days/m={100/V:.1f}")
+print("---")
 
 # %%

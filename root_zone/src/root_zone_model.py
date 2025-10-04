@@ -21,10 +21,6 @@ It stores the results in a specified directory for further analysis or reporting
 
 # %%
 import os
-import sys
-
-sys.path.insert(0, os.getcwd())
-
 from abc import ABC, abstractmethod
 import numpy as np
 import matplotlib.pyplot as plt
@@ -33,14 +29,9 @@ import pandas as pd
 import etc
 from itertools import cycle
 from typing import Any
+from pathlib import Path
 
-# Project directory namespace
-dirs = etc.Dirs(os.getcwd())
-
-# Verify that project directory is the current working directory
-# Start VScode from the project directory to realize this.
-print("os.getcwd()\n", os.getcwd())
-
+data_folder  = os.path.join(Path(__file__).resolve().parent.parent, 'data')
 
 # %% Recharge function
 
@@ -588,7 +579,7 @@ def get_deBilt_recharge(Smax_I=0.5, Smax_R=100, lam=0.25, datespan=("2020-01-01"
     -------
     pd.DataFrame with fields in deBilt with field 'RCH' added.
     """
-    meteo_csv = os.path.join(dirs.data, "DeBilt.csv")
+    meteo_csv = os.path.join(data_folder, "DeBilt.csv")
     os.path.isfile(meteo_csv)
     deBilt = pd.read_csv(meteo_csv, header=0, parse_dates=True, index_col=0)
 
@@ -658,7 +649,7 @@ if __name__ == "__main__":
     # TO 2025-09-05
 
     # Get the meteodata in a pd.DataFrame
-    meteo_csv = os.path.join(dirs.data, "DeBilt.csv")
+    meteo_csv = os.path.join(data_folder, "DeBilt.csv")
     os.path.isfile(meteo_csv)
     deBilt = pd.read_csv(meteo_csv, header=0, parse_dates=True, index_col=0)
     deBilt_short = deBilt.loc[deBilt.index >= np.datetime64("2020-01-01"), :]

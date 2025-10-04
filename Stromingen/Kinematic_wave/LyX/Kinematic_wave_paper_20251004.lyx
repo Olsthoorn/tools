@@ -143,7 +143,7 @@ T.N.Olsthoorn
 \end_layout
 
 \begin_layout Date
-Sep 12,
+Oct 05,
  2025
 \end_layout
 
@@ -1400,7 +1400,7 @@ status open
 
 \begin_layout Plain Layout
 \begin_inset Graphics
-	filename ../images/BR_munsflow_1mmpd.png
+	filename /Users/Theo/GRWMODELS/python/tools/Stromingen/Kinematic_wave/images/BR_munsflow.png
 	width 80text%
 
 \end_inset
@@ -2451,6 +2451,102 @@ is de snelheid aan het eind van de tijdstap en
 \end_layout
 
 \begin_layout Standard
+\begin_inset Float figure
+placement document
+alignment document
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\begin_inset Graphics
+	filename ../images/illustration.png
+	width 60text%
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:illustratie"
+
+\end_inset
+
+Boven:
+ Lek vanuit de wortelzone als een reeks dagelijkse fluxen 
+\begin_inset Formula $q\left(t\right)$
+\end_inset
+
+.
+ Midden:
+ Boven in de percolatiezone wanneer de flux plotseling toeneemt.
+ Punt 
+\begin_inset Formula $B$
+\end_inset
+
+ op 
+\begin_inset Formula $z=0$
+\end_inset
+
+ is dan een vochtfront en krijgt direct twee 
+\begin_inset Formula $\theta s$
+\end_inset
+
+ mee.
+ Het punt B is een dag jonger dan punt A maar punt B heeft rechts dezelfde 
+\begin_inset Formula $\theta$
+\end_inset
+
+ als punt A links.
+ Punt B loopt in op punt A.
+ Onder:
+ Boven in de percolatiezone wanneer de flux plotseling daalt.
+ De lijn ACB wordt dan een staart.
+ Rechts de situatie na korte tijd,
+ waarin te zien is dat de staart zich vormt.
+ Alle punten tussen A en B van de staart dus ook C zijn op hetzelfde moment ontstaan en reizen met vaste snelheid die door hun vochtgehalte op z=0 is bepaald.
+ Alle punten van de staart zijn een 
+\begin_inset Quotes pld
+\end_inset
+
+oud
+\begin_inset Quotes prd
+\end_inset
+
+.
+ De staart kan in feite denkbeeldig worden doorgetrokken zoals met een dunnen lijn aangegeven.
+ Het onderste punt van deze doorgetrokken staart blijft altijd op 
+\begin_inset Formula $z=0$
+\end_inset
+
+ gefixeerd (bij 
+\begin_inset Formula $\theta=$
+\end_inset
+
+veldcapaciteit).
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
 Elke regel in het vochtprofiel stelt dus een punt van het vochtprofiel voor.
  Haalt zo'n punt een ander punt in,
  dan neemt het aan zijn benedenstroomse zijde de 
@@ -2473,6 +2569,19 @@ We kunnen ten alle tijde het volledige vochtprofiel van punten tussen de explici
 \end_inset
 
 geboortetijden van de profielpunten essentieel.
+ Zie voor illustratie van de navolgende uitleg fig.
+ 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:illustratie"
+plural "false"
+caps "false"
+noprefix "false"
+nolink "false"
+
+\end_inset
+
+.
  Punten van dezelfde staart zijn altijd 
 \begin_inset Quotes pld
 \end_inset
@@ -3301,7 +3410,19 @@ KW is gewoon heel elegant omdat het de niet-lineariteit van de onverzadigde zone
  Juist op een vochtfront kan de capillaire spanning natuurlijk niet echt worden verwaarloosd.
  De werkelijke fronten zullen daardoor wat minder scherp zijn dan de KW ons wil doen geloven,
  alhoewel ook SWAP hele scherpe vochtfronten blijkt te berekenen.
- 
+\end_layout
+
+\begin_layout Standard
+En dan nu de kicker.
+ Omdat op elk moment het gehele vochtfront bekend is,
+ kunnen we ook op elk moment de flux op elke willekeurige diepte van percolatiezone berekenen.
+ Stel nu dat we een ruimtelijk,
+ niet stationair grondwatermodel hebben van een gebied waarin de dikte van de percolatiezone sterk varieert.
+ En stel dat we voor elke cel van dit model en voor elke dag de grondwateraanvulling apart willen berekenen op basis van de lokale diepte van het freatisch vlak.
+ Onder voorwaarde dat we een (of enkele) representatieve bodemsoort(en) als representatief zouden mogen toepassen,
+ kunnen we deze grondwateraanvulling in een keer berekenen door interpolatie binnen in dit profiel,
+ voor desnoods een miljoen cellen tegelijk.
+ We hebben hiermee dan een bijzonder efficiënte manier om ruimtelijk en niet-stationair de grondwateraanvulling via de percolatiezone te berekenen.
 \end_layout
 
 \begin_layout Bibliography

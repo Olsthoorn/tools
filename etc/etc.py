@@ -13,6 +13,7 @@ import calendar
 import matplotlib.pyplot as plt
 import itertools
 from pathlib import Path
+import types
 
 # %%
 
@@ -455,7 +456,8 @@ def get_outliers(ds, inner=1.5, outer=3.0):
     else:
         print('No outliers in df.')
 
-__all__ =[name for name in locals() if callable(locals()[name])
+
+__all__ =[name for name, obj in globals().items() if isinstance(obj, types.FunctionType)
            and not name.startswith('_')]
 
 # %%

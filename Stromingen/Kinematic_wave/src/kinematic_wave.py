@@ -1,34 +1,36 @@
 # %% [markdown]
-# Kinematic wave of moisture through unsaturated zone
+# # Kinematic wave of moisture through unsaturated zone
+#
+# The modules implements simulation of the percolation
+# through a thick unsaturated zone by means of the
+# kinematic wave theory. A paper has been written
+# explaining the theory and implementation and can be
+# found the ./doc folder. The paper also references
+# some literature. The paper further comopares the
+# Kinematic wave with another approach, known as Munsflow.
+#
+# @TO 20025-10-05
 #
 # %%
 import os
-import sys
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 from matplotlib.animation import FuncAnimation  # , FFMpegWriter
+from pathlib import Path
 import etc
 
 import cProfile
 import pstats
 
-import warnings
-warnings.filterwarnings("error")
+data_folder = os.path.join(Path("__file__").resolve().parent, 'data')    
+images_folder = os.path.join(Path("__file__").resolve().parent, 'images')    
+video_folder = os.path.join(Path("__file__").resolve().parent, 'videos')
 
-dirs = etc.Dirs(os.getcwd())
-print("Project directory: `{dirs.home}` ")
-    
-dirs.add_dir('videos')
+from root_zone.src.root_zone_model  import get_deBilt_recharge # noqa
+from soils.src.NL_soils import Soil #noqa
 
-# --- Local modules
-sys.path.insert(0, "")
-
-from src.rootz_rch_model  import get_deBilt_recharge # noqa
-from src.NL_soils import Soil #noqa
-
-from src.Munsflow import simulate_munsflow
-
+from Stromingen.Munsflow95.src.Munsflow import simulate_munsflow # noqa
 
 # --- update figure settings
 plt.rcParams.update({
@@ -39,8 +41,6 @@ plt.rcParams.update({
     'lines.linewidth': 2,
     'lines.markersize': 5
 })
-
-
 
 # %%
 class Kinematic_wave():
@@ -494,7 +494,6 @@ class Kinematic_wave():
         # --- Don't return anything
         return None
 
-    
     def q_at_z(self, zwt, dz=10):
         """Return the downward flux at z at current time.
         
@@ -800,9 +799,7 @@ def test_accuracy(self):
     For any soil:
         * theta(K(theta))         should return theta
         * theta(dK(theta)/dtheta) should return theta
-    """
-    Soil.load_soils(os.path.join(dirs.data, "NL_VG_soilprops.xlsx"))
-    
+    """    
     codes = ['B01', 'O01', 'B05', 'O05']
     for code in codes:
         sl = Soil(code)
@@ -838,14 +835,37 @@ def change_meteo_for_testing(meteo: pd.DataFrame, N: float=180, m:float = 1)-> p
 # %% =======================
 if __name__ == "__main__":
     
-    # %% --- Setup the example usage
+    # %% [markdown]
+    # # Get the leakage from the root zone
+    #
+    # First get the leakage from the root zone, which is the infiltration
+    # at the top of the percolation zone.
+    # We use meteo of De Bilt weather station and some values
+    # for the capacity of the interception and rootzone reservoir.
     
-    meteo = get_deBilt_recharge(Smax_I=0.5, Smax_R=100, lam=0.25, datespan=("1987-01-01", "2010-01-01"))
+    # --- Simulation datespan
+    datespan=("1987-01-01", "2010-01-01")
+    
+    # --- Capacity of the interception and root zone reservoir [mm]
+    Smax_I, Smax_R, lam =0.5, 100, 0.25
+    
+    # --- Evap reduction power for root zone: Ea = (S/Smax) ** lam * E
+    lam = 0.25
+    
+    # --- Get meteo with extrac column 'RCH' which is the leakage from the root zone
+    meteo = get_deBilt_recharge(Smax_I=Smax_I, Smax_R=Smax_R, lam=lam, datespan=datespan)
 
 
-    # Simulate the flow through the unsaturated zone using the kinematic wave model.
-    # The input is a time series of recharge on a daily basis.
-    # When this works a root-zone module will be inserted to simulate the storage of water in the root zone.
+    # %% [markdown]
+    #  # Simulate the flow through the unsaturated zone using the kinematic wave model
+    #
+    # The percolation is simulated using the kinematic wave approach.
+    # The input is a time series of daily leakage values (columns 'RCH' in meteo DataFrame.
+    # The outcome is the flux across the (fixed) water table while a video showing
+    # one frame per day of the moisture profiel is also generated.
+    #
+    
+    # %%
     
     with cProfile.Profile() as pr: # --- Profiling the computation time
         # --- Shorten the series for convenience
@@ -856,9 +876,6 @@ if __name__ == "__main__":
             
             # --- Continuous infiltration from day 0
             # meteo.loc[meteo.index <= meteo.index[0] + np.timedelta64(50, 'D'), 'RCH'] = 2 # mm/d
-
-        # --- Second step get the soil and simulate the kinematic wave
-        Soil.load_soils(os.path.join(dirs.data, "NL_VG_soilprops.xlsx"))
 
         # --- Choose a soil from the Staringreeks
         soil = Soil('O05')
@@ -889,66 +906,87 @@ if __name__ == "__main__":
 
             # --- Save anaimation
             ani.save(
-                os.path.join(dirs.home, '../Kinematic_wave/LyX',
+                os.path.join(images_folder,
                     f"Kinematic_wave_soil {soil.code}.mp4"), writer="ffmpeg", fps=20)
 
             plt.close(fig)
 
             print("Done animation.")
 
-        tspan = (np.datetime64("1990-01-01"), np.datetime64("2005-01-01"))
-        tspstr = str(tspan[0])[2:4] + '-' + str(tspan[1])[2:4]
-
-        # --- plot RCH and qwt
-        ax = etc.newfig(f"q at the water table, z0={kwave.z0} cm, zwt={kwave.zwt} cm", "time", "q mm/d")
-        # ax.plot(meteo.index, rch_gwt['RCH'], label='qrtz')
-        ax.plot(meteo.index, rch_gwt['qwt'], label='qwt, Kinematic wave')
-        qSeries = simulate_munsflow(meteo, soil=soil, z=zwt - z0, q_avg_cm=0.1)
-        ax.plot(qSeries.index, qSeries.values * 10, label='qwt_Munsflow (q_avg=0.1 cm/d)')
-
-        ax.grid(True)
-        ax.legend()
-        ax.set_xlim(tspan)
-        ax.figure.savefig(f"qwt_{soil.code}__{tspstr}")
-        ax.figure.savefig(os.path.join(dirs.home, '../Kinematic_wave/LyX', f"qwt_{soil.code}_{tspstr}"))
-        
-
-        # --- plot integrated curve of RCH and qwt
-        ax = etc.newfig(f"Flux q integrated over time from rootzone and at the water table, z_rz={kwave.z0}, zwt={kwave.zwt} cm",
-                        "time", "integral(q) mm")
-        ax.plot(meteo.index, rch_gwt['RCH'].cumsum(), label='qrtz')
-        ax.plot(meteo.index, rch_gwt['qwt'].cumsum(), label='qwt')
-        ax.plot(qSeries.index, qSeries.values.cumsum() * 10, label='qwt_Munsflow')
-        ax.set_xlim(tspan)
-        ax.grid(True)
-        ax.legend()
-        ax.figure.savefig(f"qwt_{soil.code}_cumsum_{tspstr}")
-        ax.figure.savefig(os.path.join(dirs.home, '../Kinematic_wave/LyX',f"qwt_{soil.code}_cumsum_{tspstr}"))
-
-        # --- plot the volume under the profile
-        vol = kwave.get_Vol()
-        ax = etc.newfig("Volume above fc [cm]", "time", "volume [cm]")
-        # ax.plot(rch_gwt.index, 10 * vol['V'], label="Volume")
-        ax.plot(meteo.index, 10 * vol['V'], label="Volume")
-        ax.grid(True)
-        ax.figure.savefig(f"vol_in_profile_{soil.code}")
-        ax.figure.savefig(os.path.join(dirs.home, '../Kinematic_wave/LyX', f"vol_in_profile_{soil.code}"))
-
-        print("Done")
-
-        plt.show()
-
+    # --- Issue some statistics from the profiling
     stats = pstats.Stats(pr)
     stats.sort_stats("cumtime").print_stats(20)
+
+    # %% [markdown]
+    # # Some overview graphs of the simulated kinematic wave percolation
     
-    # --- Gehrels (1999), Digitized
-    gswap = pd.read_csv(os.path.join(dirs.home, '../Kinematic_wave/data', 'GehrelsFig720_SWAP.csv'))
-    gearth = pd.read_csv(os.path.join(dirs.home, '../Kinematic_wave/data', 'GehrelsFig720_EARTH.csv'))
-    gobs = pd.read_csv(os.path.join(dirs.home, '../Kinematic_wave/data', 'GehrelsFig720_Obs.csv'))
+    # --- time spane for the overview time graphs
+    tspan = (np.datetime64("1990-01-01"), np.datetime64("2005-01-01"))
+    
+    # --- indication of time span years to include in image file name
+    tspstr = str(tspan[0])[2:4] + '-' + str(tspan[1])[2:4]
+
+    # --- plot RCH and qwt
+    ax = etc.newfig(f"q at the water table, z0={kwave.z0} cm, zwt={kwave.zwt} cm", "time", "q mm/d")
+    # ax.plot(meteo.index, rch_gwt['RCH'], label='qrtz')
+    ax.plot(meteo.index, rch_gwt['qwt'], label='qwt, Kinematic wave')
+    qSeries = simulate_munsflow(meteo, soil=soil, z=zwt - z0, q_avg_cm=0.1)
+    ax.plot(qSeries.index, qSeries.values * 10, label='qwt_Munsflow (q_avg=0.1 cm/d)')
+
+    ax.grid(True)
+    ax.legend()
+    ax.set_xlim(tspan)
+    ax.figure.savefig(f"qwt_{soil.code}__{tspstr}")
+    ax.figure.savefig(os.path.join(images_folder, f"qwt_{soil.code}_{tspstr}"))
+    
+
+    # --- plot integrated curve of RCH and qwt
+    ax = etc.newfig(f"Flux q integrated over time from rootzone and at the water table, z_rz={kwave.z0}, zwt={kwave.zwt} cm",
+                    "time", "integral(q) mm")
+    ax.plot(meteo.index, rch_gwt['RCH'].cumsum(), label='qrtz')
+    ax.plot(meteo.index, rch_gwt['qwt'].cumsum(), label='qwt')
+    ax.plot(qSeries.index, qSeries.values.cumsum() * 10, label='qwt_Munsflow')
+    ax.set_xlim(tspan)
+    ax.grid(True)
+    ax.legend()
+    ax.figure.savefig(f"qwt_{soil.code}_cumsum_{tspstr}")
+    ax.figure.savefig(os.path.join(images_folder,f"qwt_{soil.code}_cumsum_{tspstr}"))
+
+    # --- plot the volume under the profile as a function of time
+    vol = kwave.get_Vol()
+    ax = etc.newfig("Volume above fc [cm]", "time", "volume [cm]")
+    # ax.plot(rch_gwt.index, 10 * vol['V'], label="Volume")
+    ax.plot(meteo.index, 10 * vol['V'], label="Volume")
+    ax.grid(True)
+    ax.figure.savefig(f"vol_in_profile_{soil.code}")
+    ax.figure.savefig(os.path.join(images_folder, f"vol_in_profile_{soil.code}"))
+
+    print("Done")
+
+    plt.show()
+
+
+    # %% [markdown]
+    # # Hand digitized the results of Gehrels (1999) figure 7.20.
+    #
+    # These data (hand-digitized) show the recharge at the bottom of a
+    # 20 m thick unsaturated zone at Radio Kootwijk, Veluwe area, the  Netherlands.
+    # The data were simulated using SWAP unsaturated zone model and EARTH model using
+    # a root zone model plus an analytich solution of the linearized Richards-Equation
+    # Also known as Munsflow (Zwamborn 1995) and finally as computed from the measured
+    # daily change of the water table at 20 below ground surface.
+    # These data can be used to compare with the results of the kinematic wave.
+    #
+    # Yet the hand digitizing of the SWAP solution has to be redone.
+    # 
+
+    # %%
+    gswap = pd.read_csv(os.path.join(data_folder, 'GehrelsFig720_SWAP.csv'))
+    gearth = pd.read_csv(os.path.join(data_folder, 'GehrelsFig720_EARTH.csv'))
+    gobs = pd.read_csv(os.path.join(data_folder, 'GehrelsFig720_Obs.csv'))
     
     gswap.index  = etc.decimal_year_to_datetime64(gswap['x'].values)
     gearth.index  = etc.decimal_year_to_datetime64(gearth['x'].values)
     gobs.index  = etc.decimal_year_to_datetime64(gobs['x'].values)
-    
     
     # %%
