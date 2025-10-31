@@ -123,11 +123,9 @@ def fdm3t(gr=None, t=None, k=None, c=None, ss=None, fh=None, ghb=None,
             if not np.all(c.shape == (gr.nlay -1, gr.ny, gr.nx)):
                 raise AssertionError(f"shape c ({c.shape}) should be {(gr.nlay - 1, gr.ny, gr.nx)}")
 
-    # --- which cells are active ?
     active = (idomain != 0).reshape(gr.nod,)  # boolean vector denoting the active cells
     inact  = (idomain == 0).reshape(gr.nod,)  # boolean vector denoting inacive cells
 
-    # --- Check boundary condition inputs
     if fh is not None:
         fh = gr.check_sarray_dict(fh, dtype=dtypeH)
     if fq is not None:
@@ -135,18 +133,16 @@ def fdm3t(gr=None, t=None, k=None, c=None, ss=None, fh=None, ghb=None,
     if ghb is not None:
         ghb = gr.check_sarray_dict(ghb, dtype=dtypeGHB)
 
-    # --- Storage
     if ss is None:
         if fh is None and ghb is None:
-            raise ValueError('If all ss == 0, at fh or ghb must be used.')
-        # --- Prevents oscillations in early times
-        epsilon = 1.0
+            raise ValueError('If all ss == 0, at FQ or ghb must be used.')
+        epsilon = 1.0 # Prevents oscillations in early times
 
-    # --- reshaping shorthands
+    # reshaping shorthands
     dx = np.reshape(gr.dx, (1, 1, gr.nx))
     dy = np.reshape(gr.dy, (1, gr.ny, 1))
 
-    # --- half cell flow resistances
+    # half cell flow resistances
     if not gr.axial:
         rxe = 0.5 *    dx / (   dy * gr.DZ) / kx
         rxw = rxe
@@ -165,22 +161,22 @@ def fdm3t(gr=None, t=None, k=None, c=None, ss=None, fh=None, ghb=None,
             np.pi * (gr.x[1:] ** 2 - gr.x[:-1] ** 2).reshape((1, 1, gr.nx))
             )
 
-    # --- set flow resistance in inactive cells to infinite
+    # set flow resistance in inactive cells to infinite
     rxw[inact.reshape(gr.shape)] = np.inf
     rxw[inact.reshape(gr.shape)] = np.inf
     ry[inact.reshape(gr.shape)] = np.inf
     rz[inact.reshape(gr.shape)] = np.inf
 
-    # --- conductances between adjacent cells
+    # conductances between adjacent cells
     cx = 1 / (rxw[: , :,1:] + rxe[:  ,:  ,:-1])
     cy = 1 / (ry[: ,1:, :] + ry[:  ,:-1,:  ])
     cz = 1 / (rz[1:, :, :] + rc + rz[:-1,:  ,:  ])
 
-    # --- storage term, variable dt not included
+    # storage term, variable dt not included
     if ss is not None:
         Cs = ss * gr.DZ * gr.Area[np.newaxis, :, : ] / epsilon
 
-    # --- cell number of neighboring cells
+    # cell number of neighboring cells
     IW = gr.NOD[:,:,:-1]  # east neighbor cell numbers
     IE = gr.NOD[:,:, 1:] # west neighbor cell numbers
     IN = gr.NOD[:,:-1,:] # north neighbor cell numbers
@@ -192,40 +188,36 @@ def fdm3t(gr=None, t=None, k=None, c=None, ss=None, fh=None, ghb=None,
         """Return x.ravel()"""
         return x.ravel()
     
-    # --- Notice the call  csc_matrix( (data, (rowind, coind) ), (M,N))  tuple within tupple
-    # --- Also notice that Cij = negative but that Cii will be postive, namely -sum(Cij)
+    # notice the call  csc_matrix( (data, (rowind, coind) ), (M,N))  tuple within tupple
+    # also notice that Cij = negative but that Cii will be postive, namely -sum(Cij)
     A = sp.csc_matrix(( np.concatenate(( R(cx), R(cx), R(cy), R(cy), R(cz), R(cz)) ),\
                         (np.concatenate(( R(IE), R(IW), R(IN), R(IS), R(IT), R(IB)) ),\
                          np.concatenate(( R(IW), R(IE), R(IS), R(IN), R(IB), R(IT)) ),\
                       )),(gr.nod,gr.nod))
 
-    # --- Change sign and add diagonal
+    # Change sign and add diagonal
     A = -A + sp.diags( np.array(A.sum(axis=1)).ravel() )
 
-    # --- Initialize output arrays (= memory allocation)
+    #Initialize output arrays (= memory allocation)
     if t is None:
         nt, ndt, t = 2, 1, np.array([0., 1.])
     else:
         nt, ndt = len(t), len(t)-1
-        
-    # --- These arrays always exist at output
     Phi = np.zeros((ndt+1, gr.nod)) # Nt+1 times
     Q   = np.zeros((ndt,   gr.nod)) # Nt time steps
-    Qfq = np.zeros((ndt,   gr.nod))
     Qs  = np.zeros((ndt,   gr.nod))
     Qghb= np.zeros((ndt,   gr.nod))
 
-    # --- Cell flows
     Qx  = np.zeros((ndt, gr.nz, gr.ny, gr.nx-1))
     Qy  = np.zeros((ndt, gr.nz, gr.ny-1, gr.nx))
     Qz  = np.zeros((ndt, gr.nz-1, gr.ny, gr.nx))
 
-    # --- reshape input arrays to vectors for use in system equation
+    # reshape input arrays to vectors for use in system equation
 
     if ss is not None:
         Cs = R(Cs)
 
-    # --- initialize heads
+    # initialize heads
     if hi is not None:
         Phi[0] = hi.flatten()
     rhs  = np.zeros(gr.shape).flatten()
@@ -235,7 +227,7 @@ def fdm3t(gr=None, t=None, k=None, c=None, ss=None, fh=None, ghb=None,
     dia  = np.zeros(gr.shape).flatten()
     act_it = active[:]
 
-    # --- solve heads at active locations not fixed head at t_i+eps*dt_i
+    # solve heads at active locations not fixed head at t_i+eps*dt_i
     for idt, dt in enumerate(np.diff(t)):
         it = idt + 1
         rhs[:] = 0.
@@ -275,43 +267,33 @@ def fdm3t(gr=None, t=None, k=None, c=None, ss=None, fh=None, ghb=None,
 
         Phi[it][act_it] = spsolve( (A + sp.diags(dia))[act_it][:,act_it], rhs[act_it])
 
-        # --- net cell inflow
+        # net cell inflow
         Q[idt]  = A.dot(Phi[it])
 
-        # --- storage flow (out of storage is inflow)
         if ss is not None:
             Qs[idt] = -Cs/dt * (Phi[it]-Phi[it-1])
-            
-        # --- fixed Q (wells, recharge)
-        if fq is not None:
-            Qfq[idt] = fQ
 
-        # --- Flows across cell faces
+        #Flows across cell faces
         Qx[idt] =  -np.diff( Phi[it].reshape(gr.shape), axis=2) * cx
         Qy[idt] =  +np.diff( Phi[it].reshape(gr.shape), axis=1) * cy
         Qz[idt] =  +np.diff( Phi[it].reshape(gr.shape), axis=0) * cz
 
-        # --- General head boundary flows
         if ghb is not None:
             Qghb[idt] = (ghbh.ravel() - Phi[it]) * ghbc.ravel()
 
-        # --- update head to end of time step
+        # update head to end of time step
         Phi[it][act_it] = Phi[it-1][act_it] + (Phi[it]-Phi[it-1])[act_it] / epsilon
         #Phi[it][active] = Phi[it-1][active] + (Phi[it]-Phi[it-1])[active] / epsilon
         Phi[it][inact]  = np.nan
 
-    # --- reshape Phi to shape of grid
+    # reshape Phi to shape of grid
     Phi  =  Phi.reshape((nt, ) + gr.shape)
     Q    =    Q.reshape((ndt,) + gr.shape)
-    Qfq  =  Qfq.reshape((ndt,) + gr.shape)
     Qs   =   Qs.reshape((ndt,) + gr.shape)
     Qghb = Qghb.reshape((ndt,) + gr.shape)
-    
-    # --- Fixed head cell flows
-    Qfh   = Q - Qfq - Qghb - Qs
 
     out = dict()
-    out.update(gr=gr, t=t, Phi=Phi, Q=Q, Qs=Qs, Qx=Qx, Qy=Qy, Qz=Qz, Qfh=Qfh, Qfq=Qfq, Qghb=Qghb)
+    out.update(gr=gr, t=t, Phi=Phi, Q=Q, Qs=Qs, Qx=Qx, Qy=Qy, Qz=Qz, Qghb=Qghb)
 
     return out
 
