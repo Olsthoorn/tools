@@ -1003,43 +1003,51 @@ class Grid:
 
         Parameters
         ----------
-        Iglob : ndarray of int or bool
-            if dtype is int, then Iglob is global index
-
-            if dtype is bool, then Iglob is a zone array of shape
-            [ny, nx] or [nz, ny, nx]
+        Iglob : vector of int indices or ndarray of bool with shape of grid.
+            if dtype is int  --> Iglob is global index
+            if dtype is bool --> Iglob is a array of shape [ny, nx] or [nz, ny, nx]
 
         astuples: bool or None
             return as ((l, r, c), (l, r, c), ...)
         aslist: bool or None:
             return as [[l, r, c], [l, r, c], ...]
         """
-        assert isinstance(Iglob, np.ndarray), "I must be a np.ndarray of booleans or ints."
-        assert Iglob.dtype in (np.integer, bool), "Iglobe.dtype must be bool or int."
-        if isinstance(Iglob.dtype, bool):
-            assert np.all(self.shape == Iglob.shape), (
+        Iglob = np.atleast_1d(Iglob)
+        assert Iglob.dtype.kind in ('i', 'b'), "Iglobe.dtype must be bool or int."
+                
+        if Iglob.dtype.kind == 'b':
+            # --- handle bool (i.e. array of booleans of shape self.shape)            
+            assert np.all(self.shape[:2] == Iglob.shape[:2]), (
                 "If Iglob.dtype == bool, then Iglob.shape must be equal to gr.shape"
                 )
-            Iglob = self.NOD[Iglob]
-        else:
-            assert np.all(np.logical_and(Iglob >= 0, Iglob < self.nod)), (
+            Iglob = np.where(Iglob)[0]            
+        elif Iglob.dtype.kind == 'i': # integer array
+            # --- handle integers (vector of integer indices)            
+            assert np.all(np.logical_and(Iglob.ravel() >= 0, Iglob.ravel() < self.nod)), (
                 "Iglob must be > 0 and < {}".format(self.nod)
                 )
+        else:
+            raise ValueError(
+                "Iglob must be integer vector of an array of bool with shape (ny, nx) or (nz, ny, nx).")
                 
         Iglob = Iglob.flatten()
         ncol = self._nx
         nlay = self._ny * ncol
         
+        # --- compute layer, row and column indices
         L = np.array(Iglob / nlay, dtype=int)
         R = np.array((Iglob - L * nlay) / ncol, dtype=int)
         C = Iglob - L * nlay - R * ncol
         
+        # --- prepare output type
         if astuples:
             return tuple((int(lay), int(row), int(col)) for lay, row, col in zip(L, R, C))
         elif aslist:
             return [[int(lay), int(row), int(col)] for lay, row, col, in zip(L, R, C)]
         else:
+            # --- default: np.array of shape (n, 3)
             return np.vstack((L, R, C)).T
+
 
     def LRC_zone(self, zone):
         """Return ndarray [L R C] indices generated from zone array zone.
