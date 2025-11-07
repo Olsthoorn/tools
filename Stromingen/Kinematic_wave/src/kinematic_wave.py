@@ -754,6 +754,13 @@ def make_animation(profiles: dict, soil: Soil, zwt: float)->tuple:
                    )
     ax.legend()
     
+    # --- data for final plots in Stromingen article
+    article_data = {}
+    article_times = [np.datetime64('1998-11-11'),
+                     np.datetime64('1999-01-30'),
+                     np.datetime64('1999-11-03')
+                     ]
+    
     # --- Init_func: set up the initial state
     def init_func():        
         line.set_data([], [])
@@ -772,8 +779,8 @@ def make_animation(profiles: dict, soil: Soil, zwt: float)->tuple:
         
         # --- add profile points for verification
         prof = p['profile']
-        (z, thL, thR) = prof['z'], prof['thetaL'], prof['thetaR']
-        points.set_xdata(np.vstack((z, z)).flatten())
+        (zP, thL, thR) = prof['z'], prof['thetaL'], prof['thetaR']
+        points.set_xdata(np.vstack((zP, zP)).flatten())
         points.set_ydata(np.vstack((thL, thR)).flatten())
         
         txt.set_text(f"{np.datetime64(date).astype('datetime64[D]')}, t={frame} d")
@@ -782,9 +789,12 @@ def make_animation(profiles: dict, soil: Soil, zwt: float)->tuple:
             print('.', end="")
         if np.mod(frame + 1, 1000) == 0:
             print(frame)
+            
+        if p['date'] in article_times:
+            article_data[p['date']]= {'z': z, 'theta': theta, 'zP': zP, 'thL': thL, 'thR': thR}
         return (line, txt)
     
-    return fig, init_func, update_func
+    return fig, init_func, update_func, article_data
 
 # %% --- extra functions
 
@@ -845,6 +855,8 @@ if __name__ == "__main__":
     
     # --- Simulation datespan
     datespan=("1987-01-01", "2010-01-01")
+    datespan=("1995-01-01", "2000-01-01")
+    
     
     # --- Capacity of the interception and root zone reservoir [mm]
     Smax_I, Smax_R, lam =0.5, 100, 0.25
@@ -896,7 +908,7 @@ if __name__ == "__main__":
         rch_gwt = kwave.simulate(meteo)
 
         # --- Setup of the animation    
-        fig, init_func, update_func = make_animation(kwave.profiles, soil, kwave.zwt)
+        fig, init_func, update_func, article_data = make_animation(kwave.profiles, soil, kwave.zwt)
 
         # --- Animate
         if True:
@@ -912,7 +924,42 @@ if __name__ == "__main__":
             plt.close(fig)
 
             print("Done animation.")
+            
+        old_title = fig.gca().get_title()
+        
+        fig, axs = plt.subplots(3, 1, sharex=True, sharey=True)
+        fig.set_size_inches(12, 9)
+        
+        axs[ 0].set_title(old_title)
+        axs[-1].set_xlabel('z [cm]')
+        axs[-1].set_xlim(None, zwt)
 
+        for k, ax in zip(article_data, axs):            
+            # --- static reference lines (drawn once, stay forever) ---    
+            ax.axhline(y=soil.theta_fc(),      color='g', lw=1, label='field capacity')
+            ax.axhline(y=soil.theta_fr_K(0.1), color='m', lw=1, label='theta q=1 mm/d')
+            ax.axhline(y=soil.theta_fr_K(0.2), color='r', lw=1, label='theta q=2 mm/d')
+
+            z, theta = article_data[k]['z'], article_data[k]['theta']
+            zP, thL, thR = article_data[k]['zP'], article_data[k]['thL'], article_data[k]['thR']
+            ax.set_ylim(0, 0.25)
+            
+            ax.plot(z, theta, 'b')
+            ax.plot(np.vstack((zP, zP)).flatten(), np.vstack((thL, thR)).flatten(), 'ro')
+
+            ax.set_ylabel(r'$\theta$ [-]')            
+            ax.grid(True)
+            ax.legend(loc='upper right')
+            
+            ax.text(0.4, 0.7, f"{str(k)}"[:10], transform=ax.transAxes,
+                        bbox=dict(
+                            facecolor="gold",   # background color
+                            edgecolor="black",  # border color
+                            boxstyle="square")
+                    )
+                        
+        fig.savefig(os.path.join(images_folder, f"qwt_{soil.code}_3days"))
+        
     # --- Issue some statistics from the profiling
     stats = pstats.Stats(pr)
     stats.sort_stats("cumtime").print_stats(20)
