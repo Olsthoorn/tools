@@ -14,6 +14,8 @@ import matplotlib.pyplot as plt
 import itertools
 from pathlib import Path
 import types
+import importlib.util
+
 
 # %%
 
@@ -56,8 +58,6 @@ def decimal_year_to_datetime64(years):
 
 
 #%%
-
-import importlib.util
 
 def where_is(module_name: str) -> str:
     """
@@ -112,6 +112,7 @@ class Dirs:
         print(dirs.images)
         """
         if home is None:
+            # --- uses os.getcwd()
             home = check_project_root()
         
         self.home = Path(home).expanduser().resolve()
@@ -120,8 +121,7 @@ class Dirs:
         self.src = self.home / 'src'
         self.data = self.home / 'data'
         self.images = self.home / 'images'
-        self.docs = self.home / 'docs'
-        self.LyX  = self.home / 'LyX'
+        self.doc = self.home / 'docs'
         self.notebooks = self.home / 'notebooks'
         self.tests = self.home / 'tests'
 
