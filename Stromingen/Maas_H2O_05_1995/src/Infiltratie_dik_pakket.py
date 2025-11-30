@@ -94,9 +94,9 @@ X, Y = np.meshgrid(x, y)
 Z = X + 1j * Y
 Omega= Q * np.log(Z)
 fig, ax = plt.subplots(figsize=(10, 6))
-ax.set_title('Conformal mapping for $w = \log(z)$')
-ax.set_xlabel('Re(z)')
-ax.set_ylabel('Im(z)')
+ax.set_title(r'Conformal mapping for $w = \log(z)$')
+ax.set_xlabel(r'$Re(z)$')
+ax.set_ylabel(r'$Im(z)$')
 
 csphi = ax.contour(Z.real, Z.imag, Omega.real, lw=0.5, colors='royalblue', levels=20)
 cspsi = ax.contour(Z.real, Z.imag, Omega.imag, lw=0.5, colors='red', levels=20)
@@ -122,8 +122,8 @@ Omega = Phi + 1j * Psi
 z = np.exp(Omega / Q)
 fig, ax = plt.subplots(figsize=(10, 6))
 ax.set_title(r'Conformal mapping for $z = \exp(\Omega / Q)$')
-ax.set_xlabel('Re(z)')
-ax.set_ylabel('Im(z)')
+ax.set_xlabel(r'$Re(z)$')
+ax.set_ylabel(r'$Im(z)$')
 levels = np.linspace(0, 2 * np.pi * Q, 37)
 
 csphi = ax.contour(z.real, z.imag, Omega.real, lw=0.5, colors='royalblue', levels=levels)
@@ -148,9 +148,9 @@ Z = X + 1j * Y
 Omega= np.sin(Z)
 
 fig, ax = plt.subplots(figsize=(10, 6))
-ax.set_title('Conformal mapping for $\Omega = \sin(z)$' + "\nContouring Phi and Psi on the z-plane")
-ax.set_xlabel('Re(z)')
-ax.set_ylabel('Im(z)')
+ax.set_title(r'Conformal mapping for $\Omega = \sin(z)$' '\n' r"Contouring $\Phi$ and $\Psi$ on the $z$-plane")
+ax.set_xlabel(r'$Re(z)$')
+ax.set_ylabel(r'$Im(z)$')
 ax.set(aspect=1.)
 
 csphi = ax.contour(Z.real, Z.imag, Omega.real, lw=0.5, colors='royalblue', levels=20)
@@ -161,9 +161,9 @@ csphi.clabel(fmt='%1.2f', fontsize=8, colors='royalblue')
 cspsi.clabel(fmt='%1.2f', fontsize=8, colors='red')
 
 fig, ax = plt.subplots(figsize=(10, 6))
-ax.set_title('Conformal mapping for $\Omega = \sin(z)$' + '\nPlotting lines of Phi and Psi')
-ax.set_xlabel('Re(Omega)')
-ax.set_ylabel('Im(Omega)')
+ax.set_title(r'Conformal mapping for $\Omega = \sin(z)$' '\n' r'Plotting lines of $\Phi$ and $\Psi$')
+ax.set_xlabel(r'$\Re(\Omega)$')
+ax.set_ylabel(r'$\Im(\Omega)$')
 
 ax.plot(Omega.real, Omega.imag, color='blue')
 ax.plot(Omega.T.real, Omega.T.imag, color='red')
@@ -187,9 +187,9 @@ Omega = Phi + 1j * Psi
 Z = np.sin(Omega)
 
 fig, ax = plt.subplots(figsize=(10, 6))
-ax.set_title('Conformal mapping for $w = \sin(z)$, two ways, with perfcect overlap')
-ax.set_xlabel('Re(z)')
-ax.set_ylabel('Im(z)')
+ax.set_title(r'Conformal mapping for $w = \sin(z)$, two ways, with perfcect overlap')
+ax.set_xlabel(r'$Re(z)$')
+ax.set_ylabel(r'$Im(z)$')
 
 # Contouring Omega in the z-plane
 ax.contour(Z.real, Z.imag, Omega.real, linewidths=3, colors='royalblue', levels=phi)
@@ -248,6 +248,265 @@ ax.contour(Z.real, Z.imag, Phi.imag, colors='red', levels=20)
 ax.set_aspect(1.)
 plt.tight_layout()
 
+# %% [markdown]
+# ## Analytische transformatie voor sloot met halve breedte $b$ in aquifer dik $d$
+#
+# # Transformatie stappen worden een voor een getoond
+# $$\zeta_{0}=z$$
+# 
+# $$\zeta_{1}=\pi\left(\frac{1}{2}+i\frac{z}{d}\right)$$
+# 
+# $$\zeta_{2}=\sin\left(\pi\left(\frac{1}{2}+i\frac{z}{d}\right)\right)$$
+# 
+# $$\zeta_{3}=p\sin\left(\pi\left(\frac{1}{2}+i\frac{z}{d}\right)\right)+q$$
+# 
+# $$\zeta_{4}=\arcsin\left[p\sin\left(\pi\left(\frac{1}{2}+i\frac{z}{d}\right)\right)+q\right]$$
+# 
+# $$\zeta_{5}=d\left[\frac{1}{\pi}\arcsin\left[p\sin\left(\pi\left(\frac{1}{2}+i\frac{z}{d}\right)\right)+q\right]-\frac{1}{2}\right]$$
+# 
+# $$\zeta_{6}=-id\left[\frac{1}{\pi}\arcsin\left[p\sin\left(\pi\left(\frac{1}{2}+i\frac{z}{d}\right)\right)+q\right]-\frac{1}{2}\right]$$
+# 
+# $$\Omega=-iQ\left[\frac{1}{\pi}\arcsin\left[p\sin\left(\pi\left(\frac{1}{2}+i\frac{z}{d}\right)\right)+q\right]-\frac{1}{2}\right]$$
+# # 
+# De tweede grafiek berekent $Z$ voor een regelmatig grid van $\Omega$ waarden.
+#
+# $$\beta=\sin\left(\pi\left(-\frac{1}{2}+i\frac{b}{d}\right)\right)$$
+#
+# $$p=\frac{-2}{\beta+1};q=\frac{\beta-1}{\beta+1}$$
+#
+# TO 2025-11-22
+
+# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# Analytische transformatie voor sloot tussen 0 en a in aquifer dik d
+##########################################
+d = 10. # Thickness, lies at y=iH
+b = 5.
+le = 2 * b
+
+A = le + 1j * (d - 1e-6)
+B = b + 1j * d
+C = 0 + 1j * d
+D = 0
+E = le
+
+Q = 1.0
+
+x = np.linspace(0, le, int(le/0.2) + 1).clip(1e-6, le)
+y = np.linspace(0, d, int(d/0.2) + 1).clip(1e-6, d - 1e-6)
+X, Y = np.meshgrid(x, y)
+z = X + 1j * Y
+
+def wplane(i, z, b, d):
+    w = z
+    if i > 0:
+        w = np.pi * (1 / 2 + 1j * w / d)
+    if i > 1:
+        w = np.sin(w)
+    if i > 2:
+        beta = np.sin(np.pi * (- 1 / 2 +  1j * b / d))
+        p, q = -2 / (beta + 1), (beta - 1) / (beta + 1)
+        w = w * p + q        
+    if i > 3:
+        w = np.arcsin(w)
+    if i > 4:
+        w =  d * (w / np.pi  - 1 /2)
+    if i > 5:
+        w = -1j * w
+    if i > 6:
+        w = w * Q / d
+
+    return w
+
+
+fig, axs = plt.subplots(3, 3, figsize=(12, 12))
+
+for ia, ax in enumerate(axs.ravel()):
+    if ia > 7:
+        break
+    ax.set_title(fr'$\zeta_{ia}$')
+    w = wplane(ia, z, b, d)
+    for p, pnm in zip([A, B, C, D, E], ['A', 'B', 'C', 'D', 'E']):
+        p_ = wplane(ia, p, b, d)
+        ax.plot(p_.real, p_.imag, 'o', label=pnm)
+    ax.plot(w.real.T, w.imag.T, lw=0.25)
+    ax.legend()
+
+# %% [markdown]
+# ## Analytische transformatie voor sloot met halve breedte $b$ in aquifer dik $d$
+#
+# $$\Omega=-iQ\left[\frac{1}{\pi}\arcsin\left(p\sin\left(\pi\left(\frac{1}{2}+i\frac{z}{d}\right)\right)+q\right)-\frac{1}{2}\right]$$
+#
+# $$z=-id\left[\frac{1}{\pi}\arcsin\left(\frac{1}{p}\left\{ \sin\left(\pi\left(\frac{1}{2}+i\frac{\Omega}{Q}\right)\right)-q\right\} \right)-\frac{1}{2}\right]$$
+#
+# $$\beta=\sin\left(\pi\left(-\frac{1}{2}+i\frac{b}{d}\right)\right)$$
+#
+# $$p=\frac{-2}{\beta+1};\,\,\,q=\frac{\beta-1}{\beta+1}$$
+#
+# Eerste grafiek berekent $\Omega$ voor een regelmatig net van z-waarden en contourt
+# vervolgens $\Phi$ en $\Psi$.
+#
+# De tweede grafiek berekent $Z$ voor een regelmatig grid van $\Omega$ waarden.
+#
+# TO 2025-11-22
+
+
+
+# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# Analytische transformatie voor sloot met halve breedte $b$ in aquifer dik $d$
+##########################################
+d = 10. # Thickness, lies at y=iH
+b = 5.
+le = 4 * b
+
+A = le + 1j * (d - 1e-6)
+B = b + 1j * d
+C = 0 + 1j * d
+D = 0
+E = le
+
+Q = 1.0
+
+# --- define Z (points in the z-plain)
+x = np.linspace(0, le, int(le/0.2) + 1).clip(1e-6, le)
+y = np.linspace(0, d,  int(d /0.2) + 1).clip(1e-6, d - 1e-6)
+X, Y = np.meshgrid(x, y)
+Z = X + 1j * Y
+
+# --- define Omga (points in the omega plain)
+phi = np.linspace(0, 2 * Q, int(2 * abs(Q)/0.05) + 1).clip(1e-6, le)
+psi = np.linspace(0, Q, int(abs(Q)/0.05) + 1).clip(1e-6, d - 1e-6)
+Phi, Psi = np.meshgrid(phi, psi)
+Omega = Phi + 1j * Psi
+
+
+def omega_fr_z(z, b, d):
+    """Return omega = phi + i psi from z = x + i y.
+    
+    Note that z = z_fr_omega(omga_fr_z(z, b, d), b, d)
+    and       o = omega_fr_z(z_fr_omega(o, b, c), b, d)
+    
+    Parameters
+    ----------
+    b: float
+        width of the ditch (z = 0 + 1j * d to z = b + 1j * d)
+    d: float
+        thickness of the aquifer (y = 1j * d)
+    """
+    beta = np.sin(- np.pi / 2 +  1j * np.pi * b / d)
+    p, q = -2 / (beta + 1), (beta - 1) / (beta + 1)
+
+    sarg = np.pi * (1 / 2 + 1j * z / d)
+
+    omeg = -1j * Q * (np.arcsin(p * np.sin(sarg) + q) / np.pi - 1 / 2)
+
+    return omeg
+
+
+def z_fr_omega(omeg, b, d):
+    """Return z = x + i y from omega = phi + i psi).
+    
+    Note that z = z_fr_omega(omga_fr_z(z, b, d), b, d)
+    and       o = omega_fr_z(z_fr_omega(o, b, c), b, d)
+    
+    Parameters
+    ----------
+    b: float
+        width of the ditch (z = 0 + 1j * d to z = b + 1j * d)
+    d: float
+        thickness of the aquifer (y = 1j * d)
+    """
+    beta = np.sin(- np.pi / 2 +  1j * np.pi * b / d)
+    p, q = -2 / (beta + 1), (beta - 1) / (beta + 1)
+    
+    sarg = np.pi * (1/2 + 1j * omeg / Q)
+
+    z = -1j * d  * (np.arcsin( (np.sin(sarg)  - q) / p) / np.pi - 1 / 2)
+    return z
+
+# --- Plot omega and z
+fig, (ax1, ax2) = plt.subplots(2, figsize=(12, 12))
+
+# --- plot omega from Z
+om   = omega_fr_z(Z, b, d)
+ax1.set_title('Omega computed from Z contoured')
+ax1.set_xlabel('x')
+ax1.set_ylabel('y')
+ax1.contour(Z.real, Z.imag, om.real, levels=20)
+ax1.contour(Z.real, Z.imag, om.imag, levels=20)
+ax1.set_aspect(1)
+
+
+# --- plot Z from Omega
+zpl  = z_fr_omega(Omega, b, d)
+ax2.set_title('z computed from Omega')
+ax2.set_xlabel('x')
+ax2.set_ylabel('y')
+ax2.plot(zpl.real.T, zpl.imag.T)
+ax2.plot(zpl.real, zpl.imag)
+ax2.set_aspect(1)
+
+# --- plot the marker points
+for zpt, pnm in zip([A, B, C, D, E], ['A', 'B', 'C', 'D', 'E']):
+    opt = omega_fr_z(zpt, b, d)
+    ax1.plot(zpt.real, zpt.imag, 'o', ms=10, label=pnm)
+    
+    zpt_ = z_fr_omega(opt, b, d)
+    ax2.plot(zpt_.real,  zpt_.imag,  'o', label=pnm)
+    ax2.plot(zpt.real,   zpt.imag, 'o', ms=10, mfc='none')
+
+ax1.legend()
+ax2.legend()
+
+# %% [markdown]
+# ## De extra verlaging door de sloot
+# 
+# De extra verlaging door de sloot volgt uit de limit van $\Omega$ voor $z\rightarrow +\infty$. Deze limit blijkt
+# 
+# $$ \lim_{z\rightarrow +\infty}\left(\Omega(x)\right)=-Q\left(\frac x d + \frac 1 \pi \ln p\right)$$
+# 
+# De extra verlaging als gevolg van de sloot is dus
+# 
+# $$\Delta \Omega = \Delta \Phi + i \Delta \Psi = k \Delta \phi +i  \Delta \Psi= -Q \left(\frac x d + \frac 1 \pi \ln p\right)$$
+#
+# Wat onafhankelijk is van $\Psi$ voor $x \rightarrow \infty$. Dus
+#
+# $$\Delta \phi = -\frac Q {\pi k} \ln p$$
+#
+# Wanneer we vanaf de rand van de sloot ($x=b$) rekenen in plaats van het midden waar $x=0$ dan wordt dit:
+#
+# $$ \Delta \phi = -\frac Q k \left(\frac b d + \frac 1 \pi \ln p \right) $$
+#
+# $$ \Delta \phi = -\frac Q {k d} b - \frac Q \pi \frac b k \ln p $$
+#
+# Dus een stukje stroomlengte te grootte van de halve slootbreedte +
+# de bijdrage door de contractie van stroomlijnen
+
+# %%
+b, d, Q, k = 5, 10, 1, 1
+def beta_pq(b, d):
+    beta = np.sin(- np.pi / 2 +  1j * np.pi * b / d)
+    p, q = -2 / (beta + 1), (beta - 1) / (beta + 1)
+    return p, q, beta
+
+z = np.linspace(0, 10 * b) + 1j * 0
+p, q, beta = beta_pq(b, d)
+
+om = omega_fr_z(z, b, d)
+k = 1.0
+phi_o = om / k
+phi = -Q * (z.real / d + 1 / np.pi * np.log(p))
+fig, ax = plt.subplots()
+ax.set_title(fr"Limit case compared to real b={b} d={d} Q={Q} k={k}"
+             '\n'
+             fr'p={p:.2f}, q={q:.2f}, $\beta$={beta:.2f}'             
+             )
+ax.set_xlabel('x')
+ax.set_ylabel('phi')
+ax.plot(z, phi_o.real, label=r'From $\Omega$')
+ax.plot(z, phi, label='limit case, no ditch')
+ax.grid(True)
+ax.legend()
+
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # Analytical solution for flow into a ditich of width b into an aquifer of half-infinite extent
 
@@ -280,6 +539,8 @@ def z_plane(Omega, Q=None, b=None, a=0., H=None):
     return -1j * H * (1 / 2 + 1 / np.pi * np.arcsin((sin-q) / p))
     
 Q, H, b, a = 1.0, 10., 25., 20.
+Q, H, b, a = 1.0, 10., 5., 0.
+
 nms, pnts = get_points(H, b)
 
 # Because we draw the lines (no contouring) use many points
@@ -293,7 +554,7 @@ Phi, Psi = np.meshgrid(phi, psi)
 Omega = Phi + 1j * Psi
 
 fig, ax = plt.subplots(figsize=(10, 6))
-ax.set_title(r'Potential and Streamlines')
+ax.set_title('Potential and Streamlines')
 ax.set_xlabel(r'$\Re(z)$')
 ax.set_ylabel(r'$\Im(z)$')
 
@@ -339,14 +600,16 @@ def get_Z(x, y):
 
 
 Q, H, b, a = 1.0, 10., 25., 20.
-nms, pnts = get_points(H, b)
+Q, H, b, a = 1.0, 10., 5., 0.
+
+nms, pnts = get_points(H, b, a)
 
 x = np.linspace(0, 4 * H, 51)
 y = np.linspace(-H, 0, 26)
 Z = get_Z(x, y)
 
 fig, ax = plt.subplots(figsize=(10, 6))
-ax.set_title(r'Potential and Streamlines')
+ax.set_title('Potential and Streamlines')
 ax.set_xlabel(r'$\Re(z)$')
 ax.set_ylabel(r'$\Im(z)$')
 
@@ -365,6 +628,7 @@ cs2 = ax.contour(Z.real, Z.imag, Omega.imag, colors='red', levels=psi_levels)
 
 ax.set_aspect(1.0)
 plt.tight_layout()
+
 
 
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -482,9 +746,9 @@ Hs = [10, 20, 30]
 fig, axs = plt.subplots(len(Hs), 1, sharex=True, figsize=(10, 16))
 
 fig1, ax1 = plt.subplots(figsize=(10, 6))
-ax1.set_title(f"Phi along top and bottom for different aquifer H (case={case})")
-ax1.set_xlabel('Re(z) [m]')
-ax1.set_ylabel('Phi [m2/d]')
+ax1.set_title(fr"$\Phi$ along top and bottom for different aquifer $H$ (case={case})")
+ax1.set_xlabel(r'$\Re(z)$ [m]')
+ax1.set_ylabel(r'$\Phi$ [m2/d]')
 ax1.grid(True)
 clrs = cycle('brgkmc')
 
@@ -502,7 +766,7 @@ for H, ax in zip(Hs, axs):
         
     Z = get_Z()
         
-    ax.set_title(f'Potential and Streamlines. case={case}.  H={H} m, xDleft={a} m, xDright={a + b} m')
+    ax.set_title(fr'Potential and Streamlines. case={case}.  $H$={H} m, xDleft={a} m, xDright={a + b} m')
     ax.set_xlabel(r'$x=\Re(z)$')
     ax.set_ylabel(r'$y=\Im(z)$')
     

@@ -204,10 +204,10 @@ Dun blijft de mode ...
 \begin_layout Standard
 Kees had natuurlijk gelijk,
  want de wiskunde bedriegt niet.
- Ik vond het vanwege de gebruikte Swarz-Christoffeltransformatie destijds lastig om de afleiding helemaal te volgen,
+ Ik vond het vanwege de gebruikte transformatie van Schwarz-Christoffel destijds lastig om de afleiding helemaal te volgen,
  en heb het verder laten rusten,
  maar sindsdien wel altijd in het achterhoofd gehouden,
- om het ongenschijnlijk tegen-intuïtieve fenomeen in de toekomst toch nog eens keer zelf na te rekenen.
+ om het ogenschijnlijk tegen de intuïtie werkende fenomeen in de toekomst toch nog eens keer zelf na te rekenen.
  En dat moment was nu,
  35 jaar later en 10 jaar na mijn pensionering.
 \end_layout
@@ -220,7 +220,7 @@ En nu kom ik ,
 \end_layout
 
 \begin_layout Standard
-Kees had zijn infiltratiesloot in een oneindig uitgestrekte watervoerend pakket,
+Kees had zijn infiltratiesloot in een oneindig uitgestrekte watervoerende pakket,
  waarin links op oneindig de stijghoogte gelijk aan nul werd gehouden en het geïnfiltreerde water naar rechts afstroomde met vast debiet 
 \begin_inset Formula $Q$
 \end_inset
@@ -369,7 +369,7 @@ literal "false"
 \end_layout
 
 \begin_layout Standard
-Het nu voorliggende iets eenvoudiger probleem kan worden opgelost met een conforme transformatie zonder de Schwarz-Christoffeltransformatie,
+Het nu voorliggende iets eenvoudiger probleem kan worden opgelost met een conforme transformatie zonder de Schwarz-Christoffel transformatie,
  met alleen wat schuiven en de sinus-transformatie,
  zoals eveneens uitgelegd in 
 \begin_inset CommandInset citation
@@ -511,7 +511,7 @@ status open
 \begin_layout Plain Layout
 \align center
 \begin_inset Graphics
-	filename /Users/Theo/GRWMODELS/python/Stromingen/H2O051995/images/zeta_transforms_1-3.png
+	filename ../images/zeta_transforms_1-3.png
 	width 60text%
 
 \end_inset
@@ -734,7 +734,7 @@ status open
 \begin_layout Plain Layout
 \align center
 \begin_inset Graphics
-	filename /Users/Theo/GRWMODELS/python/Stromingen/H2O051995/images/zeta_transforms_4-6.png
+	filename ../images/zeta_transforms_4-6.png
 	width 60text%
 
 \end_inset
@@ -922,7 +922,7 @@ Voegen we al deze stappen samen dan krijgen we de volgende transformatie in een 
 \begin_layout Standard
 \begin_inset Formula 
 \[
-\Omega=-i\frac{Q}{\pi}\left(\arcsin\left(p\sin\left(\frac{\pi}{H}\left(iz-\frac{H}{2}\right)\right)+q\right)-\frac{\pi}{2}\right)
+\Omega=-i\frac{Q}{\pi}\left(\arcsin\left(p\sin\left(\pi\left(i\frac{z}{H}-\frac{1}{2}\right)\right)+q\right)-\frac{\pi}{2}\right)
 \]
 
 \end_inset
@@ -1319,7 +1319,7 @@ status open
 
 \begin_layout Plain Layout
 \begin_inset Graphics
-	filename /Users/Theo/GRWMODELS/python/Stromingen/H2O051995/images/sections_sin.png
+	filename ../images/sections_sin.png
 	width 70text%
 
 \end_inset
@@ -1437,7 +1437,7 @@ status open
 \begin_layout Plain Layout
 \align center
 \begin_inset Graphics
-	filename /Users/Theo/GRWMODELS/python/Stromingen/H2O051995/images/tob_bot_potential_sin.png
+	filename ../images/tob_bot_potential_sin.png
 	width 60text%
 
 \end_inset
@@ -1527,7 +1527,7 @@ nolink "false"
 \begin_layout Standard
 \begin_inset Formula 
 \[
-\zeta=\exp\left(\frac{\pi}{H}\left(z+iH\right)\right)
+\zeta=\exp\left(\pi\left(\frac{z}{H}+i\right)\right)
 \]
 
 \end_inset
@@ -1593,6 +1593,201 @@ De transformatie van het
 \end_layout
 
 \begin_layout Standard
+Met de de transformatie 
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+p\zeta+q
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+worden de punten 
+\begin_inset Formula $D_{R}$
+\end_inset
+
+en 
+\begin_inset Formula $D_{L}$
+\end_inset
+
+op 
+\begin_inset Formula $x=\pm1$
+\end_inset
+
+ gelegd waarna de 
+\begin_inset Formula $\arcsin()$
+\end_inset
+
+ de arm links van -1 en rechts van +1 omhoog klapt en 
+\begin_inset Formula $D_{R}$
+\end_inset
+
+ en 
+\begin_inset Formula $D_{L}$
+\end_inset
+
+ op 
+\begin_inset Formula $\pm\frac{\pi}{2}$
+\end_inset
+
+ komen te liggen.
+ Vermenigvuldigen met 
+\begin_inset Formula $-i/\pi$
+\end_inset
+
+ kantelt dit vlak over 90 rechtsom en schaalt waardoor 
+\begin_inset Formula $D_{R}$
+\end_inset
+
+ en 
+\begin_inset Formula $D_{L}$
+\end_inset
+
+ op 
+\begin_inset Formula $\pm\frac{1}{2}$
+\end_inset
+
+ terecht komen,
+ terwijl voor alle 
+\begin_inset Formula $y$
+\end_inset
+
+ geldt 
+\begin_inset Formula $-\frac{1}{2}\le y\le\frac{1}{2}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\zeta_{1}=-\frac{i}{\pi}\arcsin\left(p\zeta+q\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Door vermenigvuldiging met 
+\begin_inset Formula $Q$
+\end_inset
+
+ krijgen we 
+\begin_inset Formula $\Omega$
+\end_inset
+
+ waarbij 
+\begin_inset Formula $\frac{-Q}{2}\le\Psi\le+\frac{Q}{2}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\Omega=-i\frac{Q}{\pi}\arcsin\left(p\zeta+q\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+met waarden tussen 
+\begin_inset Formula $\pm Q/2$
+\end_inset
+
+ voor de stroomfunctie.
+ De stroomfunctie kunnen we laten variëren tussen 0 en Q door 
+\begin_inset Formula $iQ/2$
+\end_inset
+
+ op te tellen
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+\Omega & =-i\frac{Q}{\pi}\arcsin\left(p\zeta+q\right)+i\frac{Q}{2}\\
+ & =-iQ\left(\frac{1}{\pi}\arcsin\left(p\zeta+q\right)-\frac{1}{2}\right)
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+waarin 
+\begin_inset Formula $0\le\Psi\le Q$
+\end_inset
+
+ 
+\end_layout
+
+\begin_layout Standard
+Of het teken doen omkeren door aftrekken van 
+\begin_inset Formula $i/2$
+\end_inset
+
+ vermenigvuldiging met 
+\begin_inset Formula $-1$
+\end_inset
+
+.
+ Eerst oftrekken van 
+\begin_inset Formula $-iQ/2$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+\zeta_{1} & =-\frac{i}{\pi}\arcsin\left(p\zeta+q\right)-i\frac{1}{2}
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Dan vermenigvuldigen met 
+\begin_inset Formula $-Q$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\Omega=i\,Q\left(\frac{1}{\pi}\arcsin\left(p\zeta+q\right)+\frac{1}{2}\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+-
+\end_layout
+
+\begin_layout Standard
 De punten 
 \begin_inset Formula $L_{t}$
 \end_inset
@@ -1605,7 +1800,7 @@ De punten
 \begin_inset Formula $\zeta=0$
 \end_inset
 
- afgebeeld en de van de infiltratiesloot 
+ afgebeeld en die van de infiltratiesloot 
 \begin_inset Formula $D_{R}>z>D_{L}$
 \end_inset
 
@@ -1662,7 +1857,7 @@ De punten
 \begin_layout Standard
 \begin_inset Formula 
 \[
-\Omega=-i\frac{Q}{\pi}\left(\arcsin\left(p\zeta+q\right)-\frac{\pi}{2}\right)
+\zeta=\exp\left(\pi\left(\frac{z}{H}+i\right)\right)
 \]
 
 \end_inset
@@ -1671,13 +1866,9 @@ De punten
 \end_layout
 
 \begin_layout Standard
-De totale transformatie kan nu in een formule worden opgeschreven
-\end_layout
-
-\begin_layout Standard
 \begin_inset Formula 
 \[
-\Omega=-i\frac{Q}{\pi}\left(\arcsin\left(p\exp\left(\frac{\pi}{H}\left(z+iH\right)\right)+q\right)-\frac{\pi}{2}\right)
+\Omega=-iQ\left(\frac{1}{\pi}\arcsin\left(p\zeta+q\right)-\frac{1}{2}\right)
 \]
 
 \end_inset
@@ -1692,7 +1883,29 @@ en omgekeerd
 \begin_layout Standard
 \begin_inset Formula 
 \[
-z=-iH+\frac{H}{\pi}\ln\left(\frac{\sin\left(i\frac{\pi}{Q}\Omega+\frac{\pi}{2}\right)-q}{p}\right)
+\zeta=\frac{\sin\left(\pi\left(-i\frac{\Omega}{Q}+\frac{1}{2}\right)\right)-q}{p}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\exp\left(\pi\left(\frac{z}{H}+i\right)\right)=\frac{\sin\left(\pi\left(-i\frac{\Omega}{Q}+\frac{1}{2}\right)\right)-q}{p}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+z=-iH+\frac{H}{\pi}\ln\left[\frac{\sin\left(\pi\left(-i\frac{\Omega}{Q}+\frac{1}{2}\right)\right)-q}{p}\right]
 \]
 
 \end_inset
@@ -1793,7 +2006,7 @@ status open
 
 \begin_layout Plain Layout
 \begin_inset Graphics
-	filename /Users/Theo/GRWMODELS/python/Stromingen/H2O051995/images/sections_exp.png
+	filename ../images/sections_exp.png
 	width 70text%
 
 \end_inset
@@ -1865,7 +2078,7 @@ status open
 \begin_layout Plain Layout
 \align center
 \begin_inset Graphics
-	filename /Users/Theo/GRWMODELS/python/Stromingen/H2O051995/images/tob_bot_potential_exp.png
+	filename ../images/tob_bot_potential_exp.png
 	width 60text%
 
 \end_inset

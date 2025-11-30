@@ -176,7 +176,7 @@ Het was een mooi en belangwekkend artikel van Kees Maas (1995) in H2O waarin hij
 \begin_layout Standard
 Kees had gelijk,
  dat moest wel.
- Ik vond het vanwege de gebruikte Swarz-Christoffel transformatie destijds lastig om de afleiding helemaal te volgen,
+ Ik vond het vanwege de gebruikte Schwarz-Christoffel transformatie destijds lastig om de afleiding helemaal te volgen,
  en heb het verder laten rusten,
  maar wel in het achterhoofd gehouden om het in de toekomst toch nog een keer zelf na te rekenen.
  En dat moment was nu,
@@ -184,7 +184,7 @@ Kees had gelijk,
 \end_layout
 
 \begin_layout Standard
-Kees had zijn sloot in een oneindig uitgestreke aquifer waarin links op oneindig de stijghoogte gelijk aan nul werd gehouden en het geïnfiltreerde water naar rechts afstroomde met vast debiet 
+Kees had zijn sloot in een oneindig uitgestrekte aquifer waarin links op oneindig de stijghoogte gelijk aan nul werd gehouden en het geïnfiltreerde water naar rechts afstroomde met vast debiet 
 \begin_inset Formula $Q$
 \end_inset
 
@@ -198,14 +198,14 @@ Kees had zijn sloot in een oneindig uitgestreke aquifer waarin links op oneindig
 \begin_layout Standard
 Ik vond de door Kees gebruikte conforme transformatie lastig omdat er aan twee zijden oneindig in het spel was.
  Ik doe het daarom nu langs een iets eenvoudiger weg.
- Ik laat de aquifer eindigen op een afstand links van de sloot die geijk is aan een aantal keer de pakketdikte.
+ Ik laat de aquifer eindigen op een afstand links van de sloot die gelijk is aan een aantal keer de pakketdikte.
  Omdat daar geen stroming meer aanwezig is,
  is daar de stijghoogte gelijk aan die op elke andere grotere afstand links van de sloot dan mijn toevallige keuze.
  Hij is niet nul,
  zoals bij Kees,
  maar mijn stijghoogte is nul in de sloot.
  De stijghoogte op mijn gekozen referentiepunt is dus gelijk aan die van de sloot bij Kees.
- Hij veschuift schlechts het hele Potentiaalbeeld omhoog met deze waarde.
+ Hij verschuift slechts het hele Potentiaalbeeld omhoog met deze waarde.
 \end_layout
 
 \begin_layout Section
@@ -273,7 +273,7 @@ Een andere mogelijkheid is om te beginnen met een grid in het
 \begin_inset Formula $z$
 \end_inset
 
--vlak (door doorsned) worden verkregen die rechtstreeks kunnen worden getekend zonder contourlijnen te gebruiken.
+-vlak (door doorsnede) worden verkregen die rechtstreeks kunnen worden getekend zonder contourlijnen te gebruiken.
 \end_layout
 
 \begin_layout Section
@@ -292,7 +292,7 @@ Het nu voorliggende iets eenvoudiger probleem kan worden opgelost met een confor
 \begin_inset Formula $-H\le y\le0$
 \end_inset
 
- en een sloot tussen vaste coordinaten 
+ en een sloot tussen vaste coördinaten 
 \begin_inset Formula $x_{sL}\le x\le x_{sR}$
 \end_inset
 
@@ -315,8 +315,8 @@ Het nu voorliggende iets eenvoudiger probleem kan worden opgelost met een confor
 \begin_inset Formula $\Phi$
 \end_inset
 
- in het pakketmidden tgen de linker zijde van de doorsnede.
- Dit is gelijk aan de stijghoogte die Kees in de slootberekende,
+ in het midden van het pakket tegen de linker zijde van de doorsnede.
+ Dit is gelijk aan de stijghoogte die Kees in de sloot berekende,
  namelijk de waarde boven het vaste peil bij Kees op 
 \begin_inset Formula $x=-\infty$
 \end_inset
@@ -543,7 +543,7 @@ Wanneer we dit vlak rechtsom klappen door vermenigvuldiging met
 \begin_inset Formula $-i$
 \end_inset
 
- and hebben we het 
+ en hebben we het 
 \begin_inset Formula $\Omega$
 \end_inset
 
@@ -599,7 +599,7 @@ waarin
 \begin_inset Formula $q$
 \end_inset
 
- berekend worden met de coordinaten van de hoekpunten van de sloot in het 
+ berekend worden met de coördinaten van de hoekpunten van de sloot in het 
 \begin_inset Formula $\zeta$
 \end_inset
 
@@ -607,7 +607,7 @@ waarin
 \end_layout
 
 \begin_layout Standard
-De formule hiervoor is handig om de complexe potentiaal te berekenen bij gegeven coordinaten in het vlak van de oorspronkelijkek doorsnede.
+De formule hiervoor is handig om de complexe potentiaal te berekenen bij gegeven coördinaten in het vlak van de oorspronkelijke doorsnede.
  Het omgekeerde is ook mogelijk,
  namelijk om bij een gegeven complexe potentiaal het bijbehorende punten in het 
 \begin_inset Formula $z$
@@ -692,7 +692,7 @@ status open
 
 \begin_layout Plain Layout
 \begin_inset Graphics
-	filename /Users/Theo/GRWMODELS/python/Stromingen/H2O051995/images/sections.png
+	filename ../images/sections.png
 	width 100text%
 
 \end_inset
@@ -801,7 +801,7 @@ status open
 \begin_layout Plain Layout
 \align center
 \begin_inset Graphics
-	filename /Users/Theo/GRWMODELS/python/Stromingen/H2O051995/images/tob_bot_potential.png
+	filename ../images/tob_bot_potential.png
 	width 80text%
 
 \end_inset
@@ -858,7 +858,7 @@ Ik heb ervan afgezien om een expliciete formule af te leiden voor de potentiaal 
 \end_layout
 
 \begin_layout Section
-Tekeken van complexe functies
+Tekenen van complexe functies
 \end_layout
 
 \begin_layout Standard
@@ -1111,7 +1111,7 @@ Als we een conforme afbeelding hebben in de zin van
 \begin_inset Formula $z$
 \end_inset
 
--lijnen direct tekeken.
+-lijnen direct tekenen.
 \end_layout
 
 \begin_layout Section
@@ -1143,7 +1143,7 @@ De transformatie roteert de verticale
 \end_inset
 
 .
- Dus als we coordinaten kiezen van 
+ Dus als we coördinaten kiezen van 
 \begin_inset Formula $-a\le x\le a$
 \end_inset
 
@@ -1278,7 +1278,7 @@ waarbij
 \end_inset
 
 .
- Als we een vierantennet willen in het 
+ Als we een vierkantennet willen in het 
 \begin_inset Formula $z$
 \end_inset
 

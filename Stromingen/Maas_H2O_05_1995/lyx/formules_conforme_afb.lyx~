@@ -441,6 +441,10 @@ Dit geeft
 \end_layout
 
 \begin_layout Standard
+,
+\end_layout
+
+\begin_layout Standard
 \begin_inset Formula 
 \begin{align*}
 p & =\frac{2}{\zeta_{R}-\zeta_{L}}\\
@@ -459,7 +463,7 @@ zodat
 \begin_layout Standard
 \begin_inset Formula 
 \[
-\zeta_{R}=p\zeta+q
+\zeta_{3}=p\zeta+q
 \]
 
 \end_inset
@@ -833,7 +837,7 @@ Potentiaal langs de top en basis van de aquifer
 \end_layout
 
 \begin_layout Section
-Resultaten
+En formule voor de intredeweerstand
 \end_layout
 
 \begin_layout Standard
@@ -844,198 +848,13 @@ Ik heb ervan afgezien om een expliciete formule af te leiden voor de potentiaal 
 \end_inset
 
  tot zijn beschikking had.
- Wellicht is dit hier ook mogelijk door het punt 
-\begin_inset Formula $z=0,0$
-\end_inset
-
- te nemen en dan de sloot steeds verder richting oneindig op te schuiven.
- We krijgen dan een constante waarde voor elke doorsnede,
- dat moet zo zijn en blijkt ook door de situatie voor een aantal in grootte toenemende slootafstanden te kiezen.
-\end_layout
-
-\begin_layout Standard
-Dus we zoeken de potentiaal op 
+ Wellicht is het hier ook mogelijk om de intredeweerstand expliciet af te leiden door het punt 
 \begin_inset Formula $z=0$
 \end_inset
 
- voor de sloot naar oneindig,
- dat wil zeggen 
-\begin_inset Formula $\zeta\rightarrow-\infty$
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\begin{align*}
-p\zeta+q & =\frac{2}{\zeta_{R}-\zeta_{L}}\zeta-\frac{\zeta_{R}+\zeta_{L}}{\zeta_{R}-\zeta_{L}}
-\end{align*}
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-voor 
-\begin_inset Formula $z=0$
-\end_inset
-
- volgt 
-\begin_inset Formula $\zeta_{4}=p\zeta+q$
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\begin{align*}
-\zeta_{4} & =p\sin\left(-\frac{\pi}{2}\right)+q\\
- & =-p+q\\
- & =\frac{-2-\zeta_{R}-\zeta_{L}}{\zeta_{R}-\zeta_{L}}
-\end{align*}
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\[
-\Omega=-i\frac{Q}{\pi}\left(\arcsin\left(\frac{-2-(\zeta_{R}+\zeta_{L}}{\zeta_{R}-\zeta_{L}}\right)-\frac{\pi}{2}\right)
-\]
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\[
-\Omega=-i\frac{Q}{\pi}\left(\arcsin\left(\frac{-2-(\zeta_{R}-\zeta_{L}+2\zeta_{L})}{b}\right)-\frac{\pi}{2}\right)
-\]
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\[
-\Omega=-i\frac{Q}{\pi}\left(\arcsin\left(-2\frac{1+\zeta_{L}}{b}-b\right)-\frac{\pi}{2}\right)
-\]
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-When 
-\begin_inset Formula $\zeta_{L}\rightarrow-\infty$
-\end_inset
-
- dan gaat het argument van de 
-\begin_inset Formula $\arcsin$
-\end_inset
-
- naar 
-\begin_inset Formula $+\infty$
-\end_inset
-
- en gaat het imaginaire deel van de arcsin logarithmisch naar oneindig en het reële deel blijft 
-\begin_inset Formula $\pi/2$
-\end_inset
-
-.
- Aftrekken van 
-\begin_inset Formula $\pi/2$
-\end_inset
-
- levert dan alleen alleen het imaginaire deel op van de arcsin.
- Vermenigvuldiging met 
-\begin_inset Formula $iQ/\pi$
-\end_inset
-
- levert dan een reële waarde op voor de 
-\begin_inset Formula $\Omega$
-\end_inset
-
- en dus ook voor de 
-\begin_inset Formula $\Phi$
-\end_inset
-
-.
- Alleen lijkt het erop dat er geen harde limit is alhoewel de numerieke waarden daar wel naar toe lijken te gaan.
-\end_layout
-
-\begin_layout Standard
-wordt deze utidrukking gelijk aan 
-\begin_inset Formula $q$
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-Voor 
-\begin_inset Formula $z=0$
-\end_inset
-
- gaat
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\[
-\Omega=-i\frac{Q}{\pi}\left(\arcsin\left(p\sin\left(\frac{\pi}{H}\left(iz-\frac{H}{2}\right)\right)+q\right)-\frac{\pi}{2}\right)
-\]
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-over in
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\[
-\Omega=-i\frac{Q}{\pi}\left(\arcsin\left(p\sin\left(-\frac{\pi}{2}\right)+q\right)-\frac{\pi}{2}\right)
-\]
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\[
-\Omega=-i\frac{Q}{\pi}\left(\arcsin\left(-p+q\right)-\frac{\pi}{2}\right)
-\]
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\[
-\Omega=-i\frac{Q}{\pi}\left(\arcsin\left(\frac{-2-\zeta_{R}-\zeta_{L}}{\zeta_{R}-\zeta_{L}}\right)-\frac{\pi}{2}\right)
-\]
-
-\end_inset
-
-
+ op de linkerbovenrand vande doorsnede hiervoor te keizen en daarbij de sloot steeds verder richting oneindig op te schuiven.
+ We krijgen bij de sloot op voldoende afstand van de linkerrand een constante potentiaal voor elke doorsnede.
+ Dit blijkt ook uit de horizontale potentiaalijnen links van de sloot.
 \end_layout
 
 \begin_layout Section

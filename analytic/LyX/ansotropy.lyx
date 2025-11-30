@@ -1,0 +1,1186 @@
+#LyX 2.4 created this file. For more info see https://www.lyx.org/
+\lyxformat 620
+\begin_document
+\begin_header
+\save_transient_properties true
+\origin unavailable
+\textclass article
+\begin_preamble
+%\usepackage{epstopdf} % to include .eps graphics files with pdfLaTeX
+\usepackage{flafter}   % Don't place floats before their definition
+%\usepackage{topcapt}  % Define \topcation for placing captions above tables (not in gwTeX)
+
+\usepackage{xurl}      % better URL setting, uses old url package
+
+\usepackage{xcolor}
+\definecolor{darkblue}{rgb}{0,0,0.4}
+\usepackage[]{hyperref} % Generates all cross references
+\hypersetup{            % Setting options for hyperref package
+	breaklinks=true,    % break line with long hyperlinks
+	colorlinks=true,    % coloured links
+	linkcolor=blue,
+	filecolor=magenta,
+	urlcolor=darkblue,
+	citecolor=blue,
+	backref=page
+} 
+
+\usepackage{memhfixc}  % remove conflict between the memoir class & hyperref
+\usepackage{pdfsync}   % enable tex source and pdf output syncronicity
+
+\usepackage{memhfixc}  % remove conflict between the memoir class & hyperref
+\usepackage{pdfsync}   % enable tex source and pdf output syncronicity
+
+\usepackage{alltt}
+
+% \usepackage{listings}
+% \usepackage{xcolor}
+
+% \lstdefinestyle{mystyle}{
+%   language=Python,
+%   numbers=left
+% }
+
+% Put lstset here, after lstdefinestyle
+% \lstset{style=mystyle}
+\end_preamble
+\use_default_options true
+\maintain_unincluded_children no
+\language dutch
+\language_package default
+\inputencoding utf8
+\fontencoding auto
+\font_roman "default" "default"
+\font_sans "default" "default"
+\font_typewriter "default" "default"
+\font_math "auto" "auto"
+\font_default_family default
+\use_non_tex_fonts false
+\font_sc false
+\font_roman_osf false
+\font_sans_osf false
+\font_typewriter_osf false
+\font_sf_scale 100 100
+\font_tt_scale 100 100
+\use_microtype false
+\use_dash_ligatures true
+\graphics default
+\default_output_format pdf2
+\output_sync 0
+\bibtex_command biber
+\index_command default
+\float_placement h
+\float_alignment center
+\paperfontsize default
+\spacing single
+\use_hyperref false
+\papersize default
+\use_geometry true
+\use_package amsmath 1
+\use_package amssymb 1
+\use_package cancel 1
+\use_package esint 1
+\use_package mathdots 1
+\use_package mathtools 1
+\use_package mhchem 1
+\use_package stackrel 1
+\use_package stmaryrd 1
+\use_package undertilde 1
+\cite_engine biblatex
+\cite_engine_type authoryear
+\biblio_options hyperref=true, backref=true, backrefstyle=three,backreffloats=true,indexing=bib,date=year
+\biblatex_bibstyle authoryear
+\biblatex_citestyle authoryear
+\use_bibtopic false
+\use_indices false
+\paperorientation portrait
+\suppress_date false
+\justification true
+\use_refstyle 1
+\use_formatted_ref 0
+\use_minted 0
+\use_lineno 0
+\index Index
+\shortcut idx
+\color #008000
+\end_index
+\leftmargin 1in
+\topmargin 1in
+\rightmargin 1in
+\bottommargin 1in
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation indent
+\paragraph_indentation default
+\is_math_indent 0
+\math_numbering_side default
+\quotes_style polish
+\dynamic_quotes 0
+\papercolumns 1
+\papersides 1
+\paperpagestyle default
+\tablestyle default
+\listings_params "language=Python,extendedchars=false,frameround=fttt,numbers=left,% line numbers use none,numberstyle={\tiny},stepnumber=2,% line numbers only every so many,numbersep=9pt,% how far line numbers from text?,showspaces=false,showstringspaces=false,showtabs=false,tab={\rightarrowfill},basicstyle={\small},keywordstyle={\color{blue}},commentstyle={\color{green}},stringstyle={\ttfamily \color{magenta}},identifierstyle={\color{black}}"
+\tracking_changes false
+\output_changes false
+\change_bars false
+\postpone_fragile_content false
+\html_math_output 0
+\html_css_as_file 0
+\html_be_strict false
+\docbook_table_output 0
+\docbook_mathml_prefix 1
+\end_header
+
+\begin_body
+
+\begin_layout Title
+Anisotropy
+\begin_inset Newline newline
+\end_inset
+
+Op basis van H2O artikel uit 1982 als
+\begin_inset Newline newline
+\end_inset
+
+Hatsi-kD
+\end_layout
+
+\begin_layout Author
+Theo Olsthoorn
+\end_layout
+
+\begin_layout Date
+Nov.
+ 2025
+\end_layout
+
+\begin_layout Standard
+Het staat in elk grondwaterleerboek,
+ maar we negeren het liever omdat het lastig lijkt door de ingewikkelde formules waarmee de afleiding in zulke boeken meestal gepaard gaat:
+ anisotropie,
+ Maar omgaan met anisotropie is helemaal niet zo lastig en kan zonder al die cosinussen en sinussen,
+ mits we eerst de kaart draaien zodat de assen van de kaart samenvallen hoofdassen van de doorlatendheid.
+ Hierna hebben we de volgende anisotrope basis differentiaalvergelijking in 3D met verschillende doorlatendheid in de 
+\begin_inset Formula $x$
+\end_inset
+
+,
+ 
+\begin_inset Formula $y$
+\end_inset
+
+ en 
+\begin_inset Formula $z$
+\end_inset
+
+-richting:
+ 
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{equation}
+k_{x}\frac{\partial^{2}\phi}{\partial x^{2}}+k_{y}\frac{\partial^{2}\phi}{\partial y^{2}}+k_{z}\frac{\partial^{2}\phi}{\partial z^{2}}+q-S_{s}\frac{\partial\phi}{\partial t}=0\label{eq:base-3D-pde}
+\end{equation}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Waarin:
+\end_layout
+
+\begin_layout Description
+\begin_inset Formula $\phi$
+\end_inset
+
+ stijghoogte [m]
+\end_layout
+
+\begin_layout Description
+\begin_inset Formula $k_{x},k_{y},k_{z}$
+\end_inset
+
+ doorlatendheden evenwijdig aan de hoofdassen [m/d]
+\end_layout
+
+\begin_layout Description
+\begin_inset Formula $q$
+\end_inset
+
+ voeding [
+\begin_inset Formula $\left(m^{3}/d\right)/m^{3}$
+\end_inset
+
+]=[
+\begin_inset Formula $1/d$
+\end_inset
+
+]
+\end_layout
+
+\begin_layout Description
+\begin_inset Formula $S_{s}$
+\end_inset
+
+ specifieke bergingscoëficiënt [1/d]
+\end_layout
+
+\begin_layout Description
+\begin_inset Formula $t$
+\end_inset
+
+ tijd [d]
+\end_layout
+
+\begin_layout Standard
+In de isotrope situatie ziet deze vergelijking er als volgt uit,
+ waarbij de (') de isotrope situatie aanduidt
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{equation}
+k^{'}\left[\frac{\partial^{2}\phi'}{\partial\left(x'\right)^{2}}+\frac{\partial^{2}\phi'}{\partial\left(y'\right)^{2}}+\frac{\partial^{2}\phi^{'}}{\partial\left(z'\right)^{2}}\right]+q'-S_{s}^{'}\frac{\partial\phi^{'}}{\partial t'}=0\label{eq:isotrope-3D-pde}
+\end{equation}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+De volgende substituties maken vergelijking 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "eq:base-3D-pde"
+plural "false"
+caps "false"
+noprefix "false"
+nolink "false"
+
+\end_inset
+
+ gelijk maken aan vergelijking 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "eq:isotrope-3D-pde"
+plural "false"
+caps "false"
+noprefix "false"
+nolink "false"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+k'=\sqrt[3]{k_{x}k_{y}k_{z}};\;x=x'\sqrt{\frac{k_{x}}{k'}};\;y=y'\sqrt{\frac{k_{y}}{k'}};\;z'=z\sqrt{\frac{k_{z}}{k'}};\;\phi'=\phi;\;t'=t;\;q'=q;\;S_{s}'=S_{s}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Dit betekent niets anders dan dat we de anisotrope situatie als isotroop kunnen berekenen door uitsluitend de coördinaten en de doorlatendheid te transformeren maar 
+\begin_inset Formula $\phi$
+\end_inset
+
+,
+ 
+\begin_inset Formula $t$
+\end_inset
+
+,
+ 
+\begin_inset Formula $q$
+\end_inset
+
+ en 
+\begin_inset Formula $S_{s}$
+\end_inset
+
+ in tact te laten.
+ De volumestromen over de randen blijven dus ook hetzelfde,
+ stroomlijnen transformeren mee en tussen elk paar stroomlijnen of stroomvlakken stroomt in de anistotrope en isotrope situatie evenveel water.
+ Merk op dat 
+\begin_inset Formula $dxdydz=dx'dy'dz'$
+\end_inset
+
+ zodat het volume hetzelfde blijft.
+ 
+\end_layout
+
+\begin_layout Standard
+Bij tweedimensionale stroming in het 
+\begin_inset Formula $x,y$
+\end_inset
+
+ vlak verloopt de transformatie overeenkomstig;
+ de substituties zijn dan:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+k'=\sqrt[2]{k_{x}k_{y}};\;x=x'\sqrt{\frac{k_{x}}{k'}};\;y=y'\sqrt{\frac{k_{y}}{k'}}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+De andere variabelen:
+ 
+\begin_inset Formula $q,$
+\end_inset
+
+
+\begin_inset Formula $\phi$
+\end_inset
+
+,
+ 
+\begin_inset Formula $t$
+\end_inset
+
+ en 
+\begin_inset Formula $S$
+\end_inset
+
+ (nu de bergingscoëfficiënt van het gehele pakket) veranderen ook hier niet.
+ 
+\end_layout
+
+\begin_layout Standard
+Wellicht onverwacht,
+ maar ook verblijftijden langs stroombanen blijven in beide poreuze media hetzelfde.
+ Het bewijs hiervoor is eenvoudig.
+ De te beantwoorden vraag is:
+ wordt de afstand tussen punten 
+\begin_inset Formula $A$
+\end_inset
+
+ en 
+\begin_inset Formula $B$
+\end_inset
+
+ in de anisotrope situatie in dezelfde tijd 
+\begin_inset Formula $dt$
+\end_inset
+
+ afgelegd als de afstand tussen de getransformeerde punten 
+\begin_inset Formula $A'$
+\end_inset
+
+ en 
+\begin_inset Formula $B'$
+\end_inset
+
+ in de isotrope situatie?
+ Laat de porositeit in beide situaties gelijk zijn aan 
+\begin_inset Formula $\epsilon$
+\end_inset
+
+ en de afstand tussen 
+\begin_inset Formula $A$
+\end_inset
+
+ en 
+\begin_inset Formula $B$
+\end_inset
+
+ gelijk aan 
+\begin_inset Formula $ds=\left[dx,dy,dz\right]$
+\end_inset
+
+ en die tussen 
+\begin_inset Formula $A'$
+\end_inset
+
+ en 
+\begin_inset Formula $B'$
+\end_inset
+
+ in de isotrope situatie gelijk aan 
+\begin_inset Formula $ds'=\left[dx',dy',dz'\right]$
+\end_inset
+
+.
+ We kunnen ons beperkten door dit voor slechts één van de 2 resp.
+ 3 hoofdrichtingen te onderzoeken.
+ De tijd 
+\begin_inset Formula $dt$
+\end_inset
+
+ nodig om de afstand 
+\begin_inset Formula $dx$
+\end_inset
+
+,
+ resp.
+ 
+\begin_inset Formula $dx'$
+\end_inset
+
+ te overbruggen is
+\end_layout
+
+\begin_layout Standard
+
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\nospellcheck off
+\bar no
+\strikeout off
+\xout off
+\uuline off
+\uwave off
+\noun off
+\color none
+\begin_inset Formula 
+\begin{equation}
+dt=\epsilon\frac{dx}{v_{x}}=\epsilon\frac{dx'}{v'_{x}}\label{eq:dt-in-beide-systemen}
+\end{equation}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+waarin
+\end_layout
+
+\begin_layout Description
+\begin_inset Formula $v_{x},v\,'_{x}$
+\end_inset
+
+ de Darcy-snelheid of flux van de waterdeeltjes langs de horizontale as is in resp.
+ het anisotrope en het isotrope poreuze medium
+\end_layout
+
+\begin_layout Standard
+De vraag is nu of in vergelijking 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "eq:dt-in-beide-systemen"
+plural "false"
+caps "false"
+noprefix "false"
+nolink "false"
+
+\end_inset
+
+ aan beide zijden van het isgelijkteken inderdaad hetzelfde staat.
+ We werken daartoe de uitdrukking aan de rechterzijde uit,
+ en maken gebruik van het feit dat 
+\begin_inset Formula $dx'=\sqrt{\frac{k'}{k_{x}}}dx$
+\end_inset
+
+.
+ Deze uitwerking levert
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\frac{dx'}{v'_{x}}=\frac{\sqrt{\frac{k'}{k_{x}}}dx}{k'\frac{\partial\phi}{\partial x'}}=\frac{\sqrt{\frac{k'}{k_{x}}}dx}{k'\frac{\partial\phi}{\partial x}\frac{dx}{dx'}}=\frac{\sqrt{\frac{k'}{k_{x}}}dx}{k'\sqrt{\frac{k_{x}}{k'}}\frac{\partial\phi}{\partial x}}=\frac{dx}{k_{x}\frac{\partial\phi}{\partial x}}=\frac{dx}{v_{x}}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Newline newline
+\end_inset
+
+wat laat zien dat vergelijking 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "eq:dt-in-beide-systemen"
+plural "false"
+caps "false"
+noprefix "false"
+nolink "false"
+
+\end_inset
+
+ inderdaad waar is.
+ Hetzelfde geldt uiteraard voor de andere twee hoofdrichtingen,
+ waarmee het bewijs is geleverd.
+ Voor 2 en 3 dimensies is de afleiding hetzelfde.
+ Stroombaanberekeningen leveren in de anisotrope situatie dezelfde verblijftijden als in de isotrope situatie.
+ Men kan de coördinaten van de stroombanen tussen beide media één op één heen en weer transformeren;
+ de verblijftijden veranderen daarbij niet.
+\end_layout
+
+\begin_layout Subsection*
+Voorbeeld
+\end_layout
+
+\begin_layout Standard
+Afbeelding 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Voorbeeld-anisotropie-bij-put-en-spiegelput"
+plural "false"
+caps "false"
+noprefix "false"
+nolink "false"
+
+\end_inset
+
+ geeft een eenvoudig voorbeeld.
+ We hebben links de plattegrond met een put en een oever die toevallig evenwijdig loopt met de 
+\begin_inset Formula $y$
+\end_inset
+
+-as.
+ De hoofdrichtingen van de doorlatendheden zijn met de pijlen aangegeven.
+ Vergeet even de contouren in de eerste twee plaatjes.
+ Plaatje 2 geeft dezelfde plattegrond maar zo gedraaid dat de hoofdassen van de doorlatendheid nu evenwijdig aan die van de plattegrond verlopen.
+ Dit is voor ons de uitgangssituatie.
+ In plaatje drie zijn de horizontale en verticale assen verschaald zodat het poreuze medium nu isotroop.
+ In dit medium plaatse we de put en spiegelen deze over de eveneens getransformeerde oever.
+ We berekenden de verlaging en tekenen de contouren.
+ Dan nemen we de coördinaten van de contourlijnen en verschalen die terug naar het anisotrope medium en tekenen die in plaaatje 2.
+ Vervolgens roteren we plaatje twee zodat de oever weer langs de y-as loopt,
+ wat de eindsituatie weergeeft.
+ 
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+placement document
+alignment document
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\begin_inset Graphics
+	filename /Users/Theo/GRWMODELS/python/tools/analytic/images/anisotropy.png
+	lyxscale 60
+	width 100text%
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:Voorbeeld-anisotropie-bij-put-en-spiegelput"
+
+\end_inset
+
+Voorbeeld anisotropie bij put en spiegelput
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section*
+Conclusie
+\end_layout
+
+\begin_layout Standard
+Werken met een anisotrope situatie gaat praktisch als volgt:
+\end_layout
+
+\begin_layout Enumerate
+Leg de hoofdassen van het coördinatensysteem evenwijdig aan de hoofdassen van de doorlatendheid.
+\end_layout
+
+\begin_layout Enumerate
+Schaal deze hoofdassen zoals aangegeven.
+\end_layout
+
+\begin_layout Enumerate
+Voer alle berekeningen etc.
+ uit in het getransformeerde,
+ isotrope medium.
+ Alle stijghoogten,
+ debieten en verblijftijden blijven in beide media hetzelfde.
+\end_layout
+
+\begin_layout Enumerate
+Teken,
+ isohypsen,
+ stroomlijnen,
+ stroombanen etc.
+ en schaal die transformeer die terug naar het anisotrope medium en teken ze daarin.
+\end_layout
+
+\begin_layout Enumerate
+Wanneer van toepassing draai het anistrope medium terug naar de oorspronkelijke plattegrond.
+ Dit laatste 
+\end_layout
+
+\begin_layout Section*
+De 
+\begin_inset Quotes pld
+\end_inset
+
+tweak
+\begin_inset Quotes prd
+\end_inset
+
+ in de vlak- of randstroming in 3D en in 2D
+\end_layout
+
+\begin_layout Standard
+Anisotropy lijkt allemaal rechttoe rechtaan in zowel 3 als 2 dimensies.
+ Dit wordt veroorzaakt door dat in 3D het verschaalde volume gelijk blijft,
+ 
+\begin_inset Formula $dxdydz=dx'dy'dz'$
+\end_inset
+
+,
+ zodat een injectie 
+\begin_inset Formula $q$
+\end_inset
+
+ daarin in beide situaties gelijk blijft.
+ In 2D komt dit doordat het verschaalde oppervlak gelijk blijft 
+\begin_inset Formula $dxdy=dx'dy'$
+\end_inset
+
+.
+ Dit kan gevaarlijk worden bij het opleggen van flux-randvoorwaarden in het isotrope medium.
+ We moeten ervoor zorgen dat het getransformeerde oppervlak in het isotrope medium evenveel water krijgt als hetzelfde oppervlak in het anisotrope medium.
+ Heb je bijvoorbeeld een anisotroop Modflow model met cellen en vertaalt dat naar een isotroop Modflow model met cellen dan zorg je ervoor dat overeenkomstige cellen in beide modellen evenveel water krijgen ook al hebben ze niet het zelfde oppervlak.
+ Hetzeflde geldt voor lijnvormige randvoorwaarden in een 2D model:
+ de stroming over de overeenkomstige lijnen moet in beide modellen hetzelfde blijven.
+ Makkelijk als je modellen met cellen hebt.
+ De stroming over de celranden moeten na transformatie hetzelfde zijn.
+ Bij analytische berekeningen moeten we dit expliciet maken.
+ Laat de het neerslagoverschot in een 3D model gelijk zijn aan 
+\begin_inset Formula $n$
+\end_inset
+
+ dan is de verticale instroom over een oppervlak 
+\begin_inset Formula $dxdy$
+\end_inset
+
+ gelijk aan 
+\begin_inset Formula $ndxdy$
+\end_inset
+
+.
+ Willen we dit gelijk houden bij de transfromatie dan geldt
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+ndxdy=n'dx'dy'=n'\sqrt{\frac{k}{k_{x}}}dx\sqrt{\frac{k}{k_{y}}}dy=n'\sqrt{\frac{k^{2}}{k_{x}k_{y}}},\;\text{met}\;\sqrt[3]{k_{x}k_{y}k_{z}}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+zodat we in het isotrope medium het volgende neerslagoverschot moeten opleggen
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+n'=n\sqrt{\frac{k_{x}k_{y}}{k^{2}}};\;k=\sqrt[3]{k_{x}k_{y}k_{z}}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Om dezelfde reden verandert ook de weerstand 
+\begin_inset Formula $c$
+\end_inset
+
+ van een afdekkende laag.
+ Wil de lek in het isotrope medium gelijk blijven per oppervlak in het oorspronkelijke anisotrope medium dan geldt
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+Q=\frac{\Delta\phi}{c}dxdy=\frac{\Delta\phi}{c'}dx'dy'=\frac{\Delta\phi}{c'}\sqrt{\frac{k^{2}}{k_{x}k_{y}}}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+c'=c\sqrt{\frac{k^{2}}{k_{x}k_{y}}};\;k=\sqrt[3]{k_{x}k_{y}k_{z}}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Dus wanneer je bij 3D stroming een oppervlakte flux vertaalt van het anisotrope medium naar het isotrope medium,
+ dan wel in het 2D anistrope medium een opgelegde stroom over een lijn vertaalt naar het isotrope medium moeten we oppassen van in 3D blijven oppervlakken niet behouden en in 2D blijven lengtes niet behouden.
+ We moeten ervoor zorgen dat de flux door
+\end_layout
+
+\begin_layout Standard
+Stel nu we hebben een 2D verticale doorsnede parallel aan de 
+\begin_inset Formula $x$
+\end_inset
+
+
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\nospellcheck off
+\bar no
+\strikeout off
+\xout off
+\uuline off
+\uwave off
+\noun off
+\color none
+-as
+\family default
+\series default
+\shape default
+\size default
+\emph default
+\nospellcheck default
+\bar default
+\strikeout default
+\xout default
+\uuline default
+\uwave default
+\noun default
+\color inherit
+ met neerslagoverschot 
+\begin_inset Formula $n$
+\end_inset
+
+ dan moet 
+\begin_inset Formula $ndx=n'dx'=n'\sqrt{\frac{k}{k_{x}}}dx$
+\end_inset
+
+ zodat
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+n'=n\sqrt{\frac{k_{x}}{k}};\,k=\sqrt{k_{x}k_{y}}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Analoog bij aanwezigheid van een afdekkende laag dan geldt voor de infiltratie 
+\begin_inset Formula $Q=\frac{\Delta\phi}{c}dx=\frac{\Delta\phi}{c'}dx'=\frac{\Delta\phi}{c'}\sqrt{\frac{k}{k_{x}}}dx$
+\end_inset
+
+ zodat
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+c'=c\sqrt{\frac{k}{k_{x}}};\;k=\sqrt{k_{x}k_{y}}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Bij stroming in 3D over verticale vlakken evenwijdig van de 
+\begin_inset Formula $x$
+\end_inset
+
+ of 
+\begin_inset Formula $y$
+\end_inset
+
+ as moeten gewoon de 
+\begin_inset Formula $k_{x}$
+\end_inset
+
+,
+ 
+\begin_inset Formula $k_{y}$
+\end_inset
+
+ en 
+\begin_inset Formula $k_{z}$
+\end_inset
+
+ cyclisch worden verwisseld.
+ Stroming over een willekeurig vlak in 3D laten we hier buiten beschouwing,
+ maar die over een willekeurige lijn in 2D wordt hierna afgeleid.
+\end_layout
+
+\begin_layout Subsection*
+Stroming over een willekeurige lijn in 2D
+\end_layout
+
+\begin_layout Standard
+We onderzoeken nu de stroming 
+\begin_inset Formula $Q$
+\end_inset
+
+ [m2/d] door flux 
+\begin_inset Formula $\overrightarrow{q}$
+\end_inset
+
+ [m/d] over lijnstuk met lengte 
+\begin_inset Formula $\Delta s$
+\end_inset
+
+ [m] onder een hoek 
+\begin_inset Formula $\alpha$
+\end_inset
+
+ met de 
+\begin_inset Formula $x$
+\end_inset
+
+-as,
+ zodat 
+\begin_inset Formula $\tan\alpha=dy/dx,$
+\end_inset
+
+ met 
+\begin_inset Formula $dy$
+\end_inset
+
+ de projectie van dit lijnstuk op de 
+\begin_inset Formula $y$
+\end_inset
+
+-as en 
+\begin_inset Formula $dx$
+\end_inset
+
+ dito op de 
+\begin_inset Formula $x$
+\end_inset
+
+-as.
+ De stroming 
+\begin_inset Formula $Q$
+\end_inset
+
+ is
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+Q=\left(\overrightarrow{q}\cdot\overrightarrow{n}\right)\Delta s
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Hierin is 
+\begin_inset Formula $\overrightarrow{n}$
+\end_inset
+
+ de normaalvector op het lijnstuk 
+\begin_inset Formula $\Delta s$
+\end_inset
+
+ en flux 
+\begin_inset Formula $\overrightarrow{q}=\left[-k_{x}\frac{\partial\phi}{\partial x},\;-k_{y}\frac{\partial\phi}{\partial y}\right]^{T}$
+\end_inset
+
+ .
+ De normaalvector is 
+\begin_inset Formula $\overrightarrow{n}=\left[\sin\alpha,-\cos\alpha\right]^{T}$
+\end_inset
+
+=
+\begin_inset Formula $\left[+\frac{\Delta y}{\Delta s},\;-\frac{\Delta x}{\Delta s}\right]^{T}$
+\end_inset
+
+.
+ Bij de uitwerking valt 
+\begin_inset Formula $\Delta s$
+\end_inset
+
+ weg en krijgen we in het anisotrope 2D medium de volgende uitdrukking voor de stroming 
+\begin_inset Formula $Q$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+Q=-k_{x}\frac{\partial\phi}{\partial x}\Delta y+k_{y}\frac{\partial\phi}{\partial y}\Delta x
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+In de isotrope situatie wordt dit
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+Q'=-k\frac{\partial\phi}{\partial x'}\Delta y'+k\frac{\partial\phi}{\partial y'}\Delta x'
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+en met
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+dx=dx'\sqrt{\frac{k_{x}}{k}},\;dy=dy'\sqrt{\frac{k_{y}}{k}}\;\text{en}\;k=\sqrt{k_{x}ky}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+volgt
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+Q'=-\sqrt{k_{x}k_{y}}\frac{\partial\phi}{\sqrt{\frac{k}{k_{x}}}\partial x}\sqrt{\frac{k}{k_{y}}}\Delta y+\sqrt{k_{x}k_{y}}\frac{\partial\phi}{\sqrt{\frac{k}{k_{y}}}\partial y}\sqrt{\frac{k}{k_{x}}}\Delta x=-k_{x}\frac{\partial\phi}{\partial x}\Delta y+k_{y}\frac{\partial\phi}{\partial y}\Delta x
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Aldus blijkt inderdaad 
+\begin_inset Formula $Q=Q'.$
+\end_inset
+
+ Met andere woorden,
+ de stroom over een willekeurig lijnstukje,
+ en dus lijn,
+ is in beide media hetzelfde.
+ Mooi om te weten.
+\end_layout
+
+\begin_layout Subsection*
+Stroming over een lijn als randvoorwaarde in 2D,
+ dus sloten een andere lijnelementen
+\end_layout
+
+\begin_layout Standard
+De 
+\begin_inset Quotes pld
+\end_inset
+
+tweak
+\begin_inset Quotes prd
+\end_inset
+
+ zit hem in de stroom 
+\begin_inset Formula $Q$
+\end_inset
+
+ over een willekeurig al dan niet kromme lijn waar de stroming in het oorspronkelijke anisotrope medium direct of via een weerstand wordt opgelegd zoals bij een lijnbemaling of bij sloten.
+ De opgelegde stroming 
+\begin_inset Formula $q$
+\end_inset
+
+ over een lijnelement met lengte 
+\begin_inset Formula $\Delta s$
+\end_inset
+
+ met componenten 
+\begin_inset Formula $\Delta x$
+\end_inset
+
+ en 
+\begin_inset Formula $\Delta y$
+\end_inset
+
+ is
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+Q=q\Delta s=q\sqrt{\Delta x^{2}+\Delta y^{2}}=q'\Delta s'=q'\sqrt{\frac{k_{y}}{k_{x}}\Delta x^{2}+\frac{k_{x}}{k_{y}}\Delta y^{2}}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+zodat
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+q'=q\sqrt{\frac{\Delta x^{2}+\Delta y^{2}}{\frac{k_{y}}{k_{x}}\Delta x^{2}+\frac{k_{x}}{k_{y}}\Delta y^{2}}}=\sqrt{\frac{1+\tan^{2}\alpha}{\frac{k_{y}}{k_{x}}+\frac{k_{x}}{k_{y}}\tan^{2}\alpha}}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+In de situatie dat het lijnelement een weerstand 
+\begin_inset Formula $c$
+\end_inset
+
+ heeft krijgen we
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+Q=\frac{\Delta\phi}{c}\Delta s=\frac{\Delta\phi}{c}\sqrt{\Delta x^{2}+\Delta y^{2}}=\frac{\Delta\phi}{c'}\Delta s'=\frac{\Delta\phi}{c'}\sqrt{\frac{k_{y}}{k_{x}}\Delta x^{2}+\frac{k_{x}}{k_{y}}\Delta y^{2}}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Zodat we in het isotropy medium een aangepaste weerstand moeten toepassen gelijk aan
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+c'=c\sqrt{\frac{\frac{k_{y}}{k_{x}}\Delta x^{2}+\frac{k_{x}}{k_{y}}\Delta y^{2}}{\Delta x^{2}+\Delta y^{2}}}=\sqrt{\frac{\frac{k_{y}}{k_{x}}+\frac{k_{x}}{k_{y}}\tan^{2}\alpha}{1+\tan^{2}\alpha}}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Dus wanneer 
+\begin_inset Formula $\Delta s$
+\end_inset
+
+ evenwijdig aan de 
+\begin_inset Formula $x$
+\end_inset
+
+-as is,
+ dan geldt 
+\begin_inset Formula $c'=c\sqrt{\frac{k_{y}}{k_{x}}}$
+\end_inset
+
+ ;
+ is 
+\begin_inset Formula $\Delta c$
+\end_inset
+
+ evenwijdig aan de 
+\begin_inset Formula $y$
+\end_inset
+
+-as,
+ dan geldt 
+\begin_inset Formula $c'=c\sqrt{\ensuremath{\frac{k_{x}}{k_{y}}}}$
+\end_inset
+
+ .
+ De helling 
+\begin_inset Formula $\tan\alpha=\frac{dy}{dx}$
+\end_inset
+
+ is natuurlijk gewoon de helling van de lijn 
+\begin_inset Formula $s$
+\end_inset
+
+ ten opzichte van de 
+\begin_inset Formula $x$
+\end_inset
+
+-ax in het oorspronkelijke,
+ anisotrope medium,
+ waarin de weerstand 
+\begin_inset Formula $c$
+\end_inset
+
+ van deze rand (zeg sloot,
+ kanaal of rivier) gegeven is.
+\end_layout
+
+\end_body
+\end_document
