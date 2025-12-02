@@ -1593,9 +1593,13 @@ De transformatie van het
 \end_layout
 
 \begin_layout Standard
+Met de de transformatie 
+\end_layout
+
+\begin_layout Standard
 \begin_inset Formula 
 \[
-\zeta=\exp\left(\pi\left(\frac{z}{H}+i\right)\right)
+p\zeta+q
 \]
 
 \end_inset
@@ -1604,19 +1608,119 @@ De transformatie van het
 \end_layout
 
 \begin_layout Standard
-Met de volgende transformatie wordt wordt opgeklapt,
- naar rechts gedraaid en naar boven geschoven zodat 
-\begin_inset Formula $=-H<\Im\left(\zeta_{1}\right)<0$
+worden de punten 
+\begin_inset Formula $D_{R}$
 \end_inset
 
- 
+en 
+\begin_inset Formula $D_{L}$
+\end_inset
+
+op 
+\begin_inset Formula $x=\pm1$
+\end_inset
+
+ gelegd waarna de 
+\begin_inset Formula $\arcsin()$
+\end_inset
+
+ de arm links van -1 en rechts van +1 omhoog klapt en 
+\begin_inset Formula $D_{R}$
+\end_inset
+
+ en 
+\begin_inset Formula $D_{L}$
+\end_inset
+
+ op 
+\begin_inset Formula $\pm\frac{\pi}{2}$
+\end_inset
+
+ komen te liggen.
+ Vermenigvuldigen met 
+\begin_inset Formula $-i/\pi$
+\end_inset
+
+ kantelt dit vlak over 90 rechtsom en schaalt waardoor 
+\begin_inset Formula $D_{R}$
+\end_inset
+
+ en 
+\begin_inset Formula $D_{L}$
+\end_inset
+
+ op 
+\begin_inset Formula $\pm\frac{1}{2}$
+\end_inset
+
+ terecht komen,
+ terwijl voor alle 
+\begin_inset Formula $y$
+\end_inset
+
+ geldt 
+\begin_inset Formula $-\frac{1}{2}\le y\le\frac{1}{2}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\zeta_{1}=-\frac{i}{\pi}\arcsin\left(p\zeta+q\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Door vermenigvuldiging met 
+\begin_inset Formula $Q$
+\end_inset
+
+ krijgen we 
+\begin_inset Formula $\Omega$
+\end_inset
+
+ waarbij 
+\begin_inset Formula $\frac{-Q}{2}\le\Psi\le+\frac{Q}{2}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\Omega=-i\frac{Q}{\pi}\arcsin\left(p\zeta+q\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+met waarden tussen 
+\begin_inset Formula $\pm Q/2$
+\end_inset
+
+ voor de stroomfunctie.
+ De stroomfunctie kunnen we laten variëren tussen 0 en Q door 
+\begin_inset Formula $iQ/2$
+\end_inset
+
+ op te tellen
 \end_layout
 
 \begin_layout Standard
 \begin_inset Formula 
 \begin{align*}
-\zeta_{1} & =-i\frac{H}{\pi}\arcsin\left(p\zeta+q\right)-i\frac{H}{2}\\
- & =-iH\left(\frac{1}{\pi}\arcsin\left(p\zeta+q\right)+\frac{1}{2}\right)
+\Omega & =-i\frac{Q}{\pi}\arcsin\left(p\zeta+q\right)+i\frac{Q}{2}\\
+ & =-iQ\left(\frac{1}{\pi}\arcsin\left(p\zeta+q\right)-\frac{1}{2}\right)
 \end{align*}
 
 \end_inset
@@ -1625,25 +1729,53 @@ Met de volgende transformatie wordt wordt opgeklapt,
 \end_layout
 
 \begin_layout Standard
-Door vermenigvuldigen met 
+waarin 
+\begin_inset Formula $0\le\Psi\le Q$
+\end_inset
+
+ 
+\end_layout
+
+\begin_layout Standard
+Of het teken doen omkeren door aftrekken van 
+\begin_inset Formula $i/2$
+\end_inset
+
+ vermenigvuldiging met 
+\begin_inset Formula $-1$
+\end_inset
+
+.
+ Eerst oftrekken van 
+\begin_inset Formula $-iQ/2$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+\zeta_{1} & =-\frac{i}{\pi}\arcsin\left(p\zeta+q\right)-i\frac{1}{2}
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Dan vermenigvuldigen met 
 \begin_inset Formula $-Q$
 \end_inset
 
- krijgen we 
-\begin_inset Formula $\Omega$
-\end_inset
 
- waarbij de 
-\begin_inset Formula $\Psi$
-\end_inset
-
- varieert tussen 0 en 1
 \end_layout
 
 \begin_layout Standard
 \begin_inset Formula 
 \[
-\Omega=iQ\left(\frac{1}{\pi}\arcsin\left(p\zeta+q\right)+\frac{1}{2}\right)
+\Omega=i\,Q\left(\frac{1}{\pi}\arcsin\left(p\zeta+q\right)+\frac{1}{2}\right)
 \]
 
 \end_inset
@@ -1652,35 +1784,6 @@ Door vermenigvuldigen met
 \end_layout
 
 \begin_layout Standard
-\begin_inset Formula 
-\[
-\zeta_{1}=-i\frac{H}{\pi}\arcsin\left(p\zeta+q\right)+i\frac{H}{2}
-\]
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\[
-\zeta_{1}=-iH\left(\frac{1}{\pi}\arcsin\left(p\zeta+q\right)-\frac{1}{2}\right)
-\]
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\[
-\Omega=-iQ\left(\frac{1}{\pi}\arcsin\left(p\zeta+q\right)+\frac{1}{2}\right)
-\]
-
-\end_inset
-
 -
 \end_layout
 
@@ -1754,18 +1857,7 @@ De punten
 \begin_layout Standard
 \begin_inset Formula 
 \[
-\Omega=-i\frac{Q}{\pi}\left[\arcsin(p\exp\left(\pi(\frac{z}{H}+i))+q\right)-\frac{\pi}{2}\right]-\frac{1}{2}
-\]
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\[
-\Omega=-\frac{1}{2}-i\frac{Q}{\pi}\left[\arcsin\left(p\exp\left(\pi\left(\frac{z}{H}+i\right)\right)+q\right)-\frac{\pi}{2}\right]
+\zeta=\exp\left(\pi\left(\frac{z}{H}+i\right)\right)
 \]
 
 \end_inset
@@ -1785,50 +1877,35 @@ De punten
 \end_layout
 
 \begin_layout Standard
-De totale transformatie kan nu in een formule worden opgeschreven
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\[
-\frac{\Omega}{Q}=-i\left(\frac{1}{\pi}\arcsin\left(p\exp\left(\pi\left(\frac{z}{H}+iH\right)\right)+q\right)-\frac{1}{2}\right)
-\]
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\[
-\frac{\Omega}{Q}=-\frac{i}{\pi}\left(\arcsin\left(p\exp\left(\pi\left(\frac{z}{H}+i\right)\right)+q\right)-\frac{\pi}{2}\right)
-\]
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\[
-\frac{z}{H}=\frac{1}{\pi}\ln\left(\frac{\sin\left(\pi\left(i\frac{\Omega}{Q}+\frac{1}{2}\right)\right)-q}{p}\right)-i
-\]
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
 en omgekeerd
 \end_layout
 
 \begin_layout Standard
 \begin_inset Formula 
 \[
-\frac{z}{H}=-i+\frac{1}{\pi}\ln\left(\frac{\sin\left(\pi\left(i\frac{\Omega}{Q}+\frac{1}{2}\right)\right)-q}{p}\right)
+\zeta=\frac{\sin\left(\pi\left(-i\frac{\Omega}{Q}+\frac{1}{2}\right)\right)-q}{p}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\exp\left(\pi\left(\frac{z}{H}+i\right)\right)=\frac{\sin\left(\pi\left(-i\frac{\Omega}{Q}+\frac{1}{2}\right)\right)-q}{p}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+z=-iH+\frac{H}{\pi}\ln\left[\frac{\sin\left(\pi\left(-i\frac{\Omega}{Q}+\frac{1}{2}\right)\right)-q}{p}\right]
 \]
 
 \end_inset
