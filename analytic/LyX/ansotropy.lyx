@@ -253,6 +253,17 @@ k^{'}\left[\frac{\partial^{2}\phi'}{\partial\left(x'\right)^{2}}+\frac{\partial^
 \end_layout
 
 \begin_layout Standard
+\begin_inset Formula 
+\[
+k^{\prime}\left[\frac{\partial^{2}\phi}{\partial\left(x^{\prime}\right)^{2}}+\frac{\partial^{2}\phi}{\partial\left(y^{\prime}\right)^{2}}+\frac{\partial^{2}\phi}{\partial\left(z^{\prime}\right)^{2}}\right]+q-S_{s}\frac{\partial\phi}{\partial t}=0
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
 De volgende substituties maken vergelijking 
 \begin_inset CommandInset ref
 LatexCommand ref
@@ -282,6 +293,28 @@ nolink "false"
 \begin_inset Formula 
 \[
 k'=\sqrt[3]{k_{x}k_{y}k_{z}};\;x=x'\sqrt{\frac{k_{x}}{k'}};\;y=y'\sqrt{\frac{k_{y}}{k'}};\;z'=z\sqrt{\frac{k_{z}}{k'}};\;\phi'=\phi;\;t'=t;\;q'=q;\;S_{s}'=S_{s}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+k=\sqrt[3]{k_{x}k_{y}k_{z}};\;dx=dx^{\prime}\sqrt{\frac{k_{x}}{k}};\;dy=dy^{\prime}\sqrt{\frac{k_{y}}{k}};\;dz=dz^{\prime}\sqrt{\frac{k_{z}}{k}}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+x^{\prime}
 \]
 
 \end_inset
@@ -762,108 +795,6 @@ c'=c\sqrt{\frac{k^{2}}{k_{x}k_{y}}};\;k=\sqrt[3]{k_{x}k_{y}k_{z}}
 \begin_layout Standard
 Dus wanneer je bij 3D stroming een oppervlakte flux vertaalt van het anisotrope medium naar het isotrope medium,
  dan wel in het 2D anistrope medium een opgelegde stroom over een lijn vertaalt naar het isotrope medium moeten we oppassen van in 3D blijven oppervlakken niet behouden en in 2D blijven lengtes niet behouden.
- We moeten ervoor zorgen dat de flux door
-\end_layout
-
-\begin_layout Standard
-Stel nu we hebben een 2D verticale doorsnede parallel aan de 
-\begin_inset Formula $x$
-\end_inset
-
-
-\family roman
-\series medium
-\shape up
-\size normal
-\emph off
-\nospellcheck off
-\bar no
-\strikeout off
-\xout off
-\uuline off
-\uwave off
-\noun off
-\color none
--as
-\family default
-\series default
-\shape default
-\size default
-\emph default
-\nospellcheck default
-\bar default
-\strikeout default
-\xout default
-\uuline default
-\uwave default
-\noun default
-\color inherit
- met neerslagoverschot 
-\begin_inset Formula $n$
-\end_inset
-
- dan moet 
-\begin_inset Formula $ndx=n'dx'=n'\sqrt{\frac{k}{k_{x}}}dx$
-\end_inset
-
- zodat
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\[
-n'=n\sqrt{\frac{k_{x}}{k}};\,k=\sqrt{k_{x}k_{y}}
-\]
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-Analoog bij aanwezigheid van een afdekkende laag dan geldt voor de infiltratie 
-\begin_inset Formula $Q=\frac{\Delta\phi}{c}dx=\frac{\Delta\phi}{c'}dx'=\frac{\Delta\phi}{c'}\sqrt{\frac{k}{k_{x}}}dx$
-\end_inset
-
- zodat
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\[
-c'=c\sqrt{\frac{k}{k_{x}}};\;k=\sqrt{k_{x}k_{y}}
-\]
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-Bij stroming in 3D over verticale vlakken evenwijdig van de 
-\begin_inset Formula $x$
-\end_inset
-
- of 
-\begin_inset Formula $y$
-\end_inset
-
- as moeten gewoon de 
-\begin_inset Formula $k_{x}$
-\end_inset
-
-,
- 
-\begin_inset Formula $k_{y}$
-\end_inset
-
- en 
-\begin_inset Formula $k_{z}$
-\end_inset
-
- cyclisch worden verwisseld.
- Stroming over een willekeurig vlak in 3D laten we hier buiten beschouwing,
- maar die over een willekeurige lijn in 2D wordt hierna afgeleid.
 \end_layout
 
 \begin_layout Subsection*
@@ -1074,7 +1005,42 @@ tweak
 \begin_layout Standard
 \begin_inset Formula 
 \[
-Q=q\Delta s=q\sqrt{\Delta x^{2}+\Delta y^{2}}=q'\Delta s'=q'\sqrt{\frac{k_{y}}{k_{x}}\Delta x^{2}+\frac{k_{x}}{k_{y}}\Delta y^{2}}
+Q=q\sqrt{\Delta x^{2}+\Delta y^{2}}=q'\sqrt{\left(\Delta x'\right)^{2}+\left(\Delta y'\right)^{2}}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+Q & ==q'\sqrt{\left(\Delta x'\right)^{2}+\left(\Delta y'\right)^{2}}\\
+ & =q'\sqrt{\frac{k}{k_{x}}\Delta x^{2}+\frac{k}{k_{y}}\Delta y^{2}}\\
+ & =q'\sqrt{\frac{k}{k_{x}}\Delta x^{2}+\frac{k}{k_{y}}\Delta y^{2}}
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\frac{k}{k_{x}}=\sqrt{\frac{k_{x}k_{y}}{k_{x}k_{x}}}=\sqrt{\frac{k_{y}}{k_{x}}}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+Q=q\Delta s=q\sqrt{\Delta x^{2}+\Delta y^{2}}=q'\Delta s'=q'\sqrt{\frac{k}{k_{x}}\Delta x^{2}+\frac{k}{k_{y}}\Delta y^{2}}
 \]
 
 \end_inset
@@ -1089,7 +1055,7 @@ zodat
 \begin_layout Standard
 \begin_inset Formula 
 \[
-q'=q\sqrt{\frac{\Delta x^{2}+\Delta y^{2}}{\frac{k_{y}}{k_{x}}\Delta x^{2}+\frac{k_{x}}{k_{y}}\Delta y^{2}}}=\sqrt{\frac{1+\tan^{2}\alpha}{\frac{k_{y}}{k_{x}}+\frac{k_{x}}{k_{y}}\tan^{2}\alpha}}
+q'=q\sqrt{\frac{\Delta x^{2}+\Delta y^{2}}{\frac{k}{k_{x}}\Delta x^{2}+\frac{k}{k_{y}}\Delta y^{2}}}=\sqrt{\frac{1+\tan^{2}\alpha}{\frac{k}{k_{x}}+\frac{k}{k_{y}}\tan^{2}\alpha}}
 \]
 
 \end_inset
@@ -1108,7 +1074,7 @@ In de situatie dat het lijnelement een weerstand
 \begin_layout Standard
 \begin_inset Formula 
 \[
-Q=\frac{\Delta\phi}{c}\Delta s=\frac{\Delta\phi}{c}\sqrt{\Delta x^{2}+\Delta y^{2}}=\frac{\Delta\phi}{c'}\Delta s'=\frac{\Delta\phi}{c'}\sqrt{\frac{k_{y}}{k_{x}}\Delta x^{2}+\frac{k_{x}}{k_{y}}\Delta y^{2}}
+Q=\frac{\Delta\phi}{w}\Delta s=\frac{\Delta\phi}{w}\sqrt{\Delta x^{2}+\Delta y^{2}}=\frac{\Delta\phi}{w'}\Delta s'=\frac{\Delta\phi}{w'}\sqrt{\frac{k}{k_{x}}\Delta x^{2}+\frac{k}{k_{y}}\Delta y^{2}}
 \]
 
 \end_inset
@@ -1123,7 +1089,7 @@ Zodat we in het isotropy medium een aangepaste weerstand moeten toepassen gelijk
 \begin_layout Standard
 \begin_inset Formula 
 \[
-c'=c\sqrt{\frac{\frac{k_{y}}{k_{x}}\Delta x^{2}+\frac{k_{x}}{k_{y}}\Delta y^{2}}{\Delta x^{2}+\Delta y^{2}}}=\sqrt{\frac{\frac{k_{y}}{k_{x}}+\frac{k_{x}}{k_{y}}\tan^{2}\alpha}{1+\tan^{2}\alpha}}
+w'=w\sqrt{\frac{\frac{k}{k_{x}}\Delta x^{2}+\frac{k}{k_{y}}\Delta y^{2}}{\Delta x^{2}+\Delta y^{2}}}=\sqrt{\frac{\frac{k}{k_{x}}+\frac{k}{k_{y}}\tan^{2}\alpha}{1+\tan^{2}\alpha}}
 \]
 
 \end_inset
@@ -1140,23 +1106,31 @@ Dus wanneer
 \begin_inset Formula $x$
 \end_inset
 
--as is,
+-as is (
+\begin_inset Formula $\tan\alpha=0)$
+\end_inset
+
+,
  dan geldt 
-\begin_inset Formula $c'=c\sqrt{\frac{k_{y}}{k_{x}}}$
+\begin_inset Formula $w'=w\sqrt{\frac{k}{k_{x}}}$
 \end_inset
 
  ;
  is 
-\begin_inset Formula $\Delta c$
+\begin_inset Formula $\Delta s$
 \end_inset
 
  evenwijdig aan de 
 \begin_inset Formula $y$
 \end_inset
 
--as,
+-as (
+\begin_inset Formula $\tan\alpha=\infty)$
+\end_inset
+
+,
  dan geldt 
-\begin_inset Formula $c'=c\sqrt{\ensuremath{\frac{k_{x}}{k_{y}}}}$
+\begin_inset Formula $w'=w\sqrt{\ensuremath{\frac{k}{k_{y}}}}$
 \end_inset
 
  .
@@ -1180,6 +1154,205 @@ Dus wanneer
 
  van deze rand (zeg sloot,
  kanaal of rivier) gegeven is.
+\end_layout
+
+\begin_layout Standard
+Notice that 
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\frac{k}{k_{x}}=\sqrt{\frac{k_{y}}{kx}};\;\frac{k}{k_{y}}=\sqrt{\frac{k_{x}}{k_{y}}}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection*
+Voorbeeld
+\end_layout
+
+\begin_layout Standard
+Stel nu we hebben een 2D verticale doorsnede parallel aan de 
+\begin_inset Formula $x$
+\end_inset
+
+
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\nospellcheck off
+\bar no
+\strikeout off
+\xout off
+\uuline off
+\uwave off
+\noun off
+\color none
+-as
+\family default
+\series default
+\shape default
+\size default
+\emph default
+\nospellcheck default
+\bar default
+\strikeout default
+\xout default
+\uuline default
+\uwave default
+\noun default
+\color inherit
+ met neerslagoverschot 
+\begin_inset Formula $n$
+\end_inset
+
+ dan moet
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+n'=n\sqrt{\frac{1+\tan^{2}\alpha}{\frac{k}{k_{x}}+\frac{k}{k_{y}}\tan^{2}\alpha}},\text{ met }\alpha=0
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+zodat met 
+\begin_inset Formula $k\sqrt{k_{x}k_{y}}$
+\end_inset
+
+ volgt
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+n'=n\sqrt{\frac{k_{x}}{k}}=n\sqrt{\sqrt{\frac{k_{x}}{k_{y}}}}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Hierovoor hadden wel al
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+w'=w\sqrt{\frac{\frac{k}{k_{x}}+\frac{k}{k_{y}}\tan^{2}\alpha}{1+\tan^{2}\alpha}}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+wat voor 
+\begin_inset Formula $\alpha=0$
+\end_inset
+
+ oplevert
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+w'=w\sqrt{\frac{k}{k_{x}}}=w\sqrt{\sqrt{\frac{k_{x}k_{y}}{k_{x}k_{x}}}}=w\sqrt{\sqrt{\frac{k_{y}}{k_{x}}}}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Des bij een afdekkende laag in de verticale doorsnede geldt 
+\begin_inset Formula $c=w$
+\end_inset
+
+ [T] en 
+\begin_inset Formula $c'=w'$
+\end_inset
+
+ zodat
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+c'=c\sqrt{\frac{k}{k_{x}}}=c\sqrt{\sqrt{\frac{k_{y}}{k_{x}}}}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+En natuurlijk by stroming over een verticale weerstand (weerstandsmuurtje in de aquifer) geldt
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+w'=w\sqrt{\frac{k}{k_{y}}}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+w'=w\sqrt{\sqrt{\frac{k_{x}}{k_{y}}}}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Bij stroming in 3D over verticale vlakken evenwijdig van de 
+\begin_inset Formula $x$
+\end_inset
+
+ of 
+\begin_inset Formula $y$
+\end_inset
+
+ as moeten gewoon de 
+\begin_inset Formula $k_{x}$
+\end_inset
+
+,
+ 
+\begin_inset Formula $k_{y}$
+\end_inset
+
+ en 
+\begin_inset Formula $k_{z}$
+\end_inset
+
+ cyclisch worden verwisseld.
+ Stroming over een willekeurig vlak in 3D laten we hier buiten beschouwing,
+ maar die over een willekeurige lijn in 2D wordt hierna afgeleid.
 \end_layout
 
 \begin_layout Subsection*
