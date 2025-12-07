@@ -292,18 +292,7 @@ nolink "false"
 \begin_layout Standard
 \begin_inset Formula 
 \[
-k'=\sqrt[3]{k_{x}k_{y}k_{z}};\;x=x'\sqrt{\frac{k_{x}}{k'}};\;y=y'\sqrt{\frac{k_{y}}{k'}};\;z'=z\sqrt{\frac{k_{z}}{k'}};\;\phi'=\phi;\;t'=t;\;q'=q;\;S_{s}'=S_{s}
-\]
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\[
-k=\sqrt[3]{k_{x}k_{y}k_{z}};\;dx=dx^{\prime}\sqrt{\frac{k_{x}}{k}};\;dy=dy^{\prime}\sqrt{\frac{k_{y}}{k}};\;dz=dz^{\prime}\sqrt{\frac{k_{z}}{k}}
+k=\sqrt[3]{k_{x}k_{y}k_{z}};\;dx=dx'\sqrt{\frac{k_{x}}{k}};\;dy=dy'\sqrt{\frac{k_{y}}{k}};\;dz=dz'\sqrt{\frac{k_{z}}{k}}
 \]
 
 \end_inset
@@ -540,9 +529,6 @@ nolink "false"
 \end_layout
 
 \begin_layout Standard
-\begin_inset Newline newline
-\end_inset
-
 wat laat zien dat vergelijking 
 \begin_inset CommandInset ref
 LatexCommand ref
@@ -564,125 +550,12 @@ nolink "false"
 \end_layout
 
 \begin_layout Subsection*
-Voorbeeld
+Tweak,
+ stroming over model wanden en randen
 \end_layout
 
 \begin_layout Standard
-Afbeelding 
-\begin_inset CommandInset ref
-LatexCommand ref
-reference "fig:Voorbeeld-anisotropie-bij-put-en-spiegelput"
-plural "false"
-caps "false"
-noprefix "false"
-nolink "false"
-
-\end_inset
-
- geeft een eenvoudig voorbeeld.
- We hebben links de plattegrond met een put en een oever die toevallig evenwijdig loopt met de 
-\begin_inset Formula $y$
-\end_inset
-
--as.
- De hoofdrichtingen van de doorlatendheden zijn met de pijlen aangegeven.
- Vergeet even de contouren in de eerste twee plaatjes.
- Plaatje 2 geeft dezelfde plattegrond maar zo gedraaid dat de hoofdassen van de doorlatendheid nu evenwijdig aan die van de plattegrond verlopen.
- Dit is voor ons de uitgangssituatie.
- In plaatje drie zijn de horizontale en verticale assen verschaald zodat het poreuze medium nu isotroop.
- In dit medium plaatse we de put en spiegelen deze over de eveneens getransformeerde oever.
- We berekenden de verlaging en tekenen de contouren.
- Dan nemen we de coördinaten van de contourlijnen en verschalen die terug naar het anisotrope medium en tekenen die in plaaatje 2.
- Vervolgens roteren we plaatje twee zodat de oever weer langs de y-as loopt,
- wat de eindsituatie weergeeft.
- 
-\end_layout
-
-\begin_layout Standard
-\begin_inset Float figure
-placement document
-alignment document
-wide false
-sideways false
-status open
-
-\begin_layout Plain Layout
-\begin_inset Graphics
-	filename /Users/Theo/GRWMODELS/python/tools/analytic/images/anisotropy.png
-	lyxscale 60
-	width 100text%
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Plain Layout
-\begin_inset Caption Standard
-
-\begin_layout Plain Layout
-\begin_inset CommandInset label
-LatexCommand label
-name "fig:Voorbeeld-anisotropie-bij-put-en-spiegelput"
-
-\end_inset
-
-Voorbeeld anisotropie bij put en spiegelput
-\end_layout
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Plain Layout
-
-\end_layout
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Section*
-Conclusie
-\end_layout
-
-\begin_layout Standard
-Werken met een anisotrope situatie gaat praktisch als volgt:
-\end_layout
-
-\begin_layout Enumerate
-Leg de hoofdassen van het coördinatensysteem evenwijdig aan de hoofdassen van de doorlatendheid.
-\end_layout
-
-\begin_layout Enumerate
-Schaal deze hoofdassen zoals aangegeven.
-\end_layout
-
-\begin_layout Enumerate
-Voer alle berekeningen etc.
- uit in het getransformeerde,
- isotrope medium.
- Alle stijghoogten,
- debieten en verblijftijden blijven in beide media hetzelfde.
-\end_layout
-
-\begin_layout Enumerate
-Teken,
- isohypsen,
- stroomlijnen,
- stroombanen etc.
- en schaal die transformeer die terug naar het anisotrope medium en teken ze daarin.
-\end_layout
-
-\begin_layout Enumerate
-Wanneer van toepassing draai het anistrope medium terug naar de oorspronkelijke plattegrond.
- Dit laatste 
-\end_layout
-
-\begin_layout Section*
-De 
+Er is not wel een 
 \begin_inset Quotes pld
 \end_inset
 
@@ -690,39 +563,33 @@ tweak
 \begin_inset Quotes prd
 \end_inset
 
- in de vlak- of randstroming in 3D en in 2D
+.
+ Bij de verschaling in 3D blijft wel het volume,
+ maar niet het oppervlak of lengte behouden.
+ Bij verschaling in 2D blijft wel het oppervlak maar niet de lengte behouden.
+ Dit betekent dat de instroom over een oppervlak of een lijn wel moet worden aangepast omdat anders de berekening die voor het isotrope medium wordt uitgevoerd de verkeerde uitkomst levert voor de werkelijke anisotrope situatie.
+ Bij gegeven stroming is dit relatief gemakkelijk te voorkomen door ervoor te zorgen dat in de isotrope situatie binnen een verschaald oppervlak of verschaalde lengte dezelfde totale hoeveelheid water wordt toegepast als in de anisotrope situatie.
+ Echter bij toestroming over een vlak of lengte via een weerstand wordt de flux berekend en klopt dit dan niet meer voor de anisotrope werkelijkheid.
 \end_layout
 
 \begin_layout Standard
-Anisotropy lijkt allemaal rechttoe rechtaan in zowel 3 als 2 dimensies.
- Dit wordt veroorzaakt door dat in 3D het verschaalde volume gelijk blijft,
- 
-\begin_inset Formula $dxdydz=dx'dy'dz'$
-\end_inset
-
-,
- zodat een injectie 
-\begin_inset Formula $q$
-\end_inset
-
- daarin in beide situaties gelijk blijft.
- In 2D komt dit doordat het verschaalde oppervlak gelijk blijft 
-\begin_inset Formula $dxdy=dx'dy'$
-\end_inset
-
-.
- Dit kan gevaarlijk worden bij het opleggen van flux-randvoorwaarden in het isotrope medium.
- We moeten ervoor zorgen dat het getransformeerde oppervlak in het isotrope medium evenveel water krijgt als hetzelfde oppervlak in het anisotrope medium.
- Heb je bijvoorbeeld een anisotroop Modflow model met cellen en vertaalt dat naar een isotroop Modflow model met cellen dan zorg je ervoor dat overeenkomstige cellen in beide modellen evenveel water krijgen ook al hebben ze niet het zelfde oppervlak.
+Dealen met opgelegde stroming of flux is gemakkelijk als je bijvoorbeeld een anisotroop Modflow model met cellen hebt,
+ dat je vertaalt dat naar een isotroop Modflow-model met cellen.
+ Je zorgt er dan gewoon voor dat overeenkomstige cellen in beide modellen evenveel water krijgen ook al hebben ze niet het zelfde oppervlak en vorm.
  Hetzeflde geldt voor lijnvormige randvoorwaarden in een 2D model:
  de stroming over de overeenkomstige lijnen moet in beide modellen hetzelfde blijven.
- Makkelijk als je modellen met cellen hebt.
  De stroming over de celranden moeten na transformatie hetzelfde zijn.
- Bij analytische berekeningen moeten we dit expliciet maken.
- Laat de het neerslagoverschot in een 3D model gelijk zijn aan 
+\end_layout
+
+\begin_layout Standard
+Bij analytische berekeningen moeten we dit expliciet maken.
+ Laat de het neerslagoverschot in een 3D model,
+ met de derde hoofdas van de doorlatendheid verticaal,
+ gelijk zijn aan 
 \begin_inset Formula $n$
 \end_inset
 
+,
  dan is de verticale instroom over een oppervlak 
 \begin_inset Formula $dxdy$
 \end_inset
@@ -732,7 +599,8 @@ Anisotropy lijkt allemaal rechttoe rechtaan in zowel 3 als 2 dimensies.
 \end_inset
 
 .
- Willen we dit gelijk houden bij de transfromatie dan geldt
+ Willen we dit gelijk houden bij de transformatie.
+ dan geldt
 \end_layout
 
 \begin_layout Standard
@@ -966,7 +834,7 @@ Aldus blijkt inderdaad
 
 \begin_layout Subsection*
 Stroming over een lijn als randvoorwaarde in 2D,
- dus sloten een andere lijnelementen
+ dus vanuit sloten een andere lijnelementen
 \end_layout
 
 \begin_layout Standard
@@ -982,7 +850,9 @@ tweak
 \begin_inset Formula $Q$
 \end_inset
 
- over een willekeurig al dan niet kromme lijn waar de stroming in het oorspronkelijke anisotrope medium direct of via een weerstand wordt opgelegd zoals bij een lijnbemaling of bij sloten.
+ over een willekeurig,
+ al dan niet kromme,
+ lijn waar de stroming in het oorspronkelijke anisotrope medium direct of via een weerstand wordt opgelegd zoals bij een lijnbemaling of bij sloten.
  De opgelegde stroming 
 \begin_inset Formula $q$
 \end_inset
@@ -1014,16 +884,7 @@ Q=q\sqrt{\Delta x^{2}+\Delta y^{2}}=q'\sqrt{\left(\Delta x'\right)^{2}+\left(\De
 \end_layout
 
 \begin_layout Standard
-\begin_inset Formula 
-\begin{align*}
-Q & ==q'\sqrt{\left(\Delta x'\right)^{2}+\left(\Delta y'\right)^{2}}\\
- & =q'\sqrt{\frac{k}{k_{x}}\Delta x^{2}+\frac{k}{k_{y}}\Delta y^{2}}\\
- & =q'\sqrt{\frac{k}{k_{x}}\Delta x^{2}+\frac{k}{k_{y}}\Delta y^{2}}
-\end{align*}
-
-\end_inset
-
-
+met
 \end_layout
 
 \begin_layout Standard
@@ -1035,6 +896,10 @@ Q & ==q'\sqrt{\left(\Delta x'\right)^{2}+\left(\Delta y'\right)^{2}}\\
 \end_inset
 
 
+\end_layout
+
+\begin_layout Standard
+volgt
 \end_layout
 
 \begin_layout Standard
@@ -1156,104 +1021,84 @@ Dus wanneer
  kanaal of rivier) gegeven is.
 \end_layout
 
-\begin_layout Standard
-Notice that 
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\[
-\frac{k}{k_{x}}=\sqrt{\frac{k_{y}}{kx}};\;\frac{k}{k_{y}}=\sqrt{\frac{k_{x}}{k_{y}}}
-\]
-
-\end_inset
-
-
-\end_layout
-
 \begin_layout Subsection*
 Voorbeeld
 \end_layout
 
 \begin_layout Standard
-Stel nu we hebben een 2D verticale doorsnede parallel aan de 
-\begin_inset Formula $x$
+Fig.
+ 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Voorbeeld-anisotropie-bij-put-en-spiegelput"
+plural "false"
+caps "false"
+noprefix "false"
+nolink "false"
+
 \end_inset
 
-
-\family roman
-\series medium
-\shape up
-\size normal
-\emph off
-\nospellcheck off
-\bar no
-\strikeout off
-\xout off
-\uuline off
-\uwave off
-\noun off
-\color none
--as
-\family default
-\series default
-\shape default
-\size default
-\emph default
-\nospellcheck default
-\bar default
-\strikeout default
-\xout default
-\uuline default
-\uwave default
-\noun default
-\color inherit
- met neerslagoverschot 
-\begin_inset Formula $n$
-\end_inset
-
- dan moet
+ geeft een eenvoudig voorbeeld:
+ We zien links de plattegrond met een put en een oever.
+ De hoofdrichtingen van de doorlatendheden zijn met de pijlen aangegeven.
+ Vergeet nu even de contouren in de linker twee plaatjes.
+ Plaatje 2 geeft dezelfde plattegrond maar zo gedraaid dat de hoofdassen van de doorlatendheid daarin evenwijdig aan die van de plattegrond verlopen.
+ Dit is voor ons de uitgangssituatie.
+ In plaatje drie zijn de horizontale en verticale assen verschaald zodat het poreuze medium daarin isotroop is.
+ In dit medium plaatsen we de put en spiegelen deze over de eveneens getransformeerde oever.
+ We berekenden vervolgens de verlaging en tekenen de contouren.
+ Dan schalen we de coördinaten van de punten waarop de contourlijnen zijn gebaseerd terug naar plaatje twee en tekenen daarin ook de contourlijnen.
+ Tenslotte draaien we het dezelfde coördinaten van plaatje twee terug naar die van de oorspronkelijke platte grond en tekenen daarin nogmaals de contourlijnen van de stijghoogten die we in het isotrope medium van plaatje drie al hadden berekend.
 \end_layout
 
 \begin_layout Standard
-\begin_inset Formula 
-\[
-n'=n\sqrt{\frac{1+\tan^{2}\alpha}{\frac{k}{k_{x}}+\frac{k}{k_{y}}\tan^{2}\alpha}},\text{ met }\alpha=0
-\]
+\begin_inset Float figure
+placement H
+alignment document
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\begin_inset Graphics
+	filename /Users/Theo/GRWMODELS/python/tools/analytic/images/anisotropy.png
+	lyxscale 60
+	width 90text%
+	clip
 
 \end_inset
 
 
 \end_layout
 
-\begin_layout Standard
-zodat met 
-\begin_inset Formula $k\sqrt{k_{x}k_{y}}$
-\end_inset
+\begin_layout Plain Layout
+\begin_inset Caption Standard
 
- volgt
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\[
-n'=n\sqrt{\frac{k_{x}}{k}}=n\sqrt{\sqrt{\frac{k_{x}}{k_{y}}}}
-\]
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:Voorbeeld-anisotropie-bij-put-en-spiegelput"
 
 \end_inset
 
+Put naast oever in anisotroop pakket:
+ Links de oorspronkelijke plattegrond.
+ Midden geroteerd zodat hoofdassen van de doorlatendheid evenwijdig aan de coördinaten van de kaart lopen.
+ Rechts verschaald zodat het medium isotroop is.
+ Berekening coAfb.
+ 1ntouren van verlaging door put en spiegelput.
+ De contour-coördinaten terug-getransformeerd van plaatje 3 naar plaatje 2 en tenslotte terug-geroteerd van plaatje 1 en daarin ook de contouren getekend,
+ andere coördinaten maar dezelfde stijghoogten en stroomfunctiewaarden.
+\end_layout
+
+\end_inset
+
 
 \end_layout
 
-\begin_layout Standard
-Hierovoor hadden wel al
-\end_layout
+\begin_layout Plain Layout
 
-\begin_layout Standard
-\begin_inset Formula 
-\[
-w'=w\sqrt{\frac{\frac{k}{k_{x}}+\frac{k}{k_{y}}\tan^{2}\alpha}{1+\tan^{2}\alpha}}
-\]
+\end_layout
 
 \end_inset
 
@@ -1261,102 +1106,220 @@ w'=w\sqrt{\frac{\frac{k}{k_{x}}+\frac{k}{k_{y}}\tan^{2}\alpha}{1+\tan^{2}\alpha}
 \end_layout
 
 \begin_layout Standard
-wat voor 
-\begin_inset Formula $\alpha=0$
-\end_inset
-
- oplevert
+Voorbeeld 2 laat verschaling van de slootweerstand zien.
+ Ook hier een put langs een kanaal,
+ maar nu met intredeweerstand.
+ Ook hier moeten we eerst de isohypsen in de eerste drie plaatjes wegdenken.
+ Het eerste plaatje van afbeelding 2 toont de kaart met put en oever en met pijlen ook de hoofdassen van de anisotropie.
+ In plaatje 2,
+ rechts ervan,
+ is geroteerd zodat de hoofdassen van de doorlatendheid evenwijdig zijn aan die van de kaart.
+ Plaatje 3 is verschaald zodat het medium daarin isotroop is.
+ In plaatje vier is het kanaal op de x-as gelegd zodat daarin de analytische oplossing 316.41 van Bruggeman (1999) kan worden toegepast dit geldt voor een put naast een kanaal met weerstand.
+ Voor de situatie in plaatje 4 wordt een raster punten gegenereerd en daarvoor wordt de stijghoogte en de stroomfunctie berekend die vervolgens ook als contouren zijn getekend.
+ Vervolgens schalen we alleen deze rasterpunten terug naar de andere plaatjes en tekenen in elk de contouren van de stijghoogten en stroomfunctie die we voor het isotrope medium al hadden berekend.
 \end_layout
 
 \begin_layout Standard
-\begin_inset Formula 
-\[
-w'=w\sqrt{\frac{k}{k_{x}}}=w\sqrt{\sqrt{\frac{k_{x}k_{y}}{k_{x}k_{x}}}}=w\sqrt{\sqrt{\frac{k_{y}}{k_{x}}}}
-\]
+\begin_inset Float figure
+placement H
+alignment document
+wide false
+sideways false
+status open
 
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-Des bij een afdekkende laag in de verticale doorsnede geldt 
-\begin_inset Formula $c=w$
-\end_inset
-
- [T] en 
-\begin_inset Formula $c'=w'$
-\end_inset
-
- zodat
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\[
-c'=c\sqrt{\frac{k}{k_{x}}}=c\sqrt{\sqrt{\frac{k_{y}}{k_{x}}}}
-\]
+\begin_layout Plain Layout
+\begin_inset Graphics
+	filename /Users/Theo/GRWMODELS/python/tools/analytic/images/aniso_canal_with_w.png
+	width 100text%
 
 \end_inset
 
 
 \end_layout
 
-\begin_layout Standard
-En natuurlijk by stroming over een verticale weerstand (weerstandsmuurtje in de aquifer) geldt
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:Bron-langs-kanaal-met-weerstand"
+
+\end_inset
+
+Bron langs kanaal met intredeweerstand 
+\begin_inset Formula $w$
+\end_inset
+
+ [d].1) Vlnr:
+ 1) Uitgangssituatie met hoofddoorlatendheden als pijlen.
+ 2) Geroteerd zodat hoofddoorlatendhedenevenwijdig met de assen.
+ 3) Verschaald tot isotroop medium.
+ 4) Gedraaid kanaal valt samen met de x-as.
+ Isohypsen in isotroop medium berekend met Bruggemans formule 316.41.
+ Dan de gridpunten teruggeschaald naar de voorgaande plaatjes en daar de isohypsen en stroomlijnen gecontourd met de stijghoogten en stroomfunctiewaarden berekend in het isotrope medium van plaatje 4.
+ Blauwe lijntje op de oever geeft stukje aan dat 10 m lang is in plaatje 1 en 2 en 12.01 m in de isotrope plaatjes 3 en 4.
+ Zie tekst voor correctie intreeweerstand
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+
+
 \end_layout
 
 \begin_layout Standard
-\begin_inset Formula 
-\[
-w'=w\sqrt{\frac{k}{k_{y}}}
-\]
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\[
-w'=w\sqrt{\sqrt{\frac{k_{x}}{k_{y}}}}
-\]
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-Bij stroming in 3D over verticale vlakken evenwijdig van de 
-\begin_inset Formula $x$
-\end_inset
-
- of 
-\begin_inset Formula $y$
-\end_inset
-
- as moeten gewoon de 
-\begin_inset Formula $k_{x}$
+Hoe zit het met de weerstand van het kanaal,
+ die toch ook verschaald moest worden?
+ Beschouw daartoe het in blauw met ‘+’-markers aangegeven stukje van de oever.
+ Dat stukje is 10 m lang in de oorspronkelijke situatie,
+ maar in de isotrope situatie is dit door schaling 12.01 m lang geworden.
+ De hoeveelheid water tussen de twee ‘+’ markers is in alle plaatjes hetzelfde,
+ maar bij geven stijghoogteverval over de oever onttrekken we in onze berekening,
+ die we tenslotte voor de isotrope situatie doen,
+ 20% teveel vanwege het lengteverschil.
+ We moeten die compenseren door de weerstand 20% te verkleinen.
+ Vergelijk dit met de formule 8,
+ met 
+\begin_inset Formula $k_{1}=20$
 \end_inset
 
 ,
  
-\begin_inset Formula $k_{y}$
+\begin_inset Formula $k_{2}=60$
 \end_inset
 
- en 
-\begin_inset Formula $k_{z}$
+,
+ 
+\begin_inset Formula $k=\sqrt{k_{1}k_{2}}=34.6$
 \end_inset
 
- cyclisch worden verwisseld.
- Stroming over een willekeurig vlak in 3D laten we hier buiten beschouwing,
- maar die over een willekeurige lijn in 2D wordt hierna afgeleid.
+ m/d en 
+\begin_inset Formula $\alpha=30^{o}$
+\end_inset
+
+,
+ dan volgt 
+\begin_inset Formula $c’=0.83c$
+\end_inset
+
+ precies zoals met de analyse van het lijnstukje langs de oever bleek.
 \end_layout
 
-\begin_layout Subsection*
-Voorbeeld
+\begin_layout Section*
+Conclusie
+\end_layout
+
+\begin_layout Standard
+Werken met een anisotrope situatie gaat praktisch als volgt:
+\end_layout
+
+\begin_layout Enumerate
+Leg de hoofdassen van het coördinatensysteem evenwijdig aan de hoofdassen van de doorlatendheid.
+\end_layout
+
+\begin_layout Enumerate
+Schaal deze hoofdassen zoals aangegeven.
+\end_layout
+
+\begin_layout Enumerate
+Voer alle berekeningen etc.
+ uit in het getransformeerde,
+ isotrope medium.
+ Alle stijghoogten,
+ debieten en verblijftijden blijven in beide media hetzelfde.
+\end_layout
+
+\begin_layout Enumerate
+Teken,
+ isohypsen,
+ stroomlijnen,
+ stroombanen etc.
+ en schaal die transformeer die terug naar het anisotrope medium en teken ze daarin.
+\end_layout
+
+\begin_layout Enumerate
+Wanneer van toepassing draai het anistrope medium terug naar de oorspronkelijke plattegrond.
+ Dit laatste 
+\end_layout
+
+\begin_layout Bibliography
+\begin_inset CommandInset bibitem
+LatexCommand bibitem
+key "key-1"
+
+\end_inset
+
+Olsthoorn,
+ T.N.
+ (1982) 
+\end_layout
+
+\begin_layout Bibliography
+\begin_inset CommandInset bibitem
+LatexCommand bibitem
+key "key-2"
+
+\end_inset
+
+Bruggeman G.A.
+ (1999) Analytical Solutions of Geohydrological Problems.
+ Elsevier RIVM,
+ iSBN 0-444-81829-4,
+ 999pp.
+\end_layout
+
+\begin_layout Bibliography
+\begin_inset CommandInset bibitem
+LatexCommand bibitem
+key "key-3"
+
+\end_inset
+
+Olsthoorn,
+ T.N.
+ (1982) Anisotropie,
+ een verwaarloosd verschijnsel bij grondwatervraagstukken.
+ H2O,
+ 1982 Nr.
+ 11,
+ p261,
+ 263-267.
+\end_layout
+
+\begin_layout Bibliography
+\begin_inset CommandInset bibitem
+LatexCommand bibitem
+key "key-8"
+
+\end_inset
+
+Verruijt A (1970) Theory of Groundwater Flow (McMillan) 190p.
+\end_layout
+
+\begin_layout Section*
+Software beschikbaarheid en overige informatie:
+\end_layout
+
+\begin_layout Standard
+Voor python notebook dat afbeeldingen reconstrueert zie
+\end_layout
+
+\begin_layout Standard
+https://github.com/Olsthoorn/tools/blob/master/analytic/notebooks/anisotropy.ipynb
+\end_layout
+
+\begin_layout Standard
+
 \end_layout
 
 \end_body
