@@ -8,6 +8,8 @@ import numpy as np
 from scipy.optimize import least_squares
 import matplotlib.pyplot as plt
 from scipy.special import erf
+import warnings
+warnings.filterwarnings("error")
 
 
 # %%
@@ -18,7 +20,9 @@ k = [0.5, -0.5, 0.5, 0.5]
 b, c, e = 2, 0.5, 1.5
 A, B, C, D, E, F = 5 + 0j, b + 0j, b - c * 1j, 0 - c * 1j, 0 - e * 1j, 5 - e * 1j
 
-BE = np.array([B, C, D, E])
+BE = np.array([   B, C, D, E])
+AF = np.array([A, B, C, D, E, F])
+
 # %% Intgration points between a and b density of points increases towards a and b
 
 def unpack_u(u):
@@ -62,7 +66,7 @@ def get_pq(Afrom, Bfrom, Ato, Bto):
     q = (Ato * Bfrom - Afrom * Bto) / (Bfrom - Afrom)
     return p, q
 
-def erf_map(a, b, N=101, W=2.5):
+def erf_map(a, b, N=101, W=2.5, dense_side=None):
     """Return points between a and b concentrated near a and b.
 
     Parameters
@@ -73,17 +77,50 @@ def erf_map(a, b, N=101, W=2.5):
         Number of points
     W: float, default 2..5
         max min value defined by (b - a) * erf(W)
+    dense_side: str | None default = 'both'
+        which side has dense coordinates ('left', 'right' or 'both')?
     """
+    valid = {'l': 'L', 'r': 'R', 'b': 'B'}
+
+    try:
+        dense_side = valid[dense_side.strip().lower()[0]]
+    except Exception:
+        raise ValueError("dense_side must be 'left', 'right' or 'both'")
+    
+    if dense_side in ['L', 'R']:
+        N = N + 1
+    else:
+        N = N + 2
+    
     s = np.linspace(-W, W, N)
     M = 0.5 * (a + b)
     L = 0.5 * (a - b)
     x = M - L * erf(s)
+
+    if dense_side == 'L':
+        return x[1:]
+
+    if dense_side == 'R':
+        return x[:-1]
+
     return x[1:-1]
 
-def integrate_trapz_complex(x, y):
-    Ireal = np.trapz(np.real(y), x)
-    Iimag = np.trapz(np.imag(y), x)
-    return Ireal + 1j * Iimag
+def integrate_trapz_complex(z, fz):
+    """Return complex line integral ∫ f(z) dz along a polyline.
+    
+    Parameters
+    ----------
+    z : complex array
+        Complex points along the path, in order.
+    fz : complex array
+        Values f(z) at those points.
+    """
+    assert len(z) == len(fz), "z and fz must have the same length"
+
+    fm = 0.5 * (fz[:-1] + fz[1:])
+    dz = np.diff(z)
+    return np.sum(fm * dz)
+
 
 def sc_arg(Z, xP=None, k=None):
     """Return the argument of the Schwarz-Cristoffel expression.
@@ -100,42 +137,23 @@ def sc_arg(Z, xP=None, k=None):
     """
     fvals = 1
     for xi, ki in zip(xP, k):
-        fvals *= (s - xi + 0j) ** (-ki)
+        fvals *= (Z - xi + 0j) ** (-ki)
     return fvals
 
-def sc_integral(Z, xP, k):
-    """Return integration of Scharz-Cristoffel argument at x given points (sigularities at xP and k).
+def zeta_fr_omega(omega, Q):
+    """Transform omega = Phi + i Psi to the zeta_plane (0 < Psi / Q < 0.5).
     
-    The integration path is first vertical (along the imaginary axis) and then
-    hoirzontal along the real axis.
+    Procedure, rotate (* i) multiply by pi/Q and subtract 1.2 to centralize    
+    so that -pi/2 x < pi/2. Centralization implies that 0 < Psi< Q
+    Finally use sin to flatten the lines +/- pi/2    
+    """
+    return np.sin(1j * np.pi / Q * (omega + 0j) + 0.5)
 
-    For each point we integrate from 0 vertically along the imaginary axis and then horizontally
-    along the real axis.
+def w_fr_x(x, xP=None, k=None):
+    """Return Scharz-Cristoffel w-points from xP on real axis.
     
-    Parameters
-    ----------
-    Z np.array of complex | complex
-        Points in the z-plane
-    xP: floats (real)
-        points along real axis causing boundary in z-plane to bend.
-    k: float
-        exponents arg will be (x - xi) ** (-ki), where ki = alpha / pi (alpha inner angle between sections)
-    """    
-    # along vertical
-    ds = 1e-3
-    zv = np.arange(0, Z.imag + eps, ds)
-    zh = np.arange(0, Z.real + eps, ds)
-
-    argv = sc_arg(1j * zv, xP, k)
-    argh = sc_arg(     zh, xP, k)
-     
-    Iv = integrate_trapz_complex(1j * zv, 1j * argv)
-    Ih = integrate_trapz_complex(     zh,      argh)       
-    return Iv + Ih # w = p z + q
-
-
-def sc_along_real_ax(x, xP, k):
-    """Return integration of Scharz-Cristoffel argument at x given points (sigularities at xP).
+    This integrates along the singularities xP if passed.
+    w_fr_zeta, uses w_fr_x and add path along imaginary axis to reach genearl point zeta
     
     Parameters
     ----------
@@ -147,29 +165,74 @@ def sc_along_real_ax(x, xP, k):
         exponents arg will be (x - xi) ** (-ki), where ki = alpha / pi (alpha inner angle between sections)
     """
     xP = np.asarray(xP)
-    sc_integral = 0 + 0j # Force complex
+    w = 0 + 0j # Force complex
     
-    # --- Always integrate from zero and pass points between 0 and x
     # --- It is assumed that all xP > 0
     assert np.all(xP > 0) and np.all(np.diff(xP) > 0), "All points must be > 0 and series must increase."
     
-    as_ = np.hstack((0, xP))
-    bs_ = np.hstack((xP, np.inf))
+    # --- Integrate from 0 along segments between singular points on real zeta axis
+    xP_ext = np.hstack((0, xP, np.inf))
     
-    for a, b in zip(as_, bs_):            
-        if x <= a:
-            break
+    for xa, xb in zip(xP_ext[:-1], xP_ext[1:]):
+        if x < xa:
+            a, b = 0, x
+            if a == b:
+                return 0 + 0j
+            s = erf_map(a, b, dense_side='left')
+            argc = sc_arg(s, xP=xP, k=k)
+            return integrate_trapz_complex(s, argc)
+            
+        a, b = xa, min(xb, x)
+        if a == b:
+            continue
+        if a == xP[-1]:
+            s = erf_map(a, b, dense_side='left')
+        else:
+            s = erf_map(a, b, dense_side='both')
+        argc = sc_arg(s, xP=xP, k=k)
+        w += integrate_trapz_complex(s, argc)
+    return w
+
+
+def w_fr_zeta(Zeta, xP, k):
+    """Return integration of Scharz-Cristoffel argument at x given points (sigularities at xP and k).
+    
+    The integration path is horizontal along the real axis and then vertical.
+    
+    Parameters
+    ----------
+    Z np.array of complex | complex
+        Points in the z-plane
+    xP: floats (real)
+        points along real axis causing boundary in z-plane to bend.
+    k: float
+        exponents arg will be (x - xi) ** (-ki), where ki = alpha / pi (alpha inner angle between sections)
+    """    
+    # along vertical
+    w  = []
+    for zeta in Zeta.ravel():
         
-        b = min(x, b) # x may be < than b
-        s = erf_map(a, b, N=100, W=2.5)
+        zv = 1j * erf_map(0, zeta.imag, dense_side='left')
+        z_arg = sc_arg(zv, xP, k)
+
+        Iv = integrate_trapz_complex(zv, z_arg)
+        Ih = w_fr_x(zeta.real, xP, k)     # Function already available    
         
-        # --- compute argument of SC     
-        y = 1.0
-        for xi, ki in zip(xP, k):
-            y *= (s - xi + 0j) ** (-ki)  # force complex
-        
-        sc_integral += integrate_trapz_complex(s, y)
-    return sc_integral
+        w.append(Iv + Ih)
+    return np.array(w).reshape(Zeta.shape)
+
+def z_fr_w(w, wA, wB, zA, zB):
+    """Map points in w-plain to final real-world z-plane.
+    
+    Parameters
+    ----------
+    w: complex number(s)
+        points in the w-plane
+    wA, wB, zA, zB: complex numbers
+        Two points in the w-plane that map on two points in the z_plane.
+    """ 
+    p, q = get_pq(wA, wB, zA, zB)
+    return  p * w + q
 
 
 def sc_segment(i, xP, k):
@@ -185,14 +248,9 @@ def sc_segment(i, xP, k):
         neg exponents SC argument ...(x - xi) ** (-ki) ...
     """
     a, b= xP[i], xP[i+1]
-    s = erf_map(a, b, N=100, W=2.5)
-    
-    # --- compute argument of SC     
-    y = 1.0
-    for xi, ki in zip(xP, k):
-        y *= (s - xi + 0j) ** (-ki)  # force complex
-    
-    return integrate_trapz_complex(s, y)
+    s = erf_map(a, b, dense_side='both')
+    arg = sc_arg(s, xP=xP, k=k)
+    return integrate_trapz_complex(s, arg)
 
 
 # --- Objective function for least-squares ---
@@ -209,7 +267,7 @@ def objective(u, lengths):
     for i in range(len(lengths)):
         L = sc_segment(i, xP, k)
         computed.append(np.abs(L)) # The length
-    print("computed:" , computed)
+    # print("computed:" , computed)
     
     computed_ratios = np.array([computed[1] / computed[0], computed[2] / computed[0]])
     desired_ratios  = np.array([lengths[1] / lengths[0], lengths[2] / lengths[0]])
@@ -219,34 +277,25 @@ def objective(u, lengths):
     return computed_ratios - desired_ratios
 
 # ---- Leg B en D op -1 en 1 voor de arcsin
-def chi_to_chi1(chi, idxB=0, idxD=2):
+def zeta0_to_zeta(zeta0, xP0, xP1):
+    """Linearly map zeta_0 to zeta xP0 -> zeta0=-1, xP1-> zeta0=+1 for arcsin.
     """
-    Mapping from points on x-axis to -1 and +1 for arcsin. The indices of the points are given.
-    
-    Linear mapping: chi[idxB] -> -1, chi[idxD] -> +1
-    chi : array of chi-points (optimized pooints along the axis)
-    idxB, idxD : indices of B and D in chi
-    """
-    chi = np.asarray(chi)
-    B = chi[idxB]
-    D = chi[idxD]
-    scale = 2.0 / (D - B)
-    chi1 = scale * (chi - B) - 1.0
-    return chi1
+    scale = 2.0 / (xP1- xP0)
+    zeta = scale * (zeta0 - xP0) - 1.0
+    return zeta
 
-def w_from_omega(Omega, Q=None, k=None, xP=None, BE=None):
-    """Return w from omega using Scharz-Cristoffel for simple ditch profile.""" 
-    zeta = np.sin(1j * np.pi/Q * Omega)
-    p, q = get_pq(-1 + 0j, 1 + 0j, xP[0], xP[1])
-    Z = p * zeta + q
+
+def z_fr_omega(Omega, Q=None, k=None, xP=None, BE=None):
+    """Return w from omega using Scharz-Cristoffel for simple ditch profile."""
     
-    w0 = sc_along_real_ax(xP[0], xP, k)
-    w2 = sc_along_real_ax(xP[2], xP, k)
-    B, D = BE[0], BE[2]
-    p1, q1 = get_pq(w0, w2, B, D)
-        
-    W = p1 * sc_integral(Z, xP, k) + q
-    return W
+    zeta0 = zeta_fr_omega(Omega, Q=Q)
+    zeta = zeta0_to_zeta(zeta0, xP[0], xP[2] )
+    
+    wP = w_fr_x(xP, xP, k)
+    
+    w  = w_fr_zeta(zeta, xP, k)
+    Z = z_fr_w(w, wP[0], wP[2], BE[0], BE[2])
+    return Z
     
 
 # %%
@@ -259,6 +308,7 @@ if __name__ == '__main__':
 
     # --- Corner points B, C, D, E and extra points A and F
     A, B, C, D, E, F = 5 + 0j, b + 0j, b - c * 1j, 0 - c * 1j, 0 - e * 1j, 5 - e * 1j
+    AF = np.array([A, B, C, D, E, F])
 
     # --- Segment lengths used by the objective function which mathes segment-length ratios
     segment_lengths = np.abs(C - B), np.abs(D - C), abs(E -D)
@@ -275,66 +325,52 @@ if __name__ == '__main__':
     # --- the optimized points
     xP = unpack_u(res.x)
     print("xp:", xP)
+    
+    # --- Plot zeta, w and Z
+    fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(18, 6))
+    fig.suptitle("Schwarz-Cristoffel half-ditch X-section")
+    
+    ax1.set(title="zeta", xlabel='xi', ylabel='ypsilon')
+    ax2.set(title="w-plane", xlabel='u', ylabel='v')
+    ax3.set(title='z-plane', xlabel='x', ylabel='y')
+    
+    ax1.grid()
+    ax2.grid()
+    ax3.grid()
+    
+    # --- Plot the xP points in the zeta plane
+    ax1.plot(xP.real, xP.imag, 'bo-', label='points xP')
 
-    # --- put points B and D in the z plane to -1 and 1 to use the arcsin
-    chi = chi_to_chi1(xP, idxB=0, idxD=2)
-    print("chi", chi)
-
-    # --- Compute Omega in the omega plane
-    Q = 1
-    Omega =Q * (0.5j -1j / np.pi * np.arcsin(chi + 0j)) # Between 0 at bottom to Q at top
-    print(Omega.imag)
-
-    # --- Verify be computing the points in the w plane, the segment ratios are now
-    # correct, which is enough for us to transfrom to the omega plane. But if we
-    # wish to transfer the omega values back to the z-plane we need to transform
-    # the points in the we plane to match the actual coordinates of the cross section.
+    # --- Compute the images w(xP) and show them in the w-plane
     w = []
     for x in xP:
         # --- Compute w for xP points
-        w.append(sc_along_real_ax(x, xP, k))
+        w.append(w_fr_x(x, xP, k))
     w = np.array(w)
-
-    p, q = get_pq(w[0], w[2], B, D)
+    ax2.plot(w.real, w.imag, 'bo-', label='xP --> w')
     
-    def z_to_w(x, xP, k):
-        x = np.asaray(x, dtype=complex)
-        w = []
-        for xi in x.ravel():
-            w.append(sc_along_real_ax(xi, xP, k))
-        w = np.array(w).reshape(x.shape)
-        W = p * w + q
-        return W
+    # --- Compute the transformation from w to the final  real world
+    zP = z_fr_w(w, w[0], w[2], BE[0], BE[2])
+    
+    # --- Plot these points together with the original dich corner points
+    ax3.plot(AF.real, AF.imag, 'bo-', label='original points')
+    ax3.plot(zP.real, zP.imag, 'go', ms=8, mfc='none', label='zP (back transformed)')
         
-    ditch = [A]
-    for wi in w:
-        ditch.append(p * wi + q)
-    ditch.append(F)
-    ditch = np.array(ditch)
-        
+    # --- Try some arbitrary points in the zeta plane
+    zetaP = np.array([0 + 1j, 2 + 2j, 2 + 3j, 0 + 4j, -2 + 3j, -2 + 2j, 0 + 1j])
+    wP = w_fr_zeta(zetaP, xP, k)
+    zP = z_fr_w(wP, wP[0], wP[2], BE[0], BE[2])
     
-    fig, ax = plt.subplots()
-    ax.plot(w.real, w.imag, 'bo--', label='w-plane')
-    ax.plot(ditch.real, ditch.imag, 'go-', label='ditch in w plane' )
-    ax.legend()
+    ax1.plot(zetaP.real, zetaP.imag, 'ro--', label='polygon in zeta')
+    ax2.plot(wP.real, wP.imag, 'ro--', label='polygon in w')
+    ax3.plot(zP.real, zP.imag, 'ro--', label='polygon in Z')
     
-    # %%
-    # Back from omega:
-    eps = 1e-6
-    psi = np.linspace(-1, 1, 21).clip(-1 + eps, 1 - eps) * Q / 2
-    phi = np.linspace(0, 2, 41).clip(eps, None)
-    Phi, Psi = np.meshgrid(phi, psi)
-    Omega = Phi + 1j * Psi
-    
-    Z = w_from_omega(Omega, Q=1, k=k, xP=xP, BE=BE)
-    
-    fig, ax = plt.subplots()
-
-    ax.plot(Z.real, Z.imag, 'b-', lw=0.5, label='Phi')
-    ax.plot(Z.real.T, Z.imag.T, 'g-', lw=0.5, label='Psi')
-    ax.set_aspect(1)
-    ax.legend()
+    for ax in [ax1, ax2, ax3]:
+        ax.grid(True)
+        ax.set_aspect(1)
+        ax.legend()
 
     plt.show()
+    print("done")
 
-    # move to xB, xD
+
