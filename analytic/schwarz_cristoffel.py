@@ -299,7 +299,47 @@ def z_fr_omega(Omega, Q=None, k=None, xP=None, BE=None):
     
 
 # %%
-if __name__ == '__main__':
+
+def test_sc_mapping(case=1):
+    # --- Sets of combinations of points along x and corners (k = alpha/pi values)
+
+    if case == 0:
+        xP = np.array([1, 2, 3, 4])
+        k  = np.ones_like(xP) * 2 / 3
+    elif case == 1:
+        xP = np.array([1, 2, 3, 4, 5])
+        k  = np.ones_like(xP) / 2
+    elif case == 2:
+        xP = np.array([1, 2, 3, 4, 5, 6])
+        k  = np.ones_like(xP) * 2 / 5
+    elif case == 3:
+        xP = np.array([1, 2, 3, 4, 5, 6, 7])
+        k  = np.ones_like(xP) / 3
+    elif case == 4:
+        xP = np.array([1, 2, 3, 4])
+        k  = np.array([1, -1, 1, 1]) / 2
+
+
+    X = np.linspace(0, xP[-1] + 0.5, 1000)
+    X = xP
+    w = []
+    for x in X:
+        # --- Compute w for this point
+        w.append(w_fr_x(x, xP, k))
+        # w.append(sc_along_real_ax(x, xP, k))
+    w = np.array(w)
+
+    fig, ax = plt.subplots()
+    ax.plot(w.real, w.imag, '.-')
+
+    for ip, wi in enumerate(w):
+        ax.text(wi.real, wi.imag, f"{ip}", ha='left', va='bottom')
+    ax.set_aspect(1)
+    
+    plt.show()
+
+    
+def main():
     # --- Given angles / k_i ---
     k = [0.5, -0.5, 0.5, 0.5]
     
@@ -369,8 +409,13 @@ if __name__ == '__main__':
         ax.grid(True)
         ax.set_aspect(1)
         ax.legend()
-
+    
+if __name__ == '__main__':
+    for case in [0, 1, 2, 3, 4]:
+        test_sc_mapping(case=case)
+    
+    # main()
+    
     plt.show()
-    print("done")
 
 
