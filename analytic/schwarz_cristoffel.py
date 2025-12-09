@@ -140,14 +140,21 @@ def sc_arg(Z, xP=None, k=None):
         fvals *= (Z - xi + 0j) ** (-ki)
     return fvals
 
-def zeta_fr_omega(omega, Q):
+def zeta0_fr_omega(omega, Q):
     """Transform omega = Phi + i Psi to the zeta_plane (0 < Psi / Q < 0.5).
     
     Procedure, rotate (* i) multiply by pi/Q and subtract 1.2 to centralize    
     so that -pi/2 x < pi/2. Centralization implies that 0 < Psi< Q
     Finally use sin to flatten the lines +/- pi/2    
     """
-    return np.sin(1j * np.pi / Q * (omega + 0j) + 0.5)
+    return np.sin(1j * np.pi / Q * (omega + 0j) + np.pi / 2)
+
+def zeta_fr_zeta0(zeta0, xP0, xP1):
+    """Linearly map zeta_0 to zeta xP0 -> zeta0=-1, xP1-> zeta0=+1 for arcsin.
+    """
+    p, q = get_pq(-1, 1, xP0, xP1)
+    return zeta0 * p + q
+    
 
 def w_fr_x(x, xP=None, k=None):
     """Return Scharz-Cristoffel w-points from xP on real axis.
@@ -174,17 +181,15 @@ def w_fr_x(x, xP=None, k=None):
     xP_ext = np.hstack((0, xP, np.inf))
     
     for xa, xb in zip(xP_ext[:-1], xP_ext[1:]):
-        if x < xa:
+        if x < 0:
             a, b = 0, x
-            if a == b:
-                return 0 + 0j
             s = erf_map(a, b, dense_side='left')
             argc = sc_arg(s, xP=xP, k=k)
             return integrate_trapz_complex(s, argc)
+        if x <= xa:
+            break
             
         a, b = xa, min(xb, x)
-        if a == b:
-            continue
         if a == xP[-1]:
             s = erf_map(a, b, dense_side='left')
         else:
@@ -192,6 +197,44 @@ def w_fr_x(x, xP=None, k=None):
         argc = sc_arg(s, xP=xP, k=k)
         w += integrate_trapz_complex(s, argc)
     return w
+
+
+def sc_along_real_ax(x, xP, k):
+    """Return integration of Scharz-Cristoffel argument at x given points (sigularities at xP).
+    
+    Parameters
+    ----------
+    x: float (real)
+        Point on the real axis
+    xP: floats (real)
+        points along real axis causing boundary in z-plane to bend.
+    k: float
+        exponents arg will be (x - xi) ** (-ki), where ki = alpha / pi (alpha inner angle between sections)
+    """
+    xP = np.asarray(xP)
+    sc_integral = 0 + 0j # Force complex
+    
+    # --- Always integrate from zero and pass points between 0 and x
+    # --- It is assumed that all xP > 0
+    assert np.all(xP > 0) and np.all(np.diff(xP) > 0), "All points must be > 0 and series must increase."
+    
+    as_ = np.hstack((0, xP))
+    bs_ = np.hstack((xP, np.inf))
+    
+    for a, b in zip(as_, bs_):            
+        if x <= a:
+            break
+        
+        b = min(x, b) # x may be < than b
+        s = erf_map(a, b, N=100, W=2.5)
+        
+        # --- compute argument of SC     
+        y = 1.0
+        for xi, ki in zip(xP, k):
+            y *= (s - xi + 0j) ** (-ki)  # force complex
+        
+        sc_integral += integrate_trapz_complex(s, y)
+    return sc_integral
 
 
 def w_fr_zeta(Zeta, xP, k):
@@ -212,7 +255,7 @@ def w_fr_zeta(Zeta, xP, k):
     w  = []
     for zeta in Zeta.ravel():
         
-        zv = 1j * erf_map(0, zeta.imag, dense_side='left')
+        zv = zeta.real + 1j * erf_map(0, zeta.imag, dense_side='left')
         z_arg = sc_arg(zv, xP, k)
 
         Iv = integrate_trapz_complex(zv, z_arg)
@@ -230,7 +273,8 @@ def z_fr_w(w, wA, wB, zA, zB):
         points in the w-plane
     wA, wB, zA, zB: complex numbers
         Two points in the w-plane that map on two points in the z_plane.
-    """ 
+    """
+    w = np.asarray(w, dtype=complex)
     p, q = get_pq(wA, wB, zA, zB)
     return  p * w + q
 
@@ -275,28 +319,31 @@ def objective(u, lengths):
     print("computed_ratios ", computed_ratios)
     print("desired_ratio s  ", desired_ratios)
     return computed_ratios - desired_ratios
+    
+    
+def phase(z):
+    return np.angle(z)   # in (-pi, pi]
 
-# ---- Leg B en D op -1 en 1 voor de arcsin
-def zeta0_to_zeta(zeta0, xP0, xP1):
-    """Linearly map zeta_0 to zeta xP0 -> zeta0=-1, xP1-> zeta0=+1 for arcsin.
+def detect_phase_jumps(Z, F, threshold=np.pi/2):
     """
-    scale = 2.0 / (xP1- xP0)
-    zeta = scale * (zeta0 - xP0) - 1.0
-    return zeta
+    Detect large phase jumps (branch cuts) in a 2D complex field F(Z).
+    Returns mask of same shape as Z/F.
+    """
+    ph = np.angle(F)
 
+    # robust wrapped phase difference (mod 2π)
+    dpx = np.abs(np.angle(np.exp(1j * (ph[:, 1:] - ph[:, :-1]))))   # (M, N-1)
+    dpy = np.abs(np.angle(np.exp(1j * (ph[1:, :] - ph[:-1, :]))))   # (M-1, N)
 
-def z_fr_omega(Omega, Q=None, k=None, xP=None, BE=None):
-    """Return w from omega using Scharz-Cristoffel for simple ditch profile."""
-    
-    zeta0 = zeta_fr_omega(Omega, Q=Q)
-    zeta = zeta0_to_zeta(zeta0, xP[0], xP[2] )
-    
-    wP = w_fr_x(xP, xP, k)
-    
-    w  = w_fr_zeta(zeta, xP, k)
-    Z = z_fr_w(w, wP[0], wP[2], BE[0], BE[2])
-    return Z
-    
+    # initialize mask
+    mask = np.zeros_like(ph, dtype=bool)
+
+    # place the differences back into full grid shape
+    mask[:, 1:] |= dpx > threshold
+    mask[1:, :] |= dpy > threshold
+
+    return mask
+
 
 # %%
 
@@ -304,23 +351,28 @@ def test_sc_mapping(case=1):
     # --- Sets of combinations of points along x and corners (k = alpha/pi values)
 
     if case == 0:
+        title = "triangle"
         xP = np.array([1, 2, 3, 4])
         k  = np.ones_like(xP) * 2 / 3
     elif case == 1:
+        title = r"Four left corners of $\pi/2$"
         xP = np.array([1, 2, 3, 4, 5])
         k  = np.ones_like(xP) / 2
     elif case == 2:
+        title="Pentagon"
         xP = np.array([1, 2, 3, 4, 5, 6])
         k  = np.ones_like(xP) * 2 / 5
     elif case == 3:
-        xP = np.array([1, 2, 3, 4, 5, 6, 7])
+        title="There is not way to tell where the points will land"
+        xP = np.array([1, 2, 3.5, 4.0, 4.75, 4.9, 5])
         k  = np.ones_like(xP) / 3
     elif case == 4:
+        title="Ditch half cross section"
         xP = np.array([1, 2, 3, 4])
         k  = np.array([1, -1, 1, 1]) / 2
 
 
-    X = np.linspace(0, xP[-1] + 0.5, 1000)
+    X = np.linspace(0, xP[-1], 1000)
     X = xP
     w = []
     for x in X:
@@ -332,6 +384,7 @@ def test_sc_mapping(case=1):
     fig, ax = plt.subplots()
     ax.plot(w.real, w.imag, '.-')
 
+    ax.set_title(title)
     for ip, wi in enumerate(w):
         ax.text(wi.real, wi.imag, f"{ip}", ha='left', va='bottom')
     ax.set_aspect(1)
@@ -386,35 +439,64 @@ def main():
     for x in xP:
         # --- Compute w for xP points
         w.append(w_fr_x(x, xP, k))
-    w = np.array(w)
-    ax2.plot(w.real, w.imag, 'bo-', label='xP --> w')
+    wP = np.array(w)
+    ax2.plot(wP.real, wP.imag, 'bo-', label='xP --> w')
     
     # --- Compute the transformation from w to the final  real world
-    zP = z_fr_w(w, w[0], w[2], BE[0], BE[2])
+    zP = z_fr_w(w, wP[0], wP[2], BE[0], BE[2])
     
     # --- Plot these points together with the original dich corner points
     ax3.plot(AF.real, AF.imag, 'bo-', label='original points')
-    ax3.plot(zP.real, zP.imag, 'go', ms=8, mfc='none', label='zP (back transformed)')
+    ax3.plot(zP.real, zP.imag, 'go', ms=12, mfc='none', label='zP (back transformed)')
         
     # --- Try some arbitrary points in the zeta plane
-    zetaP = np.array([0 + 1j, 2 + 2j, 2 + 3j, 0 + 4j, -2 + 3j, -2 + 2j, 0 + 1j])
-    wP = w_fr_zeta(zetaP, xP, k)
-    zP = z_fr_w(wP, wP[0], wP[2], BE[0], BE[2])
+    zetaPgon = np.array([0 + 1j, 2 + 2j, 2 + 3j, 0 + 4j, -2 + 3j, -2 + 2j, 0 + 1j])
+    wPgon = w_fr_zeta(zetaPgon, xP, k)
+    zPgon = z_fr_w(wPgon, wP[0], wP[2], BE[0], BE[2])
     
-    ax1.plot(zetaP.real, zetaP.imag, 'ro--', label='polygon in zeta')
-    ax2.plot(wP.real, wP.imag, 'ro--', label='polygon in w')
-    ax3.plot(zP.real, zP.imag, 'ro--', label='polygon in Z')
+    ax1.plot(zetaPgon.real, zetaPgon.imag, 'r.--', label='polygon in zeta')
+    ax2.plot(wPgon.real, wPgon.imag, 'r.--', label='polygon in w')
+    ax3.plot(zPgon.real, zPgon.imag, 'r.--', label='polygon in Z')
+            
+    # --- From Omega to Z
+    eps = 1e-6
+    Q = 1.0
+    psi = np.linspace(1, 0, 21).clip(eps, 1 - eps) * Q # highest psi on top for convenience
+    phi = np.linspace(0, 3, 61).clip(eps, None) * Q
+    Phi, Psi = np.meshgrid(phi, psi)
+    Omega = (Phi + 1j * Psi) 
+    
+    zeta0 = zeta0_fr_omega(Omega, Q)
+    zeta =  zeta_fr_zeta0(zeta0, xP[0], xP[2])
+    w = w_fr_zeta(zeta, xP=xP, k=k)
+    Z = z_fr_w(w, wP[0], wP[2], BE[0], BE[2])
+    
+    ax1.plot(zeta.real,   zeta.imag,   'b', lw=0.35)
+    ax1.plot(zeta.real.T, zeta.imag.T, 'g', lw=0.35)
+    ax2.plot(w.real,   w.imag,   'b', lw=0.35)
+    ax2.plot(w.real.T, w.imag.T, 'g', lw=0.35)
+    ax3.plot(Z.real,   Z.imag,   'b', lw=0.35)
+    ax3.plot(Z.real.T, Z.imag.T, 'g', lw=0.35 )
     
     for ax in [ax1, ax2, ax3]:
         ax.grid(True)
         ax.set_aspect(1)
-        ax.legend()
+        ax.legend(loc='best')
+        
+    # Evaluate each factor's phase and the combined phase
+    factors = [ (Z - xi)**(-ki) for xi, ki in zip(xP, k) ]  # list of 2D arrays
+    total = np.prod(factors, axis=0)
+
+    masks = [detect_phase_jumps(Z, fac) for fac in factors]
+    mask_total = detect_phase_jumps(Z, total)
+
+    return mask
     
 if __name__ == '__main__':
-    for case in [0, 1, 2, 3, 4]:
-        test_sc_mapping(case=case)
+    #for case in [0, 1, 2, 3, 4]:
+    #    test_sc_mapping(case=case)
     
-    # main()
+    main()
     
     plt.show()
 
