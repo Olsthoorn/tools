@@ -155,8 +155,16 @@ def zeta_fr_zeta0(zeta0, xP0, xP1):
     p, q = get_pq(-1, 1, xP0, xP1)
     return zeta0 * p + q
     
+def w_fr_x(X, xP=None, k=None):
+    X = np.asarray(X)
+    w = []
+    for x in X:
+        w.append(w_fr_one_x(x, xP, k))        
+    w = np.array(w).reshape(X.shape)
+    return w if w.size > 1 else w.item()
+        
 
-def w_fr_x(x, xP=None, k=None):
+def w_fr_one_x(x, xP=None, k=None):
     """Return Scharz-Cristoffel w-points from xP on real axis.
     
     This integrates along the singularities xP if passed.
@@ -190,6 +198,8 @@ def w_fr_x(x, xP=None, k=None):
             break
             
         a, b = xa, min(xb, x)
+        if np.isclose(a, b):
+            return w
         if a == xP[-1]:
             s = erf_map(a, b, dense_side='left')
         else:
@@ -259,7 +269,7 @@ def w_fr_zeta(Zeta, xP, k):
         z_arg = sc_arg(zv, xP, k)
 
         Iv = integrate_trapz_complex(zv, z_arg)
-        Ih = w_fr_x(zeta.real, xP, k)     # Function already available    
+        Ih = w_fr_one_x(zeta.real, xP, k)     # Function already available    
         
         w.append(Iv + Ih)
     return np.array(w).reshape(Zeta.shape)
@@ -370,16 +380,8 @@ def test_sc_mapping(case=1):
         title="Ditch half cross section"
         xP = np.array([1, 2, 3, 4])
         k  = np.array([1, -1, 1, 1]) / 2
-
-
-    X = np.linspace(0, xP[-1], 1000)
-    X = xP
-    w = []
-    for x in X:
-        # --- Compute w for this point
-        w.append(w_fr_x(x, xP, k))
-        # w.append(sc_along_real_ax(x, xP, k))
-    w = np.array(w)
+ 
+    w = w_fr_x(xP, xP, k)
 
     fig, ax = plt.subplots()
     ax.plot(w.real, w.imag, '.-')
@@ -397,7 +399,7 @@ def main():
     k = [0.5, -0.5, 0.5, 0.5]
     
     # --- The cross section is defined by these lenghts
-    b, c, e = 2, 0.5, 1.5
+    b, c, e = 2, 1.25, 2.5
 
     # --- Corner points B, C, D, E and extra points A and F
     A, B, C, D, E, F = 5 + 0j, b + 0j, b - c * 1j, 0 - c * 1j, 0 - e * 1j, 5 - e * 1j
@@ -435,15 +437,19 @@ def main():
     ax1.plot(xP.real, xP.imag, 'bo-', label='points xP')
 
     # --- Compute the images w(xP) and show them in the w-plane
-    w = []
-    for x in xP:
-        # --- Compute w for xP points
-        w.append(w_fr_x(x, xP, k))
-    wP = np.array(w)
-    ax2.plot(wP.real, wP.imag, 'bo-', label='xP --> w')
+    wP = w_fr_x(xP, xP, k)
+    zP = z_fr_w(wP, wP[0], wP[2], BE[0], BE[2])
+    
+    # w = []
+    
+    # for x in xP:
+    #     # --- Compute w for xP points
+    #     w.append(w_fr_x(x, xP, k))
+    # wP = np.array(w)
+    # ax2.plot(wP.real, wP.imag, 'bo-', label='xP --> w')
     
     # --- Compute the transformation from w to the final  real world
-    zP = z_fr_w(w, wP[0], wP[2], BE[0], BE[2])
+    
     
     # --- Plot these points together with the original dich corner points
     ax3.plot(AF.real, AF.imag, 'bo-', label='original points')
@@ -481,16 +487,16 @@ def main():
     for ax in [ax1, ax2, ax3]:
         ax.grid(True)
         ax.set_aspect(1)
-        ax.legend(loc='best')
+        #ax.legend(loc='best')
         
     # Evaluate each factor's phase and the combined phase
     factors = [ (Z - xi)**(-ki) for xi, ki in zip(xP, k) ]  # list of 2D arrays
     total = np.prod(factors, axis=0)
 
-    masks = [detect_phase_jumps(Z, fac) for fac in factors]
-    mask_total = detect_phase_jumps(Z, total)
+    # masks = [detect_phase_jumps(Z, fac) for fac in factors]
+    # mask_total = detect_phase_jumps(Z, total)
 
-    return mask
+    return
     
 if __name__ == '__main__':
     #for case in [0, 1, 2, 3, 4]:
