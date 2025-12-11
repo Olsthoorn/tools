@@ -182,7 +182,7 @@ def integrate_trapz_complex(z, fz):
 
 
 def sc_arg(Z, xP, k):
-    """Return the argument of the Scwarz-Christoffel integral.
+    r"""Return the argument of the Scwarz-Christoffel integral.
     
     The argument is $\Pi_i=0^{len(x_P)} (z - x_i)^{-k_i}$
     
@@ -241,7 +241,7 @@ def zeta_fr_zeta0(zeta0, xP0, xP1):
     return zeta0 * p + q
     
 def w_fr_x(X, xP=None, k=None):
-    """Return the w-plane coordinates of the points X along the real zeta-axis.
+    r"""Return the w-plane coordinates of the points X along the real zeta-axis.
     
     Parameters
     ----------
@@ -341,7 +341,7 @@ def w_fr_zeta(Zeta, xP, k, N=100, endclip=1e-4):
 
         # --- Vertical path from zh[-1]
         #zv = subdiv(zh[-1], zeta, xP, N=N, endclip=endclip)
-        zv = zh[-1].real + 1j * erf_grid(zh[-1].imag, zeta.imag, N=100, dense_side='both')
+        zv = zh[-1].real + 1j * erf_grid(zh[-1].imag, zeta.imag, N=N, dense_side='both')
         
         zv_arg = sc_arg(zv, xP, k)
         Iv = integrate_trapz_complex(zv, zv_arg)
@@ -351,22 +351,23 @@ def w_fr_zeta(Zeta, xP, k, N=100, endclip=1e-4):
     return np.array(w).reshape(Zeta.shape)
 
 
-def z_fr_w(w, wA, wB, zA, zB):
-    """Map points in w-plane to final real-world z-plane.
+def z_fr_w(w, wA, wB, zA, zB, *, eps=1e-14):
+    """Map points in w-plane to the final z-plane using a linear map z = p w + q."""
     
-    This is a linear transfromation like B = A p + q.
-    p and q are determined from wA, wB, zA and zB.
-    
-    Parameters
-    ----------
-    w: complex number(s)
-        points in the w-plane
-    wA, wB, zA, zB: complex numbers
-        Two points in the w-plane that map on two points in the z_plane.
-    """
     w = np.asarray(w, dtype=complex)
-    p, q = get_pq(wA, wB, zA, zB)
-    return  p * w + q
+
+    # Avoid division by tiny denominator
+    denom = wA - wB
+    if abs(denom) < eps:
+        raise ValueError(
+            f"wA and wB are too close (|wA - wB| = {abs(denom):.3e}). "
+            "Cannot form stable linear map."
+        )
+
+    p = (zA - zB) / denom
+    q = zA - p * wA
+
+    return p * w + q
 
 
 def sc_segment(i, xP, k):
@@ -425,9 +426,6 @@ def objective(u, k, lengths):
     print("computed_ratios ", computed_ratios)
     print("desired_ratio s  ", desired_ratios)
     return computed_ratios - desired_ratios
-
-
-# %%
 
 def test_sc_mapping(case=1):
     """Show the Scharz-Christoffel transformation for a set of shapes.
@@ -494,146 +492,37 @@ def rectangular_ditch():
     to those in the z-plane.
     """
     
-    # --- Given angles / k_i ---
-    # Example values for the corners B, C, D, E
-    k = [0.5, -0.5, 0.5, 0.5]
- 
     # --- The cross section is defined by these lenghts
-    b, c, d = 0.5, 1, 2.5
-    A, B, C, D, E, F = 5 + 0j, c + 0j, c - b * 1j, 0 - b * 1j, 0 - (b + d) * 1j, 5 - (b + d) * 1j
-
-    AF = np.array([A, B, C, D, E, F])
-    BE = AF[1:-1]
-
-    # --- Segment lengths used by the objective function which mathes segment-length ratios
-    segment_lengths = np.abs(C - B), np.abs(D - C), abs(E -D)
-
-    # --- Initial guess ---
-    u0 = np.log([1.0, 1.0])  # rough starting guesses for xC-xB, xD-xC, xE-xD
-    
-    # --- Solve with least squares ---
-    res = least_squares(objective, u0,
-                xtol=1e-13, ftol=1e-13, gtol=1e-13, max_nfev=200, method='lm', args=[k, segment_lengths])
-    print("Optimization success:", res.success, res.message)
-    print(res)
-
-    # --- the optimized points
-    xP = unpack_u(res.x)
-    print("xp:", xP)
-    
-    # --- Plot zeta, w and Z
-    fig, axs = plt.subplots(2, 2, figsize=(12, 7))
-    ax0, ax1, ax2, ax3 = axs.flatten()
-    
-    fig.suptitle("Schwarz-Cristoffel half-ditch X-section")
-
-    ax0.set(title="Omega-plane", xlabel='Phi', ylabel='Psi')    
-    ax1.set(title="zeta", xlabel='xi', ylabel='ypsilon')
-    ax2.set(title="w-plane", xlabel='u', ylabel='v')
-    ax3.set(title='z-plane', xlabel='x', ylabel='y')
-    
-    # --- Plot the xP points in the zeta plane
-    ax1.plot(xP.real, xP.imag, 'bo-', label='points xP')
-
-    # --- Compute the images w(xP) and show them in the w-plane
-    wP = w_fr_x(xP, xP, k)
-    ax2.plot(wP.real, wP.imag, 'bo-', label='xP --> w')
-    
-    # --- Plot these points together with the original ditch corner points
-    zP = z_fr_w(wP, wP[0], wP[2], BE[0], BE[2])
-    ax3.plot(zP.real, zP.imag, '-', label='zP (back transformed)')
-    ax3.plot(AF.real, AF.imag, '-', ms=12, mfc='none', label='original points')
-    
-    # --- Try an arbitrary polygon in the zeta plane
-    # zetaPgon = np.array([0 + 1j, 2 + 2j, 2 + 3j, 0 + 4j, -2 + 3j, -2 + 2j, 0 + 1j])
-    # wPgon = w_fr_zeta(zetaPgon, xP, k)
-    # zPgon = z_fr_w(wPgon, wP[0], wP[2], BE[0], BE[2])
-    # 
-    # ax1.plot(zetaPgon.real, zetaPgon.imag, 'r.--', label='polygon in zeta')
-    # ax2.plot(wPgon.real, wPgon.imag, 'r.--', label='polygon in w')
-    # ax3.plot(zPgon.real, zPgon.imag, 'r.--', label='polygon in Z')
-            
-    # --- From Omega to Z
-    eps = 1e-3
-    Q = 1.0
-    psi = np.linspace(1, 0, 21).clip(eps, 1 - eps) * Q # highest psi on top for convenience
-    phi = np.linspace(0, 2, 41).clip(eps, None) * Q
-    Phi, Psi = np.meshgrid(phi, psi)
-    Omega = (Phi + 1j * Psi) 
-    
-    zeta0 = zeta0_fr_omega(Omega, Q)
-    zeta  = zeta_fr_zeta0(zeta0, xP[0], xP[2])
-    w     = w_fr_zeta(zeta, xP=xP, k=k, N=50, endclip=1e-3)
-    Z     = z_fr_w(w, wP[0], wP[2], BE[0], BE[2])
-    
-    ax0.plot(Omega.real,   Omega.imag,   'b', lw=0.35)
-    ax0.plot(Omega.real.T, Omega.imag.T, 'g', lw=0.35)    
-    ax1.plot(zeta.real,   zeta.imag,   'b', lw=0.35)
-    ax1.plot(zeta.real.T, zeta.imag.T, 'g', lw=0.35)
-    ax2.plot(w.real,   w.imag,   'b', lw=0.35)
-    ax2.plot(w.real.T, w.imag.T, 'g', lw=0.35)
-    ax3.plot(Z.real,   Z.imag,   'b', lw=0.35)
-    ax3.plot(Z.real.T, Z.imag.T, 'g', lw=0.35 )
-    
-    for ax in axs.ravel():
-        ax.grid(True)
-        ax.set_aspect(1)
-        #ax.legend(loc='best') # Pictures too small for legend.
-        
-    # --- Save picture
-    images = '/Users/Theo/GRWMODELS/python/tools/analytic/images'
-    fig.savefig(os.path.join(images, 'SC_ditch.png'))
-        
-    return
-    
-def main():
-    """Compute and show the stream and potential lines for a ditch cross section.
-    
-    The symmetrial half ditch cross-section has zero-head a vertical side
-    and a zero-head horizontal bottom through which water enters the ditch.
-    
-    This problem is sovled using the sine and Schwarz-Cristoffel conformal
-    transformation. But first the transformation is done from the Omega plane
-    to the zeta0-upper half plane to the zeta-upper half plane in which two
-    ditch-edges landed on two pervertices. From here the Schwarz-Cristoffel 
-    integral takes us to the w-plane in which the shape of the ditch is
-    corect but not its location and size and perhaps rotation. The last step, 
-    finalle, takes us from the w-plane to the real-world z-plane using a
-    linear transfromation that matches the corners of the ditch in the zeta-plane
-    to those in the z-plane.
-    """
-
-    # --- The cross section is defined by these lenghts
-    lengths = np.array([2, 1,  1, 1, 1, 5]) # b, c, d, e
-    angs    = np.array([0, 70, 45, 20, 90, 180]) * np.pi / 180
-    
+    lengths = np.array([2, 1,  1, 1, 2]) # b, c, d, e
+    angs    = np.array([180, 90, -90, 90, 90]) * np.pi / 180
     
     zd = 0 + 0j
-    zDitch = [zd]
-    for le, an in zip(lengths, angs):
-        zd1 = zd + le * np.exp(1j * (np.pi + an))
-        zDitch.append(zd1)
+    zDitch = np.array([zd])
+    theta = 0.
+    for le, ang in zip(lengths, angs):
+        theta += ang        
+        zd1 = zd + le * np.exp(1j * theta)        
+        zDitch = np.hstack((zDitch, zd1))
         zd = zd1
     zDitch = np.array(zDitch)
-    zDitch = zDitch - zDitch[-2].real - 1j * zDitch[1].imag # F.real=0, B.imag=0
     
+    zDitch = zDitch - zDitch[-2].real - 1j * zDitch[1].imag # F.real=0, B.imag=0
+        
     fig, ax = plt.subplots()
     ax.plot(zDitch.real, zDitch.imag)
+    ax.set_aspect(1)
     
+    # --- Given angles / k_i ---
     vecs = np.diff(zDitch)
     k = np.angle(vecs[1:] / vecs[:-1]) / np.pi
     
     # --- initial prevertices   
     xP = np.arange(len(k)) + 1.
     
-    # --- transform to w (just to check)
-    wP = w_fr_zeta(xP, xP, k)
-    ax.plot(wP.real, wP.imag, 'ro-')
-
- 
+    
     # --- Segment lengths used by the objective function which mathes segment-length ratios
-    segment_lengths = np.abs(zDitch[1:] - zDitch[:-1])[1:-1]     
- 
+    segment_lengths = np.abs(vecs[1:-1])
+
     # --- Initial guess ---
     u0 = np.log(np.ones(len(xP) - 2))  # rough starting guesses for xC-xB, xD-xC, xE-xD
     
@@ -666,10 +555,20 @@ def main():
     ax2.plot(wP.real, wP.imag, 'bo-', label='xP --> w')
     
     # --- Plot these points together with the original ditch corner points
-    zP = z_fr_w(wP, wP[0], wP[1], zDitch[1], zDitch[2])
+    # --- Tell which corners to match (wp and zditch)
+    zP = z_fr_w(wP, wP[0], wP[2], zDitch[1], zDitch[3])
     ax3.plot(zP.real, zP.imag, '-', label='zP (back transformed)')
     ax3.plot(zDitch.real, zDitch.imag, '-', ms=12, mfc='none', label='original points')
-                
+    
+    # --- Try an arbitrary polygon in the zeta plane
+    # zetaPgon = np.array([0 + 1j, 2 + 2j, 2 + 3j, 0 + 4j, -2 + 3j, -2 + 2j, 0 + 1j])
+    # wPgon = w_fr_zeta(zetaPgon, xP, k)
+    # zPgon = z_fr_w(wPgon, wP[0], wP[2], BE[0], BE[2])
+    # 
+    # ax1.plot(zetaPgon.real, zetaPgon.imag, 'r.--', label='polygon in zeta')
+    # ax2.plot(wPgon.real, wPgon.imag, 'r.--', label='polygon in w')
+    # ax3.plot(zPgon.real, zPgon.imag, 'r.--', label='polygon in Z')
+            
     # --- From Omega to Z
     eps = 1e-3
     Q = 1.0
@@ -679,12 +578,9 @@ def main():
     Omega = (Phi + 1j * Psi) 
     
     zeta0 = zeta0_fr_omega(Omega, Q)
-    
-    # tell func to which points -1 and 1 will map
-    zeta  = zeta_fr_zeta0(zeta0, xP[0], xP[3])
-    
+    zeta  = zeta_fr_zeta0(zeta0, xP[0], xP[2])
     w     = w_fr_zeta(zeta, xP=xP, k=k, N=50, endclip=1e-3)
-    Z     = z_fr_w(w, wP[0], wP[1], zDitch[1], zDitch[2])
+    Z     = z_fr_w(w, wP[0], wP[2], zDitch[1], zDitch[3])
     
     ax0.plot(Omega.real,   Omega.imag,   'b', lw=0.35)
     ax0.plot(Omega.real.T, Omega.imag.T, 'g', lw=0.35)    
@@ -702,11 +598,204 @@ def main():
         
     # --- Save picture
     images = '/Users/Theo/GRWMODELS/python/tools/analytic/images'
-    fig.savefig(os.path.join(images, 'SC_ditch.png'))
+    fig.savefig(os.path.join(images, 'SC_ditch_1.png'))
         
     return
     
+def some_shape(case_title='Ditch',
+               fig_name='SC_ditch_Xsec',
+               lengths=None,
+               angles=None,
+               ip1=0,
+               ip2=2):
+    """Compute and show the stream and potential lines for a ditch cross section.
     
+    The symmetrial half ditch cross-section has zero-head a vertical side
+    and a zero-head horizontal bottom through which water enters the ditch.
+    
+    This problem is sovled using the sine and Schwarz-Cristoffel conformal
+    transformation. But first the transformation is done from the Omega plane
+    to the zeta0-upper half plane to the zeta-upper half plane in which two
+    ditch-edges landed on two pervertices. From here the Schwarz-Cristoffel 
+    integral takes us to the w-plane in which the shape of the ditch is
+    corect but not its location and size and perhaps rotation. The last step, 
+    finalle, takes us from the w-plane to the real-world z-plane using a
+    linear transfromation that matches the corners of the ditch in the zeta-plane
+    to those in the z-plane.
+    
+    Paramters
+    ---------
+    Lengths: ndarray of floats
+        lengths of the segments (edges) defining the cross section.
+        First and last is part of the line from and to infinity (needed for direction)
+    angs: ndarray of floats (same size as lengths)
+        Angles in degrees between current and next segment (edge). First should be 180.
+        Follow the cross section in anti-clockwise direction (inside cross section is to the left).
+        Anti-clockwise angles are postiive.
+    i1, i2: ints
+        indices of the points that correspond to the start and end of the fixed head (ditch bottom).
+        Start counting with 0 at the second point (because the first point will be dropped).
+    """
+
+    # --- The cross section is defined by these lenghts and angles
+
+    if (lengths is None) or (angles is None):
+        # --- lengths of  segments starting on the line from infinity before the firs prevertex
+        #     continuing with the line towards infinity (firs and last needed for the direction)
+        lengths = np.array([2, 1,  1, 1, 2, 5, 5]) # a, b, c, d, e
+    
+        # --- Angles between successive edges. The first is always 180 (horizontal)
+        #     Try out different angles for the first and last to see that happens great to see!
+        angles    = np.array([180, 45, -45, -45, 45, 90, 90]) * np.pi / 180
+    else:
+        assert len(lengths) == len(angles), "lengths and angles must be of same size"
+        lengths = np.asarray(lengths)
+        angles  = np.asarray(angles)
+        
+    
+    # --- Compute the ditch points (abrupt bending points + first and last)
+    zd = 0 + 0j
+    zDitch = np.array([zd])
+    theta = 0.
+    for le, ang in zip(lengths, angles):
+        theta += ang        
+        zd1 = zd + le * np.exp(1j * theta)        
+        zDitch = np.hstack((zDitch, zd1))
+        zd = zd1
+    zDitch = np.array(zDitch)
+    
+    # --- Tell which points to translate the image to desired coordinates
+    zDitch = zDitch - zDitch[-2].real - 1j * zDitch[1].imag # F.real=0, B.imag=0
+        
+    # --- Show the ditch and its points in the w plane for verification
+    fig, ax = plt.subplots()
+    ax.set_title("Show figure in original and w-plane")
+    ax.plot(zDitch.real, zDitch.imag, 'b.-', label='ditch in z-plane')
+    ax.set_aspect(1)
+    
+    # --- Get the neg. exponents (angles between edges / pi)
+    vecs = np.diff(zDitch)
+    k = np.angle(vecs[1:] / vecs[:-1]) / np.pi
+    
+    # --- initial prevertices   
+    xP = np.arange(len(k)) + 1.
+    
+    # --- transform to w (just to check)
+    wP = w_fr_zeta(xP, xP, k)
+    
+    ax.plot(wP.real, wP.imag, 'ro-', label='ditch in w-plane')
+    ax.set_aspect(1)
+    ax.legend()
+
+    # --- Here we can throw away the first and the last point of zDitch
+    # --- because they were only help point which should actually lie at infinity
+    zDitch = zDitch[1:-1]
+
+    # --- Segment lengths used by the objective function which mathes segment-length ratios
+    segment_lengths = np.abs(zDitch[1:] - zDitch[:-1])    
+ 
+    # --- Initial guess ---
+    u0 = np.log(np.ones(len(xP) - 2))  # rough starting guesses for xC-xB, xD-xC, xE-xD
+    
+    # --- Solve with least squares ---
+    res = least_squares(objective, u0,
+                xtol=1e-13, ftol=1e-13, gtol=1e-13, max_nfev=200, method='trf', args=[k, segment_lengths])
+    print("Optimization success:", res.success, res.message)
+    print(res)
+
+    # --- the optimized points
+    xP = unpack_u(res.x)
+    print("xp:", xP)
+    
+    # --- Plot zeta, w and Z
+    fig, axs = plt.subplots(2, 2, figsize=(12, 7))
+    ax0, ax1, ax2, ax3 = axs.flatten()
+    
+    fig.suptitle(f"Schwarz-Cristoffel, X-section: {case_title}")
+
+    ax0.set(title="Omega-plane", xlabel='Phi', ylabel='Psi')    
+    ax1.set(title="zeta", xlabel='xi', ylabel='ypsilon')
+    ax2.set(title="w-plane", xlabel='u', ylabel='v')
+    ax3.set(title='z-plane', xlabel='x', ylabel='y')
+    
+    # --- Plot the xP points in the zeta plane
+    ax1.plot(xP.real, xP.imag, 'b.-', label='points xP')
+
+    # --- Compute the images w(xP) and show them in the w-plane
+    wP = w_fr_x(xP, xP, k)
+    ax2.plot(wP.real, wP.imag, 'b.-', label='xP --> w')
+    
+    # --- Plot these points together with the original ditch corner points
+    zP = z_fr_w(wP, wP[0], wP[1], zDitch[0], zDitch[1])
+    ax3.plot(zP.real, zP.imag, 'b-', lw=0.35, label='zP (back transformed)')
+    # ax3.plot(zDitch.real, zDitch.imag, 'go', ms=12, mfc='none', label='original points')
+                
+    # --- From Omega to Z
+    eps = 1e-3
+    Q = 1.0
+    psi = np.linspace(1, 0, 21).clip(eps, 1 - eps) * Q # highest psi on top for convenience
+    phi = np.linspace(0, 2, 41).clip(eps, None) * Q
+    
+    Phi, Psi = np.meshgrid(phi, psi)
+    Omega = (Phi + 1j * Psi)
+    zeta0 = zeta0_fr_omega(Omega, Q)
+    
+    # tell func to which points -1 and 1 will map
+    zeta  = zeta_fr_zeta0(zeta0, xP[ip1], xP[ip2])
+    
+    w     = w_fr_zeta(zeta, xP=xP, k=k, N=100, endclip=1e-3)
+    Z     = z_fr_w(w, wP[0], wP[1], zDitch[0], zDitch[1])
+
+    # Plot Phi and Psi in the different planes
+    ax0.plot(Omega.real,   Omega.imag,   'b', lw=0.35)
+    ax0.plot(Omega.real.T, Omega.imag.T, 'g', lw=0.35)
+    
+    ax1.plot(zeta0.real,   zeta0.imag,   'b', lw=0.35)
+    ax1.plot(zeta0.real.T, zeta0.imag.T, 'g', lw=0.35)
+    
+    ax2.plot(w.real,   w.imag,   'b', lw=0.35)
+    ax2.plot(w.real.T, w.imag.T, 'g', lw=0.35)
+    
+    ax3.plot(Z.real,   Z.imag,   'b', lw=0.35)
+    ax3.plot(Z.real.T, Z.imag.T, 'g', lw=0.35 )
+    
+    # --- Finish figures
+    for ax in axs.ravel():
+        ax.grid(True)
+        ax.set_aspect(1)
+        #ax.legend(loc='best') # Pictures too small for legend.
+        
+    # --- Save picture
+    # --- Replace this if you are in another directory of on another computer
+    images = '/Users/Theo/GRWMODELS/python/tools/analytic/images'
+    fig.savefig(os.path.join(images, fig_name))
+        
+    return
+    
+case = {0: {'case_title': "Rectangular ditch",
+            'fig_name': "SC_rect_ditch.png",
+            'lengths': np.array([2, 1,  1, 1, 2]),
+            'angles' : np.array([180, 90, -90, 90, 90]) * np.pi / 180,
+            'ip1': 0,
+            'ip2': 2
+            },
+        1: {'case_title': "Ditch with polygon profile",
+            'fig_name': "SC_pgon_ditch.png",
+            'lengths': np.array([2, 1,  1, 1, 1, 5]),
+            'angles': np.array([180, 70, -25, -25, 70, 90]) * np.pi / 180,
+            'ip1': 0,
+            'ip2': 3,
+            },
+        2: {'case_title': "Ditch cuts in top of aquifer",
+            'fig_name': "SC_cutin_ditch.png",
+            'lengths': np.array([2, 1,  1, 1, 2, 5, 5]),
+            'angles': np.array([180, 45, -45, -45, 45, 90, 90]) * np.pi / 180,
+            'ip1': 0,
+            'ip2': 3,
+            }
+        }
+
+
 if __name__ == '__main__':
     
     if False:
@@ -714,9 +803,11 @@ if __name__ == '__main__':
             test_sc_mapping(case=case)
     if False:
         rectangular_ditch()
-    if True:
-        main()
-    
+    if True:        
+        some_shape(**case[0])
+        some_shape(**case[1])
+        some_shape(**case[2])
+
     plt.show()
 
 
