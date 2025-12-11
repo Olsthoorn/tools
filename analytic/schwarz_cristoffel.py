@@ -9,32 +9,36 @@ from scipy.optimize import least_squares
 import matplotlib.pyplot as plt
 from scipy.special import erf
 
+# %% Functions
 
 def unpack_u(u):
-    """Return new parameters (robust)
+    """Return the new parameters after during and after optimation in a robust way.
     
-    Make sure that during optiomisations subsequent points are always increasing
+    Make sure that during optimisations subsequent points are always increasing
     
     Paramters
     ---------
     u: floats (u0, u1)
+        The parameters passed to the objective function.
     """
 
-    delta1 = np.exp(u[0])     # BC
-    delta2 = np.exp(u[1])     # CD
-    
+    delta = np.exp(u)     # BC
         
-    # cumulative χ-coordinates, xB and xC are kept fixed
-    xB = 1.0
-    xC = 2.0
-    xD = xC + delta1
-    xE = xD + delta2
-
-    return np.array([xB, xC, xD, xE])
+    xP = np.hstack((1, 2, 2 * np.ones(len(u))))
+    xP[2:] += np.cumsum(delta)
+    
+    return xP
 
 
 def get_pq(Afr, Bfr, Ato, Bto, test = False):
-    """Return p and q to transform A, B to An Bn.
+    """Return p and q to transform Afr, Bfr to An Bn.
+    
+    This is the linear transformation of the form
+    Afr p + q = Ato
+    
+    Where Afr and Ato are complex numbers,
+    q is a translation (complex number)
+    q is the rotation and scaling (complex number) 
     
     Parameters
     ----------
@@ -45,7 +49,7 @@ def get_pq(Afr, Bfr, Ato, Bto, test = False):
     
     Usage:
     ------
-    Pnew = p * Pold + q
+    Ato = Afr * p  + q
     """
     p = (Ato - Bto) / (Afr - Bfr)
     q = (Ato * Bfr - Afr * Bto) / (Bfr - Afr)
@@ -59,6 +63,12 @@ def get_pq(Afr, Bfr, Ato, Bto, test = False):
 
 def erf_grid(a, b, N=25, W=2.5, dense_side=None):
     """Return points between a and b concentrated near a and b.
+    
+    The density of the points is more and more increased near the
+    ends a and b of the segment a-b. Using density_side one can
+    choose the density of points to be at the left side, right side of both (default).
+    Uses the erf fucntion to densify the points near the ends.
+    How dense is regulated using W.
 
     Parameters
     ----------
@@ -98,7 +108,28 @@ def erf_grid(a, b, N=25, W=2.5, dense_side=None):
 
 
 def subdiv(A, B, xP, N=25, eps=1e-6, endclip=1e-4, show=False):
-
+    """Return subdivided line AB.
+    
+    Subdivides line AB such that de density of the points is iversily
+    proportional to the distance towards the prevertices xP. This
+    prevents taking too large steps near these singularities when
+    carrying a complex integration along path AB.
+    
+    Parameters
+    ----------
+    A, B: complex numbers
+        The ends of a straight line in complex space.
+    xP: iterable of prevertices
+        Points to take into considation.
+    N: int
+        Number of subdivisions
+    eps: small int
+        Prevents distance to become zero.
+    endclip: small int
+        Prevents the line AB to land on a prevertex.
+    show: bool
+        allows showing the subdivisions.       
+    """
     # parameter x ∈ [0,1]
     alpha = np.linspace(0, 1, 100).clip(0, 1 - endclip)  # dense pre-grid
     
@@ -118,7 +149,7 @@ def subdiv(A, B, xP, N=25, eps=1e-6, endclip=1e-4, show=False):
 
     # final points
     Z_new = A + alpha_new * (B - A)
-    ds = np.abs(np.diff(Z_new))
+    # ds = np.abs(np.diff(Z_new))
 
     if show:
         fig, ax = plt.subplots()
@@ -133,10 +164,13 @@ def subdiv(A, B, xP, N=25, eps=1e-6, endclip=1e-4, show=False):
 def integrate_trapz_complex(z, fz):
     """Return complex line integral ∫ f(z) dz along a polyline.
     
+    The path does not have to be straight, but the integration
+    wil require some density to be accurate enough.
+    
     Parameters
     ----------
     z : complex array
-        Complex points along the path, in order.
+        Complex points along the path.
     fz : complex array
         Values f(z) at those points.
     """
@@ -148,6 +182,22 @@ def integrate_trapz_complex(z, fz):
 
 
 def sc_arg(Z, xP, k):
+    """Return the argument of the Scwarz-Christoffel integral.
+    
+    The argument is $\Pi_i=0^{len(x_P)} (z - x_i)^{-k_i}$
+    
+    The computation os robust using unwrap and the log.
+    
+    Parameters
+    ----------
+    Z: np.ndarray of complex numbers (coordinates)
+        The points for which the argument is to be computed
+    xP: iterable of prevertices
+        The prevertices (points along the real axis)
+    k: ierable of floats. Some length as xP
+        the inner angles between successive edges of the domain divided by pi
+
+    """
     f_total = np.ones_like(Z, dtype=complex)
 
     for xi, ki in zip(xP, k):
@@ -168,6 +218,13 @@ def sc_arg(Z, xP, k):
 def zeta0_fr_omega(omega, Q):
     """Transform omega = Phi + i Psi to the zeta_plane (0 < Psi / Q < 0.5).
     
+    The zeta-plane is the start of the Schwarz-Cristoffel transformation, the
+    plane in which the pervertices are on the real axis, that will produce
+    the right shape in the w-plane by the SC-tranformation.
+
+    Omega is the plane Phi + i Psi with Phi the heads straight vertical lines
+    and Psi the striaght horizontal stream function lines.
+    
     Procedure, rotate (* i) multiply by pi/Q and subtract 1.2 to centralize    
     so that -pi/2 x < pi/2. Centralization implies that 0 < Psi< Q
     Finally use sin to flatten the lines +/- pi/2    
@@ -176,11 +233,26 @@ def zeta0_fr_omega(omega, Q):
 
 def zeta_fr_zeta0(zeta0, xP0, xP1):
     """Linearly map zeta_0 to zeta xP0 -> zeta0=-1, xP1-> zeta0=+1 for arcsin.
+    
+    In zeta0-plane the points -1 and 1 form two prevertices (of choice) this transoformation
+    moves -1 and 1 in the zeta0 plane to xp0 and xP1 in the zeta_plane.    
     """
     p, q = get_pq(-1, 1, xP0, xP1)
     return zeta0 * p + q
     
 def w_fr_x(X, xP=None, k=None):
+    """Return the w-plane coordinates of the points X along the real zeta-axis.
+    
+    Parameters
+    ----------
+    X point or points (real values)
+        points along the real zeta-axis.
+    xP: iterable of real numbers
+        prevertices on the real zeta-axis.
+    k: iterable of length (xP) of real numbers.
+        Schwarz-Cristoffel angles/pi (negative powers) in
+        $\Pi_i=0^N (x - xP_i)^{(-k_i)}$
+    """
     X = np.asarray(X)
     w = []
     for x in X:
@@ -189,11 +261,11 @@ def w_fr_x(X, xP=None, k=None):
     return w if w.size > 1 else w.item()
         
 def w_fr_one_x(x, xP=None, k=None):
-    """Return Scharz-Cristoffel w-points from xP on real axis.
+    """Return Scharz-Cristoffel w-points from a single point on real axis.
     
-    This integrates along the singularities xP if passed.
-    w_fr_zeta, uses w_fr_x and add path along imaginary axis to reach genearl point zeta
-    
+    This integrates along the x-axis to x, segment-wise, to avoid
+    hitting a singularity (from just after to just before the next singularity)
+        
     Parameters
     ----------
     x: float (real)
@@ -234,14 +306,16 @@ def w_fr_one_x(x, xP=None, k=None):
 
 
 def w_fr_zeta(Zeta, xP, k, N=100, endclip=1e-4):
-    """Return integration of Scharz-Cristoffel argument at x given points (sigularities at xP and k).
+    """Return Schwarz-Cristoffel integral at arbitray Zeta in the upper half plane.
     
-    The integration path is a detaul in 3 branches that avoids passing closely by the
-    prevertices. This way, far less discrtization points are necessary.
-    Could be further improved.
-    First branch from 0 to 2j to avoid horizontal branch close to real axis with vertices.
-    Second branch horizontal to real part of zete (z1 + zeta.real).
-    Third path vertically from z1 + zeta.real to zeta.
+    The integration path is a detour along 3 branches to avoid passing
+    prevertices too closely. This way, far less discretization points are necessary.
+    
+    The 3 branches:
+    Branch 1:  0 --> 2j (moving away from the real axis with the prevertices)
+    Branch 2:  2j --> 2j + zeta.real. Horizotatally
+    Branch 3:  2j + zeta.real --> zeta. Vertically.
+        This last branch applies endclip to avoid landing on a prevertex.
     
     Parameters
     ----------
@@ -249,24 +323,26 @@ def w_fr_zeta(Zeta, xP, k, N=100, endclip=1e-4):
         Points in the z-plane
     xP: floats (real)
         points along real axis causing boundary in z-plane to bend.
-    k: float
-        exponents arg will be (x - xi) ** (-ki), where ki = alpha / pi (alpha inner angle between sections)
+    k: floats, same size as xP
+        in $\\Pi (zta - x_i) ^ {-k_i}$
     """    
     w  = []
     for zeta in Zeta.ravel():
         z1 = 2j       
-        # --- Vertical to get away from the pervertices take 2
+        # --- Vertical path from 0 to z1
         zf = subdiv(0, z1, xP, N=N)        
         zf_arg = sc_arg(zf, xP, k)
         If = integrate_trapz_complex(zf, zf_arg)
 
-        # --- Horizontal path from 1j * zeta.imag
+        # --- Horizontal path from z1 to z1 + zeta.imag
         zh = subdiv(zf[-1], zf[-1] + zeta.real, xP, N=N)
         zh_arg = sc_arg(zh, xP, k)
         Ih = integrate_trapz_complex(zh, zh_arg)
 
-        # --- Vertical path from zero
-        zv = subdiv(zh[-1], zeta, xP, N=N, endclip=endclip)
+        # --- Vertical path from zh[-1]
+        #zv = subdiv(zh[-1], zeta, xP, N=N, endclip=endclip)
+        zv = zh[-1].real + 1j * erf_grid(zh[-1].imag, zeta.imag, N=100, dense_side='both')
+        
         zv_arg = sc_arg(zv, xP, k)
         Iv = integrate_trapz_complex(zv, zv_arg)
         
@@ -276,7 +352,10 @@ def w_fr_zeta(Zeta, xP, k, N=100, endclip=1e-4):
 
 
 def z_fr_w(w, wA, wB, zA, zB):
-    """Map points in w-plain to final real-world z-plane.
+    """Map points in w-plane to final real-world z-plane.
+    
+    This is a linear transfromation like B = A p + q.
+    p and q are determined from wA, wB, zA and zB.
     
     Parameters
     ----------
@@ -298,7 +377,7 @@ def sc_segment(i, xP, k):
     i: int 
         segment number
     xP: floats (real)
-        points along x-axis, singularities
+        real prevertices
     k: floats (real)
         neg exponents SC argument ...(x - xi) ** (-ki) ...
     """
@@ -310,10 +389,25 @@ def sc_segment(i, xP, k):
 
 # --- Objective function for least-squares ---
 def objective(u, k, lengths):
+    """Return u values that make the reatio of edge-lengths in the ransform match the real-world ratios.
+
+    Parameters
+    ----------
+    u: iterable of floats same size as k
+        log of the postive addition to parameters (prevertices) to make sure
+        the successive scale factors keep their order. (xP[i] = xP[i - 1] + np.exp(ui))
+        See unpack(u)
+    k: floats (real)
+        neg exponents SC argument ...(x - xi) ** (-ki) ...
+    length iterable of floats
+        length of the edges of the shape to be tranformed so that
+        the ration between those lengths can be maintained by
+        optimization.
+    
+    Returns vector of computed length rations and desired rations
     """
-    u = np.log(scales), used to enforce positivity / better scaling
-    Returns vector of differences between computed and desired lengths
-    """
+    lengths = np.asarray(lengths)
+    
     # unpack u into χ-points: here we fix xB = 1.0, solve for xC, xD, xE
     xP = unpack_u(u)
     
@@ -322,10 +416,11 @@ def objective(u, k, lengths):
     for i in range(len(lengths)):
         L = sc_segment(i, xP, k)
         computed.append(np.abs(L)) # The length
-    # print("computed:" , computed)
     
-    computed_ratios = np.array([computed[1] / computed[0], computed[2] / computed[0]])
-    desired_ratios  = np.array([lengths[1] / lengths[0], lengths[2] / lengths[0]])
+    computed = np.array(computed)
+    
+    computed_ratios = computed[1:] / computed[0]
+    desired_ratios  = lengths[1:]  / lengths[0]
     
     print("computed_ratios ", computed_ratios)
     print("desired_ratio s  ", desired_ratios)
@@ -335,6 +430,13 @@ def objective(u, k, lengths):
 # %%
 
 def test_sc_mapping(case=1):
+    """Show the Scharz-Christoffel transformation for a set of shapes.
+    
+    Parameter
+    ---------
+    case: int
+        One of the cases
+    """
     # --- Sets of combinations of points along x and corners (k = alpha/pi values)
 
     if case == 0:
@@ -357,8 +459,14 @@ def test_sc_mapping(case=1):
         title="Ditch half cross section"
         xP = np.array([1, 2, 3, 4])
         k  = np.array([1, -1, 1, 1]) / 2
+    elif case == 5:
+        title = "Arbitrary shape"
+        xP = np.array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12])
+        k = 1 / np.array([np.inf, -4, 2, -4, 4, 2, 2, -4, 4, -2, 4, np.inf])
  
-    w = w_fr_x(xP, xP, k)
+    # Do the transformation
+    w = w_fr_zeta(xP + 0j, xP, k)
+    #w = w_fr_x(xP, xP, k)
 
     fig, ax = plt.subplots()
     ax.plot(w.real, w.imag, '.-')
@@ -368,10 +476,23 @@ def test_sc_mapping(case=1):
         ax.text(wi.real, wi.imag, f"{ip}", ha='left', va='bottom')
     ax.set_aspect(1)
     
-    plt.show()
-
     
-def main():
+def rectangular_ditch():
+    """Compute and show the stream and potential lines for a ditch cross section.
+    
+    The symmetrial half ditch cross-section has zero-head a vertical side
+    and a zero-head horizontal bottom through which water enters the ditch.
+    
+    This problem is sovled using the sine and Schwarz-Cristoffel conformal
+    transformation. But first the transformation is done from the Omega plane
+    to the zeta0-upper half plane to the zeta-upper half plane in which two
+    ditch-edges landed on two pervertices. From here the Schwarz-Cristoffel 
+    integral takes us to the w-plane in which the shape of the ditch is
+    corect but not its location and size and perhaps rotation. The last step, 
+    finalle, takes us from the w-plane to the real-world z-plane using a
+    linear transfromation that matches the corners of the ditch in the zeta-plane
+    to those in the z-plane.
+    """
     
     # --- Given angles / k_i ---
     # Example values for the corners B, C, D, E
@@ -457,18 +578,144 @@ def main():
     for ax in axs.ravel():
         ax.grid(True)
         ax.set_aspect(1)
-        #ax.legend(loc='best')
+        #ax.legend(loc='best') # Pictures too small for legend.
         
+    # --- Save picture
     images = '/Users/Theo/GRWMODELS/python/tools/analytic/images'
     fig.savefig(os.path.join(images, 'SC_ditch.png'))
         
     return
     
-if __name__ == '__main__':
-    #for case in [0, 1, 2, 3, 4]:
-    #    test_sc_mapping(case=case)
+def main():
+    """Compute and show the stream and potential lines for a ditch cross section.
     
-    main()
+    The symmetrial half ditch cross-section has zero-head a vertical side
+    and a zero-head horizontal bottom through which water enters the ditch.
+    
+    This problem is sovled using the sine and Schwarz-Cristoffel conformal
+    transformation. But first the transformation is done from the Omega plane
+    to the zeta0-upper half plane to the zeta-upper half plane in which two
+    ditch-edges landed on two pervertices. From here the Schwarz-Cristoffel 
+    integral takes us to the w-plane in which the shape of the ditch is
+    corect but not its location and size and perhaps rotation. The last step, 
+    finalle, takes us from the w-plane to the real-world z-plane using a
+    linear transfromation that matches the corners of the ditch in the zeta-plane
+    to those in the z-plane.
+    """
+
+    # --- The cross section is defined by these lenghts
+    lengths = np.array([2, 1,  1, 1, 1, 5]) # b, c, d, e
+    angs    = np.array([0, 70, 45, 20, 90, 180]) * np.pi / 180
+    
+    
+    zd = 0 + 0j
+    zDitch = [zd]
+    for le, an in zip(lengths, angs):
+        zd1 = zd + le * np.exp(1j * (np.pi + an))
+        zDitch.append(zd1)
+        zd = zd1
+    zDitch = np.array(zDitch)
+    zDitch = zDitch - zDitch[-2].real - 1j * zDitch[1].imag # F.real=0, B.imag=0
+    
+    fig, ax = plt.subplots()
+    ax.plot(zDitch.real, zDitch.imag)
+    
+    vecs = np.diff(zDitch)
+    k = np.angle(vecs[1:] / vecs[:-1]) / np.pi
+    
+    # --- initial prevertices   
+    xP = np.arange(len(k)) + 1.
+    
+    # --- transform to w (just to check)
+    wP = w_fr_zeta(xP, xP, k)
+    ax.plot(wP.real, wP.imag, 'ro-')
+
+ 
+    # --- Segment lengths used by the objective function which mathes segment-length ratios
+    segment_lengths = np.abs(zDitch[1:] - zDitch[:-1])[1:-1]     
+ 
+    # --- Initial guess ---
+    u0 = np.log(np.ones(len(xP) - 2))  # rough starting guesses for xC-xB, xD-xC, xE-xD
+    
+    # --- Solve with least squares ---
+    res = least_squares(objective, u0,
+                xtol=1e-13, ftol=1e-13, gtol=1e-13, max_nfev=200, method='lm', args=[k, segment_lengths])
+    print("Optimization success:", res.success, res.message)
+    print(res)
+
+    # --- the optimized points
+    xP = unpack_u(res.x)
+    print("xp:", xP)
+    
+    # --- Plot zeta, w and Z
+    fig, axs = plt.subplots(2, 2, figsize=(12, 7))
+    ax0, ax1, ax2, ax3 = axs.flatten()
+    
+    fig.suptitle("Schwarz-Cristoffel half-ditch X-section")
+
+    ax0.set(title="Omega-plane", xlabel='Phi', ylabel='Psi')    
+    ax1.set(title="zeta", xlabel='xi', ylabel='ypsilon')
+    ax2.set(title="w-plane", xlabel='u', ylabel='v')
+    ax3.set(title='z-plane', xlabel='x', ylabel='y')
+    
+    # --- Plot the xP points in the zeta plane
+    ax1.plot(xP.real, xP.imag, 'bo-', label='points xP')
+
+    # --- Compute the images w(xP) and show them in the w-plane
+    wP = w_fr_x(xP, xP, k)
+    ax2.plot(wP.real, wP.imag, 'bo-', label='xP --> w')
+    
+    # --- Plot these points together with the original ditch corner points
+    zP = z_fr_w(wP, wP[0], wP[1], zDitch[1], zDitch[2])
+    ax3.plot(zP.real, zP.imag, '-', label='zP (back transformed)')
+    ax3.plot(zDitch.real, zDitch.imag, '-', ms=12, mfc='none', label='original points')
+                
+    # --- From Omega to Z
+    eps = 1e-3
+    Q = 1.0
+    psi = np.linspace(1, 0, 21).clip(eps, 1 - eps) * Q # highest psi on top for convenience
+    phi = np.linspace(0, 2, 41).clip(eps, None) * Q
+    Phi, Psi = np.meshgrid(phi, psi)
+    Omega = (Phi + 1j * Psi) 
+    
+    zeta0 = zeta0_fr_omega(Omega, Q)
+    
+    # tell func to which points -1 and 1 will map
+    zeta  = zeta_fr_zeta0(zeta0, xP[0], xP[3])
+    
+    w     = w_fr_zeta(zeta, xP=xP, k=k, N=50, endclip=1e-3)
+    Z     = z_fr_w(w, wP[0], wP[1], zDitch[1], zDitch[2])
+    
+    ax0.plot(Omega.real,   Omega.imag,   'b', lw=0.35)
+    ax0.plot(Omega.real.T, Omega.imag.T, 'g', lw=0.35)    
+    ax1.plot(zeta.real,   zeta.imag,   'b', lw=0.35)
+    ax1.plot(zeta.real.T, zeta.imag.T, 'g', lw=0.35)
+    ax2.plot(w.real,   w.imag,   'b', lw=0.35)
+    ax2.plot(w.real.T, w.imag.T, 'g', lw=0.35)
+    ax3.plot(Z.real,   Z.imag,   'b', lw=0.35)
+    ax3.plot(Z.real.T, Z.imag.T, 'g', lw=0.35 )
+    
+    for ax in axs.ravel():
+        ax.grid(True)
+        ax.set_aspect(1)
+        #ax.legend(loc='best') # Pictures too small for legend.
+        
+    # --- Save picture
+    images = '/Users/Theo/GRWMODELS/python/tools/analytic/images'
+    fig.savefig(os.path.join(images, 'SC_ditch.png'))
+        
+    return
+    
+    
+if __name__ == '__main__':
+    
+    if False:
+        for case in [0, 1, 2, 3, 4, 5]:
+            test_sc_mapping(case=case)
+    if False:
+        rectangular_ditch()
+    if True:
+        main()
     
     plt.show()
 
