@@ -57,7 +57,7 @@ def get_pq(Afr, Bfr, Ato, Bto, test = False):
     
     return p, q
 
-def erf_grid(a, b, N=100, W=2.5, dense_side=None):
+def erf_grid(a, b, N=25, W=2.5, dense_side=None):
     """Return points between a and b concentrated near a and b.
 
     Parameters
@@ -96,6 +96,40 @@ def erf_grid(a, b, N=100, W=2.5, dense_side=None):
 
     return x[1:-1]
 
+
+def subdiv(A, B, xP, N=25, eps=1e-6, endclip=1e-4, show=False):
+
+    # parameter x ∈ [0,1]
+    alpha = np.linspace(0, 1, 100).clip(0, 1 - endclip)  # dense pre-grid
+    
+    # fysieke punten
+    Z = A + alpha * (B - A)
+    
+    # distance-based weight
+    w = np.min(np.abs(Z[:, None] - np.array(xP)[None, :]), axis=1) + eps
+    
+    # integrate 1/w
+    s = np.cumsum(1/w)
+    s /= s[-1]                       # normalize to [0,1]
+
+    # invert s(α): given s_k → α_k
+    
+    alpha_new = np.interp(np.linspace(0, 1, N+1), s, alpha)
+
+    # final points
+    Z_new = A + alpha_new * (B - A)
+    ds = np.abs(np.diff(Z_new))
+
+    if show:
+        fig, ax = plt.subplots()
+        ax.plot(xP, np.zeros_like(xP), 'o')
+        ax.plot(Z_new.real, Z_new.imag, '.')
+        plt.show()
+
+    return Z_new # , ds
+
+
+
 def integrate_trapz_complex(z, fz):
     """Return complex line integral ∫ f(z) dz along a polyline.
     
@@ -111,25 +145,6 @@ def integrate_trapz_complex(z, fz):
     fm = 0.5 * (fz[:-1] + fz[1:])
     dz = np.diff(z)
     return np.sum(fm * dz)
-
-
-# def sc_arg(Z, xP=None, k=None):
-#     """Return the argument of the Schwarz-Cristoffel expression.
-#     
-#     
-#     Parameters
-#     ----------
-#     Z: np.ndarray of complex | complex 
-#         Coordinates in the z-plane
-#     xP: scalars
-#         Points along real axis in z plane causing aburpt bending of polygon in w-plane
-#     k: scalars
-#         internal angles between successive polygon edges / pi
-#     """
-#     fvals = 1
-#     for xi, ki in zip(xP, k):
-#         fvals *= (Z - xi + 0j) ** (-ki)
-#     return fvals
 
 
 def sc_arg(Z, xP, k):
@@ -218,7 +233,7 @@ def w_fr_one_x(x, xP=None, k=None):
     return w
 
 
-def w_fr_zeta(Zeta, xP, k):
+def w_fr_zeta(Zeta, xP, k, N=100, endclip=1e-4):
     """Return integration of Scharz-Cristoffel argument at x given points (sigularities at xP and k).
     
     The integration path is a detaul in 3 branches that avoids passing closely by the
@@ -241,17 +256,17 @@ def w_fr_zeta(Zeta, xP, k):
     for zeta in Zeta.ravel():
         z1 = 2j       
         # --- Vertical to get away from the pervertices take 2
-        zf = 0 + 1j * erf_grid(0, z1.imag, dense_side='both')
+        zf = subdiv(0, z1, xP, N=N)        
         zf_arg = sc_arg(zf, xP, k)
         If = integrate_trapz_complex(zf, zf_arg)
 
         # --- Horizontal path from 1j * zeta.imag
-        zh = zf[-1] + erf_grid(0, zeta.real, dense_side='both')
+        zh = subdiv(zf[-1], zf[-1] + zeta.real, xP, N=N)
         zh_arg = sc_arg(zh, xP, k)
         Ih = integrate_trapz_complex(zh, zh_arg)
 
         # --- Vertical path from zero
-        zv = zh[-1] + 1j * erf_grid(0, zeta.imag - z1.imag, dense_side='both')
+        zv = subdiv(zh[-1], zeta, xP, N=N, endclip=endclip)
         zv_arg = sc_arg(zv, xP, k)
         Iv = integrate_trapz_complex(zv, zv_arg)
         
@@ -315,30 +330,6 @@ def objective(u, k, lengths):
     print("computed_ratios ", computed_ratios)
     print("desired_ratio s  ", desired_ratios)
     return computed_ratios - desired_ratios
-    
-    
-def phase(z):
-    return np.angle(z)   # in (-pi, pi]
-
-def detect_phase_jumps(Z, F, threshold=np.pi/2):
-    """
-    Detect large phase jumps (branch cuts) in a 2D complex field F(Z).
-    Returns mask of same shape as Z/F.
-    """
-    ph = np.angle(F)
-
-    # robust wrapped phase difference (mod 2π)
-    dpx = np.abs(np.angle(np.exp(1j * (ph[:, 1:] - ph[:, :-1]))))   # (M, N-1)
-    dpy = np.abs(np.angle(np.exp(1j * (ph[1:, :] - ph[:-1, :]))))   # (M-1, N)
-
-    # initialize mask
-    mask = np.zeros_like(ph, dtype=bool)
-
-    # place the differences back into full grid shape
-    mask[:, 1:] |= dpx > threshold
-    mask[1:, :] |= dpy > threshold
-
-    return mask
 
 
 # %%
@@ -410,16 +401,15 @@ def main():
     print("xp:", xP)
     
     # --- Plot zeta, w and Z
-    fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(18, 6))
-    fig.suptitle("Schwarz-Cristoffel half-ditch X-section")
+    fig, axs = plt.subplots(2, 2, figsize=(12, 7))
+    ax0, ax1, ax2, ax3 = axs.flatten()
     
+    fig.suptitle("Schwarz-Cristoffel half-ditch X-section")
+
+    ax0.set(title="Omega-plane", xlabel='Phi', ylabel='Psi')    
     ax1.set(title="zeta", xlabel='xi', ylabel='ypsilon')
     ax2.set(title="w-plane", xlabel='u', ylabel='v')
     ax3.set(title='z-plane', xlabel='x', ylabel='y')
-    
-    ax1.grid()
-    ax2.grid()
-    ax3.grid()
     
     # --- Plot the xP points in the zeta plane
     ax1.plot(xP.real, xP.imag, 'bo-', label='points xP')
@@ -430,8 +420,8 @@ def main():
     
     # --- Plot these points together with the original ditch corner points
     zP = z_fr_w(wP, wP[0], wP[2], BE[0], BE[2])
-    ax3.plot(zP.real, zP.imag, 'bo-', label='zP (back transformed)')
-    ax3.plot(AF.real, AF.imag, 'go-', ms=12, mfc='none', label='original points')
+    ax3.plot(zP.real, zP.imag, '-', label='zP (back transformed)')
+    ax3.plot(AF.real, AF.imag, '-', ms=12, mfc='none', label='original points')
     
     # --- Try an arbitrary polygon in the zeta plane
     # zetaPgon = np.array([0 + 1j, 2 + 2j, 2 + 3j, 0 + 4j, -2 + 3j, -2 + 2j, 0 + 1j])
@@ -446,18 +436,17 @@ def main():
     eps = 1e-3
     Q = 1.0
     psi = np.linspace(1, 0, 21).clip(eps, 1 - eps) * Q # highest psi on top for convenience
-    # psi = np.linspace(1, 0, 21)[1:20] * Q # highest psi on top for convenience
-    
-    phi = np.linspace(0, 2, 41).clip(eps, None) * Q
     phi = np.linspace(0, 2, 41).clip(eps, None) * Q
     Phi, Psi = np.meshgrid(phi, psi)
     Omega = (Phi + 1j * Psi) 
     
     zeta0 = zeta0_fr_omega(Omega, Q)
     zeta  = zeta_fr_zeta0(zeta0, xP[0], xP[2])
-    w     = w_fr_zeta(zeta, xP=xP, k=k)
+    w     = w_fr_zeta(zeta, xP=xP, k=k, N=50, endclip=1e-3)
     Z     = z_fr_w(w, wP[0], wP[2], BE[0], BE[2])
     
+    ax0.plot(Omega.real,   Omega.imag,   'b', lw=0.35)
+    ax0.plot(Omega.real.T, Omega.imag.T, 'g', lw=0.35)    
     ax1.plot(zeta.real,   zeta.imag,   'b', lw=0.35)
     ax1.plot(zeta.real.T, zeta.imag.T, 'g', lw=0.35)
     ax2.plot(w.real,   w.imag,   'b', lw=0.35)
@@ -465,7 +454,7 @@ def main():
     ax3.plot(Z.real,   Z.imag,   'b', lw=0.35)
     ax3.plot(Z.real.T, Z.imag.T, 'g', lw=0.35 )
     
-    for ax in [ax1, ax2, ax3]:
+    for ax in axs.ravel():
         ax.grid(True)
         ax.set_aspect(1)
         #ax.legend(loc='best')
