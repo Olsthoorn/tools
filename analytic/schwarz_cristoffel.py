@@ -30,26 +30,33 @@ def unpack_u(u):
     return xP
 
 
-def get_pq(Afr, Bfr, Ato, Bto, test = False):
-    """Return p and q to transform Afr, Bfr to An Bn.
-    
-    This is the linear transformation of the form
-    Afr p + q = Ato
-    
-    Where Afr and Ato are complex numbers,
-    q is a translation (complex number)
-    q is the rotation and scaling (complex number) 
-    
+def get_pq(Afr, Bfr, Ato, Bto, test=False):
+    """
+    Return p and q for the linear complex mapping
+
+        z ↦ p*z + q
+
+    such that Afr ↦ Ato and Bfr ↦ Bto.
+
     Parameters
     ----------
-    An, Bn: complex numbers (coordinates)
-        Coordinates of the new points
-    A, B: complex numbers (coordinates)
-        Coordinates of the old points
-    
-    Usage:
-    ------
-    Ato = Afr * p  + q
+    Afr, Bfr : complex
+        Points in the original domain.
+    Ato, Bto : complex
+        Target points after transformation.
+
+    Returns
+    -------
+    p, q : complex
+        Scale+rotation (p) and translation (q).
+
+    Examples
+    --------
+    >>> p, q = get_pq(1+2j, 3+0.5j, 4+2j, 5+2j)
+    >>> abs(p - (0.32+0.24j)) < 1e-12
+    True
+    >>> abs(q - (4.16+1.12j)) < 1e-12
+    True
     """
     p = (Ato - Bto) / (Afr - Bfr)
     q = (Ato * Bfr - Afr * Bto) / (Bfr - Afr)
@@ -61,25 +68,76 @@ def get_pq(Afr, Bfr, Ato, Bto, test = False):
     
     return p, q
 
-def erf_grid(a, b, N=25, W=2.5, dense_side=None):
-    """Return points between a and b concentrated near a and b.
+class AffineMap:
+    """
+    The unique affine map z = p * w + q that sends wA → zA and wB → zB.
     
-    The density of the points is more and more increased near the
-    ends a and b of the segment a-b. Using density_side one can
-    choose the density of points to be at the left side, right side of both (default).
-    Uses the erf fucntion to densify the points near the ends.
-    How dense is regulated using W.
+    After construction, the object is callable:
+        f = AffineMap(wA, wB, zA, zB)
+        z = f(w)        # maps scalar or array-like
+    """
+    def __init__(self, wA, wB, zA, zB):
+        if np.isclose(wA, wB):
+            raise ValueError(f"wA and wB must be distinct. Got wA={wA}, wB={wB}.")
 
+        self.p = (zA - zB) / (wA - wB)
+        self.q = zA - self.p * wA
+
+    def __call__(self, w):
+        """Apply the affine map to w (scalar or array-like)."""
+        return self.p * np.asarray(w) + self.q
+
+    def inverse(self, z):
+        """Evaluate the inverse affine map at z."""
+        return (z - self.q) / self.p
+    
+    def inv_map(self):
+        """If you *do* want the inverse *as a function object*, still possible."""
+        p_inv = 1 / self.p
+        q_inv = -self.q / self.p
+        return lambda z: p_inv * z + q_inv
+
+    def __repr__(self):
+        return f"AffineMap(p={self.p}, q={self.q})"
+
+
+def erf_grid(a, b, N=25, W=2.5, dense_side=None):
+    """
+    Return points between a and b concentrated near a and b.
+    
     Parameters
     ----------
     a, b: floats
         boundary of segment along the real axis
     N: int
         Number of points
-    W: float, default 2..5
-        max min value defined by (b - a) * erf(W)
-    dense_side: str | None default = 'both'
-        which side has dense coordinates ('left', 'right' or 'both')?
+    W: float, default 2.5
+        controls density
+    dense_side: str | None
+        which side has dense coordinates ('left', 'right', 'both')
+    
+    Returns
+    -------
+    np.ndarray
+    
+    Examples
+    --------
+    >>> x = erf_grid(0, 1, N=5, dense_side='both')
+    >>> len(x)
+    5
+    >>> 0 <= x[0] < x[-1] <= 1
+    True
+
+    >>> x_left = erf_grid(0, 1, N=5, dense_side='left')
+    >>> x_left[0] > 0  # first point slightly away from a
+    True
+
+    >>> x_right = erf_grid(0, 1, N=5, dense_side='right')
+    >>> x_right[-1] < 1  # last point slightly before b
+    True
+
+    >>> np.all(np.diff(x) > 0)
+    True
     """
     valid = {'l': 'L', 'r': 'R', 'b': 'B'}
 
@@ -128,7 +186,28 @@ def subdiv(A, B, xP, N=25, eps=1e-6, endclip=1e-4, show=False):
     endclip: small int
         Prevents the line AB to land on a prevertex.
     show: bool
-        allows showing the subdivisions.       
+        allows showing the subdivisions.
+        
+    Examples
+    --------
+    A simple subdivision with one prevertex in the middle::
+
+    >>> Z = subdiv(0+0j, 1+0j, [0.5], N=4)
+    >>> len(Z)
+    5
+    >>> Z[0]
+    0j
+    >>> Z[-1]
+    (1+0j)
+
+    The spacing is finer near the prevertex 0.5::
+
+    >>> ds = np.abs(np.diff(Z))
+    >>> ds[1] < ds[0]      # just left of 0.5 is tighter than near 0.0
+    True
+    >>> ds[2] < ds[0]      # just right of 0.5 also tighter
+    True
+    
     """
     # parameter x ∈ [0,1]
     alpha = np.linspace(0, 1, 100).clip(0, 1 - endclip)  # dense pre-grid
@@ -197,6 +276,38 @@ def sc_arg(Z, xP, k):
     k: ierable of floats. Some length as xP
         the inner angles between successive edges of the domain divided by pi
 
+    Examples
+    --------
+    With all exponents k = 0 the result is identically 1::
+
+    >>> Z = np.array([0+1j, 1+1j])
+    >>> sc_arg(Z, [0, 2], [0, 0])
+    array([1.+0.j, 1.+0.j])
+
+    With a single prevertex the function reduces to (z - x)^(-k)::
+
+    >>> Z = np.array([1+1j, 2+1j])
+    >>> out = sc_arg(Z, [0], [1])
+    >>> expected = 1 / (Z - 0)
+    >>> np.allclose(out, expected)
+    True
+
+    The function is multiplicative over prevertices::
+
+    >>> Z = np.array([1+1j])
+    >>> s1 = sc_arg(Z, [0], [1])
+    >>> s2 = sc_arg(Z, [2], [2])
+    >>> combined = sc_arg(Z, [0, 2], [1, 2])
+    >>> np.allclose(combined, s1 * s2)
+    True
+
+    Output shape matches input shape::
+
+    >>> Z = np.array([1+1j, 2+2j])
+    >>> out = sc_arg(Z, [0], [1])
+    >>> out.shape == Z.shape
+    True
+
     """
     f_total = np.ones_like(Z, dtype=complex)
 
@@ -231,14 +342,15 @@ def zeta0_fr_omega(omega, Q):
     """
     return np.sin(1j * np.pi / Q * (omega + 0j) + np.pi / 2)
 
+
 def zeta_fr_zeta0(zeta0, xP0, xP1):
     """Linearly map zeta_0 to zeta xP0 -> zeta0=-1, xP1-> zeta0=+1 for arcsin.
     
     In zeta0-plane the points -1 and 1 form two prevertices (of choice) this transoformation
     moves -1 and 1 in the zeta0 plane to xp0 and xP1 in the zeta_plane.    
     """
-    p, q = get_pq(-1, 1, xP0, xP1)
-    return zeta0 * p + q
+    f = AffineMap(-1, 1, xP0, xP1)
+    return f(zeta0)
     
 def w_fr_x(X, xP=None, k=None):
     r"""Return the w-plane coordinates of the points X along the real zeta-axis.
@@ -306,26 +418,43 @@ def w_fr_one_x(x, xP=None, k=None):
 
 
 def w_fr_zeta(Zeta, xP, k, N=100, endclip=1e-4):
-    """Return Schwarz-Cristoffel integral at arbitray Zeta in the upper half plane.
-    
-    The integration path is a detour along 3 branches to avoid passing
-    prevertices too closely. This way, far less discretization points are necessary.
-    
-    The 3 branches:
-    Branch 1:  0 --> 2j (moving away from the real axis with the prevertices)
-    Branch 2:  2j --> 2j + zeta.real. Horizotatally
-    Branch 3:  2j + zeta.real --> zeta. Vertically.
-        This last branch applies endclip to avoid landing on a prevertex.
-    
+    """
+    Return Schwarz-Cristoffel integral at arbitrary Zeta in the upper half plane.
+
     Parameters
     ----------
-    Z np.array of complex | complex
+    Zeta : array_like of complex
         Points in the z-plane
-    xP: floats (real)
-        points along real axis causing boundary in z-plane to bend.
-    k: floats, same size as xP
-        in $\\Pi (zta - x_i) ^ {-k_i}$
-    """    
+    xP : array_like of floats
+        Prevertices along real axis
+    k : array_like of floats
+        SC exponents at prevertices
+    N : int
+        Number of subdivisions for each segment
+    endclip : float
+        Small offset to avoid landing exactly on a prevertex
+
+    Returns
+    -------
+    np.ndarray of complex
+        SC integral values at Zeta
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> Z = np.array([0+0j, 1+1j])
+    >>> xP = np.array([0.5])
+    >>> k = np.array([0.5])
+    >>> w = w_fr_zeta(Z, xP, k, N=10)
+    >>> isinstance(w, np.ndarray)
+    True
+    >>> w.shape == Z.shape
+    True
+    >>> np.all(np.iscomplex(w))
+    True
+    >>> w[0]  # integration starts at 0
+    0j
+    """
     w  = []
     for zeta in Zeta.ravel():
         z1 = 2j       
@@ -334,41 +463,44 @@ def w_fr_zeta(Zeta, xP, k, N=100, endclip=1e-4):
         zf_arg = sc_arg(zf, xP, k)
         If = integrate_trapz_complex(zf, zf_arg)
 
-        # --- Horizontal path from z1 to z1 + zeta.imag
+        # --- Horizontal path from z1 to z1 + zeta.real
         zh = subdiv(zf[-1], zf[-1] + zeta.real, xP, N=N)
         zh_arg = sc_arg(zh, xP, k)
         Ih = integrate_trapz_complex(zh, zh_arg)
 
         # --- Vertical path from zh[-1]
-        #zv = subdiv(zh[-1], zeta, xP, N=N, endclip=endclip)
         zv = zh[-1].real + 1j * erf_grid(zh[-1].imag, zeta.imag, N=N, dense_side='both')
-        
         zv_arg = sc_arg(zv, xP, k)
         Iv = integrate_trapz_complex(zv, zv_arg)
         
-        # --- Total path
         w.append(If + Ih + Iv)
     return np.array(w).reshape(Zeta.shape)
 
 
-def z_fr_w(w, wA, wB, zA, zB, *, eps=1e-14):
-    """Map points in w-plane to the final z-plane using a linear map z = p w + q."""
+def z_fr_w(w, wA, wB, zA, zB):
+    """Return the affine map sending wA→zA and wB→zB, applied to w.
+
+    This computes the unique linear map z = p*w + q such that:
+    - z(wA) = zA
+    - z(wB) = zB
+
+    Parameters
+    ----------
+    w : scalar or array-like
+        Points in the w-plane to map.
+    wA, wB : complex or float
+        Two distinct points in the w-plane.
+    zA, zB : complex
+        Corresponding points in the final z-plane.
+
+    Returns
+    -------
+    complex or ndarray of complex
+        The mapped points.
+    """
+    f = AffineMap(wA, wB ,zA, zB)
+    return f(w)
     
-    w = np.asarray(w, dtype=complex)
-
-    # Avoid division by tiny denominator
-    denom = wA - wB
-    if abs(denom) < eps:
-        raise ValueError(
-            f"wA and wB are too close (|wA - wB| = {abs(denom):.3e}). "
-            "Cannot form stable linear map."
-        )
-
-    p = (zA - zB) / denom
-    q = zA - p * wA
-
-    return p * w + q
-
 
 def sc_segment(i, xP, k):
     """"Return integrate between xP[i] and xP[i+1], gets segment in z plane before rotation stretching and translation.
@@ -772,6 +904,72 @@ def some_shape(case_title='Ditch',
         
     return
     
+def get_line(P, vecs):
+    """Return a line as an array of complex numbers.
+    
+    Parameters
+    ----------
+    P: complex number
+        Start of line
+    vecs: iteratble of 2-tuples (len, angle)
+        Segments of the  line    
+    """
+    theta = 0.
+    line = [P]    
+    for l, ang in vecs:
+        theta += ang * np.pi / 180
+        P1 = P + l * np.exp(1j * theta)
+        line.append(P1)
+        P = P1
+    return np.array(line)
+
+def mirror_line(line):
+    """Return line horizontalle swapped around x=0.
+    
+    Parameters
+    ----------
+    line: np.array of complex numbers
+        The line to be mirrored
+    """
+    return -line.real + 1j * line.imag
+        
+def get_puppet():
+    """Return a dict with coordinates of a puppet used for demo"""
+    cheek, temple, hat = 1/ 6 * np.sqrt(3), 1/6, 1/4
+    up_arm, low_arm, up_leg, low_leg, foot = .8, .8, 1, 1, 1/3
+    body, neck = 0.9, 1/8
+
+    throat, forehead = 0 + 0j, 0 + 1j * (neck + cheek / 2 + temple)
+    
+    puppet = {
+        'head': {
+            'left':
+                get_line(throat,
+                    ((neck, 90), (cheek, -60), (temple, 60), (2 * cheek / np.sqrt(3), 90))),
+        },
+        'hat': {
+            'left':
+                get_line(forehead,
+                    ((hat, 0), (hat, 0), (hat, 180),
+                     (hat, -90), (hat, 90))),                     
+        },
+        'arm': { 
+            'left':
+                get_line(throat,
+                     ((up_arm, -45), (low_arm, +90))),
+        },
+        'leg': { 
+            'left':
+                get_line(throat,
+                    ((body, -90), (up_leg, 50), (low_leg, -90), (foot, 90))),
+        },
+    }
+    
+    for part in puppet.keys():
+        puppet[part]['right'] = mirror_line(puppet[part]['left'])
+    return puppet
+    
+    
 case = {0: {'case_title': "Rectangular ditch",
             'fig_name': "SC_rect_ditch.png",
             'lengths': np.array([2, 1,  1, 1, 2]),
@@ -795,6 +993,33 @@ case = {0: {'case_title': "Rectangular ditch",
             }
         }
 
+def show_puppet(throat=None, navel=None, ax=None):
+    """Show the puppet matching the new points"""
+    puppet = get_puppet()
+    
+    throat_puppet = puppet['head']['left'][0]
+    navel_puppet  = puppet['leg']['left'][1]
+    
+    if throat is not None and navel is not None:
+        f = AffineMap(throat_puppet, navel_puppet, throat, navel)
+
+    if ax is None:
+        fig, ax = plt.subplots()
+    
+    for part in puppet:
+        left  = puppet[part]['left']
+        right = puppet[part]['right']
+        
+        if throat is not None and navel is not None:
+            left  = f(left)
+            right = f(right)
+        
+        ax.plot(left.real, left.imag)
+        ax.plot(right.real, right.imag)
+        
+    ax.set_aspect(1)
+    return ax
+
 
 if __name__ == '__main__':
     
@@ -803,10 +1028,17 @@ if __name__ == '__main__':
             test_sc_mapping(case=case)
     if False:
         rectangular_ditch()
-    if True:        
+    if False:        
         some_shape(**case[0])
         some_shape(**case[1])
         some_shape(**case[2])
+
+    if True:
+        # --- show puppet and its tranform using get_pq(..)
+        puppet = get_puppet()
+        ax = show_puppet()
+        show_puppet(3 + 2j, 4 + 0j, ax=ax)
+        ax.set_title('Puppet and transform using get_pq()')
 
     plt.show()
 
