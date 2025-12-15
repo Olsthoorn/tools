@@ -1,4 +1,16 @@
 # %% [markdown]
+"""
+volledige SC-pipeline:
+van Ω-vlak → ζ-vlak → w-vlak → z-vlak, inclusief:
+
+    1. genereren van het Ω-rooster (φ + iψ)
+    2. transformatie naar ζ via the complex sine
+    3. berekenen prevertices xP via least squares
+    4. integreren w(ζ) via jouw 3-segment methode
+    5. affine mapping van w → z
+    6. eventueel ook de inverse richting (z → ζ of z → Ω)
+"""
+
 # 
 # Schwarz Cristoffel for ditch cross section
 
@@ -559,6 +571,9 @@ def objective(u, k, lengths):
     print("desired_ratio s  ", desired_ratios)
     return computed_ratios - desired_ratios
 
+       
+
+
 def test_sc_mapping(case=1):
     """Show the Scharz-Christoffel transformation for a set of shapes.
     
@@ -970,28 +985,6 @@ def get_puppet():
     return puppet
     
     
-case = {0: {'case_title': "Rectangular ditch",
-            'fig_name': "SC_rect_ditch.png",
-            'lengths': np.array([2, 1,  1, 1, 2]),
-            'angles' : np.array([180, 90, -90, 90, 90]) * np.pi / 180,
-            'ip1': 0,
-            'ip2': 2
-            },
-        1: {'case_title': "Ditch with polygon profile",
-            'fig_name': "SC_pgon_ditch.png",
-            'lengths': np.array([2, 1,  1, 1, 1, 5]),
-            'angles': np.array([180, 70, -25, -25, 70, 90]) * np.pi / 180,
-            'ip1': 0,
-            'ip2': 3,
-            },
-        2: {'case_title': "Ditch cuts in top of aquifer",
-            'fig_name': "SC_cutin_ditch.png",
-            'lengths': np.array([2, 1,  1, 1, 2, 5, 5]),
-            'angles': np.array([180, 45, -45, -45, 45, 90, 90]) * np.pi / 180,
-            'ip1': 0,
-            'ip2': 3,
-            }
-        }
 
 def show_puppet(throat=None, navel=None, ax=None):
     """Show the puppet matching the new points"""
@@ -1028,12 +1021,12 @@ if __name__ == '__main__':
             test_sc_mapping(case=case)
     if False:
         rectangular_ditch()
-    if False:        
+    if True:        
         some_shape(**case[0])
         some_shape(**case[1])
         some_shape(**case[2])
 
-    if True:
+    if False:
         # --- show puppet and its tranform using get_pq(..)
         puppet = get_puppet()
         ax = show_puppet()
