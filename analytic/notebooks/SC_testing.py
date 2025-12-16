@@ -70,8 +70,16 @@ import os, sys
 import numpy as np   #noqa E402
 import matplotlib.pyplot as plt  #noqa E402
 
+# %%
+k_i = np.array([0, -0.9])
+eps = 1e-6
+k_eff = max(0.0, max(k_i))
+eps = 1e-8  # or whatever you trust
+W = np.sqrt(np.log(1/((1-k_eff)*eps)) / (1-k_eff))
+print(W)
+# %%
 
-# In[ ]:
+0# In[ ]:
 
 
 """
@@ -121,7 +129,7 @@ def subdiv(A, B, xP, N=100):
         
 
 
-# In[58]:
+erf# In[58]:
 
 
 from scipy.interpolate import interp1d

@@ -298,10 +298,10 @@ def w_fr_one_x(x, xP=None, k=None, N=25, W=2.5):
     
     # --- Integrate from 0 along segments between singular points on real zeta axis
     xP_ext = np.hstack((0, xP, np.inf))
-    
-    for xa, xb in zip(xP_ext[:-1], xP_ext[1:]):
+        
+    for xa, xb, ka, kb in zip(xP_ext[:-1], xP_ext[1:], k[:-1], k[1:] ):
         if x < 0:
-            a, b = 0, x
+            a, b = 0, x       
             s = erf_grid(a, b, N=N, W=W,dense_side='left')
             argc = sc_arg(s, xP=xP, k=k)
             return integrate_trapz_complex(s, argc)
