@@ -280,6 +280,289 @@ Een andere mogelijkheid is om te beginnen met een grid in het
 De conforme afbeelding
 \end_layout
 
+\begin_layout Subsection
+Met gebruik 
+\begin_inset Formula $\exp$
+\end_inset
+
+-transformatie
+\end_layout
+
+\begin_layout Standard
+De doorsnede bevindt zich tussen 
+\begin_inset Formula $-D\le\Im\left(z\right)\le0$
+\end_inset
+
+ and 
+\begin_inset Formula $-\infty<\Re\left(z\right)<\infty$
+\end_inset
+
+.
+ De sloot met diepte 
+\begin_inset Formula $0$
+\end_inset
+
+ ligt tussen 
+\begin_inset Formula $x_{L}\le z=x+0i\le x_{R}$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+De transformatie
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\zeta_{1}=\exp\left(\frac{\pi}{D}z\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Punt 
+\begin_inset Formula $\zeta_{1}=D_{R}$
+\end_inset
+
+ en 
+\begin_inset Formula $\zeta_{1}=D_{L}$
+\end_inset
+
+ leggen op 
+\begin_inset Formula $\zeta=-1$
+\end_inset
+
+ en 
+\begin_inset Formula $\zeta=+1$
+\end_inset
+
+ leggen
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\zeta=p\zeta_{1}+q
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Dan terug transformeren
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\zeta_{3}=\arcsin\zeta+\frac{\pi}{2}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Terug roteren
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\Omega=-i\frac{Q}{\pi}\zeta_{3}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Naar 
+\begin_inset Formula $\Omega$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\Omega=-i\frac{Q}{\pi}\left(\arcsin\left(p\exp\left(\frac{\pi}{D}z\right)+q\right)+\frac{\pi}{2}\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+p & =\frac{2}{\zeta_{L}-\zeta_{R}}\\
+q & =-\left[\frac{\zeta_{L}+\zeta_{R}}{\zeta_{L}-\zeta_{R}}\right]
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+z=\frac{D}{\pi}\ln\left(\frac{\sin\left(-i\frac{\pi}{Q}\Omega-\frac{\pi}{2}\right)-q}{p}\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\Omega=-i\frac{Q}{\pi}\left(\arcsin\left(p\exp\left(\frac{\pi}{D}z\right)+q\right)+\frac{\pi}{2}\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Asymptotisch gedrag (iQ zal wel weg moeten):
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\Omega_{z\to\+\infty}=\frac{Q}{H}z+\left(\frac{Q}{\pi}\ln\left(2p\right)+iQ\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Met gebruik van de 
+\begin_inset Formula $\sin$
+\end_inset
+
+-transformatie
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\zeta_{0}=i\frac{\pi}{D}+\frac{\pi}{2}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\zeta_{1}=\sin\left(i\frac{\pi}{D}z+\frac{\pi}{2}\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\zeta=p\zeta_{1}+q
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\zeta_{3}=\arcsin\zeta
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+\Omega & =-i\frac{Q}{\pi}\zeta_{3}+i\frac{Q}{2}\\
+ & =-i\frac{Q}{\pi}\left(\zeta_{3}-\frac{\pi}{2}\right)
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\Omega=-i\frac{Q}{\pi}\left(\arcsin\left(p\sin\left(i\frac{\pi}{D}z+\frac{\pi}{2}\right)+q\right)-\frac{\pi}{2}\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+z=-i\frac{D}{\pi}\left[\arcsin\left(\frac{\sin\left(-i\frac{\pi}{Q}\Omega+\frac{\pi}{2}\right)-q}{p}\right)-\frac{\pi}{2}\right]
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Laat zien
+\end_layout
+
+\begin_layout Standard
+Sloot tussen 
+\begin_inset Formula $x_{L}$
+\end_inset
+
+ en 
+\begin_inset Formula $x_{r}$
+\end_inset
+
+ Complexe punten 
+\begin_inset Formula $D_{L}$
+\end_inset
+
+en 
+\begin_inset Formula $D_{R}$
+\end_inset
+
+.
+\end_layout
+
 \begin_layout Standard
 Het nu voorliggende iets eenvoudiger probleem kan worden opgelost met een conforme transformatie zonder de Scharz-Christoffentransformatie,
  met alleen wat schuiven en de sinus-transformatie,
@@ -591,6 +874,17 @@ Voegen we al deze stappen samen dan krijgen we de volgende transformatie in een 
 \end_layout
 
 \begin_layout Standard
+\begin_inset Formula 
+\[
+\Omega=-i\frac{Q}{\pi}\left(\arcsin\left(p\exp\left(i\frac{\pi}{D}z+\frac{\pi}{2}\right)+q\right)+\frac{\pi}{2}\right)+iQ
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
 waarin 
 \begin_inset Formula $p$
 \end_inset
@@ -837,7 +1131,7 @@ Potentiaal langs de top en basis van de aquifer
 \end_layout
 
 \begin_layout Section
-En formule voor de intredeweerstand
+Een formule voor de intredeweerstand
 \end_layout
 
 \begin_layout Standard

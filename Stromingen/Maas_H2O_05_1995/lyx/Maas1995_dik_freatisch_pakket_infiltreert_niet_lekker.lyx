@@ -1765,6 +1765,36 @@ z=-iH+\frac{H}{\pi}\ln\left[\frac{\sin\left(\pi\left(-i\frac{\Omega}{Q}+\frac{1}
 
 \end_layout
 
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\Omega=-iQ\left(\frac{1}{\pi}\arcsin\left(p\exp\left(\left(z+iH\right)\frac{\pi}{H}\right)+q\right)-\frac{1}{2}\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Asympototisch gedrag voor 
+\begin_inset Formula $z\to\infty$
+\end_inset
+
+ is
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\Omega_{z\to\+\infty}=\frac{Q}{H}z+\left(\frac{Q}{\pi}\ln\left(2p\right)+iQ\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
 \begin_layout Subsection
 Resultaten
 \end_layout
@@ -1981,7 +2011,7 @@ De potentiaal op
 \end_inset
 
  krijgen door de waarde die de formule berekent op 
-\begin_inset Formula $x=\infty$
+\begin_inset Formula $x=-\infty$
 \end_inset
 
  van 
