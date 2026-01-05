@@ -277,15 +277,16 @@ Een andere mogelijkheid is om te beginnen met een grid in het
 \end_layout
 
 \begin_layout Section
-De conforme afbeelding
+Conforme afbeelding van sloot in een doorsnede
 \end_layout
 
 \begin_layout Subsection
-Met gebruik 
+Oneindig lange doorsnede.
+ Tranformatie met de 
 \begin_inset Formula $\exp$
 \end_inset
 
--transformatie
+-functie)
 \end_layout
 
 \begin_layout Standard
@@ -453,12 +454,23 @@ Asymptotisch gedrag (iQ zal wel weg moeten):
 
 \end_layout
 
-\begin_layout Subsection
-Met gebruik van de 
-\begin_inset Formula $\sin$
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\boxed{\Omega(z)=\frac{Q}{D}z+\frac{Q}{\pi}\ln(2p)-iQ*\mathcal{O}!\left(e^{-2\frac{\pi}{D}z}\right),\qquad z\to\infty}
+\]
+
 \end_inset
 
--transformatie
+
+\end_layout
+
+\begin_layout Subsection
+Sloot in half-oneindige doorsnede (transformatie met gebruik van de 
+\begin_inset Formula $\text{sin}$
+\end_inset
+
+-functie)
 \end_layout
 
 \begin_layout Standard
@@ -488,6 +500,18 @@ Met gebruik van de
 \[
 \zeta=p\zeta_{1}+q
 \]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+p & =\frac{2}{\zeta_{R}-\zeta_{L}}\\
+q & =-\left[\frac{\zeta_{R}+\zeta_{L}}{\zeta_{R}-\zeta_{L}}\right]
+\end{align*}
 
 \end_inset
 
@@ -539,391 +563,858 @@ z=-i\frac{D}{\pi}\left[\arcsin\left(\frac{\sin\left(-i\frac{\pi}{Q}\Omega+\frac{
 
 \end_layout
 
+\begin_layout Standard
+Het asymptotisch gedrag is
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\boxed{\Omega(z)=\frac{Q}{D}z+\frac{Q}{\pi}\ln p+\mathcal{O}\left(e^{-2\frac{\pi}{D}z}\right),\qquad z\to\infty}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Wanneer we de 
+\begin_inset Formula $x$
+\end_inset
+
+-as op b laten beginnen (rechterzijde van de sloot),
+ dan is de potentiaal verlaging door partial penetration
+\begin_inset Newline newline
+\end_inset
+
+
+\begin_inset Formula 
+\[
+\Delta\Phi=\frac{Q}{D}b+\frac{Q}{\pi}\ln p
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\frac{\Delta\Phi}{Q}=\frac{b}{D}+\frac{\ln p}{\pi}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\frac{\Delta\phi}{Q}=\frac{b}{kD}+\frac{\ln p}{k\pi}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Deze 
+\begin_inset Formula $\Delta\Phi$
+\end_inset
+
+ kan gelijk gezet worden aan een extra te doorstromen pakketlente 
+\begin_inset Formula $\Delta L$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\Delta\Phi=\Delta L\frac{Q}{D}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\Delta L\frac{Q}{D}=\frac{Q}{D}b+\frac{Q}{\pi}\ln p
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\Delta L=b+\frac{D}{\pi}\ln p
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+maar ook
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\Delta L=\Delta\Phi\frac{D}{Q}=\frac{\Delta\phi}{Q}kD
+\]
+
+\end_inset
+
+
+\backslash
+frac 
+\end_layout
+
 \begin_layout Subsection
-Laat zien
+Asymptotisch gedrag
 \end_layout
 
 \begin_layout Standard
-Sloot tussen 
-\begin_inset Formula $x_{L}$
+\begin_inset Float figure
+placement document
+alignment center
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\begin_inset Graphics
+	filename /Users/Theo/GRWMODELS/python/mf6lab/Projects/GGOR/doc/images/w_entry_dphi-dL.png
+	width 70text%
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+Verlaging door onttrekking met extra verlaging 
+\begin_inset Formula $d\Phi=k\,d\phi$
+\end_inset
+
+ door onvolkomenheid en de equivalente extra lengte 
+\begin_inset Formula $\Delta L$
+\end_inset
+
+ te doorstromen pakket met dezelfde weerstand.
+ De extra verlaging 
+\begin_inset Formula $d\Phi=Qb/D+Q/\pi\ln p$
 \end_inset
 
  en 
-\begin_inset Formula $x_{r}$
-\end_inset
-
- Complexe punten 
-\begin_inset Formula $D_{L}$
-\end_inset
-
-en 
-\begin_inset Formula $D_{R}$
+\begin_inset Formula $\Delta L=b+D/\pi\ln p$
 \end_inset
 
 .
-\end_layout
-
-\begin_layout Standard
-Het nu voorliggende iets eenvoudiger probleem kan worden opgelost met een conforme transformatie zonder de Scharz-Christoffentransformatie,
- met alleen wat schuiven en de sinus-transformatie,
- zoals uitgelegd in Verruijt (1970).
- We hebben nu een half-oneindige aquifer met 
-\begin_inset Formula $0\le x\le\infty$
-\end_inset
-
- en 
-\begin_inset Formula $-H\le y\le0$
-\end_inset
-
- en een sloot tussen vaste coördinaten 
-\begin_inset Formula $x_{sL}\le x\le x_{sR}$
-\end_inset
-
- zodat de slootbreedte 
-\begin_inset Formula $b=x_{sR}-x_{sL}$
-\end_inset
-
- contant is.
- Het enige dat we van situatie tot situatie veranderen is de pakketdikte 
-\begin_inset Formula $H$
-\end_inset
-
-.
- We zorgen ervoor dat 
-\begin_inset Formula $x_{SL}>3H$
-\end_inset
-
- in alle situaties.
- Voor de controle zullen we de doorsnedes tekenen en voor de beoordeling berekenen we de potentiaal 
-\begin_inset Formula $\Phi$
-\end_inset
-
- in het midden van het pakket tegen de linker zijde van de doorsnede.
- Dit is gelijk aan de stijghoogte die Kees in de sloot berekende,
- namelijk de waarde boven het vaste peil bij Kees op 
-\begin_inset Formula $x=-\infty$
-\end_inset
-
-.
-\end_layout
-
-\begin_layout Standard
-We nemen de volgende stappen om dit probleem op te lossen.
-\end_layout
-
-\begin_layout Standard
-Eerste kantelen we de doorsnede om de oorsprong een kwart slag tegen de klok in.
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\[
-\zeta_{1}=iz
-\]
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-Dan verschalen we 
-\begin_inset Formula $\zeta_{1}$
-\end_inset
-
-zodanig dat punt 
-\begin_inset Formula $\zeta_{1}=0\rightarrow\zeta_{2}=-\frac{\pi}{2}$
-\end_inset
-
- en 
-\begin_inset Formula $\zeta_{1}=H\rightarrow\zeta_{2}=+\frac{\pi}{2}$
-\end_inset
-
- komen te liggen
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\[
-\zeta_{2}=\frac{\pi}{H}\left(iz-\frac{H}{2}\right)
-\]
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-Door hiervan de sinus te nemen wordt 
-\begin_inset Formula $\zeta_{2}=-\frac{\pi}{2}\rightarrow\zeta=-1$
-\end_inset
-
- en 
-\begin_inset Formula $\zeta_{2}=+\frac{\pi}{2}\rightarrow\zeta=+1$
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\[
-\zeta=\sin\left(\frac{\pi}{H}\left(iz-\frac{H}{2}\right)\right)
-\]
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-De volgende stap is om 
-\begin_inset Formula $\zeta$
-\end_inset
-
- te schalen en te verschuiven naar 
-\begin_inset Formula $\zeta_{3}$
-\end_inset
-
-,
- waarbij linker en rechter oever van de sloot,
- 
-\begin_inset Formula $\zeta_{L}$
-\end_inset
-
- en 
-\begin_inset Formula $\zeta_{R}$
-\end_inset
-
- op 
-\begin_inset Formula $\zeta_{3}=-1$
-\end_inset
-
- en 
-\begin_inset Formula $\zeta_{3}=+1$
-\end_inset
-
- komen te liggen.
- Dit kan met een transformatie
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\begin{align*}
-p\zeta_{L}+q & =-1\\
-p\zeta_{R}+q & =+1
-\end{align*}
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-Dit geeft
-\end_layout
-
-\begin_layout Standard
-,
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\begin{align*}
-p & =\frac{2}{\zeta_{R}-\zeta_{L}}\\
-q & =-\left[\frac{\zeta_{R}+\zeta_{L}}{\zeta_{R}-\zeta_{L}}\right]
-\end{align*}
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-zodat
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\[
-\zeta_{3}=p\zeta+q
-\]
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-Met de arscin hiervan klappen we de tak rechts van de sloot en de hele rand links van de sloot omhoog en gaan de hoekpunten van de sloot in 
-\begin_inset Formula $\zeta_{3}$
-\end_inset
-
-,
- namelijk 
-\begin_inset Formula $-1$
-\end_inset
-
- en 
-\begin_inset Formula $+1$
-\end_inset
-
- over in 
-\begin_inset Formula $\zeta_{4}\left(\zeta_{3}=-1\right)=-\frac{\pi}{2}$
-\end_inset
-
- en 
-\begin_inset Formula $\zeta_{4}\left(\zeta_{3}=+1\right)=+\frac{\pi}{2}$
-\end_inset
-
-.
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\[
-\zeta_{4}=\arcsin\left(\zeta_{3}\right)=\arcsin\left(p\zeta+q\right)
-\]
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-Nu moeten we 
-\begin_inset Formula $\zeta_{4}$
-\end_inset
-
- schalen zodanig dat 
-\begin_inset Formula $\zeta_{4}=-\frac{\pi}{2}$
-\end_inset
-
- en 
-\begin_inset Formula $\zeta_{4}=\frac{\pi}{2}$
-\end_inset
-
- overgaan in respectievelijk 
-\begin_inset Formula $-Q$
-\end_inset
-
- en 0
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\[
-\zeta_{5}=\frac{Q}{\pi}\left(\zeta_{4}-\frac{\pi}{2}\right)
-\]
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-Wanneer we dit vlak rechtsom klappen door vermenigvuldiging met 
-\begin_inset Formula $-i$
-\end_inset
-
- en hebben we het 
-\begin_inset Formula $\Omega$
-\end_inset
-
- -vlak verkregen waarin de stroomfunctie oploopt van 0 tot Q and de potentiaal oploopt van 
-\begin_inset Formula $0$
-\end_inset
-
- tot een zelf gekozen eindwaarde van 
-\begin_inset Formula $nQ$
-\end_inset
-
-.
- (De dimensie van de potentiaal is gelijk aan die van de stroomfunctie m
-\begin_inset Formula $^{2}$
-\end_inset
-
-/d,
- en gelijke stapgroottes van beide functies garanderen een vierkantennet.
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\[
-\Omega=-i\zeta_{5}
-\]
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-Voegen we al deze stappen samen dan krijgen we de volgende transformatie in een formule
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\[
-\Omega=-i\frac{Q}{\pi}\left(\arcsin\left(p\sin\left(\frac{\pi}{H}\left(iz-\frac{H}{2}\right)\right)+q\right)-\frac{\pi}{2}\right)
-\]
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\[
-\Omega=-i\frac{Q}{\pi}\left(\arcsin\left(p\exp\left(i\frac{\pi}{D}z+\frac{\pi}{2}\right)+q\right)+\frac{\pi}{2}\right)+iQ
-\]
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-waarin 
+ Voor 
 \begin_inset Formula $p$
 \end_inset
 
- en 
-\begin_inset Formula $q$
+ zie tekst.
+ 
+\begin_inset Formula $p$
 \end_inset
 
- berekend worden met de coördinaten van de hoekpunten van de sloot in het 
+ volgt uit de verschuiving van de slootpunten in het 
 \begin_inset Formula $\zeta$
 \end_inset
 
--vlak zoals hierboven afgeleid.
+-vlak naar -1 en +1.
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Afleiding asymptotisch gedrag voor de exponent transformatie (chatGPT)
 \end_layout
 
 \begin_layout Standard
-De formule hiervoor is handig om de complexe potentiaal te berekenen bij gegeven coördinaten in het vlak van de oorspronkelijke doorsnede.
- Het omgekeerde is ook mogelijk,
- namelijk om bij een gegeven complexe potentiaal het bijbehorende punten in het 
-\begin_inset Formula $z$
+Let me do it cleanly and slowly,
+ because the subtlety is entirely in the asymptotics of the complex (
+\begin_inset Formula $\arcsin$
 \end_inset
 
--vlak uit te rekenen.
- Daarvoor keren we de zojuist afgeleide vergelijking binnenste buiten en maken 
-\begin_inset Formula $z$
-\end_inset
+).
+\end_layout
 
- expliciet
+\begin_layout Standard
+We start from
 \end_layout
 
 \begin_layout Standard
 \begin_inset Formula 
 \[
-z=-iH\left(\frac{1}{2}+\frac{1}{\pi}\arcsin\left(\frac{\sin\left(i\frac{\pi}{Q}\Omega+\frac{\pi}{2}\right)-q}{p}\right)\right)
+\Omega(z)=-i\,\frac{Q}{\pi}\left(\arcsin\left(p,e^{\frac{\pi}{D}z}+q\right)+\frac{\pi}{2}\right)\to z\to\infty,
 \]
 
 \end_inset
 
 
+\end_layout
+
+\begin_layout Standard
+with (
+\begin_inset Formula $p,q\in\mathbb{C}$
+\end_inset
+
+) fixed.
+\end_layout
+
+\begin_layout Standard
+---
+\end_layout
+
+\begin_layout Subsubsection*
+Step 1 —
+ Asymptotics of (
+\begin_inset Formula $\arcsin w$
+\end_inset
+
+) for large (
+\begin_inset Formula $|w|$
+\end_inset
+
+)
+\end_layout
+
+\begin_layout Standard
+A standard complex representation is
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\arcsin w=\frac{\pi}{2}-i\ln!\left(w+\sqrt{w^{2}-1}\right),
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+where branches are chosen consistently.
+\end_layout
+
+\begin_layout Standard
+For (
+\begin_inset Formula $|w|\to\infty$
+\end_inset
+
+),
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\sqrt{w^{2}-1}=w\sqrt{1-\frac{1}{w^{2}}}=w\left(1-\frac{1}{2w^{2}}+\mathcal{O}(w^{-4})\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+so
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+w+\sqrt{w^{2}-1}=2w\left(1-\frac{1}{4w^{2}}+\mathcal{O}(w^{-4})\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Hence
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\ln!\left(w+\sqrt{w^{2}-1}\right)=\ln(2w)+\mathcal{O}(w^{-2})
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+and therefore
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\boxed{\arcsin w=\frac{\pi}{2}-i\ln(2w)+\mathcal{O}(w^{-2})\qquad(|w|\to\infty)}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsubsection*
+Step 2 —
+ Apply to your argument
+\end_layout
+
+\begin_layout Standard
+Let
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+w(z)=p,e^{\frac{\pi}{D}z}+q
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+As (
+\begin_inset Formula $z\to\infty$
+\end_inset
+
+),
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+w(z)=p\,e^{\frac{\pi}{D}z}\left(1+\frac{q}{p}e^{-\frac{\pi}{D}z}\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+so
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\ln w=\ln p+\frac{\pi}{D}z+\mathcal{O}!\left(e^{-\frac{\pi}{D}z}\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Thus
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\arcsin!\left(pe^{\frac{\pi}{D}z}+q\right)=\frac{\pi}{2}*i\left[\ln2+\ln p+\frac{\pi}{D}z\right]-\mathcal{O}!\left(e^{-2\frac{\pi}{D}z}\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsubsection*
+Step 3 —
+ Insert into (
+\begin_inset Formula $\Omega$
+\end_inset
+
+)
+\end_layout
+
+\begin_layout Standard
+Now add the explicit (
+\begin_inset Formula $+\pi/2$
+\end_inset
+
+):
+\end_layout
+
+\begin_layout Standard
+[
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\arcsin(\cdots)+\frac{\pi}{2}=\pi*i\left[\frac{\pi}{D}z+\ln(2p)\right]-\mathcal{O}!\left(e^{-2\frac{\pi}{D}z}\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Multiply by (
+\begin_inset Formula $-iQ/\pi$
+\end_inset
+
+):
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\Omega(z)=-,iQ*\frac{Q}{\pi}\left(\frac{\pi}{D}z+\ln(2p)\right)*\mathcal{O}!\left(e^{-2\frac{\pi}{D}z}\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsubsection*
+Final asymptotic behavior
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\boxed{\Omega(z)=\frac{Q}{D}z+\frac{Q}{\pi}\ln(2p)-iQ*\mathcal{O}!\left(e^{-2\frac{\pi}{D}z}\right),\qquad z\to\infty}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsubsection*
+Remarks (important)
+\end_layout
+
+\begin_layout Itemize
+The leading term is linear in (
+\begin_inset Formula $z$
+\end_inset
+
+) with slope (
+\begin_inset Formula $Q/D$
+\end_inset
+
+).
+\end_layout
+
+\begin_layout Itemize
+The constant term depends on the branch of (
+\begin_inset Formula $\ln p$
+\end_inset
+
+) (as it must).
+\end_layout
+
+\begin_layout Itemize
+The parameter (
+\begin_inset Formula $q$
+\end_inset
+
+) does not influence the leading or constant term—
+only exponentially small corrections.
+\end_layout
+
+\begin_layout Itemize
+This is exactly the behavior one expects in Schwarz–Christoffel–type mappings:
+ logarithm (
+\backslash
+Rightarrow) linear growth.
+\end_layout
+
+\begin_layout Subsection
+Asymptotic behavior for the sin
+\end_layout
+
+\begin_layout Standard
+Nice one —
+ this *looks* different,
+ but in fact it collapses very neatly to the same structure.
+ Let’s go through it carefully and you’ll see why the asymptotics line up almost perfectly with your previous transform.
+\end_layout
+
+\begin_layout Subsubsection*
+1.
+ First simplify the inner sine
+\end_layout
+
+\begin_layout Standard
+Use the identity
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\sin\left(\frac{\pi}{2}+w\right)=\cos w
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+with (
+\begin_inset Formula $w=i\frac{\pi}{D}z)$
+\end_inset
+
+.
+ Then
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\sin!\left(i\frac{\pi}{D}z+\frac{\pi}{2}\right)=\cos!\left(i\frac{\pi}{D}z\right)=\cosh\left(\frac{\pi}{D}z\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+So your transform becomes
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\Omega=-i\frac{Q}{\pi}\left(\arcsin\left(p,\cosh!\frac{\pi}{D}z+q\right)-\frac{\pi}{2}\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsubsection*
+2.
+ Large-
+\begin_inset Formula $z$
+\end_inset
+
+ behaviour of the argument
+\end_layout
+
+\begin_layout Standard
+As 
+\begin_inset Formula $z\to\infty$
+\end_inset
+
+,
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\cosh\frac{\pi}{D}z=\tfrac{1}{2}e^{\frac{\pi}{D}z}\left(1+\mathcal{O}(e^{-2\frac{\pi}{D}z})\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+so
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+p\cosh!\frac{\pi}{D}z+q=\frac{p}{2}e^{\frac{\pi}{D}z}\left(1+\mathcal{O}(e^{-\frac{\pi}{D}z})\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Thus the argument of the (
+\begin_inset Formula $\arcsin$
+\end_inset
+
+) again tends to infinity exponentially.
+\end_layout
+
+\begin_layout Subsubsection*
+3.
+ Asymptotics of (
+\backslash
+arcsin) (same as before)
+\end_layout
+
+\begin_layout Standard
+For 
+\begin_inset Formula $|w|\to\infty$
+\end_inset
+
+,
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\arcsin w=\frac{\pi}{2}-i\ln(2w)+\mathcal{O}(w^{-2})
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Apply this with
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+w=p\cosh!\frac{\pi}{D}z+q
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Then
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\arcsin(\cdots)=\frac{\pi}{2}*i\left[\ln!\left(2\cdot\frac{p}{2}e^{\frac{\pi}{D}z}\right)\right]-\mathcal{O}(e^{-2\frac{\pi}{D}z})
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+i.e.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\arcsin(\cdots)=\frac{\pi}{2}*i\left[\frac{\pi}{D}z+\ln p\right]-\mathcal{O}(e^{-2\frac{\pi}{D}z})
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsubsection*
+4.
+ Subtract 
+\begin_inset Formula $\pi/2$
+\end_inset
+
+ and assemble 
+\begin_inset Formula $\Omega$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Subtracting the explicit 
+\begin_inset Formula $-\pi/2$
+\end_inset
+
+,
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\arcsin(\cdots)-\frac{\pi}{2}=-i\left[\frac{\pi}{D}z+\ln p\right]*\mathcal{O}(e^{-2\frac{\pi}{D}z})
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Now multiply by 
+\begin_inset Formula $-iQ/\pi$
+\end_inset
+
+:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\Omega(z)=\frac{Q}{\pi}\left(\frac{\pi}{D}z+\ln p\right)*\mathcal{O}(e^{-2\frac{\pi}{D}z})
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsubsection*
+5.
+ Final asymptotic form
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\boxed{\Omega(z)=\frac{Q}{D}z+\frac{Q}{\pi}\ln p+\mathcal{O}\left(e^{-2\frac{\pi}{D}z}\right),\qquad z\to\infty}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsubsection*
+6.
+ Comparison with your previous transform
+\end_layout
+
+\begin_layout Itemize
+Same leading behaviour:
+\end_layout
+
+\begin_layout Itemize
+(
+\begin_inset Formula ${\displaystyle \Omega\sim\frac{Q}{D}z}$
+\end_inset
+
+)
+\end_layout
+
+\begin_layout Itemize
+Same insensitivity to 
+\begin_inset Formula $q$
+\end_inset
+
+:
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $q$
+\end_inset
+
+ only affects exponentially small corrections.
+\end_layout
+
+\begin_layout Itemize
+Different constants:
+\end_layout
+
+\begin_layout Itemize
+The previous mapping produced
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $\frac{Q}{\pi}\ln(2p)-iQ$
+\end_inset
+
+;
+\end_layout
+
+\begin_layout Itemize
+this one gives simply 
+\begin_inset Formula $\frac{Q}{\pi}\ln p$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Itemize
+That difference is purely geometric and comes from:
+\end_layout
+
+\begin_layout Itemize
+using 
+\begin_inset Formula $\cosh$
+\end_inset
+
+ instead of a pure exponential,
+\end_layout
+
+\begin_layout Itemize
+and shifting the 
+\begin_inset Formula $\arcsin$
+\end_inset
+
+ by 
+\begin_inset Formula $\pm\pi/2$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Subsubsection*
+Big picture (SC intuition)
+\end_layout
+
+\begin_layout Standard
+Both mappings asymptotically reduce to a logarithm of an exponential,
+ hence a linear map.
+ The slope 
+\begin_inset Formula $Q/D$
+\end_inset
+
+ is invariant —
+ exactly what you want if this is enforcing a uniform far-field flux.
 \end_layout
 
 \begin_layout Section
@@ -1682,6 +2173,46 @@ Contractie met breedte
 \end_layout
 
 \begin_layout Standard
+De aan het begin afgeleide transformatie van de half-oneindige doorsnede werkt evengoed voor de contratie van Verruijt.
+ In de half-oneindige doorsnede kunnen de punten 
+\begin_inset Formula $D_{L}$
+\end_inset
+
+ en 
+\begin_inset Formula $D_{R}$
+\end_inset
+
+ die de sloot markeren willekeurig op de randen van deze doorsnede geplaatst zolang 
+\begin_inset Formula $D_{R}$
+\end_inset
+
+ maar in de klok-richting van 
+\begin_inset Formula $D_{L}$
+\end_inset
+
+ staat.
+ Dus op de boven-,
+ zij- of onderrand,
+ alles werkt onder de genoemde voorwaarde.
+ De verticale contractie,
+ horizontale sloot of sloot die overgaat in een verticale contractie,
+ alles werkt.
+ Alleen de variabele 
+\begin_inset Formula $p$
+\end_inset
+
+ moet worden berekend op basis van de plaatsing van de twee punten 
+\begin_inset Formula $D_{L}$
+\end_inset
+
+ n 
+\begin_inset Formula $D_{R}$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
 De oplossing die leidt tot rechte stroom en potentiaal lijnen in het vlak 
 \begin_inset Formula $\Omega$
 \end_inset
@@ -1701,7 +2232,11 @@ De oplossing die leidt tot rechte stroom en potentiaal lijnen in het vlak
 \end_layout
 
 \begin_layout Standard
-We kunnen dit visualiseren door een raster van z coordinaten te kiezen en dan 
+We kunnen dit visualiseren door een raster van 
+\begin_inset Formula $z$
+\end_inset
+
+-coördinaten te kiezen en dan 
 \begin_inset Formula $\Phi=\Re\left(\Omega\right)$
 \end_inset
 
@@ -1727,368 +2262,6 @@ We kunnen dit visualiseren door een raster van z coordinaten te kiezen en dan
 \end_inset
 
 -vlak.
-\end_layout
-
-\begin_layout Section
-Symmetrical flow through a ditch with head and half width a given extraction Q
-\end_layout
-
-\begin_layout Standard
-We have the points D,
- C,
- B,
- A,
- C with coordinates
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\begin{align*}
-C_{B} & =\infty-iH\\
-D & =0-iH\\
-A & =0\\
-B & =b\\
-C_{T} & =\infty
-\end{align*}
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-We first step is to rotate over 
-\begin_inset Formula $\pi/2$
-\end_inset
-
- anti-clockwise and to make points A and D match 
-\begin_inset Formula $-\frac{\pi}{2}$
-\end_inset
-
- and 
-\begin_inset Formula $\frac{\pi}{2}$
-\end_inset
-
- respectively and flat the vertical lines forming the top and bottom of the aquifer onto the real axis
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\begin{align*}
-\zeta & =\sin\left(\frac{\pi}{H}\left(iz-\frac{H}{2}\right)\right)
-\end{align*}
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-which puts the points 
-\begin_inset Formula $A$
-\end_inset
-
- and 
-\begin_inset Formula $D$
-\end_inset
-
- on 
-\begin_inset Formula $\zeta=\mp1$
-\end_inset
-
-.
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\begin{align*}
-\zeta\left(A\right) & \rightarrow-1\\
-\zeta\left(D\right) & \rightarrow+1
-\end{align*}
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-So determine 
-\begin_inset Formula $p$
-\end_inset
-
- and 
-\begin_inset Formula $q$
-\end_inset
-
- from the following equations to get that will make sure that 
-\begin_inset Formula $\zeta_{B}$
-\end_inset
-
- and 
-\begin_inset Formula $\zeta_{D}$
-\end_inset
-
- will be on the right spot
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\begin{align*}
-p\zeta_{B}+q & =-1\\
-p\zeta_{D}+q & =+1
-\end{align*}
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\begin{align*}
-p & =\frac{2}{\zeta_{A}-\zeta_{B}}\\
-q & =-\left[\frac{\zeta_{A}+\zeta_{B}}{\zeta_{A}-\zeta_{B}}\right]
-\end{align*}
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-So we have a new plane 
-\begin_inset Formula $\zeta_{1}$
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\[
-\zeta_{1}=p\zeta+q
-\]
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-The we turn the branches 
-\begin_inset Formula $\zeta=\mp1+iy$
-\end_inset
-
- upward again by taking the arcsin.
- This converts 
-\begin_inset Formula $\zeta_{!}\left(B\right)=-\frac{\pi}{2}$
-\end_inset
-
- and 
-\begin_inset Formula $\zeta_{1}\left(A\right)=\frac{\pi}{2}$
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\[
-\zeta_{2}=\arcsin\zeta_{1}
-\]
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-Now make sure that point 
-\begin_inset Formula $\zeta_{1}\left(B\right)=-Q$
-\end_inset
-
- and 
-\begin_inset Formula $\zeta_{2}\left(A\right)=0$
-\end_inset
-
- and turn it clockwise over 
-\begin_inset Formula $\frac{\pi}{2}$
-\end_inset
-
- by multplying by 
-\begin_inset Formula $-i$
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\[
-\zeta_{3}=\Omega=-i\frac{Q}{\pi}\left(\zeta_{2}-\frac{\pi}{2}\right)
-\]
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\[
-\Omega=-i\frac{Q}{\pi}\left(\arcsin\left(\zeta_{1}\right)-\frac{\pi}{2}\right)
-\]
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\[
-\Omega=-i\frac{Q}{\pi}\left(\arcsin\left(p\zeta+q\right)-\frac{\pi}{2}\right)
-\]
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\[
-\Omega=-i\frac{Q}{\pi}\left(\arcsin\left(p\sin\left(\frac{\pi}{H}\left(iz-\frac{H}{2}\right)\right)+q\right)-\frac{\pi}{2}\right)
-\]
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-Combining all that we did before into a single equations
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\[
-\Omega=-i\frac{Q}{\pi}\left(\arcsin\left(p\sin\left(\frac{\pi}{H}\left(iz-\frac{H}{2}\right)\right)+q\right)-\frac{\pi}{2}\right)
-\]
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-To get the 
-\begin_inset Formula $z$
-\end_inset
-
- from the 
-\begin_inset Formula $\Omega$
-\end_inset
-
- we take the following steps
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\[
--i\frac{Q}{\pi}\left(\arcsin\left(p\sin\left(\frac{\pi}{H}\left(iz-\frac{H}{2}\right)\right)+q\right)-\frac{\pi}{2}\right)=\Omega
-\]
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\[
-\arcsin\left(p\sin\left(\frac{\pi}{H}\left(iz-\frac{H}{2}\right)\right)+q\right)-\frac{\pi}{2}=i\frac{\pi}{Q}\Omega
-\]
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\[
-\arcsin\left(p\sin\left(\frac{\pi}{H}\left(iz-\frac{H}{2}\right)\right)+q\right)=i\frac{\pi}{Q}\Omega+\frac{\pi}{2}
-\]
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\[
-p\sin\left(\frac{\pi}{H}\left(iz-\frac{H}{2}\right)\right)+q=\sin\left(i\frac{\pi}{Q}\Omega+\frac{\pi}{2}\right)
-\]
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\[
-\frac{\pi}{H}\left(iz-\frac{H}{2}\right)=\arcsin\left(\frac{\sin\left(i\frac{\pi}{Q}\Omega+\frac{\pi}{2}\right)-q}{p}\right)
-\]
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\[
-z=-iH\left(\frac{1}{2}+\frac{1}{\pi}\arcsin\left(\frac{\sin\left(i\frac{\pi}{Q}\Omega+\frac{\pi}{2}\right)-q}{p}\right)\right)
-\]
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\[
-\]
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\[
-p=\frac{2}{\zeta_{D}-\zeta_{A}}
-\]
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\[
-q=-\left[\frac{\zeta_{D}+\zeta_{A}}{\zeta_{D}-\zeta_{A}}\right]
-\]
-
-\end_inset
-
-
 \end_layout
 
 \begin_layout Standard
