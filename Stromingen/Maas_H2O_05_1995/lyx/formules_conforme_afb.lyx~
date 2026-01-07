@@ -584,16 +584,8 @@ Wanneer we de
 \end_inset
 
 -as op b laten beginnen (rechterzijde van de sloot),
- dan is de potentiaal verlaging door partial penetration
-\begin_inset Newline newline
-\end_inset
-
-
-\begin_inset Formula 
-\[
-\Delta\Phi=\frac{Q}{D}b+\frac{Q}{\pi}\ln p
-\]
-
+ dan is de potentiaalverlaging door partial penetration de verlaging volgens de asymptoot op 
+\begin_inset Formula $x=b$
 \end_inset
 
 
@@ -602,7 +594,7 @@ Wanneer we de
 \begin_layout Standard
 \begin_inset Formula 
 \[
-\frac{\Delta\Phi}{Q}=\frac{b}{D}+\frac{\ln p}{\pi}
+\frac{\Delta\Phi_{pp}}{Q}=\frac{b}{D}+\frac{\ln\text{p}}{\pi}
 \]
 
 \end_inset
@@ -611,22 +603,7 @@ Wanneer we de
 \end_layout
 
 \begin_layout Standard
-\begin_inset Formula 
-\[
-\frac{\Delta\phi}{Q}=\frac{b}{kD}+\frac{\ln p}{k\pi}
-\]
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-Deze 
-\begin_inset Formula $\Delta\Phi$
-\end_inset
-
- kan gelijk gezet worden aan een extra te doorstromen pakketlente 
+We kunnen deze verlaging gelijk stellen aan die bij horizontale doorstroming door het pakket over een lengte 
 \begin_inset Formula $\Delta L$
 \end_inset
 
@@ -636,18 +613,22 @@ Deze
 \begin_layout Standard
 \begin_inset Formula 
 \[
-\Delta\Phi=\Delta L\frac{Q}{D}
+\Delta\Phi_{pp}=\frac{Q}{D}\Delta L
 \]
 
 \end_inset
 
 
+\end_layout
+
+\begin_layout Standard
+zodat
 \end_layout
 
 \begin_layout Standard
 \begin_inset Formula 
 \[
-\Delta L\frac{Q}{D}=\frac{Q}{D}b+\frac{Q}{\pi}\ln p
+\frac{\Delta\Phi_{pp}}{Q}=\frac{\Delta L}{D}
 \]
 
 \end_inset
@@ -656,18 +637,16 @@ Deze
 \end_layout
 
 \begin_layout Standard
-\begin_inset Formula 
-\[
-\Delta L=b+\frac{D}{\pi}\ln p
-\]
-
+Deze vergelijking toont de equivalentie tussen 
+\begin_inset Formula $\Delta\Phi_{pp}/Q$
 \end_inset
 
+ en 
+\begin_inset Formula $\Delta L/D$
+\end_inset
 
-\end_layout
-
-\begin_layout Standard
-maar ook
+.
+ We hebben dus ook
 \end_layout
 
 \begin_layout Standard
@@ -679,12 +658,202 @@ maar ook
 \end_inset
 
 
-\backslash
-frac 
+\end_layout
+
+\begin_layout Standard
+Fig.
+ 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:De-extra-verlaging_door_hor_en_vert_sloot"
+plural "false"
+caps "false"
+noprefix "false"
+nolink "false"
+
+\end_inset
+
+ geeft de extra verlaging ten gevolge van contractie van stroomlijnen voor een horizontale sloot met diepte nul (
+\begin_inset Formula $h/D=0$
+\end_inset
+
+) en een verticale sloot met breedte nul (
+\begin_inset Formula $b/D=0$
+\end_inset
+
+).
+ Beide sloten hebben dezelfde weerstand voor resp.
+ zeer kleine breedte en diepte.
+ De weerstand van de verticale sloot gaat naar nul op het moment dat hij over de volledige diepte reikt.
+ De weerstand van de horizontale sloot gaat naar ca 0.47,
+ de weerstand die geldt voor een oneindig brede horizontale sloot die van een zijde wordt aangestroomd.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+placement document
+alignment document
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\begin_inset Graphics
+	filename /Users/Theo/GRWMODELS/python/mf6lab/Projects/GGOR/doc/images/dPhi_pp_Q_hor_vert.png
+	height 80text%
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:De-extra-verlaging_door_hor_en_vert_sloot"
+
+\end_inset
+
+De extra verlaging ten gevolge van contractie van stroomlijnen (Partial Penetration,
+ onvolkomenheid van de sloot) voor horizontale sloot met diepte nul (
+\begin_inset Formula $h/D=0$
+\end_inset
+
+) en verticale sloot met breedte nul,
+ 
+\begin_inset Formula $(b/D=0)$
+\end_inset
+
+.
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+
+
 \end_layout
 
 \begin_layout Subsection
 Asymptotisch gedrag
+\end_layout
+
+\begin_layout Standard
+Fig.
+ 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Verlaging-door-onttrekking+asymptoot"
+plural "false"
+caps "false"
+noprefix "false"
+nolink "false"
+
+\end_inset
+
+ toont de analytisch berekende potentiaal-verlaging boven in het pakket bij slootdiepte nul en verschillende slootbreedte.
+ Het asymptotisch gedrag is steeds de gestreepte verlaagde rechte lijn.
+ De situatie is voor verschillende slootbreedtes gegeven.
+ De verlaging ter plaatse van slootbreedte 
+\begin_inset Formula $b$
+\end_inset
+
+ is de extra verlaging als gevolg van de contractie van stromingen.
+ Deze verlaging is aangeven door het verticale lijntje bij 
+\begin_inset Formula $x=b$
+\end_inset
+
+.
+ Deze verlaging is equivalent aan een extra lengte 
+\begin_inset Formula $\Delta L$
+\end_inset
+
+ te doorstromen pakket.
+ Deze extra lengte is de horizontale projectie van het zwarte gestreepte lijntje tussen de marker 'x—
+x'.
+ De specifiek potentiaalverlaging is waar het hier om gaat.
+ De potentiaal is 
+\begin_inset Formula $\Phi=k\phi$
+\end_inset
+
+ met 
+\begin_inset Formula $\phi$
+\end_inset
+
+ de stijghoogte of grondwaterstand.
+ We hebben
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\frac{\Delta\Phi_{pp}}{Q}=\frac{\Delta L}{D}=b+\frac{\ln p}{\pi}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Hierin is 
+\begin_inset Formula $p$
+\end_inset
+
+ afhankelijk van 
+\begin_inset Formula $b$
+\end_inset
+
+.
+ De parameter 
+\begin_inset Formula $p$
+\end_inset
+
+ komt voort uit de conforme transformatie waarin de plek van 
+\begin_inset Formula $D_{L}$
+\end_inset
+
+ en 
+\begin_inset Formula $D_{R}$
+\end_inset
+
+ in de 
+\begin_inset Formula $\zeta$
+\end_inset
+
+-plane moeten worden verschoven naar 
+\begin_inset Formula $-1$
+\end_inset
+
+ en 
+\begin_inset Formula $+1$
+\end_inset
+
+.
+ De extra verlaging is groot voor kleine 
+\begin_inset Formula $b$
+\end_inset
+
+ terwijl hij constant wordt voor 
+\begin_inset Formula $b$
+\end_inset
+
+ groter dan ca.
+ 
+\begin_inset Formula $1.5D$
+\end_inset
+
+.
 \end_layout
 
 \begin_layout Standard
@@ -709,24 +878,31 @@ status open
 \begin_inset Caption Standard
 
 \begin_layout Plain Layout
-Verlaging door onttrekking met extra verlaging 
-\begin_inset Formula $d\Phi=k\,d\phi$
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:Verlaging-door-onttrekking+asymptoot"
+
 \end_inset
 
- door onvolkomenheid en de equivalente extra lengte 
+Verlaging door onttrekking op 
+\begin_inset Formula $x=\infty$
+\end_inset
+
+ met asymptotisch verloop als gevolg van onvolkomenheid van de sloot (met diepte 
+\begin_inset Formula $h=0)$
+\end_inset
+
+ en de equivalente extra lengte 
 \begin_inset Formula $\Delta L$
 \end_inset
 
- te doorstromen pakket met dezelfde weerstand.
+ (is projectie van gestreepte zwarte lijn tussen 'x—
+x') te doorstromen pakket met dezelfde weerstand.
  De extra verlaging 
-\begin_inset Formula $d\Phi=Qb/D+Q/\pi\ln p$
+\begin_inset Formula $\frac{d\Phi}{Q}/Q=\frac{\Delta L}{D}=b/D+1/\pi\ln p$
 \end_inset
 
- en 
-\begin_inset Formula $\Delta L=b+D/\pi\ln p$
-\end_inset
-
-.
+ .
  Voor 
 \begin_inset Formula $p$
 \end_inset
@@ -2173,7 +2349,7 @@ Contractie met breedte
 \end_layout
 
 \begin_layout Standard
-De aan het begin afgeleide transformatie van de half-oneindige doorsnede werkt evengoed voor de contratie van Verruijt.
+De aan het begin van dit document afgeleide transformatie van de half-oneindige doorsnede werkt evengoed voor de contractie van Verruijt.
  In de half-oneindige doorsnede kunnen de punten 
 \begin_inset Formula $D_{L}$
 \end_inset
@@ -2182,7 +2358,9 @@ De aan het begin afgeleide transformatie van de half-oneindige doorsnede werkt e
 \begin_inset Formula $D_{R}$
 \end_inset
 
- die de sloot markeren willekeurig op de randen van deze doorsnede geplaatst zolang 
+,
+ die de sloot markeren,
+ willekeurig op de randen van deze doorsnede geplaatst zolang 
 \begin_inset Formula $D_{R}$
 \end_inset
 
@@ -2213,10 +2391,12 @@ De aan het begin afgeleide transformatie van de half-oneindige doorsnede werkt e
 \end_layout
 
 \begin_layout Standard
-De oplossing die leidt tot rechte stroom en potentiaal lijnen in het vlak 
+De oplossing van Verruijt,
+ die leidt tot rechte stroom en potentiaal lijnen in het vlak 
 \begin_inset Formula $\Omega$
 \end_inset
 
+,
  is direct gegeven
 \end_layout
 
@@ -2232,7 +2412,11 @@ De oplossing die leidt tot rechte stroom en potentiaal lijnen in het vlak
 \end_layout
 
 \begin_layout Standard
-We kunnen dit visualiseren door een raster van z coordinaten te kiezen en dan 
+We kunnen dit visualiseren door een raster van 
+\begin_inset Formula $z$
+\end_inset
+
+-coördinaten te kiezen en dan 
 \begin_inset Formula $\Phi=\Re\left(\Omega\right)$
 \end_inset
 
@@ -2245,7 +2429,7 @@ We kunnen dit visualiseren door een raster van z coordinaten te kiezen en dan
 \end_inset
 
  beide te contouren.
- De isolijnen zijn dan de curves van 
+ De isolijnen zijn dan de curven van 
 \begin_inset Formula $\Phi$
 \end_inset
 
@@ -2260,366 +2444,16 @@ We kunnen dit visualiseren door een raster van z coordinaten te kiezen en dan
 -vlak.
 \end_layout
 
-\begin_layout Section
-Symmetrical flow through a ditch with head and half width a given extraction Q
-\end_layout
-
 \begin_layout Standard
-We have the points D,
- C,
- B,
- A,
- C with coordinates
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\begin{align*}
-C_{B} & =\infty-iH\\
-D & =0-iH\\
-A & =0\\
-B & =b\\
-C_{T} & =\infty
-\end{align*}
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-We first step is to rotate over 
-\begin_inset Formula $\pi/2$
-\end_inset
-
- anti-clockwise and to make points A and D match 
-\begin_inset Formula $-\frac{\pi}{2}$
-\end_inset
-
- and 
-\begin_inset Formula $\frac{\pi}{2}$
-\end_inset
-
- respectively and flat the vertical lines forming the top and bottom of the aquifer onto the real axis
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\begin{align*}
-\zeta & =\sin\left(\frac{\pi}{H}\left(iz-\frac{H}{2}\right)\right)
-\end{align*}
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-which puts the points 
-\begin_inset Formula $A$
-\end_inset
-
- and 
-\begin_inset Formula $D$
-\end_inset
-
- on 
-\begin_inset Formula $\zeta=\mp1$
-\end_inset
-
-.
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\begin{align*}
-\zeta\left(A\right) & \rightarrow-1\\
-\zeta\left(D\right) & \rightarrow+1
-\end{align*}
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-So determine 
-\begin_inset Formula $p$
-\end_inset
-
- and 
-\begin_inset Formula $q$
-\end_inset
-
- from the following equations to get that will make sure that 
-\begin_inset Formula $\zeta_{B}$
-\end_inset
-
- and 
-\begin_inset Formula $\zeta_{D}$
-\end_inset
-
- will be on the right spot
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\begin{align*}
-p\zeta_{B}+q & =-1\\
-p\zeta_{D}+q & =+1
-\end{align*}
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\begin{align*}
-p & =\frac{2}{\zeta_{A}-\zeta_{B}}\\
-q & =-\left[\frac{\zeta_{A}+\zeta_{B}}{\zeta_{A}-\zeta_{B}}\right]
-\end{align*}
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-So we have a new plane 
-\begin_inset Formula $\zeta_{1}$
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\[
-\zeta_{1}=p\zeta+q
-\]
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-The we turn the branches 
-\begin_inset Formula $\zeta=\mp1+iy$
-\end_inset
-
- upward again by taking the arcsin.
- This converts 
-\begin_inset Formula $\zeta_{!}\left(B\right)=-\frac{\pi}{2}$
-\end_inset
-
- and 
-\begin_inset Formula $\zeta_{1}\left(A\right)=\frac{\pi}{2}$
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\[
-\zeta_{2}=\arcsin\zeta_{1}
-\]
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-Now make sure that point 
-\begin_inset Formula $\zeta_{1}\left(B\right)=-Q$
-\end_inset
-
- and 
-\begin_inset Formula $\zeta_{2}\left(A\right)=0$
-\end_inset
-
- and turn it clockwise over 
-\begin_inset Formula $\frac{\pi}{2}$
-\end_inset
-
- by multplying by 
-\begin_inset Formula $-i$
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\[
-\zeta_{3}=\Omega=-i\frac{Q}{\pi}\left(\zeta_{2}-\frac{\pi}{2}\right)
-\]
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\[
-\Omega=-i\frac{Q}{\pi}\left(\arcsin\left(\zeta_{1}\right)-\frac{\pi}{2}\right)
-\]
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\[
-\Omega=-i\frac{Q}{\pi}\left(\arcsin\left(p\zeta+q\right)-\frac{\pi}{2}\right)
-\]
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\[
-\Omega=-i\frac{Q}{\pi}\left(\arcsin\left(p\sin\left(\frac{\pi}{H}\left(iz-\frac{H}{2}\right)\right)+q\right)-\frac{\pi}{2}\right)
-\]
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-Combining all that we did before into a single equations
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\[
-\Omega=-i\frac{Q}{\pi}\left(\arcsin\left(p\sin\left(\frac{\pi}{H}\left(iz-\frac{H}{2}\right)\right)+q\right)-\frac{\pi}{2}\right)
-\]
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-To get the 
-\begin_inset Formula $z$
-\end_inset
-
- from the 
+We kunnen ook de relatie omkeren en een regelmatig 
 \begin_inset Formula $\Omega$
 \end_inset
 
- we take the following steps
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\[
--i\frac{Q}{\pi}\left(\arcsin\left(p\sin\left(\frac{\pi}{H}\left(iz-\frac{H}{2}\right)\right)+q\right)-\frac{\pi}{2}\right)=\Omega
-\]
-
+ grid rechts invoeren en vervolgens de verkregen kromme lijnen voor 
+\begin_inset Formula $z\left(\Omega\right)$
 \end_inset
 
-
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\[
-\arcsin\left(p\sin\left(\frac{\pi}{H}\left(iz-\frac{H}{2}\right)\right)+q\right)-\frac{\pi}{2}=i\frac{\pi}{Q}\Omega
-\]
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\[
-\arcsin\left(p\sin\left(\frac{\pi}{H}\left(iz-\frac{H}{2}\right)\right)+q\right)=i\frac{\pi}{Q}\Omega+\frac{\pi}{2}
-\]
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\[
-p\sin\left(\frac{\pi}{H}\left(iz-\frac{H}{2}\right)\right)+q=\sin\left(i\frac{\pi}{Q}\Omega+\frac{\pi}{2}\right)
-\]
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\[
-\frac{\pi}{H}\left(iz-\frac{H}{2}\right)=\arcsin\left(\frac{\sin\left(i\frac{\pi}{Q}\Omega+\frac{\pi}{2}\right)-q}{p}\right)
-\]
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\[
-z=-iH\left(\frac{1}{2}+\frac{1}{\pi}\arcsin\left(\frac{\sin\left(i\frac{\pi}{Q}\Omega+\frac{\pi}{2}\right)-q}{p}\right)\right)
-\]
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\[
-\]
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\[
-p=\frac{2}{\zeta_{D}-\zeta_{A}}
-\]
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\[
-q=-\left[\frac{\zeta_{D}+\zeta_{A}}{\zeta_{D}-\zeta_{A}}\right]
-\]
-
-\end_inset
-
-
+ tekenen.
 \end_layout
 
 \begin_layout Standard
