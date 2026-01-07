@@ -584,7 +584,7 @@ Wanneer we de
 \end_inset
 
 -as op b laten beginnen (rechterzijde van de sloot),
- dan is de potentiaalverlaging door partial penetration de verlaging volgens de asymptoot op 
+ dan is de potentiaalverlaging door de onvolkomenheid van de sloot gelijk aan de de verlaging volgens de asymptoot op 
 \begin_inset Formula $x=b$
 \end_inset
 
@@ -657,6 +657,1052 @@ Deze vergelijking toont de equivalentie tussen
 
 \end_inset
 
+
+\end_layout
+
+\begin_layout Standard
+De verlaging van de stijghoogte door onvolkomenheid van de sloot is altijd gelijk aan
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\Delta\phi=\frac{\Delta\Phi}{k}=b\frac{Q}{kD}+\frac{Q}{k\pi}\ln\left(p\left(b\right)\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Waarin 
+\begin_inset Formula $p\left((b\right)$
+\end_inset
+
+ aangeeft dat 
+\begin_inset Formula $p$
+\end_inset
+
+ direct van 
+\begin_inset Formula $b$
+\end_inset
+
+ afhangt via de conforme transformatie.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\zeta_{1}=\sin\left(i\frac{\pi}{D}z+\frac{\pi}{2}\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+p=\frac{2}{\zeta_{R}-\zeta_{L}}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Met voor een sloot waarbij het linker punt van de sloot op 
+\begin_inset Formula $iD$
+\end_inset
+
+ ligt en het rechter op 
+\begin_inset Formula $b+iD$
+\end_inset
+
+ volgt (ChatGPT)
+\end_layout
+
+\begin_layout Subsubsection
+Expliciet analytische afleiding van 
+\begin_inset Formula $p$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\zeta=\sin\left(i\frac{\pi}{D}z+\frac{\pi}{2}\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Gebruik de identiteit:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\sin\left(\frac{\pi}{2}+w\right)=\cos(w)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Dus:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\boxed{\zeta=\cos\left(i\frac{\pi}{D}z\right)}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+en met
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\cos(ix)=\cosh(x)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+krijgen we:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\boxed{\zeta=\cosh\left(\frac{\pi}{D}z\right)}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsubsection*
+2.
+ Beelden van 
+\begin_inset Formula $z_{L}$
+\end_inset
+
+ en 
+\begin_inset Formula $z_{R}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Links
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+z_{L}=iD
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\zeta_{L}=\cosh!\left(\frac{\pi}{D}iD\right)=\cosh(i\pi)=\cos(\pi)=-1
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Rechts
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+z_{R}=b+iD
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\zeta_{R}=\cosh\left(\frac{\pi}{D}(b+iD)\right)=\cosh\left(\pi\frac{b}{D}+i\pi\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Gebruik:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\cosh(x+i\pi)=-\cosh(x)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Dus:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\boxed{\zeta_{R}=-\cosh!\left(\pi\frac{b}{D}\right)}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsubsection*
+3.
+ Verschil 
+\begin_inset Formula $\zeta_{R}-\zeta_{L}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\zeta_{R}-\zeta_{L}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+-\cosh!\left(\pi\frac{b}{D}\right)-(-1)=1-\cosh!\left(\pi\frac{b}{D}\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Dus:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\boxed{\zeta_{R}-\zeta_{L}=1-\cosh!\left(\pi\frac{b}{D}\right)}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Dit is volledig reëel.
+\end_layout
+
+\begin_layout Subsubsection*
+4.
+ Definitie van 
+\begin_inset Formula $p$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+p=\frac{2}{\zeta_{R}-\zeta_{L}}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Invullen:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\boxed{p=\frac{2}{1-\cosh!\left(\pi\frac{b}{D}\right)}}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+of,
+ netter:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\boxed{p=-\frac{2}{\cosh!\left(\pi\frac{b}{D}\right)-1}}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsubsection*
+5.
+ Eigenschappen (intuïtief belangrijk)
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula $p<0$
+\end_inset
+
+ voor alle 
+\begin_inset Formula $b>0$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula $p$
+\end_inset
+
+ is exact reëel
+\end_layout
+
+\begin_layout Standard
+Geen verborgen complexe bijdrage —
+ die zat alleen in de tussenstap met 
+\begin_inset Formula $i$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsubsection*
+6.
+ Asymptotiek (altijd handig)
+\end_layout
+
+\begin_layout Standard
+Smalle strook 
+\begin_inset Formula $b/D\ll1$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\cosh x-1\approx\frac{x^{2}}{2}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+p\approx-\frac{4}{\pi^{2}}\left(\frac{D}{b}\right)^{2}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+→ sterke (kwadratische) gevoeligheid
+\end_layout
+
+\begin_layout Standard
+Brede strook 
+\begin_inset Formula 
+\[
+b/D\gg1
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+p\sim-2e^{-\pi b/D}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+→ exponentiële afname
+\end_layout
+
+\begin_layout Subsubsection*
+7.
+ Conclusie
+\end_layout
+
+\begin_layout Standard
+Je eerdere complexe uitdrukking verdwijnt volledig zodra je de transformatie correct herschrijft:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\boxed{\zeta=\cosh\left(\frac{\pi}{D}z\right)\quad\Rightarrow\quad p\in\mathbb{R}}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+En expliciet:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\boxed{p=-\frac{2}{\cosh\left(\pi\frac{b}{D}\right)-1}}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Als je wilt,
+ kunnen we dit nu:
+\end_layout
+
+\begin_layout Itemize
+direct koppelen aan je 
+\series bold
+log-term in de potentiaal
+\end_layout
+
+\begin_layout Itemize
+of vergelijken met klassieke sleuf-/kanaaloplossingen (Polubarinova–Kochina,
+ Strack e.d.)
+\end_layout
+
+\begin_layout Subsection
+Along the vertial edge
+\end_layout
+
+\begin_layout Subsubsection*
+1.
+ Same mapping,
+ now on the vertical edge
+\end_layout
+
+\begin_layout Standard
+We keep the same conformal map:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\zeta=\cosh\left(\frac{\pi}{D}z\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Now we are on the 
+\series bold
+vertical edge
+\series default
+ of the contraction:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+z=iy,\quad0\le y\le D
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+with the two endpoints:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+z_{L}=i(D-h),\qquad z_{R}=iD
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsubsection*
+2.
+ Images of the endpoints
+\end_layout
+
+\begin_layout Standard
+Right point
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\zeta_{R}=\cosh\left(\frac{\pi}{D}iD\right)=\cosh(i\pi)=\cos(\pi)=-1
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Left point
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\zeta_{L}=\cosh\left(\frac{\pi}{D}i(D-h)\right)=\cos\left(\pi\left(1-\frac{h}{D}\right)\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Use
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\cos(\pi-x)=-\cos(x)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+so:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\boxed{\zeta_{L}=-\cos!\left(\pi\frac{h}{D}\right)}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsubsection*
+3.
+ Difference (
+\backslash
+zeta_R - 
+\backslash
+zeta_L)
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\zeta_{R}-\zeta_{L}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+#
+\begin_inset Formula 
+\[
+(-1)-\big(-\cos(\pi h/D)\big)=\cos\left(\pi\frac{h}{D}\right)-1
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+So:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\boxed{\zeta_{R}-\zeta_{L}=\cos!\left(\pi\frac{h}{D}\right)-1}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+This is 
+\series bold
+real and negative
+\series default
+ for 
+\begin_inset Formula $0<h<D$
+\end_inset
+
+,
+ exactly as expected for a contraction.
+\end_layout
+
+\begin_layout Subsubsection*
+4.
+ Explicit expression for 
+\begin_inset Formula $p(h)$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+With
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+p=\frac{2}{\zeta_{R}-\zeta_{L}}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+we get:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+p(h) & =\frac{2}{\cos\left(\pi\frac{h}{D}\right)-1}\\
+ & =-\frac{2}{1-\cos!\left(\pi\frac{h}{D}\right)}
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Or,
+ using the half-angle identity:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+1-\cos x=2\sin^{2}(x/2)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\boxed{p(h)=-\frac{1}{\sin^{2}!\left(\frac{\pi h}{2D}\right)}}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Very clean.
+\end_layout
+
+\begin_layout Subsubsection*
+5.
+ Asymptotics (important for calibration!)
+\end_layout
+
+\begin_layout Standard
+Small contraction 
+\begin_inset Formula $h\ll D$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\sin!\left(\frac{\pi h}{2D}\right)\approx\frac{\pi h}{2D}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\boxed{p(h)\sim-\frac{4}{\pi^{2}}\left(\frac{D}{h}\right)^{2}}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Same 
+\series bold
+quadratic blow-up
+\series default
+ as the narrow-slot limit in 
+\begin_inset Formula $b$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+Near full depth 
+\begin_inset Formula $h\to D$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\sin!\left(\frac{\pi h}{2D}\right)\to1\quad\Rightarrow\quad p\to-1
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+So the contraction saturates smoothly.
+\end_layout
+
+\begin_layout Subsubsection*
+6.
+ Structural symmetry with the top edge
+\end_layout
+
+\begin_layout Standard
+You now have:
+\end_layout
+
+\begin_layout Standard
+| Edge | Parameter | Exact (p) |
+\end_layout
+
+\begin_layout Standard
+| ------------------- | --------- | --------------------------------------- |
+\end_layout
+
+\begin_layout Standard
+| Top edge (y=D) | (b) | (p(b) = -
+\backslash
+dfrac{2}{
+\backslash
+cosh(
+\backslash
+pi b/D)-1}) |
+\end_layout
+
+\begin_layout Standard
+| Vertical edge (x=0) | (h) | (p(h) = -
+\backslash
+dfrac{1}{
+\backslash
+sin^2(
+\backslash
+pi h / 2D)}) |
+\end_layout
+
+\begin_layout Itemize
+both diverge like 
+\begin_inset Formula $-C(D/\ell)^{2}$
+\end_inset
+
+ as 
+\begin_inset Formula $\ell\to0$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+one is 
+\series bold
+hyperbolic
+\series default
+ (horizontal spreading)
+\end_layout
+
+\begin_layout Itemize
+one is 
+\series bold
+trigonometric
+\series default
+ (vertical contraction)
+\end_layout
+
+\begin_layout Itemize
+both are 
+\series bold
+exact
+\series default
+,
+ 
+\series bold
+real
+\series default
+,
+ and monotone
+\end_layout
+
+\begin_layout Standard
+This is 
+\series bold
+gold
+\series default
+ for calibration.
+\end_layout
+
+\begin_layout Subsubsection*
+7.
+ How this guides interpolation for 
+\begin_inset Formula $b>0,h>0$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+What your numerical field is doing in the interior is some smooth “blend” of:
+\end_layout
+
+\begin_layout Itemize
+horizontal resistance growth (controlled by 
+\begin_inset Formula $b$
+\end_inset
+
+)
+\end_layout
+
+\begin_layout Itemize
+vertical contraction resistance (controlled by 
+\begin_inset Formula $h$
+\end_inset
+
+)
+\end_layout
+
+\begin_layout Standard
+A very natural strategy is therefore:
+\end_layout
+
+\begin_layout Standard
+1.
+ Factor out the singular structure,
+ e.g.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+p(b,h)\sim-\frac{1}{A(b)+B(h)}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+or
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+p(b,h)\sim-\frac{1}{\alpha,\sin^{2}(\pi h/2D)+\beta,(\cosh(\pi b/D)-1)}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+2.
+ Calibrate only a few coefficients against the numerical table
+\end_layout
+
+\begin_layout Itemize
+interior is smooth
+\end_layout
+
+\begin_layout Itemize
+asymptotes are exact
+\end_layout
+
+\begin_layout Itemize
+no freedom left for “wrong” curvature near the axes
+\end_layout
+
+\begin_layout Standard
+This is much more robust than fitting a generic 2-D surface.
+\end_layout
+
+\begin_layout Subsubsection*
+8.
+ Big picture (and you already see this)
+\end_layout
+
+\begin_layout Standard
+You now have:
+\end_layout
+
+\begin_layout Itemize
+exact solution on **both bounding edges**
+\end_layout
+
+\begin_layout Itemize
+correct singular behavior at 
+\begin_inset Formula $b\to0$
+\end_inset
+
+ and 
+\begin_inset Formula $h\to0$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+correct saturation at large 
+\begin_inset Formula $b$
+\end_inset
+
+ and large 
+\begin_inset Formula $h$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+That is exactly the information one needs to turn a numerical table into a **physically faithful closed-form approximation**.
+\end_layout
+
+\begin_layout Standard
+If you want,
+ next step could be:
+\end_layout
+
+\begin_layout Itemize
+proposing a minimal 2-parameter blending form and
+\end_layout
+
+\begin_layout Itemize
+checking which combination preserves the correct second-order asymptotics in *both* limits.
+\end_layout
+
+\begin_layout Standard
+—
 
 \end_layout
 
@@ -2473,6 +3519,10 @@ We kunnen ook de relatie omkeren en een regelmatig
 
 \end_inset
 
+
+\end_layout
+
+\begin_layout Standard
 
 \end_layout
 
