@@ -714,6 +714,41 @@ p=\frac{2}{\zeta_{R}-\zeta_{L}}
 \end_layout
 
 \begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+p\zeta_{R}+q & =-1\\
+p\zeta_{L}+q & =+1\\
+\zeta_{L} & =-1
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+q & =1-p\\
+p\zeta_{R}+1-p & =-1\\
+p\left(\zeta_{R}-1\right) & =-2\\
+p & =\frac{-2}{\zeta_{R}-1}\\
+\zeta_{R}<-1
+\end{align*}
+
+\end_inset
+
+
+\begin_inset Formula 
+\[
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
 Met voor een sloot waarbij het linker punt van de sloot op 
 \begin_inset Formula $iD$
 \end_inset
@@ -734,6 +769,14 @@ Expliciet analytische afleiding van
 \end_layout
 
 \begin_layout Standard
+Bovenrand 
+\begin_inset Formula $y=D$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
 \begin_inset Formula 
 \[
 \zeta=\sin\left(i\frac{\pi}{D}z+\frac{\pi}{2}\right)
@@ -745,63 +788,187 @@ Expliciet analytische afleiding van
 \end_layout
 
 \begin_layout Standard
+Linker punt
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+z_{L}=iD\rightarrow\zeta_{L}=\sin\left(i\pi+\frac{\pi}{2}\right)=\cosh\left(\pi\right)=-1
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Rechter punt
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+z_{R}=b+iD\rightarrow\zeta_{R}=\sin\left(i\pi\frac{b}{D}+i\pi+\frac{\pi}{2}\right)=\sin\left(\frac{\pi}{2}+i\pi\left(1+\frac{b}{D}\right)\right)=\cosh\left(\pi\left(1+\frac{b}{D}\right)\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Na dezelfde transformatie ligt dit punt links van -1 op de reële as
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\boxed{\zeta_{R}<-1}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Definitie van 
+\begin_inset Formula $p$
+\end_inset
+
+ en 
+\begin_inset Formula $q$
+\end_inset
+
+ die komen van de affine transformatie
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\zeta=p\zeta_{1}+q
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+zodat
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+p\zeta_{R}+q & =-1\\
+p\zeta_{R}+q & =+1
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+met 
+\begin_inset Formula $\zeta_{L}=-1$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Invullen
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+p\zeta_{R}+q & =-1\\
+-p+q & =+1
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Uit de tweede
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+q & =1+p
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+In de eerste:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+p\zeta_{R}+1+p=-1\rightarrow p\left(\zeta_{R}+1\right)=-2
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+En dus:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+p=\frac{-2}{\zeta_{R}+1}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Omdat
+\begin_inset Formula 
+\[
+\zeta_{R}<-1\rightarrow\zeta_{R}+1<0
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+volgt onmiddellijk:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\boxed{p>0}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
 Gebruik de identiteit:
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\[
-\sin\left(\frac{\pi}{2}+w\right)=\cos(w)
-\]
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-Dus:
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\[
-\boxed{\zeta=\cos\left(i\frac{\pi}{D}z\right)}
-\]
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-en met
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\[
-\cos(ix)=\cosh(x)
-\]
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-krijgen we:
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\[
-\boxed{\zeta=\cosh\left(\frac{\pi}{D}z\right)}
-\]
-
-\end_inset
-
-
 \end_layout
 
 \begin_layout Subsubsection*
@@ -835,7 +1002,7 @@ z_{L}=iD
 \begin_layout Standard
 \begin_inset Formula 
 \[
-\zeta_{L}=\cosh!\left(\frac{\pi}{D}iD\right)=\cosh(i\pi)=\cos(\pi)=-1
+\zeta_{L}=\cosh\left(\frac{\pi}{D}iD\right)=\cosh(i\pi)=\cos(\pi)=-1
 \]
 
 \end_inset
@@ -891,7 +1058,7 @@ Dus:
 \begin_layout Standard
 \begin_inset Formula 
 \[
-\boxed{\zeta_{R}=-\cosh!\left(\pi\frac{b}{D}\right)}
+\boxed{\zeta_{R}=-\cosh\left(\pi\frac{b}{D}\right)}
 \]
 
 \end_inset
@@ -922,7 +1089,7 @@ Dus:
 \begin_layout Standard
 \begin_inset Formula 
 \[
--\cosh!\left(\pi\frac{b}{D}\right)-(-1)=1-\cosh!\left(\pi\frac{b}{D}\right)
+-\cosh!\left(\pi\frac{b}{D}\right)-(-1)=1-\cosh\left(\pi\frac{b}{D}\right)
 \]
 
 \end_inset
@@ -937,7 +1104,7 @@ Dus:
 \begin_layout Standard
 \begin_inset Formula 
 \[
-\boxed{\zeta_{R}-\zeta_{L}=1-\cosh!\left(\pi\frac{b}{D}\right)}
+\boxed{\zeta_{R}-\zeta_{L}=1-\cosh\left(\pi\frac{b}{D}\right)}
 \]
 
 \end_inset
@@ -961,7 +1128,7 @@ Dit is volledig reëel.
 \begin_layout Standard
 \begin_inset Formula 
 \[
-p=\frac{2}{\zeta_{R}-\zeta_{L}}
+p=\frac{-2}{\zeta_{R}+1}
 \]
 
 \end_inset
@@ -976,23 +1143,7 @@ Invullen:
 \begin_layout Standard
 \begin_inset Formula 
 \[
-\boxed{p=\frac{2}{1-\cosh!\left(\pi\frac{b}{D}\right)}}
-\]
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-of,
- netter:
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\[
-\boxed{p=-\frac{2}{\cosh!\left(\pi\frac{b}{D}\right)-1}}
+\boxed{p=\frac{2}{\cosh\left(\pi\frac{b}{D}\right)-1}}
 \]
 
 \end_inset
@@ -1059,7 +1210,7 @@ Smalle strook
 \begin_layout Standard
 \begin_inset Formula 
 \[
-p\approx-\frac{4}{\pi^{2}}\left(\frac{D}{b}\right)^{2}
+p\approx\frac{4}{\pi^{2}}\left(\frac{D}{b}\right)^{2}
 \]
 
 \end_inset
@@ -1075,7 +1226,7 @@ p\approx-\frac{4}{\pi^{2}}\left(\frac{D}{b}\right)^{2}
 Brede strook 
 \begin_inset Formula 
 \[
-b/D\gg1
+b/D\gg1\rightarrow\cosh x\approx\frac{1}{2}e^{x}
 \]
 
 \end_inset
@@ -1084,9 +1235,20 @@ b/D\gg1
 \end_layout
 
 \begin_layout Standard
+Dus:
+\end_layout
+
+\begin_layout Standard
 \begin_inset Formula 
 \[
-p\sim-2e^{-\pi b/D}
+\cosh x-1\approx\frac{1}{2}e^{x}\rightarrow p\approx\frac{2}{\frac{1}{2}e^{x}}=4e^{-x}
+\]
+
+\end_inset
+
+
+\begin_inset Formula 
+\[
 \]
 
 \end_inset
@@ -1125,7 +1287,7 @@ En expliciet:
 \begin_layout Standard
 \begin_inset Formula 
 \[
-\boxed{p=-\frac{2}{\cosh\left(\pi\frac{b}{D}\right)-1}}
+\boxed{p=\frac{2}{\cosh\left(\pi\frac{b}{D}\right)-1}}
 \]
 
 \end_inset
@@ -1155,12 +1317,15 @@ Along the vertial edge
 
 \begin_layout Subsubsection*
 1.
- Same mapping,
- now on the vertical edge
+ Zelfde transformatie maar nu op de verticale rand (
+\begin_inset Formula $z=iy)$
+\end_inset
+
+
 \end_layout
 
 \begin_layout Standard
-We keep the same conformal map:
+Dezelfde conforme tranformatie:
 \end_layout
 
 \begin_layout Standard
@@ -1175,11 +1340,8 @@ We keep the same conformal map:
 \end_layout
 
 \begin_layout Standard
-Now we are on the 
-\series bold
-vertical edge
-\series default
- of the contraction:
+We bevinden ons nu op de verticale rand,
+ waar de punten een contractie definiëren vanaf de top:
 \end_layout
 
 \begin_layout Standard
@@ -1194,7 +1356,7 @@ z=iy,\quad0\le y\le D
 \end_layout
 
 \begin_layout Standard
-with the two endpoints:
+met twee eindpunten:
 \end_layout
 
 \begin_layout Standard
@@ -1210,11 +1372,15 @@ z_{L}=i(D-h),\qquad z_{R}=iD
 
 \begin_layout Subsubsection*
 2.
- Images of the endpoints
+ Afbeelding van de eindpunten
 \end_layout
 
 \begin_layout Standard
-Right point
+Rechter punt (hier bovensge punt op 
+\begin_inset Formula $z_{R}=iD$
+\end_inset
+
+
 \end_layout
 
 \begin_layout Standard
@@ -1229,7 +1395,7 @@ Right point
 \end_layout
 
 \begin_layout Standard
-Left point
+Linker punt
 \end_layout
 
 \begin_layout Standard
@@ -1244,7 +1410,7 @@ Left point
 \end_layout
 
 \begin_layout Standard
-Use
+Gebruik
 \end_layout
 
 \begin_layout Standard
@@ -1259,13 +1425,13 @@ Use
 \end_layout
 
 \begin_layout Standard
-so:
+zodat:
 \end_layout
 
 \begin_layout Standard
 \begin_inset Formula 
 \[
-\boxed{\zeta_{L}=-\cos!\left(\pi\frac{h}{D}\right)}
+\boxed{\zeta_{L}=-\cos\left(\pi\frac{h}{D}\right)}
 \]
 
 \end_inset
@@ -1275,17 +1441,17 @@ so:
 
 \begin_layout Subsubsection*
 3.
- Difference (
-\backslash
-zeta_R - 
-\backslash
-zeta_L)
+ Het verschil 
+\begin_inset Formula $\zeta_{R}-\zeta_{L}$
+\end_inset
+
+
 \end_layout
 
 \begin_layout Standard
 \begin_inset Formula 
 \[
-\zeta_{R}-\zeta_{L}
+\zeta_{R}-\zeta_{L}=(-1)-\big(-\cos(\pi h/D)\big)=\cos\left(\pi\frac{h}{D}\right)-1
 \]
 
 \end_inset
@@ -1294,10 +1460,13 @@ zeta_L)
 \end_layout
 
 \begin_layout Standard
-#
+Dus:
+\end_layout
+
+\begin_layout Standard
 \begin_inset Formula 
 \[
-(-1)-\big(-\cos(\pi h/D)\big)=\cos\left(\pi\frac{h}{D}\right)-1
+\boxed{\zeta_{R}-\zeta_{L}=\cos\left(\pi\frac{h}{D}\right)-1}
 \]
 
 \end_inset
@@ -1306,36 +1475,21 @@ zeta_L)
 \end_layout
 
 \begin_layout Standard
-So:
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\[
-\boxed{\zeta_{R}-\zeta_{L}=\cos!\left(\pi\frac{h}{D}\right)-1}
-\]
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-This is 
+Dit is 
 \series bold
-real and negative
+real en negatief
 \series default
  for 
 \begin_inset Formula $0<h<D$
 \end_inset
 
 ,
- exactly as expected for a contraction.
+ precies zoals verwacht voor een contractie.
 \end_layout
 
 \begin_layout Subsubsection*
 4.
- Explicit expression for 
+ Expliciete uitdrukking voor 
 \begin_inset Formula $p(h)$
 \end_inset
 
@@ -1343,29 +1497,10 @@ real and negative
 \end_layout
 
 \begin_layout Standard
-With
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\[
-p=\frac{2}{\zeta_{R}-\zeta_{L}}
-\]
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-we get:
-\end_layout
-
-\begin_layout Standard
 \begin_inset Formula 
 \begin{align*}
-p(h) & =\frac{2}{\cos\left(\pi\frac{h}{D}\right)-1}\\
- & =-\frac{2}{1-\cos!\left(\pi\frac{h}{D}\right)}
+p\zeta_{R}+q & =-1\\
+p\zeta_{L}+q & =+1
 \end{align*}
 
 \end_inset
@@ -1374,8 +1509,85 @@ p(h) & =\frac{2}{\cos\left(\pi\frac{h}{D}\right)-1}\\
 \end_layout
 
 \begin_layout Standard
-Or,
- using the half-angle identity:
+en 
+\begin_inset Formula $\zeta_{L}=-1$
+\end_inset
+
+volgt
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+-p+q & =-1\\
+p\zeta_{L}+q & =+1
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+zodat met 
+\begin_inset Formula $q=p-1$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+p\left(\zeta_{L}+1\right)=2
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+p=\frac{2}{\zeta_{L}+1}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Omdat 
+\begin_inset Formula $\zeta_{L}>-1$
+\end_inset
+
+ volgt dat 
+\begin_inset Formula $p>0$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+We krijgen dus:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+p(h) & =\frac{2}{1-\cos\left(\pi\frac{h}{D}\right)}
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Of,
+ met de halve-hoek identiteit:
 \end_layout
 
 \begin_layout Standard
@@ -1392,7 +1604,7 @@ Or,
 \begin_layout Standard
 \begin_inset Formula 
 \[
-\boxed{p(h)=-\frac{1}{\sin^{2}!\left(\frac{\pi h}{2D}\right)}}
+\boxed{p(h)=\frac{1}{\sin^{2}\left(\frac{\pi h}{2D}\right)}}
 \]
 
 \end_inset
@@ -1401,16 +1613,16 @@ Or,
 \end_layout
 
 \begin_layout Standard
-Very clean.
+Netjes.
 \end_layout
 
 \begin_layout Subsubsection*
 5.
- Asymptotics (important for calibration!)
+ Asymptotisch gedrag (belangrijk voor kalibratie!)
 \end_layout
 
 \begin_layout Standard
-Small contraction 
+Kleine contractie 
 \begin_inset Formula $h\ll D$
 \end_inset
 
@@ -1420,7 +1632,7 @@ Small contraction
 \begin_layout Standard
 \begin_inset Formula 
 \[
-\sin!\left(\frac{\pi h}{2D}\right)\approx\frac{\pi h}{2D}
+\sin\left(\frac{\pi h}{2D}\right)\approx\frac{\pi h}{2D}
 \]
 
 \end_inset
@@ -1431,7 +1643,7 @@ Small contraction
 \begin_layout Standard
 \begin_inset Formula 
 \[
-\boxed{p(h)\sim-\frac{4}{\pi^{2}}\left(\frac{D}{h}\right)^{2}}
+\boxed{p(h)\sim\left(\frac{2D}{\pi h}\right)^{2}}
 \]
 
 \end_inset
@@ -1440,11 +1652,7 @@ Small contraction
 \end_layout
 
 \begin_layout Standard
-Same 
-\series bold
-quadratic blow-up
-\series default
- as the narrow-slot limit in 
+Zelfde kwadratisch opblazen van de p en dus de weerstand bij steeds kleinere contractie als bij 
 \begin_inset Formula $b$
 \end_inset
 
@@ -1452,7 +1660,7 @@ quadratic blow-up
 \end_layout
 
 \begin_layout Standard
-Near full depth 
+Asymptotisch gedrag wanneer de volledige dikte benadert 
 \begin_inset Formula $h\to D$
 \end_inset
 
@@ -1462,7 +1670,7 @@ Near full depth
 \begin_layout Standard
 \begin_inset Formula 
 \[
-\sin!\left(\frac{\pi h}{2D}\right)\to1\quad\Rightarrow\quad p\to-1
+\sin\left(\frac{\pi h}{2D}\right)\to1\quad\Rightarrow\quad p\to1
 \]
 
 \end_inset
@@ -1471,49 +1679,176 @@ Near full depth
 \end_layout
 
 \begin_layout Standard
-So the contraction saturates smoothly.
+Bij 
+\begin_inset Formula $p=1$
+\end_inset
+
+ is er geen weerstand.
+ Dus de contraction gedraagt zich netjes.
 \end_layout
 
 \begin_layout Subsubsection*
 6.
- Structural symmetry with the top edge
+ Structurele symmetrie met de sloot langs de bovenrand
 \end_layout
 
 \begin_layout Standard
-You now have:
+We hebben nu:
 \end_layout
 
 \begin_layout Standard
-| Edge | Parameter | Exact (p) |
+\begin_inset Float table
+placement document
+alignment document
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+Overzicht
 \end_layout
 
-\begin_layout Standard
-| ------------------- | --------- | --------------------------------------- |
+\end_inset
+
+
 \end_layout
 
-\begin_layout Standard
-| Top edge (y=D) | (b) | (p(b) = -
-\backslash
-dfrac{2}{
-\backslash
-cosh(
-\backslash
-pi b/D)-1}) |
+\begin_layout Plain Layout
+\begin_inset Tabular
+<lyxtabular version="3" rows="3" columns="3">
+<features tabularvalignment="middle">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<row>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Rand
 \end_layout
 
-\begin_layout Standard
-| Vertical edge (x=0) | (h) | (p(h) = -
-\backslash
-dfrac{1}{
-\backslash
-sin^2(
-\backslash
-pi h / 2D)}) |
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Parameter
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Exact 
+\begin_inset Formula $p$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Bovenrand (
+\begin_inset Formula $y=D$
+\end_inset
+
+)
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $b$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $p(b)=\dfrac{2}{1-\cosh(\pi b/D)}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Verticale rand (
+\begin_inset Formula $x=0$
+\end_inset
+
+)
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $h$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $p(h)=\dfrac{1}{\sin^{2}(\pi h/2D)}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+</lyxtabular>
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
 \end_layout
 
 \begin_layout Itemize
-both diverge like 
-\begin_inset Formula $-C(D/\ell)^{2}$
+Beide divergeren volgens 
+\begin_inset Formula $C(D/\ell)^{2}$
 \end_inset
 
  as 
@@ -1524,46 +1859,42 @@ both diverge like
 \end_layout
 
 \begin_layout Itemize
-one is 
+De horizontale spreading is 
 \series bold
-hyperbolic
-\series default
- (horizontal spreading)
+hyperbolisch
 \end_layout
 
 \begin_layout Itemize
-one is 
+De verticale spreading is 
 \series bold
-trigonometric
-\series default
- (vertical contraction)
+trigonometrisch
 \end_layout
 
 \begin_layout Itemize
-both are 
+biede zijn exact 
 \series bold
 exact
 \series default
 ,
  
 \series bold
-real
+positief real
 \series default
 ,
- and monotone
+ en monotoon
 \end_layout
 
 \begin_layout Standard
-This is 
+Dit is 
 \series bold
-gold
+goud
 \series default
- for calibration.
+ voor kalibratie.
 \end_layout
 
 \begin_layout Subsubsection*
 7.
- How this guides interpolation for 
+ Hoe werkt dit richting interpolatie voor 
 \begin_inset Formula $b>0,h>0$
 \end_inset
 
@@ -1571,39 +1902,39 @@ gold
 \end_layout
 
 \begin_layout Standard
-What your numerical field is doing in the interior is some smooth “blend” of:
+What het numerieke veld doet binnen de randen is een of andere geleidelijke mix van :
 \end_layout
 
 \begin_layout Itemize
-horizontal resistance growth (controlled by 
+horizontale groei van de weerstand die gecontroleerd wordt door 
 \begin_inset Formula $b$
 \end_inset
 
-)
+
 \end_layout
 
 \begin_layout Itemize
-vertical contraction resistance (controlled by 
+verticale constratieweerstand die gecontroleerd wordt door 
 \begin_inset Formula $h$
 \end_inset
 
-)
+
 \end_layout
 
 \begin_layout Standard
-A very natural strategy is therefore:
+Een natuurlijke strategie is daarom devolgende:
 \end_layout
 
 \begin_layout Standard
 1.
- Factor out the singular structure,
- e.g.
+ Factor uit de singuliere structuur,
+ bijv.
 \end_layout
 
 \begin_layout Standard
 \begin_inset Formula 
 \[
-p(b,h)\sim-\frac{1}{A(b)+B(h)}
+p(b,h)\sim\frac{1}{A(b)+B(h)}
 \]
 
 \end_inset
@@ -1612,13 +1943,13 @@ p(b,h)\sim-\frac{1}{A(b)+B(h)}
 \end_layout
 
 \begin_layout Standard
-or
+of
 \end_layout
 
 \begin_layout Standard
 \begin_inset Formula 
 \[
-p(b,h)\sim-\frac{1}{\alpha,\sin^{2}(\pi h/2D)+\beta,(\cosh(\pi b/D)-1)}
+p(b,h)\sim\frac{1}{\alpha,\sin^{2}(\pi h/2D)+\beta,(\cosh(\pi b/D)-1)}
 \]
 
 \end_inset
@@ -1628,44 +1959,44 @@ p(b,h)\sim-\frac{1}{\alpha,\sin^{2}(\pi h/2D)+\beta,(\cosh(\pi b/D)-1)}
 
 \begin_layout Standard
 2.
- Calibrate only a few coefficients against the numerical table
+ Kalibreerd slechts enkele coëfficiënten tegen de numerieke tabel
 \end_layout
 
 \begin_layout Itemize
-interior is smooth
+het binnngebied is glad
 \end_layout
 
 \begin_layout Itemize
-asymptotes are exact
+de asymptoten zijn exact
 \end_layout
 
 \begin_layout Itemize
-no freedom left for “wrong” curvature near the axes
+er is geen vrijheid over voor verkeerde kromming nabij de assen
 \end_layout
 
 \begin_layout Standard
-This is much more robust than fitting a generic 2-D surface.
+Dit is veel robuuster dan het fitten van een willekeurig 2D vlak.
 \end_layout
 
 \begin_layout Subsubsection*
 8.
- Big picture (and you already see this)
+ Her grote plaatje
 \end_layout
 
 \begin_layout Standard
-You now have:
+We heben nu:
 \end_layout
 
 \begin_layout Itemize
-exact solution on **both bounding edges**
+de exacte oplossing op beide randen
 \end_layout
 
 \begin_layout Itemize
-correct singular behavior at 
+correct singulie gedrag bij 
 \begin_inset Formula $b\to0$
 \end_inset
 
- and 
+ en 
 \begin_inset Formula $h\to0$
 \end_inset
 
@@ -1673,11 +2004,11 @@ correct singular behavior at
 \end_layout
 
 \begin_layout Itemize
-correct saturation at large 
+correcte verzadiging bij grote
 \begin_inset Formula $b$
 \end_inset
 
- and large 
+ en grote 
 \begin_inset Formula $h$
 \end_inset
 
@@ -1685,7 +2016,7 @@ correct saturation at large
 \end_layout
 
 \begin_layout Standard
-That is exactly the information one needs to turn a numerical table into a **physically faithful closed-form approximation**.
+Dit is precies de informatie die je nodig hbt om een numerieke tabel om te zetten en een fysisch geloofwaardige closed-form benadering.
 \end_layout
 
 \begin_layout Standard
@@ -1699,6 +2030,36 @@ proposing a minimal 2-parameter blending form and
 
 \begin_layout Itemize
 checking which combination preserves the correct second-order asymptotics in *both* limits.
+\end_layout
+
+\begin_layout Standard
+Onze numerieke tabel bevat
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\frac{\Delta\Phi}{Q}=\frac{b}{D}+\frac{1}{\pi}\ln p
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Dus de doelfunctie in de kalibratie is
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+residu=\left(\frac{\Delta\Phi}{Q}\right)_{num}-\left[\frac{b}{D}-\frac{1}{\pi}\left(\alpha\sin^{2}\left(\frac{\pi h}{2D}\right)+\beta\left(\cosh\left(\pi\frac{b}{D}\right)-1\right)\right)\right]
+\]
+
+\end_inset
+
+
 \end_layout
 
 \begin_layout Standard

@@ -1089,7 +1089,7 @@ Dus:
 \begin_layout Standard
 \begin_inset Formula 
 \[
--\cosh!\left(\pi\frac{b}{D}\right)-(-1)=1-\cosh\left(\pi\frac{b}{D}\right)
+-\cosh\left(\pi\frac{b}{D}\right)-(-1)=1-\cosh\left(\pi\frac{b}{D}\right)
 \]
 
 \end_inset
@@ -1312,7 +1312,7 @@ of vergelijken met klassieke sleuf-/kanaaloplossingen (Polubarinova–Kochina,
 \end_layout
 
 \begin_layout Subsection
-Along the vertial edge
+Langs de verticale rand
 \end_layout
 
 \begin_layout Subsubsection*
