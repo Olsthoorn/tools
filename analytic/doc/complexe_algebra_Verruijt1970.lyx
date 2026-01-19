@@ -1,0 +1,1051 @@
+#LyX 2.4 created this file. For more info see https://www.lyx.org/
+\lyxformat 620
+\begin_document
+\begin_header
+\save_transient_properties true
+\origin unavailable
+\textclass article
+\begin_preamble
+%\usepackage{epstopdf} % to include .eps graphics files with pdfLaTeX
+\usepackage{flafter}   % Don't place floats before their definition
+%\usepackage{topcapt}  % Define \topcation for placing captions above tables (not in gwTeX)
+
+\usepackage{xurl}      % better URL setting, uses old url package
+
+\usepackage{xcolor}
+\definecolor{darkblue}{rgb}{0,0,0.4}
+\usepackage[]{hyperref} % Generates all cross references
+\hypersetup{            % Setting options for hyperref package
+	breaklinks=true,    % break line with long hyperlinks
+	colorlinks=true,    % coloured links
+	linkcolor=blue,
+	filecolor=magenta,
+	urlcolor=darkblue,
+	citecolor=blue,
+	backref=page
+} 
+
+\usepackage{memhfixc}  % remove conflict between the memoir class & hyperref
+\usepackage{pdfsync}   % enable tex source and pdf output syncronicity
+
+\usepackage{memhfixc}  % remove conflict between the memoir class & hyperref
+\usepackage{pdfsync}   % enable tex source and pdf output syncronicity
+
+\usepackage{alltt}
+
+% \usepackage{listings}
+% \usepackage{xcolor}
+
+% \lstdefinestyle{mystyle}{
+%   language=Python,
+%   numbers=left
+% }
+
+% Put lstset here, after lstdefinestyle
+% \lstset{style=mystyle}
+\end_preamble
+\use_default_options true
+\maintain_unincluded_children no
+\language dutch
+\language_package default
+\inputencoding utf8
+\fontencoding auto
+\font_roman "default" "default"
+\font_sans "default" "default"
+\font_typewriter "default" "default"
+\font_math "auto" "auto"
+\font_default_family default
+\use_non_tex_fonts false
+\font_sc false
+\font_roman_osf false
+\font_sans_osf false
+\font_typewriter_osf false
+\font_sf_scale 100 100
+\font_tt_scale 100 100
+\use_microtype false
+\use_dash_ligatures true
+\graphics default
+\default_output_format pdf2
+\output_sync 0
+\bibtex_command biber
+\index_command default
+\float_placement h
+\float_alignment center
+\paperfontsize default
+\spacing single
+\use_hyperref false
+\papersize default
+\use_geometry true
+\use_package amsmath 1
+\use_package amssymb 1
+\use_package cancel 1
+\use_package esint 1
+\use_package mathdots 1
+\use_package mathtools 1
+\use_package mhchem 1
+\use_package stackrel 1
+\use_package stmaryrd 1
+\use_package undertilde 1
+\cite_engine biblatex
+\cite_engine_type authoryear
+\biblio_options hyperref=true, backref=true, backrefstyle=three,backreffloats=true,indexing=bib,date=year
+\biblatex_bibstyle authoryear
+\biblatex_citestyle authoryear
+\use_bibtopic false
+\use_indices false
+\paperorientation portrait
+\suppress_date false
+\justification true
+\use_refstyle 1
+\use_formatted_ref 0
+\use_minted 0
+\use_lineno 0
+\index Index
+\shortcut idx
+\color #008000
+\end_index
+\leftmargin 1in
+\topmargin 1in
+\rightmargin 1in
+\bottommargin 1in
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation indent
+\paragraph_indentation default
+\is_math_indent 0
+\math_numbering_side default
+\quotes_style polish
+\dynamic_quotes 0
+\papercolumns 1
+\papersides 1
+\paperpagestyle default
+\tablestyle default
+\listings_params "language=Python,extendedchars=false,frameround=fttt,numbers=left,% line numbers use none,numberstyle={\tiny},stepnumber=2,% line numbers only every so many,numbersep=9pt,% how far line numbers from text?,showspaces=false,showstringspaces=false,showtabs=false,tab={\rightarrowfill},basicstyle={\small},keywordstyle={\color{blue}},commentstyle={\color{green}},stringstyle={\ttfamily \color{magenta}},identifierstyle={\color{black}}"
+\tracking_changes false
+\output_changes false
+\change_bars false
+\postpone_fragile_content false
+\html_math_output 0
+\html_css_as_file 0
+\html_be_strict false
+\docbook_table_output 0
+\docbook_mathml_prefix 1
+\end_header
+
+\begin_body
+
+\begin_layout Title
+Complex numbers (Verruijt 1970)
+\end_layout
+
+\begin_layout Section
+De algebra van complexe getallen
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+z=x+iy
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+i^{2}=-1
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+x+iy & =\frac{a+ib}{c+id}\\
+x+iy & =\frac{\left(a+ib\right)\left(c-id\right)}{\left(c+id\right)\left(c-id\right)}\\
+x+iy & =\frac{\left(ac+bd\right)+i\left(bc-ad\right)}{c^{2}+d^{2}}
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Conjugate 
+\begin_inset Formula $\overline{z}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\overline{z}=x-iy
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+z\overline{z} & =\left(x+iy\right)\left(x-iy\right)\\
+ & =x^{2}+y^{2}
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+z+\overline{z}=2x
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+z-\overline{z}=+2iy
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+z=re^{i\theta},\;\text{met}\;0\le\theta\le\pi
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+x=r\cos\theta,\;y=r\sin\theta
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+z=r\cos\theta+ir\sin\theta
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Vermenigvuldigen en delen van complexe getallen is gemakkelijk wanneer je ze in polaire coördinaten schrijft
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+z_{1}z_{2} & =r_{1}\left(\cos\theta_{1}+i\sin\theta_{1}\right)r_{2}\left(\cos\theta_{2}+i\sin\theta_{2}\right)\\
+ & =r_{1}r_{2}\left(\cos\theta_{1}\cos\theta_{2}-\sin\theta_{1}\sin\theta_{2}+i\left(\sin\theta_{1}\cos\theta_{2}+\sin\theta_{2}\cos\theta_{1}\right)\right)
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Met
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+\cos\theta_{1}\cos\theta_{2}-\sin\theta_{1}\sin\theta_{2} & =\cos\left(\theta_{1}+\theta_{2}\right)\\
+\sin\theta_{1}\cos\theta_{1}+\sin\theta_{2}\cos\theta_{2} & =\sin\left(\theta_{2}+\theta_{2}\right)
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+z_{1}z_{2}=r_{1}r_{2}\left(\cos\left(\theta_{1}+\theta_{2}\right)+i\sin\left(\theta_{1}+\theta_{2}\right)\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+z_{1}/z_{2} & =\frac{r_{1}}{r_{2}}\frac{\left(\cos\theta_{1}+i\sin\theta_{1}\right)}{\left(\cos\theta_{2}+i\sin\theta_{2}\right)}\frac{\left(\cos\theta_{2}-i\sin\theta_{1}\right)}{\left(\cos\theta_{2}-i\sin\theta_{2}\right)}\\
+ & =\frac{r_{1}}{r_{1}}\times\frac{\left(\cos\theta_{1}\cos\theta_{2}+\sin\theta_{1}\sin\theta_{2}\right)+i\left(\sin\theta_{1}\cos\theta_{2}-\cos\theta_{1}\sin\theta_{2}\right)}{\cos^{2}\theta_{2}+\sin^{2}\theta_{2}}\\
+ & =\frac{r_{1}}{r_{1}}\times\left(\cos\left(\theta_{1}-\theta_{2}\right)+i\sin\left(\theta_{1}-\theta_{2}\right)\right)
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\left|z\right|=\left|x+iy\right|=\left|re^{i\theta}\right|=r
+\]
+
+\end_inset
+
+
+\begin_inset Newline newline
+\end_inset
+
+
+\begin_inset Formula 
+\begin{align*}
+\left|z_{1}z_{2}\right| & =r_{1}r_{2}\\
+\left|z_{1}/z_{1}\right| & =r_{1}/r_{2}
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+\arg\left(z_{1}z_{2}\right) & =\arg z_{1}+\arg z_{2}\\
+\arg\left(z_{1}/z_{2}\right) & =\arg z_{1}-\arg z_{2}
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+z^{n} & =r^{n}\left(\cos\theta+i\sin\theta\right)^{n}\\
+ & =r^{n}\left(\cos n\theta+i\sin n\theta\right)
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Dus ook
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\cos n\theta+i\sin n\theta=\left(\cos\theta+i\sin\theta\right)^{n}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+Analytische uitdrukkingen van een complexe variabele
+\end_layout
+
+\begin_layout Standard
+Functie van een complexe variabele,
+ concept:
+\end_layout
+
+\begin_layout Standard
+Als voor elk punt in een omgeving 
+\begin_inset Formula $R$
+\end_inset
+
+ in het complexe vlak een of meer waarden van 
+\begin_inset Formula $w$
+\end_inset
+
+,
+ ook een complex getal,
+ bestaat of is gedefinieerd,
+ dan is 
+\begin_inset Formula $w$
+\end_inset
+
+ een functie van 
+\begin_inset Formula $z$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+w=f\left(z\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula $R$
+\end_inset
+
+ is de het definitiegebied voor de complexe functie.
+ 
+\begin_inset Formula $f\left(z\right)$
+\end_inset
+
+ enkel of meerwaardig zijn.
+\end_layout
+
+\begin_layout Standard
+Een eenwaardige functie 
+\begin_inset Formula $f\left(z\right)$
+\end_inset
+
+ is continu in het punt 
+\begin_inset Formula $z_{0}$
+\end_inset
+
+ wanneer
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\lim_{z\to\z_{0}}f\left(z\right)=f\left(z_{0}\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+onafhankelijk van het pad in het 
+\begin_inset Formula $z$
+\end_inset
+
+-vlak waarlangs 
+\begin_inset Formula $z_{0}$
+\end_inset
+
+ wordt benaderd.
+\end_layout
+
+\begin_layout Standard
+Een eenwaardige functie is continu in regio 
+\begin_inset Formula $R$
+\end_inset
+
+ wanneer hij continu is in elk punt van 
+\begin_inset Formula $R$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+Wanneer de limiet
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\lim_{z\to z_{0}}\frac{f\left(z_{0}+\Delta z\right)-f\left(z_{0}\right)}{\Delta z}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+bestaat,
+ en zijn waarde onafhankelijk is van het gekozen pad,
+ dan is de functie 
+\begin_inset Formula $f\left(z\right)$
+\end_inset
+
+ analytisch in 
+\begin_inset Formula $z_{0}$
+\end_inset
+
+.
+ De limiet wordt aangeduid als de afgeleide 
+\begin_inset Formula $f'\left(w\right)$
+\end_inset
+
+ of 
+\begin_inset Formula $df/dz$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+In de theorie van functies van complexe variabelen wordt de term 
+\begin_inset Quotes pld
+\end_inset
+
+analytisch
+\begin_inset Quotes prd
+\end_inset
+
+ gebruikt in plaats van 
+\begin_inset Quotes pld
+\end_inset
+
+differentieerbaar
+\begin_inset Quotes prd
+\end_inset
+
+ bij functies van reële getallen.
+ Dit betekent gewoon dat de afgeleide van een complexe functie bestaat in boven beschreven zin.
+\end_layout
+
+\begin_layout Standard
+Hoe bewijzen we dat een functie analytisch is?
+ Zo:
+ wanneer een functie 
+\begin_inset Formula $w=f\left(z\right)$
+\end_inset
+
+ met 
+\begin_inset Formula $w=u+iv$
+\end_inset
+
+ en 
+\begin_inset Formula $z=x+iy$
+\end_inset
+
+ analytisch is in 
+\begin_inset Formula $z_{0}=x_{0}+iy_{0}$
+\end_inset
+
+,
+ dan zijn de volgende relaties waar:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\frac{\partial u}{\partial x}=\frac{\partial v}{\partial y};\;\frac{\partial u}{\partial y}=-\frac{\partial v}{\partial x}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Die zijn de zogenoemde Cauchy-Riemann relaties.
+\end_layout
+
+\begin_layout Standard
+Lijkt dat op
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+q_{x} & =-\frac{\partial\Phi}{\partial x}=-\frac{\partial\Psi}{\partial y};\;q_{y}=-\frac{\partial\Phi}{\partial y}=\frac{\partial\Psi}{\partial x}
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+\frac{\partial^{2}\phi}{\partial x^{2}}+\frac{\partial^{2}\phi}{\partial y^{2}} & =0\\
+\frac{\partial^{2}\Psi}{\partial x^{2}}+\frac{\partial^{2}\Psi}{\partial y^{2}} & =0
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+\frac{\partial^{2}\Phi}{\partial x^{2}} & =\frac{\partial\Psi}{\partial x\partial y}\\
+\frac{\partial^{2}\Phi}{\partial y^{2}} & =-\frac{\partial^{2}\Psi}{\partial x\partial y}
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Dus de som is nul
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+\frac{\partial^{2}\Psi}{\partial x^{2}} & =-\frac{\partial^{2}\Phi}{\partial x\partial y}\\
+\frac{\partial^{2}\Psi}{\partial y^{2}} & =\frac{\partial^{2}\Phi}{\partial x\partial y}
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Dus de som is nul.
+\end_layout
+
+\begin_layout Standard
+Dus als 
+\begin_inset Formula $\Phi$
+\end_inset
+
+ en 
+\begin_inset Formula $\Psi$
+\end_inset
+
+ aan de Laplace vergelijking voldoen zijn zij analytisch,
+ want zij voldoen dan ook aan de Cauchy-Riemann relaties.
+\end_layout
+
+\begin_layout Standard
+Hoe bewijzen we de Cauchy-Riemann relaties?
+ Dus als de afgeleide bestaat onafhankelijk van het gekozen pad deze dan gelden?
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+w=u\left(x,y\right)+iv\left(x,y\right);\;\Delta z=\Delta x+i\Delta y
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+\frac{\ensuremath{dw}}{dz} & =\lim_{\Delta x\to0;\;\Delta y\to0}\frac{\left[u\left(x+\Delta x,y+\Delta y\right)+iv\left(x+\Delta x,y+\Delta y\right)-u\left(x,y\right)-iv\left(x,y\right)\right]}{\Delta x+i\Delta y}
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula $\Delta x$
+\end_inset
+
+ en 
+\begin_inset Formula $\Delta y$
+\end_inset
+
+ kunnen naar nul gaan langs willekeurig welk pad (binnen 
+\begin_inset Formula $R$
+\end_inset
+
+ natuurlijk).
+ Dan kiezen we de horizontale weg
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+\frac{\ensuremath{dw}}{dz} & =\lim_{\Delta x\to0}\left[\frac{u\left(x+\Delta x,iy\right)-u\left(x,y\right)}{\Delta x}+i\frac{v\left(x+\Delta x,y\right)-v\left(x,y\right)}{\Delta x}\right]\\
+ & =\frac{\partial u}{\partial x}+i\frac{\partial v}{\partial x}
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Op de zelfde manier langs de verticale weg
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+\frac{\ensuremath{dw}}{dz} & =\lim_{\Delta y\to0}\left[\frac{u\left(x,y+\Delta y\right)-u\left(x,y\right)}{i\Delta y}+i\frac{v\left(x,y+\Delta y\right)-v\left(x,y\right)}{i\Delta y}\right]\\
+ & =\frac{\partial v}{\partial y}-i\frac{\partial u}{\partial y}
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Dus
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+\frac{\partial u}{\partial x} & =\frac{\partial v}{\partial y}\\
+\frac{\partial u}{\partial y} & =-\frac{\partial v}{\partial x}
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Een functie moet aan de Cauchy-Riemann vergelijkingen voldoen om analytisch te zijn.
+\end_layout
+
+\begin_layout Standard
+Zowel het reële als het imaginaire deel van een analytische functie voldoet aan de Laplace-vergelijking.
+ Dus reduceert het zoeken van oplossingen die voldoen aan de Laplace-vergelijking tot het zoeken naar analytische functies.
+\end_layout
+
+\begin_layout Standard
+Een andere eigenschap van analytische functies is dat de afgeleide van een analytische functie zelf ook een analytische functie is.
+ Met
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+\frac{dw}{dz} & =\frac{\partial u}{\partial x}+i\frac{\partial v}{\partial x}\\
+\frac{dw}{dz} & =\frac{\partial v}{\partial y}-i\frac{\partial u}{\partial y}
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Dus
+\backslash
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\frac{dw}{dz}=\frac{\partial u}{\partial x}-i\frac{\partial u}{\partial y}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+De reële en imaginaire delen van deze afgeleide (aangegeven als 
+\begin_inset Formula $u^{*}$
+\end_inset
+
+en 
+\begin_inset Formula $v^{*}$
+\end_inset
+
+ voldoen ook aan de CR-vergelijkingen.
+\end_layout
+
+\begin_layout Section
+Voorbeelden van analytische functies
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+w=f\left(z\right)=c=a+ib
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Alle afgeleiden zijn nul,
+ dus voldoet 
+\begin_inset Formula $f\left(z\right)=c$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+w=u+iv=f\left(z\right)=z=x+iy
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\frac{\partial u}{\partial x}=\frac{\partial v}{\partial y}=1;\;\frac{\partial u}{\partial y}=-\frac{\partial v}{\partial x}=0
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+f'\left(w\right)=\frac{dz}{dx}=1
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+w=f\left(z\right)=z^{2}=\left(x+iy\right)^{2}=x^{2}-y^{2}+i\left(2xy\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\frac{\partial u}{\partial x}=\frac{\partial v}{\partial y}=2x;\;\frac{\partial u}{\partial y}=-\frac{\partial v}{\partial x}=-2y
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+f'\left(w\right)=2x+i2y=2z
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Functies van complexe variabelen zijn generalisaties van functies van reële variabelen.
+ Deze complex functies reduceren tot reële functies wanneer hun argumenten reëel zijn.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+\exp z & =\exp x\left[\cos y+i\sin y\right]\\
+\exp z= & \exp x\cos y+i\exp x\sin y\\
+= & u+iv
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Inderdaad,
+ wanneer 
+\begin_inset Formula $x$
+\end_inset
+
+ 
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\nospellcheck off
+\bar no
+\strikeout off
+\xout off
+\uuline off
+\uwave off
+\noun off
+\color none
+reëel en 
+\begin_inset Formula $y=0$
+\end_inset
+
+ dan reduceert 
+\begin_inset Formula $\exp z\to\exp x$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+\frac{d\exp z}{dz} & =\frac{\partial\left(\exp x\cos y\right)}{\partial x}+i\frac{\partial\left(\exp x\sin y\right)}{\partial x}\\
+ & =\exp x\cos y+i\exp x\sin y\\
+ & =\frac{d\exp z}{dz}
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+De fundamentele trigoniometrische functies zijn
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+\cos z & =\cosh iz\\
+\sin z & =i\sinh iz
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+\frac{d\sin z}{dz} & =+\cos z\\
+\frac{d\cos z}{dz} & =-\sin z
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\sin^{2}z+\cos^{2}z=1
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+\cosh z & =+\cos iz\\
+\sinh z & =-i\sin iz
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+\frac{d\cosh z}{dz} & =\sinh z\\
+\frac{d\sinh z}{dz} & =\cosh z
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\cosh^{2}z-\sinh^{2}z=1
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Logaritme
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\ln z=\ln re^{i\theta}=\ln r+i\theta
+\]
+
+\end_inset
+
+Afgeleide
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+w & =\ln z\rightarrow z=e^{w}\to\frac{dz}{dw}=e^{w}=\ln z\to\frac{dw}{dz}=\frac{1}{z}
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\end_body
+\end_document

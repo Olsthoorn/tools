@@ -148,7 +148,7 @@ def fdm3(gr=None, K=None, c=None, FQ=None, HI=None, IBOUND=None, GHB=None, axial
     Nod = Ny * Nx * Nz
     NOD = np.arange(Nod).reshape(SHP) # generate cell numbers
 
-    if gr.axial==True:
+    if gr.axial is True:
         print("axial==True so that y coordinates and ky are ignored")
         print("            and x stands for r, so that all x coordinates must be >= 0.")
     if isinstance(K, np.ndarray): # only one ndaray was given
@@ -174,7 +174,7 @@ def fdm3(gr=None, K=None, c=None, FQ=None, HI=None, IBOUND=None, GHB=None, axial
     inact  = (IBOUND==0).reshape(Nod,) # boolean vector denoting inacive cells
     fxhd   = (IBOUND<0 ).reshape(Nod,)  # boolean vector denoting fixed-head cells
 
-    if gr.axial==False:
+    if gr.axial is False:
         Rx2 = 0.5 * dx / (dy * dz) / kx
         Rx1 = 0.5 * dx / (dy * dz) / kx
         Ry  = 0.5 * dy / (dz * dx) / ky
@@ -205,9 +205,9 @@ def fdm3(gr=None, K=None, c=None, FQ=None, HI=None, IBOUND=None, GHB=None, axial
     Cx = 1 / (Rx1[:, :,:-1] + Rx2[:, :,1:])
     Cy = 1 / (Ry[:, :-1, :] + Ry[:, 1:, :])
     if c is None:
-        Cz = 1 / (Rz[:-1, :, :] + Rz[:-1, :,:])
+        Cz = 1 / (Rz[:-1, :, :] + Rz[1:, :,:])
     else:
-        Cz = 1 / (Rz[:-1, :, :] + Rc + Rz[:-1, :,:])
+        Cz = 1 / (Rz[:-1, :, :] + Rc + Rz[1:, :,:])
         
     # General head bounaries
     if GHB is not None:
