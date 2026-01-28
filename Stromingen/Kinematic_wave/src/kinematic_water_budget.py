@@ -91,7 +91,7 @@ title1 = f"Staringreeks soil {soil.code}, {soil.props['Omschrijving']}\n"
 title2 = r"Vochtprofielpunten: $V = dK(\theta)\,/\,d\theta$. Waterdeeltjes $v = q\, /\, \theta = K(\theta)\,/\,\theta$"
 ylabel = r'$dK(\theta)\, /\, d\theta$ [cm/d], $K(\theta)\, /\, \theta$ [cm/d]'
 
-ax = etc.newfig(title1 + title2, r'--- \theta ---', ylabel, fontsize=15,
+ax = etc.newfig(title1 + title2, r'--- $\theta$ ---', ylabel, fontsize=15,
                 yscale='log')
 
 ax.plot(theta, V, label=r'$V = dK(\theta)/d\theta$')
