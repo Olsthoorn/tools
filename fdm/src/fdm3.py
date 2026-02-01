@@ -139,11 +139,8 @@ def fdm3(gr=None, K=None, c=None, FQ=None, HI=None, IBOUND=None, GHB=None, axial
         Output shapes are
         (Ny,Nx,Nz) (Ny,Nx-1,Nz), (Ny-1,Nx,Nz), (Ny,Nx,Nz-1), (Ny, Nx, Nz)
 
-    TO 160905
+    TO 20160905-20260131
     '''
-    # notice that Our is a class. It is instantiated in the return below
-    Out = dict()
-
     Nz, Ny, Nx = SHP = gr.shape
     Nod = Ny * Nx * Nz
     NOD = np.arange(Nod).reshape(SHP) # generate cell numbers
@@ -213,9 +210,9 @@ def fdm3(gr=None, K=None, c=None, FQ=None, HI=None, IBOUND=None, GHB=None, axial
     if GHB is not None:
         Cghb = gr.const(0.)
         Hghb = gr.const(0.)
-        I = GHB['I']
-        Cghb.ravel()[I] = GHB['C'] 
-        Hghb.ravel()[I] = GHB['h']
+        Id = GHB['I']
+        Cghb.ravel()[Id] = GHB['C'] 
+        Hghb.ravel()[Id] = GHB['h']
         
     #conductances between adjacent cells
 
