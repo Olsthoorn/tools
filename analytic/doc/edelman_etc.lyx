@@ -1,0 +1,718 @@
+#LyX 2.4 created this file. For more info see https://www.lyx.org/
+\lyxformat 620
+\begin_document
+\begin_header
+\save_transient_properties true
+\origin unavailable
+\textclass article
+\begin_preamble
+%\usepackage{epstopdf} % to include .eps graphics files with pdfLaTeX
+\usepackage{flafter}   % Don't place floats before their definition
+%\usepackage{topcapt}  % Define \topcation for placing captions above tables (not in gwTeX)
+
+\usepackage{xurl}      % better URL setting, uses old url package
+
+
+\DeclareMathOperator{\iop}{i}
+\DeclareMathOperator{\erfc}{erfc}
+\DeclareMathOperator{\erf}{erf}
+\DeclareMathOperator{\W}{W}
+
+
+\usepackage{xcolor}
+\definecolor{darkblue}{rgb}{0,0,0.4}
+\usepackage[]{hyperref} % Generates all cross references
+\hypersetup{            % Setting options for hyperref package
+	breaklinks=true,    % break line with long hyperlinks
+	colorlinks=true,    % coloured links
+	linkcolor=blue,
+	filecolor=magenta,
+	urlcolor=darkblue,
+	citecolor=blue,
+	backref=page
+} 
+
+\usepackage{memhfixc}  % remove conflict between the memoir class & hyperref
+\usepackage{pdfsync}   % enable tex source and pdf output syncronicity
+
+\usepackage{memhfixc}  % remove conflict between the memoir class & hyperref
+\usepackage{pdfsync}   % enable tex source and pdf output syncronicity
+
+\usepackage{alltt}
+
+% \usepackage{listings}
+% \usepackage{xcolor}
+
+% \lstdefinestyle{mystyle}{
+%   language=Python,
+%   numbers=left
+% }
+
+% Put lstset here, after lstdefinestyle
+% \lstset{style=mystyle}
+\end_preamble
+\use_default_options true
+\maintain_unincluded_children no
+\language dutch
+\language_package default
+\inputencoding utf8
+\fontencoding auto
+\font_roman "default" "default"
+\font_sans "default" "default"
+\font_typewriter "default" "default"
+\font_math "auto" "auto"
+\font_default_family default
+\use_non_tex_fonts false
+\font_sc false
+\font_roman_osf false
+\font_sans_osf false
+\font_typewriter_osf false
+\font_sf_scale 100 100
+\font_tt_scale 100 100
+\use_microtype false
+\use_dash_ligatures true
+\graphics default
+\default_output_format pdf2
+\output_sync 0
+\bibtex_command biber
+\index_command default
+\float_placement h
+\float_alignment center
+\paperfontsize default
+\spacing single
+\use_hyperref false
+\papersize default
+\use_geometry true
+\use_package amsmath 2
+\use_package amssymb 1
+\use_package cancel 1
+\use_package esint 1
+\use_package mathdots 1
+\use_package mathtools 1
+\use_package mhchem 1
+\use_package stackrel 1
+\use_package stmaryrd 1
+\use_package undertilde 1
+\cite_engine biblatex
+\cite_engine_type authoryear
+\biblio_options hyperref=true, backref=true, backrefstyle=three,backreffloats=true,indexing=bib,date=year
+\biblatex_bibstyle authoryear
+\biblatex_citestyle authoryear
+\use_bibtopic false
+\use_indices false
+\paperorientation portrait
+\suppress_date false
+\justification true
+\use_refstyle 1
+\use_formatted_ref 0
+\use_minted 0
+\use_lineno 0
+\index Index
+\shortcut idx
+\color #008000
+\end_index
+\leftmargin 1in
+\topmargin 1in
+\rightmargin 1in
+\bottommargin 1in
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation indent
+\paragraph_indentation default
+\is_math_indent 0
+\math_numbering_side default
+\quotes_style polish
+\dynamic_quotes 0
+\papercolumns 1
+\papersides 1
+\paperpagestyle default
+\tablestyle default
+\listings_params "language=Python,extendedchars=false,frameround=fttt,numbers=left,% line numbers use none,numberstyle={\tiny},stepnumber=2,% line numbers only every so many,numbersep=9pt,% how far line numbers from text?,showspaces=false,showstringspaces=false,showtabs=false,tab={\rightarrowfill},basicstyle={\small},keywordstyle={\color{blue}},commentstyle={\color{green}},stringstyle={\ttfamily \color{magenta}},identifierstyle={\color{black}}"
+\tracking_changes false
+\output_changes false
+\change_bars false
+\postpone_fragile_content false
+\html_math_output 0
+\html_css_as_file 0
+\html_be_strict false
+\docbook_table_output 0
+\docbook_mathml_prefix 1
+\end_header
+
+\begin_body
+
+\begin_layout Standard
+Tijdens onze colleges grondwaterhydrologie kregen we waarschijnlijk allemaal de formules van Edelman onderwezen.
+ Je weet wel,
+ hoe de stijghoogte en de grondwaterstroom op punt 
+\begin_inset Formula $x$
+\end_inset
+
+ vanaf 
+\begin_inset Formula $t=0$
+\end_inset
+
+ tijdsafhankelijk veranderen door een al dan niet plotselinge verandering van stijghoogte of debiet op 
+\begin_inset Formula $x=0$
+\end_inset
+
+ en op of vanaf 
+\begin_inset Formula $t=0$
+\end_inset
+
+.
+ De logica achter de getabelleerde functies 
+\begin_inset Formula $E_{1}$
+\end_inset
+
+ t/m 
+\begin_inset Formula $E_{4}$
+\end_inset
+
+ was echter niet te volgen;
+ evenmin gold dat voor de ingewikkelde coëfficiënten ervoor.
+ Dat was echter geheel het gevolg van de keuzes die Edelman in zijn proefschrift uit 1940 zelf maakte.
+ Wiskundig is de reeks wel logisch en dat geldt evenzeer voor de coëfficiënten.
+ De reeks waarvan de Edelmain-gevallen deel uitmaken is namelijk te schrijven als
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{equation}
+s\left(x,t\right)=At^{n/2}\frac{\iop^{n}\erfc\left(u\right)}{\iop^{n}\erfc\left(0\right)};\;\text{met\;u=\ensuremath{\sqrt{\frac{x^{2}S}{4kDt}}}}\label{eq:Edelman-s}
+\end{equation}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+
+\series bold
+\begin_inset Formula 
+\[
+Q\left(x,t\right)=\frac{A}{2}\sqrt{kDS}\,t^{\frac{n-1}{2}}\frac{\iop^{n-1}\erfc\left(u\right)}{\iop^{n}\erfc\left(0\right)}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Hierin is
+\end_layout
+
+\begin_layout Description
+\begin_inset Formula $s$
+\end_inset
+
+ de verandering van de grondwaterstand op plaats 
+\begin_inset Formula $x>0$
+\end_inset
+
+ en tijd 
+\begin_inset Formula $t>0$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Description
+\begin_inset Formula $S$
+\end_inset
+
+ de bergingscoëfficiënt (freatisch of elastisch)
+\end_layout
+
+\begin_layout Description
+\begin_inset Formula $kD$
+\end_inset
+
+ het doorlaatvermogen
+\end_layout
+
+\begin_layout Description
+\begin_inset Formula $n$
+\end_inset
+
+ een geheel getal
+\end_layout
+
+\begin_layout Description
+\begin_inset Formula $A$
+\end_inset
+
+ de constante of grootte van de verandering op 
+\begin_inset Formula $x=0$
+\end_inset
+
+ en 
+\begin_inset Formula $t>0$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Description
+\begin_inset Formula $\iop^{n}\erfc\left(...\right)$
+\end_inset
+
+ De 
+\begin_inset Formula $n$
+\end_inset
+
+-de herhaalde integraal van de complementaire errorfunctie
+\end_layout
+
+\begin_layout Description
+\begin_inset Formula $Q$
+\end_inset
+
+ volgt direct uit Darcy met 
+\begin_inset Formula $Q=-kD\frac{ds\left(u\right)}{du}\frac{\partial u}{\partial x}$
+\end_inset
+
+ en
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{equation}
+\iop^{n}\erfc\left(u\right)=\intop_{u}^{\infty}\iop^{n-1}\erfc\left(\zeta\right)d\zeta\to\frac{d\left(\iop^{n}\erfc\left(u\right)\right)}{du}=-\iop^{n-1}\erfc\left(u\right)\label{eq:inerfc}
+\end{equation}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+De ingewikkelde coëfficiënten zijn nu gewoon 
+\begin_inset Formula $\iop^{n}\erfc\left(0\right)$
+\end_inset
+
+.
+ Dus wanneer we de 
+\begin_inset Formula $\iop^{n}\erfc\left(u\right)$
+\end_inset
+
+ kunnen berekenen voor elke 
+\begin_inset Formula $u$
+\end_inset
+
+ kunnen we dat met dezelfde functie ook voor 
+\begin_inset Formula $u=0$
+\end_inset
+
+.
+ Deze functie uitrekenen gaat heel eenvoudig zie verderop.
+\end_layout
+
+\begin_layout Standard
+Dit debiet 
+\begin_inset Formula $Q$
+\end_inset
+
+ is het gevolg van wat er met de stijghoogte op 
+\begin_inset Formula $x=0$
+\end_inset
+
+ gebeurt.
+ Evengoed kunnen we berekenen wat er met de stijghoogte gebeurt als gevolg van hoe 
+\begin_inset Formula $Q$
+\end_inset
+
+ op 
+\begin_inset Formula $x=0$
+\end_inset
+
+ verandert.
+ Dus stel gewoon 
+\begin_inset Formula $B=\frac{A}{2}\sqrt{kDS}$
+\end_inset
+
+ zodat 
+\begin_inset Formula $A=\frac{2B}{\sqrt{kDS}}$
+\end_inset
+
+.
+ We hebben dan
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{equation}
+Q\left(x,t\right)=Bt^{\frac{n-1}{2}}\frac{\iop^{n-1}\erfc\left(u\right)}{\iop^{n}\erfc\left(0\right)}\label{eq:edelman-Q2}
+\end{equation}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{equation}
+s\left(x,t\right)=\frac{2B}{\sqrt{kDS}}t^{\frac{n}{2}}\frac{\iop^{n}\erfc\left(u\right)}{\iop^{n}\erfc\left(0\right)}\label{eq:edelman-s2}
+\end{equation}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+De 
+\begin_inset Formula $\iop^{n}\erfc\left(u\right)$
+\end_inset
+
+ functie kan gemakkelijk worden berekend uit de bekende recursieformule
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{equation}
+\iop^{n}\erfc\left(u\right)=\frac{-u}{n}\iop^{n-1}\erfc\left(u\right)+\frac{1}{2n}\iop^{n-2}\erfc\left(u\right);\;\text{met\;n=1, 2, 3, 4,...}\label{eq:inerfc-recursie}
+\end{equation}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+waarbij en
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{equation}
+\iop^{0}\erfc\left(u\right)=\erfc\left(u\right)\;\text{en\;}\iop^{-1}\erfc\left(u\right)=\frac{2}{\sqrt{\pi}}e^{-u^{2}}\label{eq:i0erfc0-eni-1erfc}
+\end{equation}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Dus stel gewoon 
+\begin_inset Formula $B=\frac{A}{2}\sqrt{kDS}$
+\end_inset
+
+ zodat 
+\begin_inset Formula $A=\frac{2B}{\sqrt{kDS}}$
+\end_inset
+
+.
+ We hebben dan
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float table
+placement document
+alignment document
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+Vier gevallen van Edelman (1940) versus de series
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Tabular
+<lyxtabular version="3" rows="5" columns="3">
+<features tabularvalignment="middle">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<row>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Edelman
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Edelman (1940)
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Series
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+1
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula 
+\begin{align*}
+s & =s_{0}E_{0}\left(u\right)\\
+Q & =\frac{s_{0}}{\sqrt{t}}\sqrt{\frac{kDS}{4\pi}}E_{2}\left(u\right)
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\nospellcheck off
+\bar no
+\strikeout off
+\xout off
+\uuline off
+\uwave off
+\noun off
+\color none
+\begin_inset Formula 
+\begin{align*}
+s\left(x,t\right) & =s_{0}\times\frac{\iop^{0}\erfc\left(u\right)}{\iop^{0}\erfc\left(0\right)}\\
+Q\left(x,t\right) & =\frac{s_{0}}{\sqrt{t}}\times\frac{\iop^{-1}\erfc\left(u\right)}{\iop^{0}\erfc\left(0\right)}\times\sqrt{\frac{kDS}{4}}
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+2
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula 
+\begin{align*}
+s & =Q_{0}\sqrt{t}\sqrt{\frac{4}{\pi kDS}}E_{3}\left(u\right)\\
+Q & =Q_{0}E_{1}\left(u\right)
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\nospellcheck off
+\bar no
+\strikeout off
+\xout off
+\uuline off
+\uwave off
+\noun off
+\color none
+\begin_inset Formula 
+\begin{align*}
+s\left(x,t\right) & =Q_{0}\sqrt{t}\times\frac{\iop^{1}\erfc\left(u\right)}{\iop^{1}\erfc\left(0\right)}\times\times\sqrt{\frac{4}{kDS}}\\
+Q\left(x,t\right) & =Q_{0}\times\frac{\iop^{0}\erfc\left(u\right)}{\iop^{1}\erfc\left(0\right)}
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+3
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula 
+\begin{align*}
+s & =\alpha tE_{4}\left(u\right)\\
+Q & =\alpha\sqrt{t}\sqrt{\frac{4kDS}{\pi}}E_{3}\left(u\right)
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\nospellcheck off
+\bar no
+\strikeout off
+\xout off
+\uuline off
+\uwave off
+\noun off
+\color none
+\begin_inset Formula 
+\begin{align*}
+s\left(x,t\right) & =\alpha t\times\frac{\iop^{2}\erfc\left(u\right)}{\iop^{2}\erfc\left(0\right)}\\
+Q\left(x,t\right) & =\alpha\sqrt{t}\times\frac{\iop^{1}\erfc\left(u\right)}{\iop^{2}\erfc\left(0\right)}\times\sqrt{\frac{kDS}{4}}
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+4
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula 
+\begin{align*}
+s & =\beta t\sqrt{t}\sqrt{\frac{16/9}{\pi kDS}}E_{5}\left(u\right)\\
+Q & =\beta tE_{4}\left(u\right)
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\nospellcheck off
+\bar no
+\strikeout off
+\xout off
+\uuline off
+\uwave off
+\noun off
+\color none
+\begin_inset Formula 
+\begin{align*}
+s\left(x,t\right) & =\beta\,t\sqrt{t}\times\frac{\iop^{3}\erfc\left(u\right)}{\iop^{3}\erfc\left(0\right)}\times\sqrt{\frac{4}{kDS}}\\
+Q\left(x,t\right) & =\beta t\times\frac{\iop^{2}\erfc\left(u\right)}{\iop^{3}\erfc\left(0\right)}
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+</lyxtabular>
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_body
+\end_document
