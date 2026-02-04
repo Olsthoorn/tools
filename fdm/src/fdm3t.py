@@ -271,7 +271,7 @@ def fdm3t(gr=None, t=None, k=None, c=None, ss=None, fh=None, ghb=None,
                 Phi[it][Ifh] = hfh
                 fh_rhs = (A + sp.diags(dia))[:, Ifh].dot(Phi[it][Ifh])
                 act_it = np.logical_and(active, np.logical_not(isfh))
-                rhs -= fh_rhs
+                rhs -= fh_rhs.toarray().flatten()
 
         Phi[it][act_it] = spsolve( (A + sp.diags(dia))[act_it][:,act_it], rhs[act_it])
 
@@ -548,235 +548,47 @@ class Fdm3t:
         return ax
 
 
-def deGlee(r=None, D=None, kr=None, kz=None, c=None, use_ghb=False, **kw):
-    """Return De Glee output in a two-layer axially symmetric layer.
+if __name__ == '__main__':
+    def deGlee(r=None, D=None, kr=None, kz=None, c=None, use_ghb=False, **kw):
+        """Return De Glee output in a two-layer axially symmetric layer.
 
-    Steady state is computed be setting all ss = 0.  if c is given ghb is used else, kz is use
-    to set the resistance.
+        Steady state is computed be setting all ss = 0.  if c is given ghb is used else, kz is use
+        to set the resistance.
 
-    Returns the besselfunction because Q = 2 * np.kD
+        Returns the besselfunction because Q = 2 * np.kD
 
-    Parameters
-    ----------
-    gr: mfgrid.Grid object
-        the grid
-    kr, kz: float, 3D arrays of horizontal and vertical conductivities
-        kr, kz conductivities
-    """
-    kD = (kr * D).sum()
-    ctop = c
-    L = np.sqrt(kD * c)
-    Q = 2 * np.pi * kD
+        Parameters
+        ----------
+        gr: mfgrid.Grid object
+            the grid
+        kr, kz: float, 3D arrays of horizontal and vertical conductivities
+            kr, kz conductivities
+        """
+        kD = (kr * D).sum()
+        ctop = c
+        L = np.sqrt(kD * c)
+        Q = 2 * np.pi * kD
 
-    z = -np.cumsum(np.hstack((0, D)))
+        z = -np.cumsum(np.hstack((0, D)))
 
-    gr = Grid(r, [-0.5, 0.5], z, axial=True)
+        gr = Grid(r, [-0.5, 0.5], z, axial=True)
 
-    kr = kr[:, np.newaxis, np.newaxis] * gr.const(1.)
-    kz = kz[:, np.newaxis, np.newaxis] * gr.const(1.)
+        kr = kr[:, np.newaxis, np.newaxis] * gr.const(1.)
+        kz = kz[:, np.newaxis, np.newaxis] * gr.const(1.)
 
-    fq = np.zeros(1, dtype=dtypeQ)
-    fq['I'], fq['q'] = gr.NOD[-1, 0, 0], Q
-    fq = {0: fq}
-
-    if use_ghb:
-        # use ghb instead of c. So fh must be None as well as c
-        ghb = np.zeros(gr.nx * gr.ny, dtype=dtypeGHB)
-        ghb['I'], ghb['C'], ghb['h'] = gr.NOD[-1].ravel(), gr.Area.ravel() / c, 0.
-        ghb = {0: ghb}
-        fh = None
-        c = None
-    else:
-        #use c insteand of ghb, so ghb must be None and fh and c must be set to None
-        fh = np.zeros(gr.nx * gr.ny, dtype=dtypeH)
-        fh['I'], fh['h'] = gr.NOD[0].ravel(), 0.
-        fh = {0: fh}
-        c = gr.const(0.)[:-1]
-        c[0] = ctop
-        ghb = None
-
-    idomain = gr.const(1, dtype=int)
-    hi = gr.const(0.)
-
-    out = fdm3t(gr=gr, t=None, k=(kr, kr, kz), c=c,
-                fh=fh, fq=fq, ghb=ghb,
-                hi=hi, idomain=idomain)
-
-    ax = newfig('De Glee example',
-        'r [m]', 'drawdown',
-        xscale='log', yscale='linear')
-    ax.invert_yaxis()
-
-    ax.plot(gr.xm, out['Phi'][-1, -1, 0, :], '.-', label='numerical')
-
-    ax.plot(gr.xm, Q / (2 * np.pi * kD) * k0(gr.xm / L), '-', label='DeGlee')
-
-    ax.legend()
-    return ax
-
-def theis1(um1=None, r=None, D=None, kr=None, kz=None, ss=None, r_=None, epsilon=0.67, **kw):
-    """Return Theis output in a one-layer axially symmetric model.
-
-    If np.all(ss == 0.), steady state should be returned. For his at least
-    one cell must be fixed head (as specified by fh).
-    """
-
-    kD = (kr * D).sum()
-    S  = (ss * D).sum()
-
-    z = -np.cumsum(np.hstack((0, D)))
-    gr = Grid(r, [-0.5, 0.5], z, axial=True)
-    idomain = gr.const(1, dtype=int)
-
-    Q = 4 * np.pi * kD
-
-    ir = np.arange(gr.nx + 1)[r < 60][-1]
-    t = um1 * r[ir] ** 2 * S / (4 * kD)
-
-    hi = gr.const(0.)
-    hi[0, 0, :] = Q / (4 * np.pi * kD) * exp1(gr.xm ** 2 * D  / (4 * kD * t[0]))
-
-    fq = np.zeros(1, dtype=dtypeQ)
-    fq['I'], fq['q'] = gr.NOD[-1, 0, 0], Q
-    fq = {0: fq}
-
-
-    fh = np.zeros(gr.nz * gr.ny, dtype=dtypeH)
-    fh['I'], fh['h'] = gr.NOD[:, :, -1].ravel(), 0
-    fh = {0: fh}
-    fh = None
-
-    out = fdm3t(gr=gr, t=t, k=(kr, kr, kz), ss=ss, fh=fh, fq=fq, hi=hi, idomain=idomain, epsilon=epsilon)
-
-    xlim = np.logspace(-2, 6, 2)
-    ylim = np.logspace(-4, 1, 2)
-
-    ax = newfig(kw['title'],
-        'r increases <---- (4 kD / S) t / r^2 [-] ----> time increase' ,
-        's / (Q / (4 pi kD)) [-]',
-        xscale='log', yscale='log',
-        xlim=xlim, ylim=ylim)
-
-    cc = color_cycler()
-    # select a few distances for which the show the graph
-    for ir in range(0, gr.nx, 10):
-        color = next(cc)
-        rm = gr.xm[ir]
-        if rm < 1.0 or rm > 1000.:
-            continue
-        ax.plot((4 * kD  / S) * (t / rm ** 2), out['Phi'][:, -1, 0, ir] / (Q / (4 * np.pi * kD)), '-', color=color, label=f'r={gr.xm[ir]:.3g} m')
-
-    ax.plot(um1, exp1(1 / um1), '.', label=f'Theis, r={gr.xm[ir]:.3g} m')
-    ax.legend()
-    return ax
-
-def theis_use_class(um1=None, r=None, D=None, kr=None, kz=None, ss=None, r_=None, epsilon=0.67, **kw):
-    """Return Theis output in a one-layer axially symmetric model, but use class Fdm3t instead of function fdm3t.
-
-    If np.all(ss == 0.), steady state should be returned. For his at least
-    one cell must be fixed head (as specified by fh).
-    """
-
-    kD = (kr * D).sum()
-    S  = (ss * D).sum()
-
-    z = -np.cumsum(np.hstack((0, D)))
-    gr = Grid(r, [-0.5, 0.5], z, axial=True)
-    idomain = gr.const(1, dtype=int)
-
-    mdl = Fdm3t(gr=gr, k= (kr, kr, kz), c=None, ss=ss, idomain=idomain)
-
-    Q = 4 * np.pi * kD
-
-    ir = np.arange(gr.nx + 1)[r < 60][-1]
-    t = um1 * r[ir] ** 2 * S / (4 * kD)
-
-    hi = gr.const(0.)
-    hi[0, 0, :] = Q / (4 * np.pi * kD) * exp1(gr.xm ** 2 * D  / (4 * kD * t[0]))
-
-    fq = np.zeros(1, dtype=dtypeQ)
-    fq['I'], fq['q'] = gr.NOD[-1, 0, 0], Q
-    fq = {0: fq}
-
-
-    fh = np.zeros(gr.nz * gr.ny, dtype=dtypeH)
-    fh['I'], fh['h'] = gr.NOD[:, :, -1].ravel(), 0
-    fh = {0: fh}
-    fh = None
-
-    out = mdl.simulate(t=t, fh=fh, fq=fq, hi=hi, epsilon=epsilon)
-
-    xlim = np.logspace(-2, 6, 2)
-    ylim = np.logspace(-4, 1, 2)
-
-    ax = newfig(kw['title'],
-        'r increases <---- (4 kD / S) t / r^2 [-] ----> time increase' ,
-        's / (Q / (4 pi kD)) [-]',
-        xscale='log', yscale='log',
-        xlim=xlim, ylim=ylim)
-
-    cc = color_cycler()
-    # select a few distances for which the show the graph
-    for ir in range(0, gr.nx, 10):
-        color = next(cc)
-        rm = gr.xm[ir]
-        if rm < 1.0 or rm > 1000.:
-            continue
-        ax.plot((4 * kD  / S) * (t / rm ** 2), out['Phi'][:, -1, 0, ir] / (Q / (4 * np.pi * kD)), '-', color=color, label=f'r={gr.xm[ir]:.3g} m')
-
-    ax.plot(um1, exp1(1 / um1), '.', label=f'Theis, r={gr.xm[ir]:.3g} m')
-    ax.legend()
-    return ax
-
-
-def hantush(um1=None, r=None, kr=None, kz=None, D=None, ss=None, rhos=None, use_ghb=False, epsilon=0.67, **kw):
-    """Show hantush well function using two layer model."""
-
-    # c is not used, it's obtained for the given rho = r / lambda
-
-    kD = (kr * D).sum()
-    S  = (ss * D).sum()
-    Q = 4 * np.pi * kD
-
-    z =- np.hstack((0, D)).cumsum()
-
-    gr = Grid(r, [-0.5, 0.5], z, axial=True)
-
-    if gr.nlay == 1:
-        use_ghb = True
-
-    idomain = gr.const(1, dtype=int)
-    hi = gr.const(0.)
-    kx = kr[:, np.newaxis, np.newaxis] * gr.const(1)
-    kz = kz[:, np.newaxis, np.newaxis] * gr.const(1.)
-    ss = ss[:, np.newaxis, np.newaxis] * gr.const(1.)
-
-    fq = np.zeros(1, dtype=dtypeQ)
-    fq['I'], fq['q'] = gr.NOD[-1, 0, 0], Q
-    fq = {0: fq}
-
-    xlim = np.logspace(-2, 6, 2)
-    ylim = np.logspace(-4, 1, 2)
-
-    ax = newfig(f"Hantush using {gr.nlay} layer(s), leakage using {'ghb' if use_ghb else 'c'}, epsilon={epsilon}",
-            r'increasing r <--- $(4 kD /S) (t / r^2)$ ---> increasing t',
-            r'$s / (Q / (4 \pi kD))$',
-            xscale='log', yscale='log', xlim=xlim, ylim=ylim)
-
-    ir = np.arange(gr.nx + 1)[r < 60][-1]
-
-    for rho in rhos:
-        t = r[ir] ** 2 * S / (4 * kD) * um1
-        L = r[ir] / rho
-        ctop = L ** 2  / kD
+        fq = np.zeros(1, dtype=dtypeQ)
+        fq['I'], fq['q'] = gr.NOD[-1, 0, 0], Q
+        fq = {0: fq}
 
         if use_ghb:
+            # use ghb instead of c. So fh must be None as well as c
             ghb = np.zeros(gr.nx * gr.ny, dtype=dtypeGHB)
-            ghb['I'], ghb['h'], ghb['C'] = gr.NOD[-1].ravel(), 0., gr.Area.ravel() / ctop
+            ghb['I'], ghb['C'], ghb['h'] = gr.NOD[-1].ravel(), gr.Area.ravel() / c, 0.
             ghb = {0: ghb}
-            c = None
             fh = None
+            c = None
         else:
+            #use c insteand of ghb, so ghb must be None and fh and c must be set to None
             fh = np.zeros(gr.nx * gr.ny, dtype=dtypeH)
             fh['I'], fh['h'] = gr.NOD[0].ravel(), 0.
             fh = {0: fh}
@@ -784,327 +596,516 @@ def hantush(um1=None, r=None, kr=None, kz=None, D=None, ss=None, rhos=None, use_
             c[0] = ctop
             ghb = None
 
-        out = fdm3t(gr=gr, t=t, k=(kx, kx, kz), ss=ss, c=c, fh=fh, fq=fq, ghb=ghb, hi=hi, idomain=idomain, epsilon=epsilon)
+        idomain = gr.const(1, dtype=int)
+        hi = gr.const(0.)
 
-        um1 = 4 * kD * t  / (S * r[ir] ** 2)
-        wh = out['Phi'][:, -1, 0, ir] /(Q  / (4 *np.pi * kD))
+        out = fdm3t(gr=gr, t=None, k=(kr, kr, kz), c=c,
+                    fh=fh, fq=fq, ghb=ghb,
+                    hi=hi, idomain=idomain)
 
-        ax.plot(um1, wh, '-',                 label=f"numeric fdm, rho={rho:.4g}")
-        ax.plot(um1, Wh(1/um1, rho)[0], '--', label=f'Wh(u, rho),  rho={rho:.4g}')
+        ax = newfig('De Glee example',
+            'r [m]', 'drawdown',
+            xscale='log', yscale='linear')
+        ax.invert_yaxis()
 
-    ax.legend()    
-    return ax
+        ax.plot(gr.xm, out['Phi'][-1, -1, 0, :], '.-', label='numerical')
 
-def boulton(um1=None, r=None, D=None, kr=None, kz=None, ss=None, rhos=None, epsilon=0.67, **kw):
+        ax.plot(gr.xm, Q / (2 * np.pi * kD) * k0(gr.xm / L), '-', label='DeGlee')
 
-    kD = (kr[1:] * D[1:]).sum()
-    S0  = ss[0] * D[0]
-    S1 = (ss[1:] * D[1:]).sum()
+        ax.legend()
+        return ax
 
-    Q = 4 * np.pi * kD
+    def theis1(um1=None, r=None, D=None, kr=None, kz=None, ss=None, r_=None, epsilon=0.67, **kw):
+        """Return Theis output in a one-layer axially symmetric model.
 
-    z = np.hstack((0, -D))
+        If np.all(ss == 0.), steady state should be returned. For his at least
+        one cell must be fixed head (as specified by fh).
+        """
 
-    gr = Grid(r, [-0.5, +0.5], z, axial=True)
+        kD = (kr * D).sum()
+        S  = (ss * D).sum()
 
-    idomain = gr.const(1, dtype=int)
+        z = -np.cumsum(np.hstack((0, D)))
+        gr = Grid(r, [-0.5, 0.5], z, axial=True)
+        idomain = gr.const(1, dtype=int)
 
-    ss = ss[:, np.newaxis, np.newaxis] * gr.const(1.)
-    kr = kr[:, np.newaxis, np.newaxis] * gr.const(1.)
-    kz = kz[:, np.newaxis, np.newaxis] * gr.const(1.)
+        Q = 4 * np.pi * kD
 
-    hi = gr.const(0.)
+        ir = np.arange(gr.nx + 1)[r < 60][-1]
+        t = um1 * r[ir] ** 2 * S / (4 * kD)
 
-    fq = np.zeros(1, dtype=dtypeQ)
-    fq['I'], fq['q'] = gr.NOD[-1, 0, 0], Q
-    fq = {0: fq}
+        hi = gr.const(0.)
+        hi[0, 0, :] = Q / (4 * np.pi * kD) * exp1(gr.xm ** 2 * D  / (4 * kD * t[0]))
 
-    xlim = np.logspace(-2, 7, 2)
-    ylim = np.logspace(-4, 2, 2)
-
-    ax = newfig(kw['title'] + f", no fixed heads, grid shape = {gr.shape}, ",
-            r'increasing r <--- $(4 kD /S) (t / r^2)$ ---> increasing t',
-            r'$s  / (Q / (4 \pi kD))$',
-            xscale='log', yscale='log', xlim=xlim, ylim=ylim)
-
-    ax.plot(um1,          exp1(1/um1), 'r.-',  lw=2, label=f'Theis Sy = {S0:.4g}')
-    ax.plot(um1 * S0 /S1, exp1(1/um1), 'r.--', lw=2, label=f'Theis S  = {S1:.4g}')
-
-    ir = np.arange(gr.nx + 1)[r < 60][-1]
-
-    clrs = color_cycler()
-    for rho in rhos:
-        clr = next(clrs)
-        t = r[ir] ** 2 * S1 / (4 * kD) * um1
-        B = r[ir] / rho
-        ctop = B ** 2  / kD
-
-        c = gr.const(0.)[:-1]
-        c[0] = ctop
-
-        out = fdm3t(gr=gr, t=t, k=(kr, kr, kz), ss=ss, fh=None,
-                    fq=fq, hi=hi, idomain=idomain, c=c, ghb=None, epsilon=epsilon)
-
-        ax.plot(um1, out['Phi'][:, -1, 0, ir],  color=clr, label=f"Phi[:,-1,0,{ir}], rho={rho:.4g}")
-        ax.plot(um1, Wh(1/um1, rho)[0], '--', color=clr, label=f"Wh(u, rho),     rho={rho:.4g}")
-
-    ax.legend()
-    return ax
-
-def brug223_02(t=None, r=None, D=None, kr=None, kz=None, ss=None, epsilon=0.67, **kw):
-    """Return solution of Bruggeman 223_02, in a one-layer axially symmetric model.
-
-    The problem is flow  outside a cyling with radius R afger sudden head change at R.
-    """
-    kD = (kr * D).sum()
-    S  = (ss * D).sum()
-
-    z = -np.cumsum(np.hstack((0, D)))
-    gr = Grid(r, [-0.5, 0.5], z, axial=True)
-
-    kr = kr[:, np.newaxis, np.newaxis] * gr.const(1.)
-    kz = kz[:, np.newaxis, np.newaxis] * gr.const(1.)
-    ss = ss[:, np.newaxis, np.newaxis] * gr.const(1.)
-
-    idomain = gr.const(1, dtype=int)
-
-    s0 = 1.0
-    hi = gr.const(0.)
-    #hi[:, :, 0] = s0
+        fq = np.zeros(1, dtype=dtypeQ)
+        fq['I'], fq['q'] = gr.NOD[-1, 0, 0], Q
+        fq = {0: fq}
 
 
-    fh = np.zeros(gr.nz * gr.ny, dtype=dtypeH)
-    fh['I'], fh['h'] = gr.NOD[:, :, 0].ravel(), s0
-    fh = {0: fh}
+        fh = np.zeros(gr.nz * gr.ny, dtype=dtypeH)
+        fh['I'], fh['h'] = gr.NOD[:, :, -1].ravel(), 0
+        fh = {0: fh}
+        fh = None
 
-    out = fdm3t(gr=gr, t=t, k=(kr, kr, kz), ss=ss, fh=fh, fq=None, hi=hi, idomain=idomain, epsilon=epsilon)
+        out = fdm3t(gr=gr, t=t, k=(kr, kr, kz), ss=ss, fh=fh, fq=fq, hi=hi, idomain=idomain, epsilon=epsilon)
 
-    xlim = np.logspace(np.log10(t[0]), np.log10(t[-1]), 2)
-    ylim = np.logspace(-4, 1, 2)
+        xlim = np.logspace(-2, 6, 2)
+        ylim = np.logspace(-4, 1, 2)
 
-    # The head change s
-    ax = newfig(kw['title'],
-        't [d]',
-        's [m]',
-        xscale='log', yscale='log',
-        xlim=xlim, ylim=ylim)
+        ax = newfig(kw['title'],
+            'r increases <---- (4 kD / S) t / r^2 [-] ----> time increase' ,
+            's / (Q / (4 pi kD)) [-]',
+            xscale='log', yscale='log',
+            xlim=xlim, ylim=ylim)
 
-    cc = color_cycler()
-    # select a few distances for which the show the graph
-    for ir in np.hstack((0, 1, 2, 3, 4, np.arange(5, gr.nx, 5))):
-        if gr.xm[ir] > 100:
-            continue
-        color = next(cc)
-        ax.plot(t, out['Phi'][:, -1, 0, ir], '-', color=color, label=f'r={gr.xm[ir]:.3g} m')
+        cc = color_cycler()
+        # select a few distances for which the show the graph
+        for ir in range(0, gr.nx, 10):
+            color = next(cc)
+            rm = gr.xm[ir]
+            if rm < 1.0 or rm > 1000.:
+                continue
+            ax.plot((4 * kD  / S) * (t / rm ** 2), out['Phi'][:, -1, 0, ir] / (Q / (4 * np.pi * kD)), '-', color=color, label=f'r={gr.xm[ir]:.3g} m')
 
-    ax.legend()
+        ax.plot(um1, exp1(1 / um1), '.', label=f'Theis, r={gr.xm[ir]:.3g} m')
+        ax.legend()
+        return ax
 
-    # The flow Q
-    ylim = np.logspace(0, 5, 2)
+    def theis_use_class(um1=None, r=None, D=None, kr=None, kz=None, ss=None, r_=None, epsilon=0.67, **kw):
+        """Return Theis output in a one-layer axially symmetric model, but use class Fdm3t instead of function fdm3t.
 
-    ax = newfig(kw['title'] + "Flow Q [m3/d]",
-        't [d]',
-        'Q [m3/d]',
-        xscale='log', yscale='log',
-        xlim=xlim, ylim=ylim)
+        If np.all(ss == 0.), steady state should be returned. For his at least
+        one cell must be fixed head (as specified by fh).
+        """
 
-    cc = color_cycler()
-    # select a few distances for which the show the graph
-    for ir in np.hstack((0, 1, 2, 3, 4, np.arange(5, gr.nx, 5))):
-        if gr.xm[ir] > 1000:
-            continue
-        color = next(cc)
-        ax.plot(t[1:], out['Qx'][:, -1, 0, ir], '-', color=color, label=f'r={gr.x[ir]:.3g} m')
-    ax.legend()
-    return ax
+        kD = (kr * D).sum()
+        S  = (ss * D).sum()
 
-def kraaij(t=None, x=None, D=None, kx=None, kz=None, ss=None, dh=None, epsilon=1.0, **kw):
-    """Return Kraaijenhoff vd Leur output in a one-layer model.
+        z = -np.cumsum(np.hstack((0, D)))
+        gr = Grid(r, [-0.5, 0.5], z, axial=True)
+        idomain = gr.const(1, dtype=int)
 
-    If np.all(ss == 0.), steady state should be returned. For his at least
-    one cell must be fixed head (as specified by fh).
-    """
+        mdl = Fdm3t(gr=gr, k= (kr, kr, kz), c=None, ss=ss, idomain=idomain)
 
-    def kraaijenhoff(kD=None, S=None, t=None, x=None, dh=None):
-        """Return Kraaijenhoff vd Leur solution."""
-        if np.isscalar(t):
-            t = np.array(t) .reshape(1, 1)
+        Q = 4 * np.pi * kD
 
-        b = x[-1]
-        t = t[:, np.newaxis]
-        xm = 0.5 * (x[:-1] + x[1:])
-        xm = xm[np.newaxis, :]
+        ir = np.arange(gr.nx + 1)[r < 60][-1]
+        t = um1 * r[ir] ** 2 * S / (4 * kD)
 
-        s = np.zeros((t.shape[0], xm.shape[-1]))
-        for j in range(1, 20):
-            _2jm1 = 2 * j - 1
-            T = b ** 2 * S / kD
-            s +=  (-1) ** (j - 1) / _2jm1 * np.cos(_2jm1 * np.pi / 2 * xm / b) * np.exp(-(_2jm1 * np.pi / 2) ** 2 * t /T)
-        return dh * 4  / np.pi * s
+        hi = gr.const(0.)
+        hi[0, 0, :] = Q / (4 * np.pi * kD) * exp1(gr.xm ** 2 * D  / (4 * kD * t[0]))
 
-    x = np.hstack((0., x[x > 0]))
-    kD = (kx * D).sum()
-    S  = (ss * D).sum()
+        fq = np.zeros(1, dtype=dtypeQ)
+        fq['I'], fq['q'] = gr.NOD[-1, 0, 0], Q
+        fq = {0: fq}
 
-    T = x[-1] ** 2 * S / kD * (2 / np.pi) ** 2
-    tkrvdl = np.arange(1, 11) * T
-    t = np.unique(np.hstack((t, tkrvdl)))
 
-    z = -np.cumsum(np.hstack((0, D)))
-    gr = Grid(x, [-0.5, 0.5], z, axial=False)
+        fh = np.zeros(gr.nz * gr.ny, dtype=dtypeH)
+        fh['I'], fh['h'] = gr.NOD[:, :, -1].ravel(), 0
+        fh = {0: fh}
+        fh = None
 
-    krvdl = kraaijenhoff(kD=kD, S=S, t=tkrvdl, x=x, dh=dh)
+        out = mdl.simulate(t=t, fh=fh, fq=fq, hi=hi, epsilon=epsilon)
 
-    idomain = gr.const(1, dtype=int)
-    hi = gr.const(dh)
+        xlim = np.logspace(-2, 6, 2)
+        ylim = np.logspace(-4, 1, 2)
 
-    fh = np.zeros(gr.nz * gr.ny, dtype=dtypeH)
-    fh['I'], fh['h'] = gr.NOD[:, :, -1].ravel(), 0.
-    fh = {0: fh}
+        ax = newfig(kw['title'],
+            'r increases <---- (4 kD / S) t / r^2 [-] ----> time increase' ,
+            's / (Q / (4 pi kD)) [-]',
+            xscale='log', yscale='log',
+            xlim=xlim, ylim=ylim)
 
-    out = fdm3t(gr=gr, t=t, k=(kx, kx, kz), ss=ss, fh=fh, fq=None, hi=hi, idomain=idomain, epsilon=epsilon)
+        cc = color_cycler()
+        # select a few distances for which the show the graph
+        for ir in range(0, gr.nx, 10):
+            color = next(cc)
+            rm = gr.xm[ir]
+            if rm < 1.0 or rm > 1000.:
+                continue
+            ax.plot((4 * kD  / S) * (t / rm ** 2), out['Phi'][:, -1, 0, ir] / (Q / (4 * np.pi * kD)), '-', color=color, label=f'r={gr.xm[ir]:.3g} m')
 
-    ax = newfig(kw['title'],
-        'x [m]',
-        'h - h0 [m]')
+        ax.plot(um1, exp1(1 / um1), '.', label=f'Theis, r={gr.xm[ir]:.3g} m')
+        ax.legend()
+        return ax
 
-    cc = color_cycler()
-    for it, t_ in enumerate(t):
-        if t_ not in tkrvdl:
-            continue
-        color = next(cc)
-        ax.plot(gr.xm, out['Phi'][it, -1, 0, :], '-', color=color, label=f't={t_:.4g} d')
-    cc = color_cycler()
-    for it, t_ in enumerate(tkrvdl):
-        color = next(cc)
-        ax.plot(gr.xm, krvdl[it, :], '.', color=color, label=f'krvl, t={t_:.4g} d')
-    ax.legend()
-    return ax
 
-cases = {
-    'steady':
-        {'title': 'steady',
-         "comment": """This test is to verify the accuracy of the model against an analytical
-         solution of Theis or even Hantush by a regular simulation, no dimensionless parameters.
-         """,
-        't': np.logspace(-4, 9, 131),
-        'r': np.hstack((0, np.logspace(-2, 6, 81))),
-        'D': np.array([  10., 50.]),
-        'kr': np.array([ 1e-6, 10.]),
-        'kz': np.array([ 1e6,  1e6]),
-        'Ss': np.array([ 0.01, 0.2e-6]),
-        'c': np.array([600.]),
-        'use_ghb': True,
-         },
-    'Theis':
-        {'title': r"""Theis numeric vs um1 = 1/u. Increasing um1 --> increasing time --> decreasing r.
-         Curves for different r overlap due to the choice of both axes which yieldds the Theis type curve.
-         Small deviations with the analytic type curve occur only for very large r or very small t.
-         """,
-         'comment': """Theis numeric.
-         Computes the theis type curve by plotting s / (Q / (4 pi kD) vs 4 kD / S * t / r^2
-         and compare this with the real theis function exp1.
-         """,
-        'um1': np.logspace(-5, 9, 141), # um1 = 1/ u
-        'r': np.hstack((0., np.logspace(-2, 6, 381))),
-        'D': np.array([50.]),
-        'kr': np.array([10.]),
-        'kz': np.array([1e6]),
-        'ss': np.array([1e-5]),
-        'epsilon': 0.5,
-        },
-    'Hantush1L':
-        {'title' : 'Hantush using 1 layer',
-        'comment': """Hantush is numerically simlated using a single model layer, the inflow
-        at the top is made using general head boundaries. This result should be the same
-        as the one alled Hantush 2L. It's a way to verify that the GHB has been implemented correctly.
-        """,
-        #'um1': np.logspace(-3, 3, 71), # um1 = 1/ u,
-        'um1': np.logspace(-3, 3, 31), # um1 = 1/ u,
-        'r': np.hstack((0., np.logspace(-2, 6, 1 * 80 + 1))), # so many points per log cycle
-        'D': np.array([50.]),
-        'kr': np.array([10.]),
-        'kz': np.array([1e6]),
-        'ss': np.array([0.2e-6]),
-        'rhos': [0., 0.01, 0.03, .1, .3, 1., 3.],
-        'r_': 30.,
-        'epsilon': 1.0,
-        },
-    'Hantush2L': {
-        'title': 'Hantush using 2 layers',
-        'comment': """Hantush is simulated using 2 layer. One is the top layer with fixed head and
-        given resistance between the first and second layer. The second layer is the aquifer. This
-        example also serves to verify the implementation of the interlayer resistance 'c'.
-        """,
-        'um1': np.logspace(-5, 9, 141), # um1 = 1/ u
-        'r': np.hstack((0., np.logspace(-2, 6, 581))),
-        'D': np.array([10., 20.]),
-        'kr': np.array([ 1e-6, 1e1]),
-        'kz': np.array([ 1e6,  1e6]),
-        'ss': np.array([   0., 1e-5]),
-        'rhos': [0., 0.01, 0.03, .1, .3, 1., 3.],
-        'r_': 30.,
-        'use_ghb': False,
-        'epsilon': 0.5,
-        },
-    'Boulton63': {
-        'title': 'Boulton 1963, delayed yield',
-        'comment': """Boulton is simulated using 2 layers. One is the top layer with given Sy and
-        given resistance between the first and second layer. The second layer is the aquifer with
-        elastic storage coefficient S. The resisance between the two layers follows from the
-        value of rho used. A single reference distance r_ is used for all curve. This has no effect
-        on the results because these are given on dimensionless graphs.
-        """,
-        'um1': np.logspace(-5, 9, 141), # um1 = 1/ u
-        'r': np.hstack((0., np.logspace(-2, 6, 8 * 80))),
-        'D': np.array([10., 50.]),
-        'kr': np.array([ 0., 10.]),
-        'kz': np.array([ 1e6,  1e6]),
-        'ss': np.array([  0.01, 0.2e-6]),
-        'rhos': [0., 0.01, 0.03, .1, .3, 1., 3.], # c comes from rho
-        'r_': 30,
-        'epsilon': 0.5,
-        },
-    'Brug223_02': {
-        'title': "Bruggeman (1999) solution 223.02.""",
-         'comment': """Sudden change of head at r=R.
-         This solution is very difficult to correctly evaluate analytically.
-         Same as Theis but sudden head change at cylinder with r=R.""",
-        't': np.logspace(-3, 3, 141), # um1 = 1/ u
-        'r': np.hstack((30. - 0.01, np.logspace(np.log10(30.), 6, 1 * 160))),
-        'D': np.array([100.]),
-        'kr': np.array([10.]),
-        'kz': np.array([1e6]),
-        'ss': np.array([1e-3]),
-        'epsilon': 0.6,
-        },
-    'Kraaij':
-        {'title': r"""Kraaijenhoff vd Leur, 1D head development after sudden change of head at x +/- b.
-         """,
-         'comment': """Kraaij.
-         Computes the head change in a cross section after chaning the head at +/-b suddenly at t=0
-         """,
-        't': np.logspace(-3, 3, 61),
-        'x': np.linspace(0, 1000.0, 2 * 100),
-        'D': np.array([50.]),
-        'kx': np.array([10.]),
-        'kz': np.array([1e6]),
-        'ss': np.array([1e-3]),
-        'dh': 1.0,
-        'epsilon': 0.5
-        },
-    }
+    def hantush(um1=None, r=None, kr=None, kz=None, D=None, ss=None, rhos=None, use_ghb=False, epsilon=0.67, **kw):
+        """Show hantush well function using two layer model."""
 
-if __name__ == '__main__':
+        # c is not used, it's obtained for the given rho = r / lambda
 
-    print(f'Available cases:\n{cases.keys()}')
-    deGlee(**cases['steady'])
-    theis1(**cases['Theis'])
-    theis_use_class(**cases['Theis'])
-    hantush(**cases['Hantush1L']) # for S=0 -> steady De Glee
-    hantush(**cases['Hantush2L'])
-    boulton(**cases['Boulton63'])
-    brug223_02(**cases['Brug223_02'])
-    kraaij(**cases['Kraaij'])
+        kD = (kr * D).sum()
+        S  = (ss * D).sum()
+        Q = 4 * np.pi * kD
 
-    plt.show()
+        z =- np.hstack((0, D)).cumsum()
+
+        gr = Grid(r, [-0.5, 0.5], z, axial=True)
+
+        if gr.nlay == 1:
+            use_ghb = True
+
+        idomain = gr.const(1, dtype=int)
+        hi = gr.const(0.)
+        kx = kr[:, np.newaxis, np.newaxis] * gr.const(1)
+        kz = kz[:, np.newaxis, np.newaxis] * gr.const(1.)
+        ss = ss[:, np.newaxis, np.newaxis] * gr.const(1.)
+
+        fq = np.zeros(1, dtype=dtypeQ)
+        fq['I'], fq['q'] = gr.NOD[-1, 0, 0], Q
+        fq = {0: fq}
+
+        xlim = np.logspace(-2, 6, 2)
+        ylim = np.logspace(-4, 1, 2)
+
+        ax = newfig(f"Hantush using {gr.nlay} layer(s), leakage using {'ghb' if use_ghb else 'c'}, epsilon={epsilon}",
+                r'increasing r <--- $(4 kD /S) (t / r^2)$ ---> increasing t',
+                r'$s / (Q / (4 \pi kD))$',
+                xscale='log', yscale='log', xlim=xlim, ylim=ylim)
+
+        ir = np.arange(gr.nx + 1)[r < 60][-1]
+
+        for rho in rhos:
+            t = r[ir] ** 2 * S / (4 * kD) * um1
+            L = r[ir] / rho
+            ctop = L ** 2  / kD
+
+            if use_ghb:
+                ghb = np.zeros(gr.nx * gr.ny, dtype=dtypeGHB)
+                ghb['I'], ghb['h'], ghb['C'] = gr.NOD[-1].ravel(), 0., gr.Area.ravel() / ctop
+                ghb = {0: ghb}
+                c = None
+                fh = None
+            else:
+                fh = np.zeros(gr.nx * gr.ny, dtype=dtypeH)
+                fh['I'], fh['h'] = gr.NOD[0].ravel(), 0.
+                fh = {0: fh}
+                c = gr.const(0.)[:-1]
+                c[0] = ctop
+                ghb = None
+
+            out = fdm3t(gr=gr, t=t, k=(kx, kx, kz), ss=ss, c=c, fh=fh, fq=fq, ghb=ghb, hi=hi, idomain=idomain, epsilon=epsilon)
+
+            um1 = 4 * kD * t  / (S * r[ir] ** 2)
+            wh = out['Phi'][:, -1, 0, ir] /(Q  / (4 *np.pi * kD))
+
+            ax.plot(um1, wh, '-',                 label=f"numeric fdm, rho={rho:.4g}")
+            ax.plot(um1, Wh(1/um1, rho)[0], '--', label=f'Wh(u, rho),  rho={rho:.4g}')
+
+        ax.legend()    
+        return ax
+
+    def boulton(um1=None, r=None, D=None, kr=None, kz=None, ss=None, rhos=None, epsilon=0.67, **kw):
+
+        kD = (kr[1:] * D[1:]).sum()
+        S0  = ss[0] * D[0]
+        S1 = (ss[1:] * D[1:]).sum()
+
+        Q = 4 * np.pi * kD
+
+        z = np.hstack((0, -D))
+
+        gr = Grid(r, [-0.5, +0.5], z, axial=True)
+
+        idomain = gr.const(1, dtype=int)
+
+        ss = ss[:, np.newaxis, np.newaxis] * gr.const(1.)
+        kr = kr[:, np.newaxis, np.newaxis] * gr.const(1.)
+        kz = kz[:, np.newaxis, np.newaxis] * gr.const(1.)
+
+        hi = gr.const(0.)
+
+        fq = np.zeros(1, dtype=dtypeQ)
+        fq['I'], fq['q'] = gr.NOD[-1, 0, 0], Q
+        fq = {0: fq}
+
+        xlim = np.logspace(-2, 7, 2)
+        ylim = np.logspace(-4, 2, 2)
+
+        ax = newfig(kw['title'] + f", no fixed heads, grid shape = {gr.shape}, ",
+                r'increasing r <--- $(4 kD /S) (t / r^2)$ ---> increasing t',
+                r'$s  / (Q / (4 \pi kD))$',
+                xscale='log', yscale='log', xlim=xlim, ylim=ylim)
+
+        ax.plot(um1,          exp1(1/um1), 'r.-',  lw=2, label=f'Theis Sy = {S0:.4g}')
+        ax.plot(um1 * S0 /S1, exp1(1/um1), 'r.--', lw=2, label=f'Theis S  = {S1:.4g}')
+
+        ir = np.arange(gr.nx + 1)[r < 60][-1]
+
+        clrs = color_cycler()
+        for rho in rhos:
+            clr = next(clrs)
+            t = r[ir] ** 2 * S1 / (4 * kD) * um1
+            B = r[ir] / rho
+            ctop = B ** 2  / kD
+
+            c = gr.const(0.)[:-1]
+            c[0] = ctop
+
+            out = fdm3t(gr=gr, t=t, k=(kr, kr, kz), ss=ss, fh=None,
+                        fq=fq, hi=hi, idomain=idomain, c=c, ghb=None, epsilon=epsilon)
+
+            ax.plot(um1, out['Phi'][:, -1, 0, ir],  color=clr, label=f"Phi[:,-1,0,{ir}], rho={rho:.4g}")
+            ax.plot(um1, Wh(1/um1, rho)[0], '--', color=clr, label=f"Wh(u, rho),     rho={rho:.4g}")
+
+        ax.legend()
+        return ax
+
+    def brug223_02(t=None, r=None, D=None, kr=None, kz=None, ss=None, epsilon=0.67, **kw):
+        """Return solution of Bruggeman 223_02, in a one-layer axially symmetric model.
+
+        The problem is flow  outside a cyling with radius R afger sudden head change at R.
+        """
+        kD = (kr * D).sum()
+        S  = (ss * D).sum()
+
+        z = -np.cumsum(np.hstack((0, D)))
+        gr = Grid(r, [-0.5, 0.5], z, axial=True)
+
+        kr = kr[:, np.newaxis, np.newaxis] * gr.const(1.)
+        kz = kz[:, np.newaxis, np.newaxis] * gr.const(1.)
+        ss = ss[:, np.newaxis, np.newaxis] * gr.const(1.)
+
+        idomain = gr.const(1, dtype=int)
+
+        s0 = 1.0
+        hi = gr.const(0.)
+        #hi[:, :, 0] = s0
+
+
+        fh = np.zeros(gr.nz * gr.ny, dtype=dtypeH)
+        fh['I'], fh['h'] = gr.NOD[:, :, 0].ravel(), s0
+        fh = {0: fh}
+
+        out = fdm3t(gr=gr, t=t, k=(kr, kr, kz), ss=ss, fh=fh, fq=None, hi=hi, idomain=idomain, epsilon=epsilon)
+
+        xlim = np.logspace(np.log10(t[0]), np.log10(t[-1]), 2)
+        ylim = np.logspace(-4, 1, 2)
+
+        # The head change s
+        ax = newfig(kw['title'],
+            't [d]',
+            's [m]',
+            xscale='log', yscale='log',
+            xlim=xlim, ylim=ylim)
+
+        cc = color_cycler()
+        # select a few distances for which the show the graph
+        for ir in np.hstack((0, 1, 2, 3, 4, np.arange(5, gr.nx, 5))):
+            if gr.xm[ir] > 100:
+                continue
+            color = next(cc)
+            ax.plot(t, out['Phi'][:, -1, 0, ir], '-', color=color, label=f'r={gr.xm[ir]:.3g} m')
+
+        ax.legend()
+
+        # The flow Q
+        ylim = np.logspace(0, 5, 2)
+
+        ax = newfig(kw['title'] + "Flow Q [m3/d]",
+            't [d]',
+            'Q [m3/d]',
+            xscale='log', yscale='log',
+            xlim=xlim, ylim=ylim)
+
+        cc = color_cycler()
+        # select a few distances for which the show the graph
+        for ir in np.hstack((0, 1, 2, 3, 4, np.arange(5, gr.nx, 5))):
+            if gr.xm[ir] > 1000:
+                continue
+            color = next(cc)
+            ax.plot(t[1:], out['Qx'][:, -1, 0, ir], '-', color=color, label=f'r={gr.x[ir]:.3g} m')
+        ax.legend()
+        return ax
+
+    def kraaij(t=None, x=None, D=None, kx=None, kz=None, ss=None, dh=None, epsilon=1.0, **kw):
+        """Return Kraaijenhoff vd Leur output in a one-layer model.
+
+        If np.all(ss == 0.), steady state should be returned. For his at least
+        one cell must be fixed head (as specified by fh).
+        """
+
+        def kraaijenhoff(kD=None, S=None, t=None, x=None, dh=None):
+            """Return Kraaijenhoff vd Leur solution."""
+            if np.isscalar(t):
+                t = np.array(t) .reshape(1, 1)
+
+            b = x[-1]
+            t = t[:, np.newaxis]
+            xm = 0.5 * (x[:-1] + x[1:])
+            xm = xm[np.newaxis, :]
+
+            s = np.zeros((t.shape[0], xm.shape[-1]))
+            for j in range(1, 20):
+                _2jm1 = 2 * j - 1
+                T = b ** 2 * S / kD
+                s +=  (-1) ** (j - 1) / _2jm1 * np.cos(_2jm1 * np.pi / 2 * xm / b) * np.exp(-(_2jm1 * np.pi / 2) ** 2 * t /T)
+            return dh * 4  / np.pi * s
+
+        x = np.hstack((0., x[x > 0]))
+        kD = (kx * D).sum()
+        S  = (ss * D).sum()
+
+        T = x[-1] ** 2 * S / kD * (2 / np.pi) ** 2
+        tkrvdl = np.arange(1, 11) * T
+        t = np.unique(np.hstack((t, tkrvdl)))
+
+        z = -np.cumsum(np.hstack((0, D)))
+        gr = Grid(x, [-0.5, 0.5], z, axial=False)
+
+        krvdl = kraaijenhoff(kD=kD, S=S, t=tkrvdl, x=x, dh=dh)
+
+        idomain = gr.const(1, dtype=int)
+        hi = gr.const(dh)
+
+        fh = np.zeros(gr.nz * gr.ny, dtype=dtypeH)
+        fh['I'], fh['h'] = gr.NOD[:, :, -1].ravel(), 0.
+        fh = {0: fh}
+
+        out = fdm3t(gr=gr, t=t, k=(kx, kx, kz), ss=ss, fh=fh, fq=None, hi=hi, idomain=idomain, epsilon=epsilon)
+
+        ax = newfig(kw['title'],
+            'x [m]',
+            'h - h0 [m]')
+
+        cc = color_cycler()
+        for it, t_ in enumerate(t):
+            if t_ not in tkrvdl:
+                continue
+            color = next(cc)
+            ax.plot(gr.xm, out['Phi'][it, -1, 0, :], '-', color=color, label=f't={t_:.4g} d')
+        cc = color_cycler()
+        for it, t_ in enumerate(tkrvdl):
+            color = next(cc)
+            ax.plot(gr.xm, krvdl[it, :], '.', color=color, label=f'krvl, t={t_:.4g} d')
+        ax.legend()
+        return ax
+
+    cases = {
+        'steady':
+            {'title': 'steady',
+            "comment": """This test is to verify the accuracy of the model against an analytical
+            solution of Theis or even Hantush by a regular simulation, no dimensionless parameters.
+            """,
+            't': np.logspace(-4, 9, 131),
+            'r': np.hstack((0, np.logspace(-2, 6, 81))),
+            'D': np.array([  10., 50.]),
+            'kr': np.array([ 1e-6, 10.]),
+            'kz': np.array([ 1e6,  1e6]),
+            'Ss': np.array([ 0.01, 0.2e-6]),
+            'c': np.array([600.]),
+            'use_ghb': True,
+            },
+        'Theis':
+            {'title': r"""Theis numeric vs um1 = 1/u. Increasing um1 --> increasing time --> decreasing r.
+            Curves for different r overlap due to the choice of both axes which yieldds the Theis type curve.
+            Small deviations with the analytic type curve occur only for very large r or very small t.
+            """,
+            'comment': """Theis numeric.
+            Computes the theis type curve by plotting s / (Q / (4 pi kD) vs 4 kD / S * t / r^2
+            and compare this with the real theis function exp1.
+            """,
+            'um1': np.logspace(-5, 9, 141), # um1 = 1/ u
+            'r': np.hstack((0., np.logspace(-2, 6, 381))),
+            'D': np.array([50.]),
+            'kr': np.array([10.]),
+            'kz': np.array([1e6]),
+            'ss': np.array([1e-5]),
+            'epsilon': 0.5,
+            },
+        'Hantush1L':
+            {'title' : 'Hantush using 1 layer',
+            'comment': """Hantush is numerically simlated using a single model layer, the inflow
+            at the top is made using general head boundaries. This result should be the same
+            as the one alled Hantush 2L. It's a way to verify that the GHB has been implemented correctly.
+            """,
+            #'um1': np.logspace(-3, 3, 71), # um1 = 1/ u,
+            'um1': np.logspace(-3, 3, 31), # um1 = 1/ u,
+            'r': np.hstack((0., np.logspace(-2, 6, 1 * 80 + 1))), # so many points per log cycle
+            'D': np.array([50.]),
+            'kr': np.array([10.]),
+            'kz': np.array([1e6]),
+            'ss': np.array([0.2e-6]),
+            'rhos': [0., 0.01, 0.03, .1, .3, 1., 3.],
+            'r_': 30.,
+            'epsilon': 1.0,
+            },
+        'Hantush2L': {
+            'title': 'Hantush using 2 layers',
+            'comment': """Hantush is simulated using 2 layer. One is the top layer with fixed head and
+            given resistance between the first and second layer. The second layer is the aquifer. This
+            example also serves to verify the implementation of the interlayer resistance 'c'.
+            """,
+            'um1': np.logspace(-5, 9, 141), # um1 = 1/ u
+            'r': np.hstack((0., np.logspace(-2, 6, 581))),
+            'D': np.array([10., 20.]),
+            'kr': np.array([ 1e-6, 1e1]),
+            'kz': np.array([ 1e6,  1e6]),
+            'ss': np.array([   0., 1e-5]),
+            'rhos': [0., 0.01, 0.03, .1, .3, 1., 3.],
+            'r_': 30.,
+            'use_ghb': False,
+            'epsilon': 0.5,
+            },
+        'Boulton63': {
+            'title': 'Boulton 1963, delayed yield',
+            'comment': """Boulton is simulated using 2 layers. One is the top layer with given Sy and
+            given resistance between the first and second layer. The second layer is the aquifer with
+            elastic storage coefficient S. The resisance between the two layers follows from the
+            value of rho used. A single reference distance r_ is used for all curve. This has no effect
+            on the results because these are given on dimensionless graphs.
+            """,
+            'um1': np.logspace(-5, 9, 141), # um1 = 1/ u
+            'r': np.hstack((0., np.logspace(-2, 6, 8 * 80))),
+            'D': np.array([10., 50.]),
+            'kr': np.array([ 0., 10.]),
+            'kz': np.array([ 1e6,  1e6]),
+            'ss': np.array([  0.01, 0.2e-6]),
+            'rhos': [0., 0.01, 0.03, .1, .3, 1., 3.], # c comes from rho
+            'r_': 30,
+            'epsilon': 0.5,
+            },
+        'Brug223_02': {
+            'title': "Bruggeman (1999) solution 223.02.""",
+            'comment': """Sudden change of head at r=R.
+            This solution is very difficult to correctly evaluate analytically.
+            Same as Theis but sudden head change at cylinder with r=R.""",
+            't': np.logspace(-3, 3, 141), # um1 = 1/ u
+            'r': np.hstack((30. - 0.01, np.logspace(np.log10(30.), 6, 1 * 160))),
+            'D': np.array([100.]),
+            'kr': np.array([10.]),
+            'kz': np.array([1e6]),
+            'ss': np.array([1e-3]),
+            'epsilon': 0.6,
+            },
+        'Kraaij':
+            {'title': r"""Kraaijenhoff vd Leur, 1D head development after sudden change of head at x +/- b.
+            """,
+            'comment': """Kraaij.
+            Computes the head change in a cross section after chaning the head at +/-b suddenly at t=0
+            """,
+            't': np.logspace(-3, 3, 61),
+            'x': np.linspace(0, 1000.0, 2 * 100),
+            'D': np.array([50.]),
+            'kx': np.array([10.]),
+            'kz': np.array([1e6]),
+            'ss': np.array([1e-3]),
+            'dh': 1.0,
+            'epsilon': 0.5
+            },
+        }
+
+    if __name__ == '__main__':
+
+        print(f'Available cases:\n{cases.keys()}')
+        deGlee(**cases['steady'])
+        theis1(**cases['Theis'])
+        theis_use_class(**cases['Theis'])
+        hantush(**cases['Hantush1L']) # for S=0 -> steady De Glee
+        hantush(**cases['Hantush2L'])
+        boulton(**cases['Boulton63'])
+        brug223_02(**cases['Brug223_02'])
+        kraaij(**cases['Kraaij'])
+
+        plt.show()

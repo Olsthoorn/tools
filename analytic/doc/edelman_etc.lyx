@@ -364,6 +364,32 @@ s\left(x,t\right)=\frac{2B}{\sqrt{kDS}}t^{\frac{n}{2}}\frac{\iop^{n}\erfc\left(u
 \end_layout
 
 \begin_layout Standard
+Of
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+Q\left(x,t\right)=Bt^{\frac{n}{2}}\frac{\iop^{n}\erfc\left(u\right)}{\iop^{n+1}\erfc\left(0\right)}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+s\left(x,t\right)=\frac{2B}{\sqrt{kDS}}t^{\frac{n+1}{2}}\frac{\iop^{n+1}\erfc\left(u\right)}{\iop^{n+1}\erfc\left(0\right)}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
 De 
 \begin_inset Formula $\iop^{n}\erfc\left(u\right)$
 \end_inset
@@ -411,6 +437,72 @@ Dus stel gewoon
 \end_layout
 
 \begin_layout Standard
+\begin_inset Formula 
+\[
+\frac{s_{0}}{\sqrt{t}}\sqrt{\frac{kDS}{4\pi}}E_{2}\left(u\right)=\frac{s_{0}}{\sqrt{t}}\times\frac{\iop^{-1}\erfc\left(u\right)}{\iop^{0}\erfc\left(0\right)}\times\sqrt{\frac{kDS}{4}}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+E_{2}\left(u\right)=\frac{\iop^{-1}\erfc\left(u\right)}{\iop^{0}\erfc\left(0\right)}\times\frac{1}{2}\sqrt{\pi}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+E_{3}\left(u\right)=\frac{\iop^{1}\erfc\left(u\right)}{\iop^{2}\erfc\left(0\right)}\times\frac{1}{4}\sqrt{\pi}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+E_{4}\left(u\right)=\frac{\iop^{2}\erfc\left(u\right)}{\iop^{2}\erfc\left(0\right)}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+E_{4}\left(u\right)=\frac{\iop^{2}\erfc\left(u\right)}{\iop^{3}\erfc\left(0\right)}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+E_{5}\left(u\right)=\times\frac{\iop^{3}\erfc\left(u\right)}{\iop^{3}\erfc\left(0\right)}\times\frac{3}{2}\sqrt{\pi}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
 \begin_inset Float table
 placement document
 alignment document
@@ -442,7 +534,7 @@ Vier gevallen van Edelman (1940) versus de series
 \begin_inset Text
 
 \begin_layout Plain Layout
-Edelman
+n
 \end_layout
 
 \end_inset
@@ -471,7 +563,7 @@ Series
 \begin_inset Text
 
 \begin_layout Plain Layout
-1
+0
 \end_layout
 
 \end_inset
@@ -482,8 +574,8 @@ Series
 \begin_layout Plain Layout
 \begin_inset Formula 
 \begin{align*}
-s & =s_{0}E_{0}\left(u\right)\\
-Q & =\frac{s_{0}}{\sqrt{t}}\sqrt{\frac{kDS}{4\pi}}E_{2}\left(u\right)
+s & =s_{0}E_{1}\left(u\right)\\
+Q & =\frac{s_{0}}{\sqrt{t}}\sqrt{\frac{kDS}{\pi}}E_{2}\left(u\right)
 \end{align*}
 
 \end_inset
@@ -530,7 +622,7 @@ Q\left(x,t\right) & =\frac{s_{0}}{\sqrt{t}}\times\frac{\iop^{-1}\erfc\left(u\rig
 \begin_inset Text
 
 \begin_layout Plain Layout
-2
+1
 \end_layout
 
 \end_inset
@@ -572,7 +664,7 @@ Q & =Q_{0}E_{1}\left(u\right)
 \color none
 \begin_inset Formula 
 \begin{align*}
-s\left(x,t\right) & =Q_{0}\sqrt{t}\times\frac{\iop^{1}\erfc\left(u\right)}{\iop^{1}\erfc\left(0\right)}\times\times\sqrt{\frac{4}{kDS}}\\
+s\left(x,t\right) & =Q_{0}\sqrt{t}\times\frac{\iop^{1}\erfc\left(u\right)}{\iop^{1}\erfc\left(0\right)}\times\sqrt{\frac{4}{kDS}}\\
 Q\left(x,t\right) & =Q_{0}\times\frac{\iop^{0}\erfc\left(u\right)}{\iop^{1}\erfc\left(0\right)}
 \end{align*}
 
@@ -589,7 +681,7 @@ Q\left(x,t\right) & =Q_{0}\times\frac{\iop^{0}\erfc\left(u\right)}{\iop^{1}\erfc
 \begin_inset Text
 
 \begin_layout Plain Layout
-3
+2
 \end_layout
 
 \end_inset
@@ -648,7 +740,7 @@ Q\left(x,t\right) & =\alpha\sqrt{t}\times\frac{\iop^{1}\erfc\left(u\right)}{\iop
 \begin_inset Text
 
 \begin_layout Plain Layout
-4
+3
 \end_layout
 
 \end_inset
