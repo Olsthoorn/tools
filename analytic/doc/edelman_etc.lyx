@@ -16,7 +16,10 @@
 \DeclareMathOperator{\iop}{i}
 \DeclareMathOperator{\erfc}{erfc}
 \DeclareMathOperator{\erf}{erf}
+\DeclareMathOperator{\erfc}{erfc}
 \DeclareMathOperator{\W}{W}
+\DeclareMathOperator{\ierfc}{ierfc}
+
 
 
 \usepackage{xcolor}
@@ -142,13 +145,13 @@
 \begin_body
 
 \begin_layout Standard
-Tijdens onze colleges grondwaterhydrologie kregen we waarschijnlijk allemaal de formules van Edelman onderwezen.
+Tijdens onze colleges grondwaterhydrologie kregen we waarschijnlijk allemaal de formules van Edelman (1940) onderwezen.
  Je weet wel,
- hoe de stijghoogte en de grondwaterstroom op punt 
+ de formules die beschrijven hoe de stijghoogte en de grondwaterstroom op punt 
 \begin_inset Formula $x$
 \end_inset
 
- vanaf 
+>0 vanaf 
 \begin_inset Formula $t=0$
 \end_inset
 
@@ -156,7 +159,7 @@ Tijdens onze colleges grondwaterhydrologie kregen we waarschijnlijk allemaal de 
 \begin_inset Formula $x=0$
 \end_inset
 
- en op of vanaf 
+ en vanaf 
 \begin_inset Formula $t=0$
 \end_inset
 
@@ -169,30 +172,15 @@ Tijdens onze colleges grondwaterhydrologie kregen we waarschijnlijk allemaal de 
 \begin_inset Formula $E_{4}$
 \end_inset
 
- was echter niet te volgen;
- evenmin gold dat voor de ingewikkelde coëfficiënten ervoor.
- Dat was echter geheel het gevolg van de keuzes die Edelman in zijn proefschrift uit 1940 zelf maakte.
- Wiskundig is de reeks wel logisch en dat geldt evenzeer voor de coëfficiënten.
- De reeks waarvan de Edelmain-gevallen deel uitmaken is namelijk te schrijven als
+ was echter niet te volgen en dat gold ook voor de ingewikkelde coëfficiënten.
+ We zullen hier Edelman versimpelen.
+ De formules van Edelman zijn oplossingen van de differentiaalvergelijking
 \end_layout
 
 \begin_layout Standard
-\begin_inset Formula 
-\begin{equation}
-s\left(x,t\right)=At^{n/2}\frac{\iop^{n}\erfc\left(u\right)}{\iop^{n}\erfc\left(0\right)};\;\text{met\;u=\ensuremath{\sqrt{\frac{x^{2}S}{4kDt}}}}\label{eq:Edelman-s}
-\end{equation}
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-
-\series bold
 \begin_inset Formula 
 \[
-Q\left(x,t\right)=\frac{A}{2}\sqrt{kDS}\,t^{\frac{n-1}{2}}\frac{\iop^{n-1}\erfc\left(u\right)}{\iop^{n}\erfc\left(0\right)}
+kD\frac{\partial^{2}\phi}{\partial x^{2}}=S\frac{\partial\phi}{\partial t}
 \]
 
 \end_inset
@@ -205,172 +193,79 @@ Hierin is
 \end_layout
 
 \begin_layout Description
-\begin_inset Formula $s$
+\begin_inset Formula $\phi$
 \end_inset
 
- de verandering van de grondwaterstand op plaats 
-\begin_inset Formula $x>0$
-\end_inset
-
- en tijd 
-\begin_inset Formula $t>0$
-\end_inset
-
-
+ stijghoogte (ten opzichte van initiële waarde) [L]
 \end_layout
 
 \begin_layout Description
-\begin_inset Formula $S$
+\begin_inset Formula $t$
 \end_inset
 
- de bergingscoëfficiënt (freatisch of elastisch)
+ tijd [T]
+\end_layout
+
+\begin_layout Description
+\begin_inset Formula $x$
+\end_inset
+
+ Afstand vanaf de randvoorwaarde [L]
 \end_layout
 
 \begin_layout Description
 \begin_inset Formula $kD$
 \end_inset
 
- het doorlaatvermogen
+ doorlaatvermogen [L2/T]
 \end_layout
 
 \begin_layout Description
+\begin_inset Formula $S$
+\end_inset
+
+ bergingscoëfficiënt [-]
+\end_layout
+
+\begin_layout Standard
+Carslaw & Jaeger (1959,
+ p52) schrijven dat
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{equation}
+y\left(x,t\right)=t^{n/2}\ierfc\left(n,u\right);\;\text{met}\;u=x\sqrt{\frac{S}{4kDt}}\label{eq:CarslawJeager}
+\end{equation}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+oplossingen zijn.
+ Hierin is 
+\begin_inset Formula $\ierfc\left(n,u\right)$
+\end_inset
+
+ is de 
 \begin_inset Formula $n$
 \end_inset
 
- een geheel getal
-\end_layout
-
-\begin_layout Description
-\begin_inset Formula $A$
-\end_inset
-
- de constante of grootte van de verandering op 
-\begin_inset Formula $x=0$
-\end_inset
-
- en 
-\begin_inset Formula $t>0$
-\end_inset
-
-
-\end_layout
-
-\begin_layout Description
-\begin_inset Formula $\iop^{n}\erfc\left(...\right)$
-\end_inset
-
- De 
-\begin_inset Formula $n$
-\end_inset
-
--de herhaalde integraal van de complementaire errorfunctie
-\end_layout
-
-\begin_layout Description
-\begin_inset Formula $Q$
-\end_inset
-
- volgt direct uit Darcy met 
-\begin_inset Formula $Q=-kD\frac{ds\left(u\right)}{du}\frac{\partial u}{\partial x}$
-\end_inset
-
- en
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\begin{equation}
-\iop^{n}\erfc\left(u\right)=\intop_{u}^{\infty}\iop^{n-1}\erfc\left(\zeta\right)d\zeta\to\frac{d\left(\iop^{n}\erfc\left(u\right)\right)}{du}=-\iop^{n-1}\erfc\left(u\right)\label{eq:inerfc}
-\end{equation}
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-De ingewikkelde coëfficiënten zijn nu gewoon 
-\begin_inset Formula $\iop^{n}\erfc\left(0\right)$
+-de herhaalde integraal van de complementaire errorfunctie 
+\begin_inset Formula $\erfc$
 \end_inset
 
 .
- Dus wanneer we de 
-\begin_inset Formula $\iop^{n}\erfc\left(u\right)$
-\end_inset
-
- kunnen berekenen voor elke 
-\begin_inset Formula $u$
-\end_inset
-
- kunnen we dat met dezelfde functie ook voor 
-\begin_inset Formula $u=0$
-\end_inset
-
-.
- Deze functie uitrekenen gaat heel eenvoudig zie verderop.
-\end_layout
-
-\begin_layout Standard
-Dit debiet 
-\begin_inset Formula $Q$
-\end_inset
-
- is het gevolg van wat er met de stijghoogte op 
-\begin_inset Formula $x=0$
-\end_inset
-
- gebeurt.
- Evengoed kunnen we berekenen wat er met de stijghoogte gebeurt als gevolg van hoe 
-\begin_inset Formula $Q$
-\end_inset
-
- op 
-\begin_inset Formula $x=0$
-\end_inset
-
- verandert.
- Dus stel gewoon 
-\begin_inset Formula $B=\frac{A}{2}\sqrt{kDS}$
-\end_inset
-
- zodat 
-\begin_inset Formula $A=\frac{2B}{\sqrt{kDS}}$
-\end_inset
-
-.
- We hebben dan
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\begin{equation}
-Q\left(x,t\right)=Bt^{\frac{n-1}{2}}\frac{\iop^{n-1}\erfc\left(u\right)}{\iop^{n}\erfc\left(0\right)}\label{eq:edelman-Q2}
-\end{equation}
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\begin{equation}
-s\left(x,t\right)=\frac{2B}{\sqrt{kDS}}t^{\frac{n}{2}}\frac{\iop^{n}\erfc\left(u\right)}{\iop^{n}\erfc\left(0\right)}\label{eq:edelman-s2}
-\end{equation}
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-Of
+ Zulke functies zijn gemakkelijk uit rekenen (Abramovitz & Stegun,
+ 1964) :
 \end_layout
 
 \begin_layout Standard
 \begin_inset Formula 
 \[
-Q\left(x,t\right)=Bt^{\frac{n}{2}}\frac{\iop^{n}\erfc\left(u\right)}{\iop^{n+1}\erfc\left(0\right)}
+\ierfc\left(n,u\right)=\intop_{u}^{\infty}\ierfc\left(n-1,y\right)dy
 \]
 
 \end_inset
@@ -379,9 +274,13 @@ Q\left(x,t\right)=Bt^{\frac{n}{2}}\frac{\iop^{n}\erfc\left(u\right)}{\iop^{n+1}\
 \end_layout
 
 \begin_layout Standard
+met
+\end_layout
+
+\begin_layout Standard
 \begin_inset Formula 
 \[
-s\left(x,t\right)=\frac{2B}{\sqrt{kDS}}t^{\frac{n+1}{2}}\frac{\iop^{n+1}\erfc\left(u\right)}{\iop^{n+1}\erfc\left(0\right)}
+\ierfc\left(0,u\right)=\erfc\left(u\right)\;\text{en}\;\ierfc\left(-1,u\right)=\frac{2}{\sqrt{\pi}}e^{-u^{2}}
 \]
 
 \end_inset
@@ -390,56 +289,13 @@ s\left(x,t\right)=\frac{2B}{\sqrt{kDS}}t^{\frac{n+1}{2}}\frac{\iop^{n+1}\erfc\le
 \end_layout
 
 \begin_layout Standard
-De 
-\begin_inset Formula $\iop^{n}\erfc\left(u\right)$
-\end_inset
-
- functie kan gemakkelijk worden berekend uit de bekende recursieformule
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\begin{equation}
-\iop^{n}\erfc\left(u\right)=\frac{-u}{n}\iop^{n-1}\erfc\left(u\right)+\frac{1}{2n}\iop^{n-2}\erfc\left(u\right);\;\text{met\;n=1, 2, 3, 4,...}\label{eq:inerfc-recursie}
-\end{equation}
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-waarbij en
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\begin{equation}
-\iop^{0}\erfc\left(u\right)=\erfc\left(u\right)\;\text{en\;}\iop^{-1}\erfc\left(u\right)=\frac{2}{\sqrt{\pi}}e^{-u^{2}}\label{eq:i0erfc0-eni-1erfc}
-\end{equation}
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-Dus stel gewoon 
-\begin_inset Formula $B=\frac{A}{2}\sqrt{kDS}$
-\end_inset
-
- zodat 
-\begin_inset Formula $A=\frac{2B}{\sqrt{kDS}}$
-\end_inset
-
-.
- We hebben dan
+en
 \end_layout
 
 \begin_layout Standard
 \begin_inset Formula 
 \[
-\frac{s_{0}}{\sqrt{t}}\sqrt{\frac{kDS}{4\pi}}E_{2}\left(u\right)=\frac{s_{0}}{\sqrt{t}}\times\frac{\iop^{-1}\erfc\left(u\right)}{\iop^{0}\erfc\left(0\right)}\times\sqrt{\frac{kDS}{4}}
+\ierfc\left(n,u\right)=-\frac{u}{n}\ierfc\left(n-1,u\right)+\frac{1}{2n}\ierfc\left(n-2,u\right)
 \]
 
 \end_inset
@@ -448,9 +304,13 @@ Dus stel gewoon
 \end_layout
 
 \begin_layout Standard
+Tegelijk volgt uit de definitie dat
+\end_layout
+
+\begin_layout Standard
 \begin_inset Formula 
 \[
-E_{2}\left(u\right)=\frac{\iop^{-1}\erfc\left(u\right)}{\iop^{0}\erfc\left(0\right)}\times\frac{1}{2}\sqrt{\pi}
+\frac{d\ierfc\left(n,u\right)}{du}=-\ierfc\left(n-1,u\right)
 \]
 
 \end_inset
@@ -459,9 +319,36 @@ E_{2}\left(u\right)=\frac{\iop^{-1}\erfc\left(u\right)}{\iop^{0}\erfc\left(0\rig
 \end_layout
 
 \begin_layout Standard
+Vgl.
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "eq:CarslawJeager"
+plural "false"
+caps "false"
+noprefix "false"
+nolink "false"
+
+\end_inset
+
+ kunnen we met een constante vermenigvuldigen,
+ dan nog blijft het een oplossing van de differentiaalvergelijking Dus als we 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "eq:CarslawJeager"
+plural "false"
+caps "false"
+noprefix "false"
+nolink "false"
+
+\end_inset
+
+ schrijven als
+\end_layout
+
+\begin_layout Standard
 \begin_inset Formula 
 \[
-E_{3}\left(u\right)=\frac{\iop^{1}\erfc\left(u\right)}{\iop^{2}\erfc\left(0\right)}\times\frac{1}{4}\sqrt{\pi}
+\phi\left(x,t\right)=At^{n/2}\frac{\ierfc\left(n.u\right)}{\ierfc\left(n,0\right)}=A^{n/2}F\left(n,u\right)
 \]
 
 \end_inset
@@ -470,36 +357,48 @@ E_{3}\left(u\right)=\frac{\iop^{1}\erfc\left(u\right)}{\iop^{2}\erfc\left(0\righ
 \end_layout
 
 \begin_layout Standard
-\begin_inset Formula 
-\[
-E_{4}\left(u\right)=\frac{\iop^{2}\erfc\left(u\right)}{\iop^{2}\erfc\left(0\right)}
-\]
+hebben we de oplossing voor grondwater stroming waarbij 
+\begin_inset Formula $\phi\left(0,t\right)=At^{n/2}$
+\end_inset
+
+,
+ immers 
+\begin_inset Formula $F\left(n,u\right)=\ierfc\left(n,u\right)/\ierfc\left(n,0\right)$
+\end_inset
+
+ is 1 voor 
+\begin_inset Formula $x=0\rightarrow u=0.$
+\end_inset
+
+ De functie 
+\begin_inset Formula $F\left(n,u\right)$
+\end_inset
+
+ vertaalt zich direct naar die van Edelman.
+ Tabel 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "tab:Vergelijking-F-E"
+plural "false"
+caps "false"
+noprefix "false"
+nolink "false"
 
 \end_inset
 
-
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\[
-E_{4}\left(u\right)=\frac{\iop^{2}\erfc\left(u\right)}{\iop^{3}\erfc\left(0\right)}
-\]
-
+ laat dit verband zien.
+ Let op dat 
+\begin_inset Formula $E_{2}$
 \end_inset
 
-
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\[
-E_{5}\left(u\right)=\times\frac{\iop^{3}\erfc\left(u\right)}{\iop^{3}\erfc\left(0\right)}\times\frac{3}{2}\sqrt{\pi}
-\]
-
+en 
+\begin_inset Formula $E_{1}$
 \end_inset
 
-
+ door verwisseling niet in de logische volgorde passen (Huisman,
+ 1972,
+ p42-47).
+ Dit verklaart wellicht een deel van de verwarring.
 \end_layout
 
 \begin_layout Standard
@@ -511,10 +410,32 @@ sideways false
 status open
 
 \begin_layout Plain Layout
+
+\end_layout
+
+\begin_layout Plain Layout
 \begin_inset Caption Standard
 
 \begin_layout Plain Layout
-Vier gevallen van Edelman (1940) versus de series
+\begin_inset CommandInset label
+LatexCommand label
+name "tab:Vergelijking-F-E"
+
+\end_inset
+
+Vergelijking van functie 
+\begin_inset Formula $F\left(n,u\right)$
+\end_inset
+
+ met de functies van Eldelman 
+\begin_inset Formula $E_{1}$
+\end_inset
+
+ t/m 
+\begin_inset Formula $E_{5}$
+\end_inset
+
+
 \end_layout
 
 \end_inset
@@ -524,223 +445,22 @@ Vier gevallen van Edelman (1940) versus de series
 
 \begin_layout Plain Layout
 \begin_inset Tabular
-<lyxtabular version="3" rows="5" columns="3">
+<lyxtabular version="3" rows="3" columns="5">
 <features tabularvalignment="middle">
 <column alignment="center" valignment="top">
 <column alignment="center" valignment="top">
 <column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
 <row>
 <cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
 \begin_inset Text
 
 \begin_layout Plain Layout
-n
-\end_layout
-
-\end_inset
-</cell>
-<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
-\begin_inset Text
-
-\begin_layout Plain Layout
-Edelman (1940)
-\end_layout
-
-\end_inset
-</cell>
-<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
-\begin_inset Text
-
-\begin_layout Plain Layout
-Series
-\end_layout
-
-\end_inset
-</cell>
-</row>
-<row>
-<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
-\begin_inset Text
-
-\begin_layout Plain Layout
-0
-\end_layout
-
-\end_inset
-</cell>
-<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
-\begin_inset Text
-
-\begin_layout Plain Layout
-\begin_inset Formula 
-\begin{align*}
-s & =s_{0}E_{1}\left(u\right)\\
-Q & =\frac{s_{0}}{\sqrt{t}}\sqrt{\frac{kDS}{\pi}}E_{2}\left(u\right)
-\end{align*}
-
+\begin_inset Formula $n=-1$
 \end_inset
 
 
-\end_layout
-
-\end_inset
-</cell>
-<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
-\begin_inset Text
-
-\begin_layout Plain Layout
-
-\family roman
-\series medium
-\shape up
-\size normal
-\emph off
-\nospellcheck off
-\bar no
-\strikeout off
-\xout off
-\uuline off
-\uwave off
-\noun off
-\color none
-\begin_inset Formula 
-\begin{align*}
-s\left(x,t\right) & =s_{0}\times\frac{\iop^{0}\erfc\left(u\right)}{\iop^{0}\erfc\left(0\right)}\\
-Q\left(x,t\right) & =\frac{s_{0}}{\sqrt{t}}\times\frac{\iop^{-1}\erfc\left(u\right)}{\iop^{0}\erfc\left(0\right)}\times\sqrt{\frac{kDS}{4}}
-\end{align*}
-
-\end_inset
-
-
-\end_layout
-
-\end_inset
-</cell>
-</row>
-<row>
-<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
-\begin_inset Text
-
-\begin_layout Plain Layout
-1
-\end_layout
-
-\end_inset
-</cell>
-<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
-\begin_inset Text
-
-\begin_layout Plain Layout
-\begin_inset Formula 
-\begin{align*}
-s & =Q_{0}\sqrt{t}\sqrt{\frac{4}{\pi kDS}}E_{3}\left(u\right)\\
-Q & =Q_{0}E_{1}\left(u\right)
-\end{align*}
-
-\end_inset
-
-
-\end_layout
-
-\end_inset
-</cell>
-<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
-\begin_inset Text
-
-\begin_layout Plain Layout
-
-\family roman
-\series medium
-\shape up
-\size normal
-\emph off
-\nospellcheck off
-\bar no
-\strikeout off
-\xout off
-\uuline off
-\uwave off
-\noun off
-\color none
-\begin_inset Formula 
-\begin{align*}
-s\left(x,t\right) & =Q_{0}\sqrt{t}\times\frac{\iop^{1}\erfc\left(u\right)}{\iop^{1}\erfc\left(0\right)}\times\sqrt{\frac{4}{kDS}}\\
-Q\left(x,t\right) & =Q_{0}\times\frac{\iop^{0}\erfc\left(u\right)}{\iop^{1}\erfc\left(0\right)}
-\end{align*}
-
-\end_inset
-
-
-\end_layout
-
-\end_inset
-</cell>
-</row>
-<row>
-<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
-\begin_inset Text
-
-\begin_layout Plain Layout
-2
-\end_layout
-
-\end_inset
-</cell>
-<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
-\begin_inset Text
-
-\begin_layout Plain Layout
-\begin_inset Formula 
-\begin{align*}
-s & =\alpha tE_{4}\left(u\right)\\
-Q & =\alpha\sqrt{t}\sqrt{\frac{4kDS}{\pi}}E_{3}\left(u\right)
-\end{align*}
-
-\end_inset
-
-
-\end_layout
-
-\end_inset
-</cell>
-<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
-\begin_inset Text
-
-\begin_layout Plain Layout
-
-\family roman
-\series medium
-\shape up
-\size normal
-\emph off
-\nospellcheck off
-\bar no
-\strikeout off
-\xout off
-\uuline off
-\uwave off
-\noun off
-\color none
-\begin_inset Formula 
-\begin{align*}
-s\left(x,t\right) & =\alpha t\times\frac{\iop^{2}\erfc\left(u\right)}{\iop^{2}\erfc\left(0\right)}\\
-Q\left(x,t\right) & =\alpha\sqrt{t}\times\frac{\iop^{1}\erfc\left(u\right)}{\iop^{2}\erfc\left(0\right)}\times\sqrt{\frac{kDS}{4}}
-\end{align*}
-
-\end_inset
-
-
-\end_layout
-
-\end_inset
-</cell>
-</row>
-<row>
-<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
-\begin_inset Text
-
-\begin_layout Plain Layout
-3
 \end_layout
 
 \end_inset
@@ -749,12 +469,31 @@ Q\left(x,t\right) & =\alpha\sqrt{t}\times\frac{\iop^{1}\erfc\left(u\right)}{\iop
 \begin_inset Text
 
 \begin_layout Plain Layout
-\begin_inset Formula 
-\begin{align*}
-s & =\beta t\sqrt{t}\sqrt{\frac{16/9}{\pi kDS}}E_{5}\left(u\right)\\
-Q & =\beta tE_{4}\left(u\right)
-\end{align*}
+\begin_inset Formula $n=0$
+\end_inset
 
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $n=1$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $n=2$
 \end_inset
 
 
@@ -766,26 +505,132 @@ Q & =\beta tE_{4}\left(u\right)
 \begin_inset Text
 
 \begin_layout Plain Layout
+\begin_inset Formula $n=3$
+\end_inset
 
-\family roman
-\series medium
-\shape up
-\size normal
-\emph off
-\nospellcheck off
-\bar no
-\strikeout off
-\xout off
-\uuline off
-\uwave off
-\noun off
-\color none
-\begin_inset Formula 
-\begin{align*}
-s\left(x,t\right) & =\beta\,t\sqrt{t}\times\frac{\iop^{3}\erfc\left(u\right)}{\iop^{3}\erfc\left(0\right)}\times\sqrt{\frac{4}{kDS}}\\
-Q\left(x,t\right) & =\beta t\times\frac{\iop^{2}\erfc\left(u\right)}{\iop^{3}\erfc\left(0\right)}
-\end{align*}
 
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+F
+\begin_inset Formula $\left(-1,u\right)$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $F\left(0,u\right)$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $F\left(1,u\right)$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $F\left(2,u\right)$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $F\left(3,u\right)$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $E_{2}\left(u\right)$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $E_{1}\left(u\right)$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $E_{3}\left(u\right)$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $E_{4}\left(u\right)$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $E_{5}\left(u\right)$
 \end_inset
 
 
@@ -800,6 +645,709 @@ Q\left(x,t\right) & =\beta t\times\frac{\iop^{2}\erfc\left(u\right)}{\iop^{3}\er
 
 
 \end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Het debiet volgt rechtstreeks met Darcy
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+Q\left(x,t\right) & =-kD\frac{\partial\phi\left(x,t\right)}{\partial x}=-kD\frac{d}{du}\left(At^{n/2}\frac{\ierfc\left(n,u\right)}{\ierfc\left(n.0\right)}\right)\frac{\partial u}{\partial x}=kDAt^{n/2}\frac{\ierfc\left(n-1,u\right)}{\ierfc\left(n,0\right)}\sqrt{\frac{S}{4kDt}}\\
+ & =At^{\left(n-1\right)/2}\sqrt{\frac{kDS}{4}}\frac{\ierfc\left(n-1,0\right)}{\ierfc\left(n,0\right)}\frac{\ierfc\left(n-1,u\right)}{\ierfc\left(n-1,0\right)}\\
+ & =At^{\left(n-1\right)/2}\sqrt{\frac{kDS}{4}}\frac{F\left(n-1,u\right)}{f\left(n-1\right)}
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+waarin
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+f\left(n-1\right)=\frac{\ierfc\left(n,0\right)}{\ierfc\left(n-1,0\right)}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+We hebben hiermee de hele serie oplossingen
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+\phi\left(x,t\right) & =A^{n/2}F\left(n,u\right)\\
+Q\left(x,t\right) & =At^{\left(n-1\right)/2}\sqrt{\frac{kDS}{4}}\frac{F\left(n-1,u\right)}{f\left(n-1\right)}
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Omgekeerd,
+ hebben we natuurlijk ook de serie waarbij 
+\begin_inset Formula $Q\left(0,t\right)=Bt^{\left(n-1\right)/2}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+\phi\left(x,t\right) & =Bt^{n/2}\sqrt{\frac{4}{kDS}}f\left(n-1\right)F\left(n,u\right)\\
+Q\left(x,t\right) & =Bt^{\left(n-1\right)/2}F\left(n-1,u\right)
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Dit is eigenlijk zowat alles wat er over de formules van Edelman te zeggen valt:
+ Zo zijn zij heel eenvoudig en bovendien in een paar regels te programmeren ,zodat we nooit meer getallen in de oorspronkelijke tabellen hoeven op te zoeken.
+\end_layout
+
+\begin_layout Standard
+Op zich geeft AS (1964) ook een formule voor 
+\begin_inset Formula $\ierfc\left(n,0\right)$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\ierfc\left(n,0\right)=2^{n}\Gamma\left(\frac{n}{2}+1\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+en natuurlijk kan hiermee ook 
+\begin_inset Formula $f\left(n-1\right)$
+\end_inset
+
+ worden berekend.
+ We hebben dit echter helemaal niet nodig,
+ want we hebben al 
+\begin_inset Formula $\ierfc\left(n,u\right)$
+\end_inset
+
+ en kunnen dus ook 
+\begin_inset Formula $\ierfc\left(n,0\right)$
+\end_inset
+
+ direct uitrekenen.
+\end_layout
+
+\begin_layout Section
+Voorbeeld
+\end_layout
+
+\begin_layout Standard
+Afb.
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Stijghoogten-edelm"
+plural "false"
+caps "false"
+noprefix "false"
+nolink "false"
+
+\end_inset
+
+ en 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Flows-edelm"
+plural "false"
+caps "false"
+noprefix "false"
+nolink "false"
+
+\end_inset
+
+ geven de allersimpelste toepassing.
+ Namelijk een randvoorwaarde 
+\begin_inset Formula $s_{0}=At^{n/2}$
+\end_inset
+
+ voor 
+\begin_inset Formula $A=1$
+\end_inset
+
+ voor 
+\begin_inset Formula $n=0..3$
+\end_inset
+
+.
+ Getoond wordt voor elk van deze randvoorwaarden het verloop van 
+\begin_inset Formula $\phi\left(0,t\right)$
+\end_inset
+
+ en 
+\begin_inset Formula $Q\left(0,t\right)$
+\end_inset
+
+ en 
+\begin_inset Formula $\phi\left(x_{p},t\right)$
+\end_inset
+
+ en 
+\begin_inset Formula $Q\left(x_{p},t\right)$
+\end_inset
+
+ zowel berekende met bovenstaande formules als met een numeriek model van 1000 m lengte en 2 m celgrootte.
+ De uitkomsten vallen op elkaar,
+ wat ook zo moet zijn.
+ Dezelfde set grafieken kan gemaakt worden voor 
+\begin_inset Formula $Q_{0}=Bt^{\left(n-1\right)/2}$
+\end_inset
+
+ met 
+\begin_inset Formula $B$
+\end_inset
+
+ een willekeurige constante.
+ Voor 
+\begin_inset Formula $n=1$
+\end_inset
+
+ is 
+\begin_inset Formula $Q_{0}=B$
+\end_inset
+
+ voor 
+\begin_inset Formula $n=3$
+\end_inset
+
+ is 
+\begin_inset Formula $Q_{0}=Bt$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+placement document
+alignment document
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\begin_inset Graphics
+	filename /Users/Theo/GRWMODELS/python/tools/analytic/images/Edelman_heads.png
+	width 80text%
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:Stijghoogten-edelm"
+
+\end_inset
+
+Stijghoogten voor 
+\begin_inset Formula $x=0$
+\end_inset
+
+ en 
+\begin_inset Formula $x_{p}=50$
+\end_inset
+
+ m voor 4 waarden van 
+\begin_inset Formula $n$
+\end_inset
+
+ in de randvoorwaarden 
+\begin_inset Formula $\phi\left(0,t\right)=At^{n/2}$
+\end_inset
+
+.
+ Berekend analytisch en met eindig differentie model waarvan de gegevens in de kop van de Afbeelding.
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+placement document
+alignment document
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\begin_inset Graphics
+	filename /Users/Theo/GRWMODELS/python/tools/analytic/images/Edelman_flows.png
+	width 80text%
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:Flows-edelm"
+
+\end_inset
+
+Debiet [m2/d] voor 
+\begin_inset Formula $x=0$
+\end_inset
+
+ en 
+\begin_inset Formula $x_{p}=50$
+\end_inset
+
+ m voor 4 waarden van 
+\begin_inset Formula $n$
+\end_inset
+
+ in de randvoorwaarden 
+\begin_inset Formula $\phi\left(0,t\right)=At^{n/2}$
+\end_inset
+
+.
+ Berekend analytisch en met eindig differentie model waarvan de gegevens in de kop van de Afbeelding.
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Bibliography
+\begin_inset CommandInset bibitem
+LatexCommand bibitem
+key "key-1"
+
+\end_inset
+
+Abramowitz,
+ M.
+ and Stegun,
+ I.A.
+ (1972) Handbook of Mathematical Functions.
+ Dover Publications.
+ NY.
+ 9th Printing.
+\end_layout
+
+\begin_layout Bibliography
+\begin_inset CommandInset bibitem
+LatexCommand bibitem
+key "key-3"
+
+\end_inset
+
+Carslaw,
+ H.S and Jaeger,
+ J.C.
+ (1959) Conduction of Heat in Soils.
+ Oxford Science Publications.
+ Second edition.
+ ISBN 0-19853368-3,
+ 510p.
+ Talloze keren herdrukt.
+\end_layout
+
+\begin_layout Bibliography
+\begin_inset CommandInset bibitem
+LatexCommand bibitem
+key "key-4"
+
+\end_inset
+
+Edelman,
+ J.H.
+ (1947) Over de berekening van grondwaterstromingen.
+ Doctors Thesis,
+ Delft.
+\end_layout
+
+\begin_layout Bibliography
+\begin_inset CommandInset bibitem
+LatexCommand bibitem
+key "key-2"
+
+\end_inset
+
+Huisman,
+ L.
+ (1972) Groundwater Recovery.
+ MacMillan,
+ Pitman Press,
+ Bath UK.
+ SBN 333-09870-6,
+ 336p.
+\end_layout
+
+\begin_layout Standard
+\begin_inset CommandInset line
+LatexCommand rule
+offset "0.5ex"
+width "100col%"
+height "1pt"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+Appendix
+\end_layout
+
+\begin_layout Standard
+n=0
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+s\left(x,t\right)=At^{n/2}E_{1}\left(u\right)=At^{n/2}F\left(n,u\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+E_{1}\left(u\right)=F\left(0,u\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+n=2
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+s\left(x,t\right)=At^{n/2}\times E_{4}\left(u\right)=At^{n/2}\times F\left(n,u\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+E_{4}\left(u\right)=F\left(2,u\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+n=0
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+Q\left(x,t\right)=At^{\left(n-1\right)/2}\left(\frac{2}{\sqrt{\pi}}\right)\sqrt{\frac{kDS}{4}}E_{2}\left(u\right)=At^{\left(n-1\right)/2}\frac{1}{f\left(n-1\right)}\sqrt{\frac{kDS}{4}}\times F\left(n-1,u\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+E_{2}\left(u\right)=\frac{\sqrt{\pi}}{2}\frac{1}{f\left(-1\right)}F\left(-1,u\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+E_{2}\left(u\right)=F\left(-1,u\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+n=2
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+Q\left(x,t\right)=At^{\left(n-1\right)/2}\left(\frac{4}{\sqrt{\pi}}\right)\sqrt{\frac{kDS}{4}}E_{3}\left(u\right)=At^{\left(n-1\right)/2}\frac{1}{f\left(n-1\right)}\sqrt{\frac{kDS}{4}}\times F\left(n-1,u\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+E_{3}\left(u\right)=\frac{\sqrt{\pi}}{4}\frac{1}{f\left(1\right)}F\left(1,u\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Same as
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+E_{3}\left(u\right)=F_{1}\left(1,u\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+Q\left(x,t\right)=At^{\left(n-1\right)/2}\left(\frac{1}{f\left(n-1\right)}\sqrt{\frac{kDS}{4}}\right)\times F\left(n-1,u\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset CommandInset line
+LatexCommand rule
+offset "0.5ex"
+width "100col%"
+height "1pt"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+n=1,
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+s\left(x,t\right)=Bt^{n/2}\left(\frac{1}{\sqrt{\pi}}\right)\sqrt{\frac{4}{kDS}}\times E_{3}\left(u\right)=Bt^{n/2}\left(f\left(n-1\right)\sqrt{\frac{4}{kDS}}\right)\times F\left(n,u\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+E_{3}\left(u\right)=\sqrt{\pi}f\left(0\right)F\left(1,u\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+E_{3}\left(u\right)=F\left(1,u\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+Q\left(x,t\right)=Bt^{\left(n-1\right)/2}\times E_{1}\left(u\right)=Bt^{\left(n-1\right)/2}\times F\left(n-1,u\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+E_{1}\left(u\right)=F\left(0,u\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+n=3
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+s\left(x,t\right)=Bt^{n/2}\left(\frac{2}{3\sqrt{\pi}}\right)\sqrt{\frac{4}{kDS}}\times E_{5}\left(u\right)=Bt^{n/2}\left(f\left(n-1\right)\sqrt{\frac{4}{kDS}}\right)\times F\left(n,u\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+E_{5}\left(u\right)=1.5\sqrt{\pi}f\left(2\right)F\left(3,u\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+E_{3}\left(u\right)=F\left(3,0\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+Q\left(x,t\right)=Bt^{\left(n-1\right)/2}\times E_{4}\left(u\right)=Bt^{\left(n-1\right)/2}\times F\left(n-1,u\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+E_{4}\left(u\right)=F\left(2,u\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset CommandInset line
+LatexCommand rule
+offset "0.5ex"
+width "100col%"
+height "1pt"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+E_{1}\left(u\right) & =F\left(0,u\right)\\
+E_{2}\left(u\right) & =F\left(-1,u\right)\\
+E_{3}\left(u\right) & =F\left(1,u\right)\\
+E_{4}\left(u\right) & =F\left(2,u\right)\\
+E_{5}\left(u\right) & =F\left(3,u\right)
+\end{align*}
 
 \end_inset
 
