@@ -96,11 +96,10 @@
 \use_package stackrel 1
 \use_package stmaryrd 1
 \use_package undertilde 1
-\cite_engine biblatex
-\cite_engine_type authoryear
+\cite_engine basic
+\cite_engine_type default
+\biblio_style plain
 \biblio_options hyperref=true, backref=true, backrefstyle=three,backreffloats=true,indexing=bib,date=year
-\biblatex_bibstyle authoryear
-\biblatex_citestyle authoryear
 \use_bibtopic false
 \use_indices false
 \paperorientation portrait
@@ -144,10 +143,30 @@
 
 \begin_body
 
+\begin_layout Title
+Hatsi-kD Edelman
+\end_layout
+
+\begin_layout Author
+T.N.Olsthoorn
+\end_layout
+
+\begin_layout Date
+5-2-2026
+\end_layout
+
 \begin_layout Standard
-Tijdens onze colleges grondwaterhydrologie kregen we waarschijnlijk allemaal de formules van Edelman (1940) onderwezen.
+Tijdens onze colleges grondwaterhydrologie kwamen vroeg of laat de formules van 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "E47"
+literal "false"
+
+\end_inset
+
+ langs.
  Je weet wel,
- de formules die beschrijven hoe de stijghoogte en de grondwaterstroom op punt 
+ de formules die beschrijven hoe de stijghoogte en de grondwaterstroom op 
 \begin_inset Formula $x$
 \end_inset
 
@@ -155,12 +174,8 @@ Tijdens onze colleges grondwaterhydrologie kregen we waarschijnlijk allemaal de 
 \begin_inset Formula $t=0$
 \end_inset
 
- tijdsafhankelijk veranderen door een al dan niet plotselinge verandering van stijghoogte of debiet op 
+ veranderen door een al dan niet plotselinge wijzing van stijghoogte of debiet op 
 \begin_inset Formula $x=0$
-\end_inset
-
- en vanaf 
-\begin_inset Formula $t=0$
 \end_inset
 
 .
@@ -172,8 +187,9 @@ Tijdens onze colleges grondwaterhydrologie kregen we waarschijnlijk allemaal de 
 \begin_inset Formula $E_{4}$
 \end_inset
 
- was echter niet te volgen en dat gold ook voor de ingewikkelde coëfficiënten.
- We zullen hier Edelman versimpelen.
+ en de ingewikkelde coëfficiënten was dan als snel zoek,
+ en je moest ze maar aannemen en sommen maken met de bijbehorende tabellen.
+ Ik wil hier Edelman logisch maken en versimpelen en de formules geven om de tabellen zelf en een paar regels te berekenen.
  De formules van Edelman zijn oplossingen van de differentiaalvergelijking
 \end_layout
 
@@ -228,14 +244,20 @@ Hierin is
 \end_layout
 
 \begin_layout Standard
-Carslaw & Jaeger (1959,
- p52) schrijven dat
+\begin_inset CommandInset citation
+LatexCommand cite
+key "CJ59"
+literal "false"
+
+\end_inset
+
+ schrijven dat
 \end_layout
 
 \begin_layout Standard
 \begin_inset Formula 
 \begin{equation}
-y\left(x,t\right)=t^{n/2}\ierfc\left(n,u\right);\;\text{met}\;u=x\sqrt{\frac{S}{4kDt}}\label{eq:CarslawJeager}
+y\left(x,t\right)=t^{n/2}\ierfc\left(n,u\right)\label{eq:CarslawJeager}
 \end{equation}
 
 \end_inset
@@ -244,12 +266,44 @@ y\left(x,t\right)=t^{n/2}\ierfc\left(n,u\right);\;\text{met}\;u=x\sqrt{\frac{S}{
 \end_layout
 
 \begin_layout Standard
-oplossingen zijn.
+met 
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\nospellcheck off
+\bar no
+\strikeout off
+\xout off
+\uuline off
+\uwave off
+\noun off
+\color none
+
+\begin_inset Formula $u=x\sqrt{\frac{S}{4kDt}}$
+\end_inset
+
+
+\family default
+\series default
+\shape default
+\size default
+\emph default
+\nospellcheck default
+\bar default
+\strikeout default
+\xout default
+\uuline default
+\uwave default
+\noun default
+\color inherit
+ oplossingen zijn.
  Hierin is 
 \begin_inset Formula $\ierfc\left(n,u\right)$
 \end_inset
 
- is de 
+ de 
 \begin_inset Formula $n$
 \end_inset
 
@@ -258,14 +312,12 @@ oplossingen zijn.
 \end_inset
 
 .
- Zulke functies zijn gemakkelijk uit rekenen (Abramovitz & Stegun,
- 1964) :
 \end_layout
 
 \begin_layout Standard
 \begin_inset Formula 
 \[
-\ierfc\left(n,u\right)=\intop_{u}^{\infty}\ierfc\left(n-1,y\right)dy
+\ierfc\left(n,u\right)=\intop_{u}^{\infty}\ierfc\left(n-1,y\right)dy\;\to\;\frac{d\erfc\left(n.u\right)}{du}=-\ierfc\left(n-1,u\right)
 \]
 
 \end_inset
@@ -274,22 +326,19 @@ oplossingen zijn.
 \end_layout
 
 \begin_layout Standard
-met
-\end_layout
+De functies 
+\begin_inset Formula $\ierfc\left(n,u\right)$
+\end_inset
 
-\begin_layout Standard
-\begin_inset Formula 
-\[
-\ierfc\left(0,u\right)=\erfc\left(u\right)\;\text{en}\;\ierfc\left(-1,u\right)=\frac{2}{\sqrt{\pi}}e^{-u^{2}}
-\]
+zijn gemakkelijk uit te rekenen met een recursieve formule (
+\begin_inset CommandInset citation
+LatexCommand cite
+key "AS72"
+literal "false"
 
 \end_inset
 
-
-\end_layout
-
-\begin_layout Standard
-en
+ sectie 7.2.5):
 \end_layout
 
 \begin_layout Standard
@@ -304,13 +353,13 @@ en
 \end_layout
 
 \begin_layout Standard
-Tegelijk volgt uit de definitie dat
+met voor n is 0 en -1 de volgende relaties
 \end_layout
 
 \begin_layout Standard
 \begin_inset Formula 
 \[
-\frac{d\ierfc\left(n,u\right)}{du}=-\ierfc\left(n-1,u\right)
+\ierfc\left(0,u\right)=\erfc\left(u\right)\;\text{en}\;\ierfc\left(-1,u\right)=\frac{2}{\sqrt{\pi}}e^{-u^{2}}
 \]
 
 \end_inset
@@ -330,8 +379,8 @@ nolink "false"
 
 \end_inset
 
- kunnen we met een constante vermenigvuldigen,
- dan nog blijft het een oplossing van de differentiaalvergelijking Dus als we 
+ kunnen we met een willekeurige constante vermenigvuldigen.
+ Dus als we 
 \begin_inset CommandInset ref
 LatexCommand ref
 reference "eq:CarslawJeager"
@@ -357,12 +406,12 @@ nolink "false"
 \end_layout
 
 \begin_layout Standard
-hebben we de oplossing voor grondwater stroming waarbij 
+hebben we in een klap de oplossing voor grondwater stroming waarbij 
 \begin_inset Formula $\phi\left(0,t\right)=At^{n/2}$
 \end_inset
 
-,
- immers 
+.
+ Immers 
 \begin_inset Formula $F\left(n,u\right)=\ierfc\left(n,u\right)/\ierfc\left(n,0\right)$
 \end_inset
 
@@ -374,7 +423,16 @@ hebben we de oplossing voor grondwater stroming waarbij
 \begin_inset Formula $F\left(n,u\right)$
 \end_inset
 
- vertaalt zich direct naar die van Edelman.
+ vertaalt zich direct naar de Edelman tabellen in 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "H72"
+literal "false"
+
+\end_inset
+
+,
+ p42-47.
  Tabel 
 \begin_inset CommandInset ref
 LatexCommand ref
@@ -395,10 +453,7 @@ en
 \begin_inset Formula $E_{1}$
 \end_inset
 
- door verwisseling niet in de logische volgorde passen (Huisman,
- 1972,
- p42-47).
- Dit verklaart wellicht een deel van de verwarring.
+ door verwisseling niet in de logische volgorde passen.
 \end_layout
 
 \begin_layout Standard
@@ -427,15 +482,24 @@ Vergelijking van functie
 \begin_inset Formula $F\left(n,u\right)$
 \end_inset
 
- met de functies van Eldelman 
-\begin_inset Formula $E_{1}$
+ met de Edelman tabellen 
+\begin_inset Formula $E_{1}\left(u\right)$
 \end_inset
 
  t/m 
-\begin_inset Formula $E_{5}$
+\begin_inset Formula $E_{5}\left(u\right)$
 \end_inset
 
+ in 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "H72"
+literal "false"
 
+\end_inset
+
+,
+ p42-47
 \end_layout
 
 \end_inset
@@ -519,8 +583,7 @@ Vergelijking van functie
 \begin_inset Text
 
 \begin_layout Plain Layout
-F
-\begin_inset Formula $\left(-1,u\right)$
+\begin_inset Formula $F\left(-1,u\right)$
 \end_inset
 
 
@@ -658,9 +721,9 @@ Het debiet volgt rechtstreeks met Darcy
 \begin_layout Standard
 \begin_inset Formula 
 \begin{align*}
-Q\left(x,t\right) & =-kD\frac{\partial\phi\left(x,t\right)}{\partial x}=-kD\frac{d}{du}\left(At^{n/2}\frac{\ierfc\left(n,u\right)}{\ierfc\left(n.0\right)}\right)\frac{\partial u}{\partial x}=kDAt^{n/2}\frac{\ierfc\left(n-1,u\right)}{\ierfc\left(n,0\right)}\sqrt{\frac{S}{4kDt}}\\
- & =At^{\left(n-1\right)/2}\sqrt{\frac{kDS}{4}}\frac{\ierfc\left(n-1,0\right)}{\ierfc\left(n,0\right)}\frac{\ierfc\left(n-1,u\right)}{\ierfc\left(n-1,0\right)}\\
- & =At^{\left(n-1\right)/2}\sqrt{\frac{kDS}{4}}\frac{F\left(n-1,u\right)}{f\left(n-1\right)}
+Q\left(x,t\right) & =-kD\frac{\partial\phi\left(x,t\right)}{\partial x}=-kD\frac{d}{du}\left(At^{n/2}\frac{\ierfc\left(n,u\right)}{\ierfc\left(n.0\right)}\right)\frac{\partial u}{\partial x}=kDAt^{n/2}\left(\frac{\ierfc\left(n-1,u\right)}{\ierfc\left(n,0\right)}\right)\sqrt{\frac{S}{4kDt}}\\
+ & =At^{\left(n-1\right)/2}\sqrt{\frac{kDS}{4}}\left(\frac{\ierfc\left(n-1,0\right)}{\ierfc\left(n,0\right)}\right)\left(\frac{\ierfc\left(n-1,u\right)}{\ierfc\left(n-1,0\right)}\right)\\
+ & =At^{\left(n-1\right)/2}\sqrt{\frac{kDS}{4}}\left(\frac{F\left(n-1,u\right)}{f\left(n-1\right)}\right)
 \end{align*}
 
 \end_inset
@@ -675,7 +738,7 @@ waarin
 \begin_layout Standard
 \begin_inset Formula 
 \[
-f\left(n-1\right)=\frac{\ierfc\left(n,0\right)}{\ierfc\left(n-1,0\right)}
+f\left(n\right)=\frac{\ierfc\left(n+1,0\right)}{\ierfc\left(n,0\right)}
 \]
 
 \end_inset
@@ -684,15 +747,15 @@ f\left(n-1\right)=\frac{\ierfc\left(n,0\right)}{\ierfc\left(n-1,0\right)}
 \end_layout
 
 \begin_layout Standard
-We hebben hiermee de hele serie oplossingen
+We hebben hiermee de volledige reeks Edelman-achtige oplossingen te pakken:
 \end_layout
 
 \begin_layout Standard
 \begin_inset Formula 
-\begin{align*}
-\phi\left(x,t\right) & =A^{n/2}F\left(n,u\right)\\
-Q\left(x,t\right) & =At^{\left(n-1\right)/2}\sqrt{\frac{kDS}{4}}\frac{F\left(n-1,u\right)}{f\left(n-1\right)}
-\end{align*}
+\begin{align}
+\phi\left(x,t\right) & =A^{n/2}F\left(n,u\right)\label{eq:edel-phi-phi}\\
+Q\left(x,t\right) & =At^{\left(n-1\right)/2}\sqrt{\frac{kDS}{4}}\frac{F\left(n-1,u\right)}{f\left(n-1\right)}\label{eq:edel-phi-Q}
+\end{align}
 
 \end_inset
 
@@ -705,15 +768,15 @@ Omgekeerd,
 \begin_inset Formula $Q\left(0,t\right)=Bt^{\left(n-1\right)/2}$
 \end_inset
 
-
+ voor het oprapen
 \end_layout
 
 \begin_layout Standard
 \begin_inset Formula 
-\begin{align*}
-\phi\left(x,t\right) & =Bt^{n/2}\sqrt{\frac{4}{kDS}}f\left(n-1\right)F\left(n,u\right)\\
-Q\left(x,t\right) & =Bt^{\left(n-1\right)/2}F\left(n-1,u\right)
-\end{align*}
+\begin{align}
+\phi\left(x,t\right) & =Bt^{n/2}\sqrt{\frac{4}{kDS}}f\left(n-1\right)F\left(n,u\right)\label{eq:edel-Q-phi}\\
+Q\left(x,t\right) & =Bt^{\left(n-1\right)/2}F\left(n-1,u\right)\label{eq:edel-Q-Q}
+\end{align}
 
 \end_inset
 
@@ -721,8 +784,101 @@ Q\left(x,t\right) & =Bt^{\left(n-1\right)/2}F\left(n-1,u\right)
 \end_layout
 
 \begin_layout Standard
-Dit is eigenlijk zowat alles wat er over de formules van Edelman te zeggen valt:
- Zo zijn zij heel eenvoudig en bovendien in een paar regels te programmeren ,zodat we nooit meer getallen in de oorspronkelijke tabellen hoeven op te zoeken.
+De bekende formules van Edelman zijn nu vgl.
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "eq:edel-phi-phi"
+plural "false"
+caps "false"
+noprefix "false"
+nolink "false"
+
+\end_inset
+
+ en 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "eq:edel-phi-Q"
+plural "false"
+caps "false"
+noprefix "false"
+nolink "false"
+
+\end_inset
+
+ voor 
+\begin_inset Formula $n=0$
+\end_inset
+
+ en 
+\begin_inset Formula $n=2$
+\end_inset
+
+ zodat 
+\begin_inset Formula $\phi(0,t)=A$
+\end_inset
+
+ is resp.
+ 
+\begin_inset Formula $\phi\left(0,t\right)=At$
+\end_inset
+
+ en vgl.
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "eq:edel-Q-phi"
+plural "false"
+caps "false"
+noprefix "false"
+nolink "false"
+
+\end_inset
+
+ en 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "eq:edel-Q-Q"
+plural "false"
+caps "false"
+noprefix "false"
+nolink "false"
+
+\end_inset
+
+ voor 
+\begin_inset Formula $n=1$
+\end_inset
+
+ en 
+\begin_inset Formula $n-3$
+\end_inset
+
+ zodat 
+\begin_inset Formula $Q\left(0,t\right)=B$
+\end_inset
+
+ resp.
+ 
+\begin_inset Formula $Q\left(0,t\right)=Bt$
+\end_inset
+
+.
+ Maar de gegeven formules gelden voor elke 
+\begin_inset Formula $n\ge$
+\end_inset
+
+0 en zijn niet beperkt tot 
+\begin_inset Formula $n=$
+\end_inset
+
+0 t/m 4.
+\end_layout
+
+\begin_layout Standard
+Dit is eigenlijk zowat alles wat er over de formules van Edelman te zeggen valt.
+ De formules zijn nu eenvoudig,
+ logisch en bovendien in een paar regels te programmeren ,zodat we de oorspronkelijke tabellen niet meer nodig hebben,
+ behalve om onze implementatie te controleren..
 \end_layout
 
 \begin_layout Standard
@@ -745,21 +901,20 @@ Op zich geeft AS (1964) ook een formule voor
 \end_layout
 
 \begin_layout Standard
-en natuurlijk kan hiermee ook 
-\begin_inset Formula $f\left(n-1\right)$
+Onze 
+\begin_inset Formula $f\left(n\right)$
 \end_inset
 
- worden berekend.
- We hebben dit echter helemaal niet nodig,
- want we hebben al 
+ kan ook hiermee worden berekend,
+ maar omdat we 
 \begin_inset Formula $\ierfc\left(n,u\right)$
 \end_inset
 
- en kunnen dus ook 
+ en dus ook 
 \begin_inset Formula $\ierfc\left(n,0\right)$
 \end_inset
 
- direct uitrekenen.
+al kunnen berekenen hebben deze form niet nodig.
 \end_layout
 
 \begin_layout Section
@@ -799,10 +954,10 @@ nolink "false"
 \end_inset
 
  voor 
-\begin_inset Formula $n=0..3$
+\begin_inset Formula $n=$
 \end_inset
 
-.
+ 0 t/m 3.
  Getoond wordt voor elk van deze randvoorwaarden het verloop van 
 \begin_inset Formula $\phi\left(0,t\right)$
 \end_inset
@@ -819,10 +974,10 @@ nolink "false"
 \begin_inset Formula $Q\left(x_{p},t\right)$
 \end_inset
 
- zowel berekende met bovenstaande formules als met een numeriek model van 1000 m lengte en 2 m celgrootte.
+ zowel berekend met bovenstaande formules als met een numeriek model van 1000 m lengte en 2 m celgrootte.
  De uitkomsten vallen op elkaar,
  wat ook zo moet zijn.
- Dezelfde set grafieken kan gemaakt worden voor 
+ Dezelfde set grafieken kunnen gemaakt worden voor 
 \begin_inset Formula $Q_{0}=Bt^{\left(n-1\right)/2}$
 \end_inset
 
@@ -835,19 +990,29 @@ nolink "false"
 \begin_inset Formula $n=1$
 \end_inset
 
- is 
+ geldt dan 
 \begin_inset Formula $Q_{0}=B$
 \end_inset
 
- voor 
+ en voor 
 \begin_inset Formula $n=3$
 \end_inset
 
- is 
+ geldt in dat geval 
 \begin_inset Formula $Q_{0}=Bt$
 \end_inset
 
 .
+ De formule voor 
+\begin_inset Formula $\phi\left(0,t\right)$
+\end_inset
+
+ en 
+\begin_inset Formula $Q\left(0,t\right)$
+\end_inset
+
+ staat boven elk van de grafieken,
+ de gebruikte gegevens staan bovenin de afbeeldingen.
 \end_layout
 
 \begin_layout Standard
@@ -965,19 +1130,88 @@ Debiet [m2/d] voor
 
 \end_layout
 
-\begin_layout Plain Layout
-
-\end_layout
-
 \end_inset
 
 
 \end_layout
 
+\begin_layout Standard
+De tabellen in 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "H72"
+literal "false"
+
+\end_inset
+
+ wijken af van die in het proefschrift van 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "E47"
+literal "false"
+
+\end_inset
+
+.
+ Edelman gebruikt functies 
+\begin_inset Formula $f_{0}\left(u\right)$
+\end_inset
+
+ t/m 
+\begin_inset Formula $f_{4}\left(u\right)$
+\end_inset
+
+ en dimensieloze parameters 
+\begin_inset Formula $\tau=\frac{kD}{S}t$
+\end_inset
+
+ en 
+\begin_inset Formula $q=\frac{Q}{kD}$
+\end_inset
+
+.
+ Zijn formules staan op p11 met de functies die zijn tabellen reproduceren.
+ Edelman gebruikt nergens 
+\begin_inset Formula $\ierfc\left(n,u\right)$
+\end_inset
+
+ waardoor zijn functies ingewikkelder zijn.
+ Voor wie in zijn proefschrift wil duiken zijn hier de naar 
+\begin_inset Formula $\ierfc$
+\end_inset
+
+ omgezette functies die de 5 kolommen van zijn tabel op p77 reproduceren 
+\begin_inset Formula $f_{-1}=\frac{1}{2}\ierfc\left(-1,u\right)$
+\end_inset
+
+,
+ 
+\begin_inset Formula $f_{0}=-\ierfc\left(0,u\right)$
+\end_inset
+
+,
+ 
+\begin_inset Formula $f_{1}=2\ierfc\left(1,u\right)$
+\end_inset
+
+,
+ 
+\begin_inset Formula $f_{2}=-4\ierfc\left(2,u\right)$
+\end_inset
+
+ en 
+\begin_inset Formula $f_{3}=8\ierfc\left(3,u\right)$
+\end_inset
+
+.
+\end_layout
+
 \begin_layout Bibliography
 \begin_inset CommandInset bibitem
 LatexCommand bibitem
-key "key-1"
+label "Abramowitz & Stegun (1972)"
+key "AS72"
+literal "false"
 
 \end_inset
 
@@ -994,7 +1228,9 @@ Abramowitz,
 \begin_layout Bibliography
 \begin_inset CommandInset bibitem
 LatexCommand bibitem
-key "key-3"
+label "Carslaw & Jaeger (1959)"
+key "CJ59"
+literal "false"
 
 \end_inset
 
@@ -1012,7 +1248,9 @@ Carslaw,
 \begin_layout Bibliography
 \begin_inset CommandInset bibitem
 LatexCommand bibitem
-key "key-4"
+label "Edelman (1947)"
+key "E47"
+literal "false"
 
 \end_inset
 
@@ -1026,7 +1264,9 @@ Edelman,
 \begin_layout Bibliography
 \begin_inset CommandInset bibitem
 LatexCommand bibitem
-key "key-2"
+label "Huisman (1972)"
+key "H72"
+literal "false"
 
 \end_inset
 
@@ -1056,8 +1296,22 @@ height "1pt"
 Appendix
 \end_layout
 
+\begin_layout Subsection
+Link tussen 
+\begin_inset Formula $F\left(n.u\right)$
+\end_inset
+
+ en de Edelman-tabellen E1-E5 in Huisman (1972),
+ p42-47
+\end_layout
+
 \begin_layout Standard
-n=0
+n=0,
+ 
+\begin_inset Formula $\phi$
+\end_inset
+
+
 \end_layout
 
 \begin_layout Standard
@@ -1083,7 +1337,12 @@ E_{1}\left(u\right)=F\left(0,u\right)
 \end_layout
 
 \begin_layout Standard
-n=2
+n=2,
+ 
+\begin_inset Formula $\phi$
+\end_inset
+
+
 \end_layout
 
 \begin_layout Standard
@@ -1109,7 +1368,12 @@ E_{4}\left(u\right)=F\left(2,u\right)
 \end_layout
 
 \begin_layout Standard
-n=0
+n=0,
+ 
+\begin_inset Formula $Q$
+\end_inset
+
+
 \end_layout
 
 \begin_layout Standard
@@ -1146,7 +1410,12 @@ E_{2}\left(u\right)=F\left(-1,u\right)
 \end_layout
 
 \begin_layout Standard
-n=2
+n=2,
+ 
+\begin_inset Formula $Q$
+\end_inset
+
+
 \end_layout
 
 \begin_layout Standard
@@ -1211,6 +1480,11 @@ height "1pt"
 
 \begin_layout Standard
 n=1,
+ 
+\begin_inset Formula $\phi$
+\end_inset
+
+
 \end_layout
 
 \begin_layout Standard
@@ -1247,6 +1521,11 @@ E_{3}\left(u\right)=F\left(1,u\right)
 \end_layout
 
 \begin_layout Standard
+n=1,
+ Q
+\end_layout
+
+\begin_layout Standard
 \begin_inset Formula 
 \[
 Q\left(x,t\right)=Bt^{\left(n-1\right)/2}\times E_{1}\left(u\right)=Bt^{\left(n-1\right)/2}\times F\left(n-1,u\right)
@@ -1269,7 +1548,12 @@ E_{1}\left(u\right)=F\left(0,u\right)
 \end_layout
 
 \begin_layout Standard
-n=3
+n=3,
+ 
+\begin_inset Formula $\phi$
+\end_inset
+
+
 \end_layout
 
 \begin_layout Standard
@@ -1303,6 +1587,11 @@ E_{3}\left(u\right)=F\left(3,0\right)
 \end_inset
 
 
+\end_layout
+
+\begin_layout Standard
+n=3,
+ Q
 \end_layout
 
 \begin_layout Standard
@@ -1340,6 +1629,18 @@ height "1pt"
 \end_layout
 
 \begin_layout Standard
+Resultaat verband tussen Huisman (1972) p42-47 
+\begin_inset Formula $E_{i}\left(u\right)$
+\end_inset
+
+ en 
+\begin_inset Formula $F\left(n,u\right)$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
 \begin_inset Formula 
 \begin{align*}
 E_{1}\left(u\right) & =F\left(0,u\right)\\
@@ -1349,6 +1650,981 @@ E_{4}\left(u\right) & =F\left(2,u\right)\\
 E_{5}\left(u\right) & =F\left(3,u\right)
 \end{align*}
 
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Proefschrift Edelman (1947).
+ Merk op dat 
+\begin_inset Formula $\phi=\phi$
+\end_inset
+
+,
+ 
+\begin_inset Formula $q=Q/kD$
+\end_inset
+
+,
+ 
+\begin_inset Formula $\tau=\frac{kD}{S}t$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+\phi & =-\phi_{0}f_{0}\left(u\right)=\phi_{0}\left(1-E\left(u\right)\right)\\
+\phi & =-q_{0}\tau^{1/2}f_{1}\left(u\right)=-q_{0}\tau^{1/2}\left[\frac{2}{\sqrt{\pi}}e^{-u^{2}}-2u\left(1-E\left(u\right)\right)\right]\\
+\phi & =-\alpha\tau f_{2}\left(u\right)=-a\tau\left[\frac{2}{\sqrt{\pi}}ue^{-u^{2}}-\left(2u^{2}+1\right)\left(1-E\left(u\right)\right)\right]\\
+\phi & =-\beta\tau^{3/2}f_{3}\left(u\right)=-\frac{2}{3}\beta\tau^{3/2}\left[\frac{2}{\sqrt{\pi}}\left(u^{2}+1\right)e^{-u^{2}}-\left(2u^{3}+3u\right)\left(1-E\left(u\right)\right)\right]
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+q & =-\frac{\phi_{0}}{\sqrt{\pi}}\tau^{-1/2}e^{-u^{2}}\\
+q & =q_{0}\left\{ 1-E\left(u\right)\right\} \\
+q & =-a\tau^{1/2}\left[\frac{2}{\sqrt{\pi}}e^{-u^{2}}-2u\left(1-E\left(u\right)\right)\right]\\
+q & =-\beta\tau\left[\frac{2}{\sqrt{\pi}}ue^{-u^{2}}-\left(2u^{2}+1\right)\left(1+E\left(u\right)\right)\right]
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Met 
+\begin_inset Formula $\erfc\left(u\right)=1-E\left(u\right)$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Met 
+\begin_inset Formula $t=\frac{kD}{S}T$
+\end_inset
+
+ en 
+\begin_inset Formula $q=\frac{Q}{kD}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Recursieve relatie tussen 
+\begin_inset Formula $\ierfc\left(n,u\right)$
+\end_inset
+
+,
+ 
+\begin_inset Formula $\ierfc\left(n-1,u\right)$
+\end_inset
+
+ en 
+\begin_inset Formula $\ierfc\left(n-2,u\right)$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\ierfc\left(n,u\right)=\frac{1}{2n}\ierfc\left(n-2,u\right)-\frac{u}{n}\ierfc\left(n-1,u\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Uitgeschreven voor 
+\begin_inset Formula $n=1,2,3$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\ierfc\left(1,u\right)=\frac{1}{2}\ierfc\left(-1,u\right)-u\ierfc\left(0,u\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\erfc\left(2,u\right)=\frac{1}{4}\ierfc\left(0,u\right)-\frac{u}{2}\ierfc\left(1,u\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\ierfc\left(3,u\right)=\frac{1}{6}\ierfc\left(1,u\right)-\frac{u}{3}\ierfc\left(2,u\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+\erfc\left(2,u\right) & =\frac{1}{4}\ierfc\left(0,u\right)-\frac{u}{2}\ierfc\left(1,u\right)\\
+ & =\frac{1}{4}\ierfc\left(0,u\right)-\frac{u}{2}\left[\frac{1}{2}\ierfc\left(-1,u\right)-u\ierfc\left(0,u\right)\right]\\
+ & =\frac{1}{4}\ierfc\left(0,u\right)-\frac{u}{4}\ierfc\left(-1,u\right)+\frac{u^{2}}{2}\ierfc\left(0,u\right)\\
+ & =\left(\frac{u^{2}}{2}+\frac{1}{4}\right)\ierfc\left(0,u\right)-\frac{u}{4}\ierfc\left(-1,u\right)\\
+ & =\frac{1}{4}\left[\left(2u^{2}+1\right)\ierfc\left(0,u\right)-u\ierfc\left(-1,u\right)\right]
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+\ierfc\left(3,u\right) & =\frac{1}{3}\left\{ \frac{1}{2}\ierfc\left(1,u\right)-u\left[\ierfc\left(2,u\right)\right]\right\} \\
+ & =\frac{1}{12}\left\{ 2\ierfc\left(1,u\right)-\left(2u^{3}+u\right)\ierfc\left(0,u\right)+u^{2}\ierfc\left(-1,u\right)\right\} \\
+ & =\frac{1}{12}\left\{ \ierfc\left(-1,u\right)-2u\ierfc\left(0,u\right)-\left(2u^{3}+u\right)\ierfc\left(0,u\right)+u^{2}\ierfc\left(-1,u\right)\right\} \\
+ & =\frac{1}{8}\frac{2}{3}\left\{ \left(u^{2}+1\right)\ierfc\left(-1,u\right)-\left(2u^{3}+3u\right)\ierfc\left(0,u\right)\right\} 
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+Edelman's tabellen
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float table
+placement document
+alignment document
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Tabular
+<lyxtabular version="3" rows="5" columns="6">
+<features tabularvalignment="middle">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<row>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+n
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\phi$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Edelman
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Edelman
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+omgezet
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+f
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+0
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\phi\left(x,t\right)$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\nospellcheck off
+\bar no
+\strikeout off
+\xout off
+\uuline off
+\uwave off
+\noun off
+\color none
+\begin_inset Formula $-\phi_{0}f_{0}\left(u\right)$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\phi_{0}\left(1-E\left(u\right)\right)$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $-\phi_{0}\left(-\erfc\left(0,u\right)\right)$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $-\ierfc\left(0,u\right)$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+1
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\phi\left(x,t\right)$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\nospellcheck off
+\bar no
+\strikeout off
+\xout off
+\uuline off
+\uwave off
+\noun off
+\color none
+\begin_inset Formula $-q_{0}\tau^{1/2}f_{1}\left(u\right)$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\nospellcheck off
+\bar no
+\strikeout off
+\xout off
+\uuline off
+\uwave off
+\noun off
+\color none
+\begin_inset Formula $-q_{0}\tau^{1/2}\left[\frac{2}{\sqrt{\pi}}e^{-u^{2}}-2u\left(1-E\left(u\right)\right)\right]$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $-q_{0}\tau^{1/2}$
+\end_inset
+
+
+\begin_inset Formula $\left(2\ierfc\left(1,u\right)\right)$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $2\ierfc\left(1,u\right)$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+2
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\phi\left(x,t\right)$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\nospellcheck off
+\bar no
+\strikeout off
+\xout off
+\uuline off
+\uwave off
+\noun off
+\color none
+\begin_inset Formula $-\alpha\tau f_{2}\left(u\right)$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $-a\tau\left[\frac{2}{\sqrt{\pi}}ue^{-u^{2}}-\left(2u^{2}+1\right)\left(1-E\left(u\right)\right)\right]$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $-a\tau\left(-4\ierfc\left(2,u\right)\right)$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $-4\ierfc\left(2,u\right)$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+3
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\phi\left(x,t\right)$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $-\beta\tau^{3/2}f_{3}\left(u\right)$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $-\frac{2}{3}\beta\tau^{3/2}\left[\frac{2}{\sqrt{\pi}}\left(u^{2}+1\right)e^{-u^{2}}-\left(2u^{3}+3u\right)\left(1-E\left(u\right)\right)\right]$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $-\beta\tau^{3/2}\left(8\ierfc\left(3,u\right)\right)$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $8\ierfc\left(3,u\right)$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+</lyxtabular>
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float table
+placement document
+alignment document
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+Edelmans tabel
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Tabular
+<lyxtabular version="3" rows="5" columns="6">
+<features tabularvalignment="middle">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<row>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+u
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\frac{e^{-u^{2}}}{\sqrt{\pi}}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $f_{0}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $f_{1}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $f_{2}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $f_{3}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+0
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+0.5641
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+-1
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+1.1284
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+-1
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+0.7523
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+0.05
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+0.5628
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+-0.9436
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+1.0312
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+-0.8920
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+0.6578
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+0.5
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+0.4394
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+-0.4795
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+0.3993
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+-0.2799
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+0.1729
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+1.0
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+0.2076
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+-0.1573
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+0.1005
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+-0.0568
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+0.0291
+\end_layout
+
+\end_inset
+</cell>
+</row>
+</lyxtabular>
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Kolom 1 is wat het zegt 
+\begin_inset Formula $e^{-u^{2}}/\sqrt{\pi}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Kolom 2 = 
+\begin_inset Formula $-\erfc\left(u\right)$
 \end_inset
 
 

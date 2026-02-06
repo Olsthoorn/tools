@@ -41,8 +41,18 @@ class Edelman:
     
     # --- further methods in this class deleted because obsolete
     
+def table_edelm1947_p77()->pd.DataFrame:
+    """"Return part of the orginal table in Edelman's (1947) PhD thesis"""
+    columns = ['e^(-u^2)/sqrt(pi)$', "f0", "f1", "f2", "f3"]
+    index = [0, 0.05, 0.5, 1.0]
+    data = ((0.5641, -1.0000, 1.1284, -1.0000, 0.7523),
+            (0.5628, -0.9436, 1.0312, -0.8920, 0.6578),
+            (0.4394, -0.4795, 0.3993, -0.2799, 0.1729),
+            (0.2076, -0.1573, 0.1005, -0.0568, 0.0291)
+            )
+    return pd.DataFrame(index=index, columns=columns, data=data)
 
-def get_etable()->pd.DataFrame:
+def table_huism1972_p42()->pd.DataFrame:
     """Return DataFrame with some Edelman values from Huisman (1972, p42-47)""" 
     idx = [0, 0.1, 0.3, 0.65, 1.0, 1.6]
     data = [(1.0000, 1.0000, 1.0000, 1.0000, 1.0000),
@@ -54,6 +64,52 @@ def get_etable()->pd.DataFrame:
     ]
     columns = ['E1', 'E2', 'E3', 'E4', 'E5']
     return pd.DataFrame(index=idx, data=data, columns=columns)
+
+def comp_table_edelm1947()->pd.DataFrame:
+    """Return computed original edelman tables"""
+    edelm_orig = table_edelm1947_p77()
+    
+    print()
+    print("Edelman's 1948 PhD table (p77). Hand-picked values")
+    print(edelm_orig)
+    
+    u = np.array(np.asarray(edelm_orig.index, dtype=float))
+    cols = edelm_orig.columns
+    
+    u = np.round(np.hstack((np.arange(0,0.15,0.025), np.arange(0.15,1.5,0.05), np.arange(1.5,2.501,0.1))), 3)
+
+    edelm1947_table = pd.DataFrame(index=u)
+    
+    # --- Edelman r'$e^{-u^2}/\sqrt{\pi}$'
+    edelm1947_table[cols[0]] = np.exp(-u**2) / np.sqrt(np.pi)
+    
+    # --- Edelman f0(u)
+    edelm1947_table[cols[1]] = -ierfc(0,u)
+    
+    # ---  Edelman f1(u)
+    #      edelm1947_table[cols[2]] = ierfc(-1,u) - 2 * u * ierfc(0,u)
+    edelm1947_table[cols[2]] = 2 * ierfc(1,u)
+    
+    # --- Edelman f2(u)
+    #     edelm1947_table[cols[3]] = u * ierfc(-1,u) - (2 * u**2 + 1) * ierfc(0,u)
+    edelm1947_table[cols[3]] = -4 *ierfc(2,u)
+    
+    # --- Edelman f3(u)
+    #     edelm1947_table[cols[4]] = 2/3 * (u**2 + 1) * ierfc(-1,u) - 2/3 * (2 * u**3 + 3*u) * ierfc(0,u)
+    edelm1947_table[cols[4]] = 8 * ierfc(3,u)
+    
+    # --- Verification with hand-copied values
+    print()
+    print("Edelman's 1948, computed table values to compare with hand-picked values")
+    print(edelm1947_table.loc[edelm_orig.index, :])
+    
+    # --- Total tabels of Edelman's 1947 PhD (p77)
+    print()
+    print("Edelman's 1948 table (p77) complete:")
+    print(edelm1947_table)
+    return edelm1947_table
+    
+                 
 
 def compare(etable, cols=[1, 2, 3, 30, 4, 5]):
     """
@@ -238,10 +294,9 @@ def model_edelman():
         fig1.savefig(os.path.join(images, "Edelman_heads.png"))
         fig2.savefig(os.path.join(images, "Edelman_flows.png"))
         
-
 if __name__ == '__main__':
     if False:
-        etable = get_etable()
+        etable = table_huism1972_p42()
         btable = compare(etable=etable)
         print(etable)
         print(btable)
@@ -251,7 +306,9 @@ if __name__ == '__main__':
         print("Eleman tables:")
         tables = generate_edelman_tables()
         print(tables)
-    if True:
+    if True: # --- Edelman's original tables
+        comp_table_edelm1947()        
+    if False:
         model_edelman()
     if False:
         for n in range(5):
