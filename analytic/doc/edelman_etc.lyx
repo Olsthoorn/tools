@@ -715,15 +715,23 @@ literal "false"
 \end_layout
 
 \begin_layout Standard
-Het debiet volgt rechtstreeks met Darcy
+Het debiet volgt rechtstreeks met Darcy met 
+\begin_inset Formula $\partial\phi\left(,t\right)/\partial x=\left(\partial\phi\left(u,t\right)\partial u\right)\left(\partial u/\partial x\right)$
+\end_inset
+
+ met 
+\begin_inset Formula $\partial u/\partial x=\sqrt{S/\left(4kDt\right)}$
+\end_inset
+
+ volgt
 \end_layout
 
 \begin_layout Standard
 \begin_inset Formula 
 \begin{align*}
-Q\left(x,t\right) & =-kD\frac{\partial\phi\left(x,t\right)}{\partial x}=-kD\frac{d}{du}\left(At^{n/2}\frac{\ierfc\left(n,u\right)}{\ierfc\left(n.0\right)}\right)\frac{\partial u}{\partial x}=kDAt^{n/2}\left(\frac{\ierfc\left(n-1,u\right)}{\ierfc\left(n,0\right)}\right)\sqrt{\frac{S}{4kDt}}\\
- & =At^{\left(n-1\right)/2}\sqrt{\frac{kDS}{4}}\left(\frac{\ierfc\left(n-1,0\right)}{\ierfc\left(n,0\right)}\right)\left(\frac{\ierfc\left(n-1,u\right)}{\ierfc\left(n-1,0\right)}\right)\\
- & =At^{\left(n-1\right)/2}\sqrt{\frac{kDS}{4}}\left(\frac{F\left(n-1,u\right)}{f\left(n-1\right)}\right)
+Q\left(x,t\right) & =-kD\frac{d}{du}\left(At^{n/2}\frac{\ierfc\left(n,u\right)}{\ierfc\left(n.0\right)}\right)\frac{\partial u}{\partial x}\\
+ & =At^{\left(n-1\right)/2}\sqrt{\frac{kDS}{4}}\times\frac{\ierfc\left(n-1,0\right)}{\ierfc\left(n,0\right)}\times\frac{\ierfc\left(n-1,u\right)}{\ierfc\left(n-1,0\right)}\\
+ & =At^{\left(n-1\right)/2}\sqrt{\frac{kDS}{4}}\times\frac{F\left(n-1,u\right)}{f\left(n-1\right)}
 \end{align*}
 
 \end_inset
@@ -764,7 +772,7 @@ Q\left(x,t\right) & =At^{\left(n-1\right)/2}\sqrt{\frac{kDS}{4}}\frac{F\left(n-1
 
 \begin_layout Standard
 Omgekeerd,
- hebben we natuurlijk ook de serie waarbij 
+ ligt natuurlijk ook de serie waarbij 
 \begin_inset Formula $Q\left(0,t\right)=Bt^{\left(n-1\right)/2}$
 \end_inset
 
