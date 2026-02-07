@@ -731,7 +731,7 @@ Het debiet volgt rechtstreeks met Darcy met
 \begin{align*}
 Q\left(x,t\right) & =-kD\frac{d}{du}\left(At^{n/2}\frac{\ierfc\left(n,u\right)}{\ierfc\left(n.0\right)}\right)\frac{\partial u}{\partial x}\\
  & =At^{\left(n-1\right)/2}\sqrt{\frac{kDS}{4}}\times\frac{\ierfc\left(n-1,0\right)}{\ierfc\left(n,0\right)}\times\frac{\ierfc\left(n-1,u\right)}{\ierfc\left(n-1,0\right)}\\
- & =At^{\left(n-1\right)/2}\sqrt{\frac{kDS}{4}}\times\frac{F\left(n-1,u\right)}{f\left(n-1\right)}
+ & =At^{\left(n-1\right)/2}\sqrt{\frac{kDS}{4}}\times\frac{1}{f\left(n-1\right)}\times F\left(n-1,u\right)
 \end{align*}
 
 \end_inset
