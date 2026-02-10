@@ -1,0 +1,21 @@
+project_docs
+Literature
+tempCodeRunnerFile.*
+
+# --- macOS ---
+.DS_Store
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+
+# --- Virtual environments ---
+.venv/
+venv/
+env/
+
+# --- VS Code ---
+.vscode/
+tempCodeRunnerFile.*
+
+vtl_fdm

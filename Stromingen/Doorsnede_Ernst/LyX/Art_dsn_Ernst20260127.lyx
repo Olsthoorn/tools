@@ -1,0 +1,3459 @@
+#LyX 2.4 created this file. For more info see https://www.lyx.org/
+\lyxformat 620
+\begin_document
+\begin_header
+\save_transient_properties true
+\origin unavailable
+\textclass article
+\begin_preamble
+%\usepackage{epstopdf} % to include .eps graphics files with pdfLaTeX
+\usepackage{flafter}   % Don't place floats before their definition
+%\usepackage{topcapt}  % Define \topcation for placing captions above tables (not in gwTeX)
+
+\usepackage{xurl}      % better URL setting, uses old url package
+
+\usepackage{xcolor}
+\definecolor{darkblue}{rgb}{0,0,0.4}
+\usepackage[]{hyperref} % Generates all cross references
+\hypersetup{            % Setting options for hyperref package
+	breaklinks=true,    % break line with long hyperlinks
+	colorlinks=true,    % coloured links
+	linkcolor=blue,
+	filecolor=magenta,
+	urlcolor=darkblue,
+	citecolor=blue,
+	backref=page
+} 
+
+\usepackage{memhfixc}  % remove conflict between the memoir class & hyperref
+\usepackage{pdfsync}   % enable tex source and pdf output syncronicity
+
+\usepackage{memhfixc}  % remove conflict between the memoir class & hyperref
+\usepackage{pdfsync}   % enable tex source and pdf output syncronicity
+
+\usepackage{alltt}
+
+% \usepackage{listings}
+% \usepackage{xcolor}
+
+% \lstdefinestyle{mystyle}{
+%   language=Python,
+%   numbers=left
+% }
+
+% Put lstset here, after lstdefinestyle
+% \lstset{style=mystyle}
+\end_preamble
+\use_default_options true
+\maintain_unincluded_children no
+\language dutch
+\language_package default
+\inputencoding utf8
+\fontencoding auto
+\font_roman "default" "default"
+\font_sans "default" "default"
+\font_typewriter "default" "default"
+\font_math "auto" "auto"
+\font_default_family default
+\use_non_tex_fonts false
+\font_sc false
+\font_roman_osf false
+\font_sans_osf false
+\font_typewriter_osf false
+\font_sf_scale 100 100
+\font_tt_scale 100 100
+\use_microtype false
+\use_dash_ligatures true
+\graphics default
+\default_output_format pdf2
+\output_sync 0
+\bibtex_command biber
+\index_command default
+\float_placement h
+\float_alignment center
+\paperfontsize default
+\spacing single
+\use_hyperref false
+\papersize default
+\use_geometry true
+\use_package amsmath 1
+\use_package amssymb 1
+\use_package cancel 1
+\use_package esint 1
+\use_package mathdots 1
+\use_package mathtools 1
+\use_package mhchem 1
+\use_package stackrel 1
+\use_package stmaryrd 1
+\use_package undertilde 1
+\cite_engine basic
+\cite_engine_type default
+\biblio_style plain
+\biblio_options hyperref=true, backref=true, backrefstyle=three,backreffloats=true,indexing=bib,date=year
+\use_bibtopic false
+\use_indices false
+\paperorientation portrait
+\suppress_date false
+\justification true
+\use_refstyle 1
+\use_formatted_ref 0
+\use_minted 0
+\use_lineno 0
+\index Index
+\shortcut idx
+\color #008000
+\end_index
+\leftmargin 1in
+\topmargin 1in
+\rightmargin 1in
+\bottommargin 1in
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation indent
+\paragraph_indentation default
+\is_math_indent 0
+\math_numbering_side default
+\quotes_style polish
+\dynamic_quotes 0
+\papercolumns 1
+\papersides 1
+\paperpagestyle default
+\tablestyle default
+\listings_params "language=Python,extendedchars=false,frameround=fttt,numbers=left,% line numbers use none,numberstyle={\tiny},stepnumber=2,% line numbers only every so many,numbersep=9pt,% how far line numbers from text?,showspaces=false,showstringspaces=false,showtabs=false,tab={\rightarrowfill},basicstyle={\small},keywordstyle={\color{blue}},commentstyle={\color{green}},stringstyle={\ttfamily \color{magenta}},identifierstyle={\color{black}}"
+\tracking_changes false
+\output_changes false
+\change_bars false
+\postpone_fragile_content false
+\html_math_output 0
+\html_css_as_file 0
+\html_be_strict false
+\docbook_table_output 0
+\docbook_mathml_prefix 1
+\end_header
+
+\begin_body
+
+\begin_layout Title
+De verticale doorsnede van Ernst (1962) ontrafeld
+\begin_inset Newline newline
+\end_inset
+
+
+\end_layout
+
+\begin_layout Author
+T.N.Olsthoorn,
+ David Simpson,
+ Cas Neyens
+\end_layout
+
+\begin_layout Date
+2 februari 2026
+\end_layout
+
+\begin_layout Abstract
+Dit artikel is een niet-triviale,
+ kwantiatieve ontrafeling en terugsubstitutie van de perceelsdoorsnede in Fig.7 uit het beroemde proefschrift van 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "Ernst62"
+literal "false"
+
+\end_inset
+
+.
+ Eerst wordt de geïdealiseerde doorsnede analytisch uiteengerafeld,
+ waarin de pakketdikte constant is en de sloot tot een punt is teruggebracht.
+ Daarna rekenen we de doorsnede door zoals Ernst die zelf heeft getekend,
+ dat wil zeggen met een sterk opbollend freatisch vlak en echte afmetingen van de de sloot.
+ We gaan in op de verschillen.
+ We werken aan het eind de radiale weerstand,
+ door onvolkomenheid van de sloot,
+ analytisch uit tot de asymptotische benadering die zowel door Ernst als door 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "Huisman72"
+literal "false"
+
+\end_inset
+
+ wordt gepresenteerd,
+ maar we constateren ook dat de betrouwbaarheid beperkt is.
+ Een benadering die tot aanmerkelijk grotere sloot-radii geldt wordt gegeven.
+ Vervolgens wordt uitgewerkt hoe verticale anisotropie in de weerstandsfromule moet worden verwerkt.
+ Tenslotte wordt ingegaan op de stippellijn in Ernst's fig.7b en de wat hij met de wat mysterieuze 
+\begin_inset Formula $D^{*}$
+\end_inset
+
+ bedoelde.
+ 
+\end_layout
+
+\begin_layout Abstract
+\begin_inset CommandInset toc
+LatexCommand tableofcontents
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+Ernst
+\end_layout
+
+\begin_layout Standard
+Ernst was een hydrologische grootheid (Van Bakel ...),
+ dat staat wel vast voor iedereen die kennis van zijn werk heeft genomen.
+ Zo zit zijn proefschrift 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "Ernst62"
+literal "false"
+
+\end_inset
+
+ vol originele hydrologische uitwerkingen en inzichten die,
+ behalve essentieel voor de landbouwhydrologie,
+ ook daarbuiten tot vernieuwing heeft geleid.
+ Tal van formules die hij heeft afgeleid worden nog altijd veel gebruikt wanneer analytisch inzicht gevraagd is.
+ Analytisch inzicht blijft ook belangrijk in de huidige tijd van de grote modellen,
+ al was het maar om deze brute-force gereedschappen te kunnen verifiëren of om goede benaderingen af te leiden voor bijvoorbeeld de manier waarop een fijn stelsel oppervlaktewater in een grof model kan worden opgenomen zonder de werkelijkheid al teveel geweld aan te doen (De Lange et al.
+ 2026).
+ Het blijft de moeite waard om het in kraakhelder Nederlands geschreven proefschrift van Ernst door te lezen;
+ het staat vol pareltjes van hydrologisch inzicht;
+ alles wordt keurig uitgelegd en afgeleid.
+ Het proefschrift geeft een mooi overzicht van de stand van de kennis op het gebied van de landbouwhydrologie in zijn tijd.
+ En ...
+ analytische oplossingen blijven altijd geldig,
+ en up-to-date.
+\end_layout
+
+\begin_layout Standard
+Zoals bijna altijd bij het analytisch aanpakken van grondwaterstromingsvraagstukken blijkt superpositie hét gereedschap van de hydroloog.
+ De kunst is het uiteenrafelen van een grondwaterprobleem in brokken die afzonderlijk redelijk gemakkelijk zijn op te lossen,
+ om ze vervolgens bij elkaar op te tellen tot de samengestelde stroming,
+ die het oorspronkelijke,
+ te complexe vraagstuk oplost.
+ Dat opbreken is soms een kunst en vaak moet het vraagstuk wat gekneed worden tot het past in een vorm die we analytisch kunnen tackelen.
+ Ernst heeft ook zo'n vraagstuk,
+ hier overgenomen in Afbeelding 1.
+ Het ging hem erom de stroming in een halve doorsnede van een landbouwperceel,
+ tussen het midden van de randsloot en de waterscheiding in het midden van het perceel,
+ te ontrafelen om een goede uitdrukking te vinden voor de radiale weerstand.
+ Hij ging aan de slag met een freatisch homogeen en isotroop watervoerend pakket op vlakke basis dat wordt gevoed met een uniform neerslagoverschot 
+\begin_inset Formula $N$
+\end_inset
+
+.
+ Hoe eenvoudig kan het zijn,
+ zou je denken.
+ Ook Ernst kon de samengestelde stroming in Afbeelding 1a niet in één keer oplossen en wilde hem daarom opsplitsen in drie deelstromen:
+ een verticale (Afb.1b) een horizontale (Afb.1c) en één die wordt veroorzaakt door de uitsluitend de contractie van de stroomlijnen nabij de sloot.
+ Helemaal perfect lukt dat niet,
+ want voor superpositie moet het stromingsdomein hetzelfde blijven en de randvoorwaarden consistent.
+ Het stromingsdomein wordt aan de bovenzijde begrensd door het freatisch vlak in Afb.1a,
+ maar datzelfde freatisch vlak past natuurlijk niet bij het stoombeeld in Afb.1b met alleen verticale stroming.
+ Bij uitsluitend verticale stroming is het freatisch vlak immers horizontaal.
+ Ook de sloot verstoort het ideaalbeeld,
+ want die zorgt ervoor dat de stroomlijnen in Afb.1b niet zuiver verticaal en de horizontale in Afb.1c niet zuiver horizontaal kunnen zijn.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+placement document
+alignment document
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\begin_inset Graphics
+	filename ../images/Ernst62Fig7.png
+	lyxscale 50
+	width 80text%
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:Ernst-fig7"
+
+\end_inset
+
+Afb.
+ 7 uit Ernst (1962)
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Ik wil in dit artikel deze doorsnede uit elkaar rafelen en doorrekenen,
+ A) om hem helemaal te kwantificeren,
+ B) de radiale weerstand te bepalen,
+ C) verticale anisotropie daarin op te nemen en D) om erachter te komen wat nu precies de stippellijn in Afb.1b voorstelt samen met 
+\begin_inset Formula $D^{*}$
+\end_inset
+
+ die als term 
+\begin_inset Formula $D^{*}/k$
+\end_inset
+
+ in Ernst's weerstandsformule (zijn vgl.
+ 33) terugkomt.
+ Hij zegt daar op p.17 het volgende over:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Quotes pld
+\end_inset
+
+In figuur 7b is de vorm van de natte omtrek van de open leiding de oorzaak,
+ dat de stroming niet zuiver verticaal kan zijn.
+ Op de stippellijn in deze figuur is de potentiaal gelijk aan het peil van het open water.
+ De aequipotentiaallijn ligt grotendeels horizontaal met een hoogte ongeveer overeenkomend met de onderkant van de natte omtrek van de open leiding.
+ De figuur toont aan,
+ dat het betrokken stijghoogteverschil alleen van betekenis kan zijn bij een slecht doorlatende bovenlaag.
+\begin_inset Quotes prd
+\end_inset
+
+ Wat wil hij hiermee?
+\end_layout
+
+\begin_layout Standard
+Het is duidelijk dat we geen analytische oplossingen hebben voor precies de doorsnede die Ernst heeft onderzocht.
+ Dat wordt anders wanneer we hem idealiseren tot een rechthoek die een watervoerend pakket voorstelt met vaste dikte 
+\begin_inset Formula $D$
+\end_inset
+
+ tussen slootmidden op 
+\begin_inset Formula $x=b$
+\end_inset
+
+ en de waterscheiding op 
+\begin_inset Formula $x=0$
+\end_inset
+
+ en waarin we de sloot samentrekken tot een puntonttrekking in het punt 
+\begin_inset Formula $x=0,$
+\end_inset
+
+ 
+\begin_inset Formula $z=D$
+\end_inset
+
+.
+ De afwijking van de werkelijke doorsnede zal niet groot zijn wanneer de hoogte van het freatisch vlak boven het slootpeil maar een fractie van de pakketdikte is en de radius van de sloot klein ten opzichte van diezelfde dikte.
+ Hier beginnen we mee,
+ om verderop de werkelijke doorsnede te onderzoeken,
+ precies zoals Ernst die heeft getekend.
+\end_layout
+
+\begin_layout Section
+De geïdealiseerde doorsnede
+\end_layout
+
+\begin_layout Standard
+In de geïdealiseerde doorsnede met vaste pakketdikte en tot punt gereduceerde slootdoorsnede,
+ kunnen we de stroming exact opsplitsen in verticale,
+ horizontale en radiale stroming (Afb.
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Figuur-7-numeriek"
+plural "false"
+caps "false"
+noprefix "false"
+nolink "false"
+
+\end_inset
+
+).
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+placement document
+alignment document
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\begin_inset Graphics
+	filename ../images/ErnstFig7_numeriek.png
+	width 100text%
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:Figuur-7-numeriek"
+
+\end_inset
+
+Afbeelding 7 uit Ernst numeriek nagerekend.
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Verticale stroming
+\end_layout
+
+\begin_layout Standard
+Zuiver verticale stroming ontstaat door over het oppervlak van de doorsnede een stroom 
+\begin_inset Formula $n=N/D$
+\end_inset
+
+ [1/d] onttrekken.
+ Immers dan vermindert de verticale flux van 
+\begin_inset Formula $N$
+\end_inset
+
+ [m/d] op 
+\begin_inset Formula $z=D$
+\end_inset
+
+ tot 0 aan de basis bij 
+\begin_inset Formula $z=0$
+\end_inset
+
+.
+ Ernst doet dat ook;
+ hij maakt van zijn doorsnede een blok met dikte 
+\begin_inset Formula $\Delta y$
+\end_inset
+
+ en onttrekt deze stroom uniform aan het linker zijvlak van dit blok.
+ Hierdoor ontstaat de stroming zoals hij dit in het blok rechts naast de doorsnede van Afb.
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Ernst-fig7"
+plural "false"
+caps "false"
+noprefix "false"
+nolink "false"
+
+\end_inset
+
+/b tekende.
+ In de ideale doorsnede levert de verticale stroming perfect horizontale stijghoogtelijnen op,
+ die bovenin dichter bij elkaar liggen omdat daar de verticale flux groter is.
+ En de sloot?
+ Die is tot een punt gereduceerd,
+ en doet helemaal niets.
+ Je kan diezelfde sloot overal in de doorsnede plaatsen zonder dat er iets aan het beeld verandert;
+ de stroming is er geheel onafhankelijk van.
+ De stijghoogten zijn onbepaald,
+ tenzij we een willekeurig punt een vaste potentiaal geven.
+ Kiezen we voor dit punt de linker bovenhoek,
+ en krijgt het stijghoogte nul,
+ dan is automatisch de stijghoogte langs het hele bovenvlak nul (want er is geen horizontale stroming).
+\end_layout
+
+\begin_layout Standard
+De verticale flux is onafhankelijk van 
+\begin_inset Formula $x$
+\end_inset
+
+ en gelijk aan
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+q_{z}=-k\frac{d\phi}{dz}=-N\frac{z}{D}\to\phi=\phi_{z=0}+\frac{N}{2kD}z^{2}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+De stijghoogte bovenin het pakket op 
+\begin_inset Formula $z=D$
+\end_inset
+
+ is overal 
+\begin_inset Formula $ND/\left(2k\right)$
+\end_inset
+
+ hoger dan aan de basis (vul in 
+\begin_inset Formula $z=D$
+\end_inset
+
+).
+\end_layout
+
+\begin_layout Standard
+De genoemde uniforme onttrekking 
+\begin_inset Formula $n$
+\end_inset
+
+ (de divergentie) is dus inderdaad 
+\begin_inset Formula $n=k\,\left(d^{2}\phi/dz^{2}\right)=N/D$
+\end_inset
+
+.
+ Omdat de divergentie hier niet nul is,
+ is de stroomfunctie hier niet gedefinieerd,
+ en kunnen we de stroomlijnen niet als contourlijnen tekenen (alleen via particle tracking).
+ Hetzelfde geldt voor de doorsnede met alleen horizontale stroming.
+\end_layout
+
+\begin_layout Subsection
+Horizontale stroming
+\end_layout
+
+\begin_layout Standard
+Ernst vaart vervolgens voort met de horizontale stroming (Afb.1c en Afb.2c).
+ Zuiver horizontale stroming ontstaat door een uniforme infiltratie 
+\begin_inset Formula $i=N/D$
+\end_inset
+
+ over de hele doorsnede op te leggen,
+ samen met een gesloten rand rechts op 
+\begin_inset Formula $x=0$
+\end_inset
+
+ en op de linker rand,
+ op 
+\begin_inset Formula $x=b$
+\end_inset
+
+,
+ een uniforme onttrekking ter grootte van 
+\begin_inset Formula $q=Nb/D$
+\end_inset
+
+.
+ De totale onttrekking aan deze rand is dan gelijk aan het totale neerslagoverschot 
+\begin_inset Formula $Nb$
+\end_inset
+
+ dat over de bovenrand de doorsnede binnenstroomt.
+ Opnieuw maakt Ernst van zijn doorsnede een blok ter breedte 
+\begin_inset Formula $\Delta y$
+\end_inset
+
+ (onderste Afbeelding in Afb.1c) waarin hij de stroomlijnen laat zien die deze infiltratie veroorzaakt.
+ Ook in deze situatie is de stroming in de doorsnede volledig onafhankelijk van de sloot,
+ die immers infiltreert noch onttrekt.
+ De sloot is dan ook niet getekend in de afbeeldingen waar hij er niet toe doet.
+ De stijghoogte is ook hier onbepaald,
+ totdat die ergens in de doorsnede in een punt wordt vastgeprikt.
+\end_layout
+
+\begin_layout Standard
+De stijghoogte 
+\begin_inset Formula $\phi$
+\end_inset
+
+ in de doorsnede hangt nu alleen af van 
+\begin_inset Formula $x$
+\end_inset
+
+.
+ Combineren van continuïteit en Darcy levert:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+q_{x}=\frac{Q\left(x\right)}{D}=-k\frac{d\phi}{dx}=Nx\;\to\;\phi=C-\frac{Nx^{2}}{2kD}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Met 
+\begin_inset Formula $\phi=\phi_{b}$
+\end_inset
+
+ voor 
+\begin_inset Formula $x=b$
+\end_inset
+
+ volgt 
+\begin_inset Formula $C=\phi_{0}$
+\end_inset
+
+ en
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{equation}
+\phi-\phi_{b}=\frac{N}{2kD}\left(b^{2}-x^{2}\right)\label{eq:Dupuit}
+\end{equation}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Deze stijghoogte 
+\begin_inset Formula $\phi\left(x\right)$
+\end_inset
+
+ volgens Dupuit is onafhankelijk van 
+\begin_inset Formula $z$
+\end_inset
+
+.
+ De uniforme infiltratie is 
+\begin_inset Formula $-kD\,\left(d^{2}\phi\,/\,dx^{2}\right)=N/D$
+\end_inset
+
+,
+ dus even groot als de uniforme onttrekking bij de horizontale stroming in Afb.2b.
+ 
+\begin_inset Formula $N/D$
+\end_inset
+
+ is dus de divergentie in zowel Afb.2b en Afb.2c,
+ even groot maar tegengesteld.
+ Het is niet zo dat de divergentie wegvalt door 
+\begin_inset Formula $\Delta y\rightarrow0$
+\end_inset
+
+ te laten gaan;
+ de divergentie valt weg door de stroming in Afb.2b en Afb.2b te superponeren.
+ Je krijgt dan het plaatje dat Ernst niet getekend heeft,
+ hier getoond in Afb.2d.
+ Merk op dat Ernst overal alleen de stroomlijnen schetst.
+\end_layout
+
+\begin_layout Subsection
+Combinatie van horizontale en verticale stroming
+\end_layout
+
+\begin_layout Standard
+We zien in Afb.2d een doorsnede met breedte 
+\begin_inset Formula $b$
+\end_inset
+
+,
+ die gevoed wordt door uniform neerslagoverschot 
+\begin_inset Formula $N$
+\end_inset
+
+ en water via zijn linker rand afvoert middels een uniforme horizontale component ter grootte 
+\begin_inset Formula $q_{x=b}=Nb/D$
+\end_inset
+
+.
+ Ook deze doorsnede is volledig door stromingsranden vastgelegd,
+ waarbij de rand rechts en de basis van de doorsnede stroomlijnen zijn.
+ Ook hier is de stijghoogte onbepaald zolang deze niet ergens,
+ in een willekeurig punt,
+ wordt vastgeprikt.
+ Voor de stroming in deze doorsnede gelden de volgende horizontale en verticale stromingscomponenten,
+ waarbij gemakshalve 
+\begin_inset Formula $z=0$
+\end_inset
+
+ gelijk aan de basis is genomen:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+q_{z}=-\frac{Nz}{D};\;q_{x}=+\frac{Nx}{D}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+met divergentie
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\nabla\cdot\overline{q}=\frac{\partial q_{x}}{\partial x}+\frac{\partial q_{z}}{\partial z}=0
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+De stroomlijnen liggen in deze doorsnede vast.
+ We krijgen we door ze te volgen:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+q_{z}=N\left(1-\frac{z}{D}\right)=\epsilon\frac{dz}{dt};\;q_{x}=\frac{Nx}{D}=\epsilon\frac{dx}{dt}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Elimineren van 
+\begin_inset Formula $dt$
+\end_inset
+
+ en beide zijden delen door 
+\begin_inset Formula $N/D$
+\end_inset
+
+ levert vervolgens:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\frac{dx}{x}=-\frac{dz}{z}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Dus,
+ na integreren van beide zijden krijgen we
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+\ln x & =-\ln z+C\\
+\ln xz & =C
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+De integratieconstante,
+ 
+\begin_inset Formula $C$
+\end_inset
+
+,
+ volgt uit het startpunt van de stroomlijn:
+ 
+\begin_inset Formula $x=x_{0}$
+\end_inset
+
+,
+ 
+\begin_inset Formula $z=z_{0}$
+\end_inset
+
+.
+ Aldus 
+\begin_inset Formula $C=\ln x_{0}z_{0}$
+\end_inset
+
+,
+ zodat de stroomlijnen worden beschreven door
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+xz=x_{0}z_{0}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Deze stroomlijnen blijken derhalve hyperbolen te zijn.
+ Kies een startpunt,
+ bijv.
+ 
+\begin_inset Formula $x=x_{0}$
+\end_inset
+
+ en 
+\begin_inset Formula $z_{0}=D$
+\end_inset
+
+ dan volgt
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+z=\frac{x_{0}D}{x}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+We hebben natuurlijk ook de stroomfunctie 
+\begin_inset Formula $\Psi$
+\end_inset
+
+.
+ Die hangt van van de complexe variabele die we normaliter 
+\begin_inset Formula $z$
+\end_inset
+
+ noemen.
+ Omdat 
+\begin_inset Formula $z$
+\end_inset
+
+ al in gebruik is,
+ kiezen we hiervoor,
+ in navolging van Ernst,
+ 
+\begin_inset Formula $\zeta=x+iz$
+\end_inset
+
+.
+
+\series bold
+ 
+\series default
+De definitie van de stroomfunctie invullen geeft
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+\frac{\partial\Psi}{\partial z} & =-q_{x}=-\frac{Nx}{D}\\
+\frac{\partial\Psi}{\partial x} & =+q_{y}=-\frac{Ny}{D}
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+De Laplacian van de de stroomfunctie is dus nul,
+ wat ook zo moet zijn:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\frac{\partial^{2}\Psi}{\partial x^{2}}+\frac{\partial^{2}\Psi}{\partial z^{2}}=0
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+En de stroomfunctie zelf wordt verkregen door integratie
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\Psi=\Psi_{0}-\frac{N}{D}xz
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Hierin is 
+\begin_inset Formula $\Psi_{0}$
+\end_inset
+
+ de waarde van de stroomfunctie is op de stroomlijnen die vanaf de top van de waterscheiding omlaag 
+\begin_inset Formula $\left(x=0\right)$
+\end_inset
+
+ loopt en voorts langs de basis van het watervoerende pakket 
+\begin_inset Formula $\left(z=0\right)$
+\end_inset
+
+ naar de uitstroomrand (
+\begin_inset Formula $x=b$
+\end_inset
+
+).
+ De stroomlijnen krijgen we door de contourlijnen van 
+\begin_inset Formula $\Psi$
+\end_inset
+
+ te tekenen.
+ Kies je bijvoorbeeld 
+\begin_inset Formula $\Psi=\Psi_{0}-Nx_{0}D$
+\end_inset
+
+,
+ dan krijg je stroomlijn 
+\begin_inset Formula $xz=x_{0}D$
+\end_inset
+
+ net als hiervoor.
+\end_layout
+
+\begin_layout Standard
+De stroomfunctie langs het bovenvlak,
+ 
+\begin_inset Formula $z=D$
+\end_inset
+
+ is
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\Psi=\Psi_{0}-Nx
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Deze stroomlijn loopt dus vanaf de waterscheiding 
+\begin_inset Formula $\left(x=0\right)$
+\end_inset
+
+ met 
+\begin_inset Formula $\Psi=\Psi_{0}$
+\end_inset
+
+ af nul tot 
+\begin_inset Formula $\Psi_{0}-Nb$
+\end_inset
+
+,
+ dit als gevolg van het neerslagoverschot dat het freatisch vlak passeert.
+ En op 
+\begin_inset Formula $x=b$
+\end_inset
+
+,
+ waar het water de doorsnede verlaat neemt de stroomfunctie af van nul aan de basis tot eveneens 
+\begin_inset Formula $Nb$
+\end_inset
+
+ aan de top:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\Psi=\Psi_{0}-Nb\frac{z}{D}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Met de stroomfunctie hoeven we de stroomlijnen niet meer afzonderlijk te tekenen,
+ we kunnen ze gewoon contouren in het hele vlak van de doorsnede.
+ Dit is wat Afb.2d laat zien.
+\end_layout
+
+\begin_layout Subsection
+Contractiestroming
+\end_layout
+
+\begin_layout Standard
+Afb.1c laat de derde deelstroom zien.
+ Dat is de stroming die ontstaat door de contractie van de stroomlijnen naar de sloot.
+ Dit is ook de stroming die verantwoordelijk is voor de radiale weerstand.
+ Dit contractiestroombeeld verkrijgen we door aan het slootpunt 
+\begin_inset Formula $Q=Nb$
+\end_inset
+
+ te onttrekken,
+ (waardoor water van rechts gaat toestromen) en daarop een even grote horizontale uniforme tegenstroom te superponeren.
+ De stroming ver rechts van de sloot wordt dan nul en precies onder de sloot maakt deze superpositie de horizontale component gelijk aan 
+\begin_inset Formula $Nb/D$
+\end_inset
+
+,
+ dus gelijk maar tegengesteld aan die in Afb.2c.
+ Dit water stroomt vanaf de verticaal onder de sloot naar de sloot zoals is te zien in Afb.2d.
+ Het is duidelijk dat wanneer we Afb.2c op Afb.2d superponeren we precies de samengestelde stroming in afb.2f krijgen.
+\end_layout
+
+\begin_layout Standard
+Voor de berekening van de contractiestroming moeten we nu onze toevlucht nemen tot complexe getallen en conforme afbeeldingen.
+ De oplossing is (zie appendix):
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{equation}
+\Omega(\zeta)=\frac{2Q}{\pi}\,\ln\left(\sin\left(\frac{i\pi}{2D}\left(b-\zeta\right)\right)\right)-\frac{Q}{D}\left(b-\zeta\right)\ +\frac{2Q}{\pi}\ln2;\qquad0\le x\le b,\ -D\le y\le0\label{eq:contractie-functie}
+\end{equation}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+De eerste term is de stroming door de onttrekking in het hoekpunt van de aquifer 
+\begin_inset Formula $\left(\zeta=b\right)$
+\end_inset
+
+,
+ de tweede term is de genoemde uniforme tegenstroom en de derde term maakt de potentiaal op 
+\begin_inset Formula $\zeta=-\infty$
+\end_inset
+
+ gelijk aan nul.
+ Het netwerk van stroom- en potentiaallijnen kan men eenvoudig tekenen door een netwerk van complexe coördinaten 
+\begin_inset Formula $\zeta=x+iz$
+\end_inset
+
+ te creëren en dan de reële en imaginaire waarden van 
+\begin_inset Formula $\Omega$
+\end_inset
+
+ te contouren.
+ Dit is wat Afb.2e laat zien.
+ Afb.
+ 2e laat ook zien dat de afstand tussen de uitgaande stroomlijnen onder de sloot in Afb.2d en de ingaande in Afb.2e even groot zijn en dat alle stroomlijnen in het onttrekkingspunt eindigen.
+ Ook staan de isohypsen van de contractiestroming loodrecht op de gesloten randen van de doorsnede en is de contractie stroming op een afstand groter dan ca.
+ 
+\begin_inset Formula $1.5D$
+\end_inset
+
+ praktisch nul.
+\end_layout
+
+\begin_layout Subsection
+De samengestelde stroming
+\end_layout
+
+\begin_layout Standard
+Afb.2f toont de som van Afb.2b,
+ 2c en 2e of van Afb.2d en 2e.
+ De getekende lijnen zijn hoogtelijnen van de potentiaal 
+\begin_inset Formula $\Phi=k\phi$
+\end_inset
+
+ (met 
+\begin_inset Formula $\phi$
+\end_inset
+
+ is stijghoogte) en van de stroomfunctie 
+\begin_inset Formula $\Psi$
+\end_inset
+
+.
+ We kunnen de complexe potentiaal 
+\begin_inset Formula $\Omega=\Phi+i\Psi$
+\end_inset
+
+ zelf definiëren met gebruik van het horizontale en verticale verloop van de stijghoogte die we reeds hadden voor Afb.2d:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+\Phi=k\phi & =\frac{N}{2D}\left(b^{2}-x^{2}\right)-\frac{Nz^{2}}{2D}\\
+\Psi & =\frac{N}{D}x\left(D+z\right)
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Uitgeschreven als complexe potentiaal,
+ met 
+\begin_inset Formula $\Re\left(\zeta\right)=x$
+\end_inset
+
+ en 
+\begin_inset Formula $\Im\left(\zeta\right)=z$
+\end_inset
+
+,
+ krijgen we direct
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{equation}
+\Omega\left(\zeta\right)=\Phi+i\Psi=\frac{N}{2D}\left[b^{2}-\Re\left(\zeta^{2}\right)-\Im\left(\zeta^{2}\right)\right]+i\frac{N}{D}\Re\left(\zeta\right)\Im\left(D+\zeta\right)\label{eq:omega-afb2d}
+\end{equation}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Deze functie berekend op een raster van 
+\begin_inset Formula $\zeta$
+\end_inset
+
+-coördinaten en gecontourd geeft Afb.2d.
+ De contourlijnen van vergelijking (
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "eq:contractie-functie"
+plural "false"
+caps "false"
+noprefix "false"
+nolink "false"
+
+\end_inset
+
+) geven Afb.2e en tel je (
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "eq:contractie-functie"
+plural "false"
+caps "false"
+noprefix "false"
+nolink "false"
+
+\end_inset
+
+) bij elkaar (
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "eq:contractie-functie"
+plural "false"
+caps "false"
+noprefix "false"
+nolink "false"
+
+\end_inset
+
+) op,
+ dan krijg je de contourlijnen van Afb.2f van de samengestelde stroming.
+ De afstand tussen de contourlijnen is is steeds 
+\begin_inset Formula $Q/25$
+\end_inset
+
+ voor zowel 
+\begin_inset Formula $\Psi$
+\end_inset
+
+ als 
+\begin_inset Formula $\Phi$
+\end_inset
+
+.
+ De horizontale as is omgedraaid zodat de figuren dezelfde oriëntatie hebben als de doorsnede van Ernst in Afb.
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Ernst-fig7"
+plural "false"
+caps "false"
+noprefix "false"
+nolink "false"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Section
+Verloop van de stijghoogte langs de onder- de bovenrand van de doorsnede en radiale weerstand
+\end_layout
+
+\begin_layout Standard
+Met de verkregen functies (
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "eq:omega-afb2d"
+plural "false"
+caps "false"
+noprefix "false"
+nolink "false"
+
+\end_inset
+
+) en (
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "eq:contractie-functie"
+plural "false"
+caps "false"
+noprefix "false"
+nolink "false"
+
+\end_inset
+
+) kunnen we ook het verloop van de stijghoogte tekenen langs de top en de basis van het watervoerende pakket.
+ Afb.
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Verloop-van-phi-onder-en-boven-rechth-dsn"
+plural "false"
+caps "false"
+noprefix "false"
+nolink "false"
+
+\end_inset
+
+ geeft het resultaat voor de situatie in Afb.2b,
+ c,
+ d,
+ e,
+ en f.
+ De zuiver verticale stroming in Afb.2a geeft een horizontale lijn 
+\begin_inset Formula $\phi=0$
+\end_inset
+
+ aan de top en 
+\begin_inset Formula $\phi=-ND/\left(2k\right)$
+\end_inset
+
+ aan de basis.
+ De zuiver horizontale stroming in Afb.2c geeft het parabolische verloop 
+\begin_inset Formula $\phi=N/(2kD)(b^{2}-x^{2})$
+\end_inset
+
+ waarbij de stijghoogte aan de top en basis op elkaar vallen.
+ De superpositie van Afb.2b en 2c in Afb.2d geeft dezelfde lijn aan de top en aan de basis een lijn evenwijdig daaraan en 
+\begin_inset Formula $ND/\left(2k\right)$
+\end_inset
+
+ lager.
+ De rode lijnen geven het verloop aan top en basis door uitsluitend de contractiestroming.
+ Op een afstand groter dan ca.
+ 
+\begin_inset Formula $1.5D$
+\end_inset
+
+ van de onttrekking vallen deze lijnen samen.
+ De hoogte is de stijghoogtetoename door de contractie van de stroomlijnen is genomen ten opzichte van het slootpeil (hier 
+\begin_inset Formula $\phi=0$
+\end_inset
+
+) en hangt af van de radius van de sloot.
+ Naar de sloot toe duikt de stijghoogte aan de top van het watervoerend pakket sterk omlaag als gevolg van de steeds meer geconcentreerde stroming.
+ Vlakbij de onttrekking is het verloop logaritmisch.
+ Aan de basis neemt de stijghoogte door de stroomlijnen-contractie juist toe.
+ Het verschil op 
+\begin_inset Formula $x=b$
+\end_inset
+
+ (de onttrekking) is precies het stijghoogteverval dat nodig is om de druppel vanaf het stagnatiepunt aan de pakketbasis naar de sloot te drijven.
+ De groene lijnen,
+ tenslotte,
+ geven het verloop aan de top en de basis in Afb.2f.
+ Het is de som van de andere stijghoogtes.
+ Op grotere afstand is de stijghoogte aan de basis altijd 
+\begin_inset Formula $ND\left(2k\right)$
+\end_inset
+
+ lager dan aan de top.
+ Door de bijdrage van de contractiestroming verandert dat vlak bij het onttrekkingspunt.
+ In de linkermarge van Afb.3 zijn de verschillende bijdragen aangegeven.
+ Met Dupuit wordt vgl.(
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "eq:Dupuit"
+plural "false"
+caps "false"
+noprefix "false"
+nolink "false"
+
+\end_inset
+
+) bedoeld.
+\end_layout
+
+\begin_layout Standard
+Afb.
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Stijghoogte-langs-top-en-basis"
+plural "false"
+caps "false"
+noprefix "false"
+nolink "false"
+
+\end_inset
+
+ laat ook zien,
+ dat het verloop aan de top,
+ dus feitelijk het freatisch vlak,
+ exact gelijk is aan de som van de horizontale stroming (
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "eq:Dupuit"
+plural "false"
+caps "false"
+noprefix "false"
+nolink "false"
+
+\end_inset
+
+) en die door de contractie van stroomlijnen (
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "eq:contractie-functie"
+plural "false"
+caps "false"
+noprefix "false"
+nolink "false"
+
+\end_inset
+
+).
+ Hier hoort geen afzonderlijke term voor de verticale weerstand bij;
+ die ligt al besloten in de bijdrage van de contractiestroming.
+ Los daarvan is de stijghoogte aan de basis op afstand 
+\begin_inset Formula $>1.5D$
+\end_inset
+
+ altijd 
+\begin_inset Formula $ND/(2k)$
+\end_inset
+
+ lager dan aan de top.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+placement document
+alignment document
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\begin_inset Graphics
+	filename ../images/ErnstNumeriekPhimaaiveld_456_annotatee.png
+	lyxscale 60
+	width 80text%
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:Verloop-van-phi-onder-en-boven-rechth-dsn"
+
+\end_inset
+
+Verloop van de stijghoogte aan de onderzijde (stippellijnen) en aan de bovenzijde (getrokken lijnen) van de doorsnede.
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Vergelijking 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "eq:contractie-functie"
+plural "false"
+caps "false"
+noprefix "false"
+nolink "false"
+
+\end_inset
+
+ geeft uiteraard de verandering van de stijghoogte door de stroomlijnen-contractie langs de top,
+ basis of langs de verticaal onder het onttrekkingspunt of waar dan ook.
+ Het is slechts een kwestie van invullen van de juiste coördinaten in 
+\begin_inset Formula $\zeta$
+\end_inset
+
+.
+ Voor het boven- en ondervlak is dit weergegeven ten opzichte van punten op grote afstand van de onttrekking,
+ waar de verandering van de stijghoogte door de contractie van stroomlijnen nul is.
+ Het logaritmische verloop langs de top voor kleine afstand blijkt duidelijk uit de rechte lijn waar dit naar toe streeft in Afb.
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Stijghoogte-langs-top-en-basis"
+plural "false"
+caps "false"
+noprefix "false"
+nolink "false"
+
+\end_inset
+
+.
+ Dit asymptotische verloop volgt direct uit de limiet voor 
+\begin_inset Formula $b-\zeta=re^{i\theta}$
+\end_inset
+
+ voor 
+\begin_inset Formula $r\to0$
+\end_inset
+
+.
+ We krijgen dan de potentiaal voor een sloot met een kleine,
+ half-cirkelvormige doorsnede.
+ Met (
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "eq:contractie-functie"
+plural "false"
+caps "false"
+noprefix "false"
+nolink "false"
+
+\end_inset
+
+) volgt
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align}
+\lim_{r\to0}\left(\Phi+i\Psi\right) & \approx\frac{2Q}{\pi}\ln\left(2i\sinh\left(\frac{\pi r}{2D}e^{i\theta}\right)\right)\nonumber \\
+ & \approx\frac{2Q}{\pi}\ln\left(\frac{\pi r}{D}\right)+i\left(\theta+\frac{\pi}{2}\right)Q,\;\;\frac{\pi}{2}\le\theta\le0\nonumber \\
+\lim_{r\rightarrow0} & \phi=\frac{2Q}{\pi k}\ln\left(\frac{\pi r}{D}\right)\label{eq:dphi-contractie}
+\end{align}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Deze uitkomst is negatief omdat 
+\begin_inset Formula $Q$
+\end_inset
+
+ een onttrekking is.
+ Geeft men de voorkeur aan een positief getal voor de extra verlaging of verhoging,
+ draai dan de breuk onder de logaritme om.
+ Het verloop van 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "eq:dphi-contractie"
+plural "false"
+caps "false"
+noprefix "false"
+nolink "false"
+
+\end_inset
+
+ is als rode lijn opgenomen in Afb.
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Stijghoogte-langs-top-en-basis"
+plural "false"
+caps "false"
+noprefix "false"
+nolink "false"
+
+\end_inset
+
+.
+ De lijn laat zien dat de overeenkomst van deze benadering snel afneemt voor 
+\begin_inset Formula $r>0.1D$
+\end_inset
+
+.
+ We kunnen dan ook beter de blauwe lijn gebruikten voor de radiale weerstand,
+ vgl.
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "eq:dphi-sloot-r"
+plural "false"
+caps "false"
+noprefix "false"
+nolink "false"
+
+\end_inset
+
+ verderop.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+placement document
+alignment document
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\begin_inset Graphics
+	filename ../images/phi_top_basis.png
+	width 60text%
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:Stijghoogte-langs-top-en-basis"
+
+\end_inset
+
+Stijghoogte langs top en basis van het watervoerend pakket voor de situatie met alleen de contractiestroming (Afb.2e),
+ samen met de benadering.
+ Voor de twee bollen zie het eind van sectie 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sec:De-echte-doorsnede"
+plural "false"
+caps "false"
+noprefix "false"
+nolink "false"
+
+\end_inset
+
+.
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Verticale anisotropie
+\end_layout
+
+\begin_layout Standard
+Verticale anisotropie komt algemeen voor,
+ en dikwijls wordt de verhouding tussen 
+\begin_inset Formula $k_{h}/k_{v}$
+\end_inset
+
+ in de orde van 10 geraamd.
+ Hoewel dit grote gevolgen heeft voor de stroomlijnen contractie en het bereik waarover deze de stijghoogte beïnvloedt,
+ wordt daar in de praktijk zelden echt rekening mee gehouden.
+ Zo kan de verticale anisotropie deze reikwijdte met factoren vergroten,
+ waardoor bijvoorbeeld de verlaging in waarnemingsputten bij pompproeven verkeerd wordt geïnterpreteerd.
+ De procedure bij anisotropie evenwijdig aan de coördinaatassen,
+ de verticale anisotropie,
+ is altijd als volgt:
+ 1) Verschaal de 
+\begin_inset Formula $x$
+\end_inset
+
+- en de 
+\begin_inset Formula $z$
+\end_inset
+
+-as zodanig dat de doorsnede isotroop wordt.
+ 2) Voer all berekeningen in de isotrope doorsnede uit en 3) schaal terug voor de visualisatie.
+ Of:
+ A) kies een netwerk van 
+\begin_inset Formula $x-$
+\end_inset
+
+ en 
+\begin_inset Formula $z-$
+\end_inset
+
+coördinaten in de doorsnede,
+ B) schaal die zodat de doorsnede isotroop is.
+ C) Bereken is de isotrope doorsnede de stijghoogten en stroomfunctiewaarden uit op de knooppunten van dat verschaalde netwerk en D) contour deze stijghoogten en stroomfunctie vervolgens op het originele coördinatennetwerk.
+\end_layout
+
+\begin_layout Standard
+In Afb.
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Doorsnede-anisotroop"
+plural "false"
+caps "false"
+noprefix "false"
+nolink "false"
+
+\end_inset
+
+ is dit uitgewerkt voor dezelfde doorsnede als Afb.2 maar nu is verondersteld dat de verticale doorlatendheid 
+\begin_inset Formula $k_{z}$
+\end_inset
+
+ een factor 9 keer zo klein is als de horizontale 
+\begin_inset Formula $k_{x}$
+\end_inset
+
+ dus 
+\begin_inset Formula $k_{x}/k_{z}=9.$
+\end_inset
+
+ De verschaling loopt als volgt.
+ Eerst stappen we over op de doorlatendheid van de isotrope doorsnede:
+ 
+\begin_inset Formula $k=\sqrt{k_{x}k_{z}}=k_{x}/3=3k_{z}$
+\end_inset
+
+.
+ De horizontale as van de originele anisotrope doorsnede wordt hierdoor ingedrukt met een factor 
+\begin_inset Formula $\sqrt{k/k_{x}}=1/\sqrt{3}$
+\end_inset
+
+ en de verticale wordt hierdoor opgerekt met de factor 
+\begin_inset Formula $\sqrt{k/k_{z}}=\sqrt{3}$
+\end_inset
+
+.
+ De doorsnede wordt hierdoor isotroop (Afb.
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Doorsnede-anisotroop"
+plural "false"
+caps "false"
+noprefix "false"
+nolink "false"
+
+\end_inset
+
+,
+ boven).
+ Vervolgens worden alle berekeningen in deze isotrope doorsnede uitgevoerd (en gecontourd).
+ Het resultaat is het stelsel stijghoogte- en stroomlijnen in Afb.
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Doorsnede-anisotroop"
+plural "false"
+caps "false"
+noprefix "false"
+nolink "false"
+
+\end_inset
+
+ boven.
+ Tenslotte worden worden in de bovenste figuur in Afb.
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Doorsnede-anisotroop"
+plural "false"
+caps "false"
+noprefix "false"
+nolink "false"
+
+\end_inset
+
+ nog een keer gecontourd op het originele netwerk met als resultaat de onderste figuur van Afb.
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Doorsnede-anisotroop"
+plural "false"
+caps "false"
+noprefix "false"
+nolink "false"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+placement document
+alignment document
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\begin_inset Graphics
+	filename ../images/Partial_penetration_analytic_aniso.png
+	width 70text%
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:Doorsnede-anisotroop"
+
+\end_inset
+
+Doorsnede van Afb.2 maar met 
+\begin_inset Formula $k_{x}/k_{z}=9$
+\end_inset
+
+ zodat 
+\begin_inset Formula $k\sqrt{k_{x}k_{z}}=k_{x}/3=3k_{z}$
+\end_inset
+
+.
+ Boven:
+ isotroop gemaakte doorsnede door indrukken van de 
+\begin_inset Formula $x$
+\end_inset
+
+-as met factor 
+\begin_inset Formula $\sqrt{k/k_{x}}=1/\sqrt{3}$
+\end_inset
+
+ en oprekken van de 
+\begin_inset Formula $z$
+\end_inset
+
+-as met factor 
+\begin_inset Formula $\sqrt{k/k_{z}}=\sqrt{3}$
+\end_inset
+
+.
+ In deze isotrope doorsnede zijn de stijghoogten en stroomfunctiewaarden berekend en gecontourd.
+ Onder:
+ De contourlijnen van de potentiaal en e stroomfunctie uit de bovenste figuur getekend op het onverschaalde coördinatennetwerk in de originele doorsnede.
+ Voor het gemak is 
+\begin_inset Formula $x=0$
+\end_inset
+
+ nu bij de onttrekking gelegd en loopt de doorsnede naar rechts door.
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Hoe zit het nu met de verschaling van de radiale weerstand in vergelijking (
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "eq:dphi-contractie"
+plural "false"
+caps "false"
+noprefix "false"
+nolink "false"
+
+\end_inset
+
+)?
+ Nu komt het:
+ Als we een sloot hebben met halve breedte 
+\begin_inset Formula $r$
+\end_inset
+
+ zodat op de rand 
+\begin_inset Formula $x=r$
+\end_inset
+
+ dan verschalen we de 
+\begin_inset Formula $x$
+\end_inset
+
+ tot 
+\begin_inset Formula $x\sqrt{k/k_{x}}$
+\end_inset
+
+.
+ Met de 
+\begin_inset Formula $D$
+\end_inset
+
+ verschaald tot 
+\begin_inset Formula $D\sqrt{k/k_{z}}$
+\end_inset
+
+ volgt dan
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align}
+\lim_{x\to0}\phi & \approx\frac{2Q}{\pi\sqrt{k_{x}k_{z}}}\ln\left(\frac{\pi x\sqrt{k/k_{x}}}{D\sqrt{k/k_{z}}}\right)\label{eq:dphi-aniso-x}\\
+ & \approx\frac{2Q}{\pi\sqrt{k_{x}k_{z}}}\ln\left(\frac{\pi x}{D}\sqrt{\frac{k_{x}}{k_{z}}}\right)\label{eq:dphi-aniso-x2}
+\end{align}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Hebben we echter een sloot met diepte 
+\begin_inset Formula $r=y$
+\end_inset
+
+ dan schalen we de verticale 
+\begin_inset Formula $y$
+\end_inset
+
+ hetzelfde als de verticale 
+\begin_inset Formula $D$
+\end_inset
+
+,
+ dat wil zeggen:
+ dus niet:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{equation}
+\lim_{y\to0}\phi\approx\frac{2Q}{\pi\sqrt{k_{x}k_{z}}}\ln\left(\frac{\pi y}{D}\right)\label{eq:dphi-aniso-y}
+\end{equation}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Meestal zullen we in de praktijk eerder denken aan een sloot met halve breedte 
+\begin_inset Formula $x=r$
+\end_inset
+
+ dan halve diepte,
+ zodat vgl.
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "eq:dphi-aniso-x2"
+plural "false"
+caps "false"
+noprefix "false"
+nolink "false"
+
+\end_inset
+
+ moet worden genomen.
+ Met 
+\begin_inset Formula $\sqrt{k_{x}/k_{z}}=3$
+\end_inset
+
+ in dit voorbeeld zal dus ook de afstand tot waar de contractie van de stroomlijnen relevant is een factor 3 groter zijn dan in de anisotrope situatie.
+ Dit is direct te zien door de uiterste stroomlijn in Afb.2/e te vergelijken met die in Afb.
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Doorsnede-anisotroop"
+plural "false"
+caps "false"
+noprefix "false"
+nolink "false"
+
+\end_inset
+
+/2.
+ In de eerste afbeelding reikt deze tot 8 m en in de tweede tot 24 m.
+ Dit blijkt ook wanneer we de stijghoogte in Afb.
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Doorsnede-anisotroop"
+plural "false"
+caps "false"
+noprefix "false"
+nolink "false"
+
+\end_inset
+
+/2 langs de top en basis van het pakket tekenen samen met de benadering volgens (
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "eq:dphi-aniso-x2"
+plural "false"
+caps "false"
+noprefix "false"
+nolink "false"
+
+\end_inset
+
+).
+ Zie Afb.
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:phi-topbasis-aniso"
+plural "false"
+caps "false"
+noprefix "false"
+nolink "false"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+placement document
+alignment document
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\begin_inset Graphics
+	filename ../images/stijgh_top_basis_contractie_aniso.png
+	width 60text%
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:phi-topbasis-aniso"
+
+\end_inset
+
+Stijghoogte langs boven en ondervlak van de anisotrope doorsnede samen met de benadering (vgl.
+ 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "eq:dphi-aniso-x2"
+plural "false"
+caps "false"
+noprefix "false"
+nolink "false"
+
+\end_inset
+
+) De afstand waarover beide blauwe lijnen uiteenlopen is nu 
+\begin_inset Formula $x<4.5D$
+\end_inset
+
+ in plaats van 
+\begin_inset Formula $x<1.5D$
+\end_inset
+
+ zoals in Afb.
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Stijghoogte-langs-top-en-basis"
+plural "false"
+caps "false"
+noprefix "false"
+nolink "false"
+
+\end_inset
+
+.
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+\begin_inset CommandInset label
+LatexCommand label
+name "sec:De-echte-doorsnede"
+
+\end_inset
+
+De echte doorsnede van Ernst
+\end_layout
+
+\begin_layout Standard
+Tenslotte dan de nagerekende echte doorsnede van Ernst.
+ De gestileerde versie met constante pakketdikte en tot punt teruggebrachte sloot maakte het makkelijk om de verschillende deelstromen te toetsen aan de theorie.
+ Numeriek berekende doorsnedes met een raster van 10x10 cm zijn dan ook niet te onderscheiden van de analytische en worden daarom niet getoond.
+ De echte doorsnede van Ernst heeft geen constante dikte;
+ die laat een freatisch vlak zien dat duidelijk de dikte van het watervoerend pakket verandert.
+ Zijn doorsnede heeft bovendien een sloot van niet verwaarloosbare afmetingen.
+ We rekenen hierna de doorsnedes van Ernst numeriek door met afmetingen die overeenkomen met die van de doorsnede die hij heeft getekend (Afb.
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Ernst-fig7"
+plural "false"
+caps "false"
+noprefix "false"
+nolink "false"
+
+\end_inset
+
+).
+ We kiezen de halve perceelbreedte 
+\begin_inset Formula $b=25$
+\end_inset
+
+ m en een dikte van 
+\begin_inset Formula $D=10$
+\end_inset
+
+ m bij de sloot.
+ De sloot bij Ernst is dan bovenin ca.
+ 2 m breed (halve breedte) en onderin ca.
+ 0.6 m.
+ Hij is ook 2 m diep.
+ De doorlatendheid 
+\begin_inset Formula $K=0.025$
+\end_inset
+
+ m/d is zo klein gekozen als nodig was het freatisch vlak op de waterscheiding op ca.
+ 1.6 m boven het slootpeil te laten uitkomen bij een neerslagoverschot 
+\begin_inset Formula $N=0.001$
+\end_inset
+
+ m/d,
+ ongeveer de maximale hoogte in de afbeelding van Ernst.
+ Omwille van de consistentie is deze doorlatendheid ook aangehouden in de doorsneden van Afb.
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Figuur-7-numeriek"
+plural "false"
+caps "false"
+noprefix "false"
+nolink "false"
+
+\end_inset
+
+.
+ Voor de analyse is de numerieke grootte van de doorlatendheid echter zonder betekenis.
+ 
+\end_layout
+
+\begin_layout Standard
+Wanneer we de meer op een werkelijke situatie lijkende doorsnede simuleren,
+ verwachten we dat met name de sloot door zijn afmetingen kleine afwijkingen in het lijnenpatroon gaat opleveren ten opzichte van die in de gestileerde doorsnede.
+ In de gestileerde doorsnede van 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Figuur-7-numeriek"
+plural "false"
+caps "false"
+noprefix "false"
+nolink "false"
+
+\end_inset
+
+/2 met alleen verticale stroming zijn de isohypsen perfect horizontaal;
+ in de meer reële doorsnede zal dat met name in de buurt van de sloot niet meer helemaal het geval zijn.
+ Iets dergelijks verwachten we ook in de doorsnede met de horizontale stroming waarin de isohypsen in de ideale doorsnede zuiver verticale lijnen vormen.
+\end_layout
+
+\begin_layout Standard
+In de nieuwe doorsnede loopt het freatisch vlak van de sloot naar de waterscheiding aanmerkelijk op.
+ Hierdoor is de uniforme onttrekking in Afb.
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Figuur-7-numeriek"
+plural "false"
+caps "false"
+noprefix "false"
+nolink "false"
+
+\end_inset
+
+/2 en de uniforme infiltratie in Afb.
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Figuur-7-numeriek"
+plural "false"
+caps "false"
+noprefix "false"
+nolink "false"
+
+\end_inset
+
+/3 niet meer zuiver uniform.
+ In plaats van 
+\begin_inset Formula $N/D$
+\end_inset
+
+ met 
+\begin_inset Formula $D$
+\end_inset
+
+ constant,
+ gebruiken we nu de dikte 
+\begin_inset Formula $D_{x}$
+\end_inset
+
+ die hoort bij de plek 
+\begin_inset Formula $x$
+\end_inset
+
+ in de doorsnede in overeenstemming met de afstand tussen het freatisch vlak en de basis van het watervoerende pakket.
+ De afstroming 
+\begin_inset Formula $Q=Nb$
+\end_inset
+
+ over linker rand Afb.
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Figuur-7-numeriek"
+plural "false"
+caps "false"
+noprefix "false"
+nolink "false"
+
+\end_inset
+
+/3 wordt nu verdeeld over de hoogte van de deze rand onder de sloot.
+ Dat geldt ook voor de instroom in Afb.
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Figuur-7-numeriek"
+plural "false"
+caps "false"
+noprefix "false"
+nolink "false"
+
+\end_inset
+
+/4.
+ Het rekenraster bestaat uit vierkante cellen van 10x10 cm.
+ Het netwerk reikt tot 2 m boven de sloot.
+ Het verloop van het freatisch vlak is iteratief bepaald door steeds de stijghoogte te berekenen en cellen die boven het freatisch vlak liggen inactief te maken.
+ Het neerslagoverschot wordt in de bovenste actieve cellen ingevoerd.
+ Het niet-actieve deel van het model boven het freatisch vlak wordt niet getoond in Afb.
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Numerieke-doorrekening-reeele-dsn"
+plural "false"
+caps "false"
+noprefix "false"
+nolink "false"
+
+\end_inset
+
+.
+ Het resultaat van de berekeningen is gegeven in Afb.
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Numerieke-doorrekening-reeele-dsn"
+plural "false"
+caps "false"
+noprefix "false"
+nolink "false"
+
+\end_inset
+
+.
+ De afbeeldingen komen overeen met die van gestileerde doorsnede in Afb.
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Figuur-7-numeriek"
+plural "false"
+caps "false"
+noprefix "false"
+nolink "false"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+placement document
+alignment document
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\begin_inset Graphics
+	filename ../images/ErnstFig7_numeriek_freat.png
+	width 80text%
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:Numerieke-doorrekening-reeele-dsn"
+
+\end_inset
+
+Numerieke doorrekening van de doorsnede van Ernst (1962,
+ Afb.7)
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Afb.
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Numerieke-doorrekening-reeele-dsn"
+plural "false"
+caps "false"
+noprefix "false"
+nolink "false"
+
+\end_inset
+
+/2 is het resultaat voor de situatie met alleen verticale stroming,
+ die wordt verkregen door infiltratie van neerslagoverschot 
+\begin_inset Formula $N$
+\end_inset
+
+ in de bovenste actieve cellen en een bijna uniforme onttrekking ter grootte 
+\begin_inset Formula $N/D_{x}$
+\end_inset
+
+.
+ We zien hier dus inderdaad kleine afwijkingen van de horizontale isohypsen nabij de sloot waar Ernst over repte.
+ In Afb.
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Numerieke-doorrekening-reeele-dsn"
+plural "false"
+caps "false"
+noprefix "false"
+nolink "false"
+
+\end_inset
+
+/2 is ook de stippellijn getekend die Ernst in zijn Afb.7b toont.
+ Deze stippellijn is de contour van stijghoogte 0 (het slootpeil).
+ Het is opvallend hoe mooi deze lijn met die van Ernst overeen komt.
+ De stijghoogte boven deze stippellijn is dus negatief ten opzichte van het slootpeil.
+\end_layout
+
+\begin_layout Standard
+Afb.
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Numerieke-doorrekening-reeele-dsn"
+plural "false"
+caps "false"
+noprefix "false"
+nolink "false"
+
+\end_inset
+
+/3 geeft de situatie met alleen de horizontale stroming.
+ Deze wordt verkregen door een ruimtelijke infiltratie over de gehele doorsnede gelijk aan 
+\begin_inset Formula $N/D_{x}$
+\end_inset
+
+,
+ dus gelijk maar tegengesteld aan de onttrekking voor 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Numerieke-doorrekening-reeele-dsn"
+plural "false"
+caps "false"
+noprefix "false"
+nolink "false"
+
+\end_inset
+
+/2,
+ en een uniforme onttrekking 
+\begin_inset Formula $Nb/D_{x=b}$
+\end_inset
+
+ aan de verticaal onder de sloot,
+ waar 
+\begin_inset Formula $x=b$
+\end_inset
+
+.
+ De aanwezigheid van de sloot geeft nu een behoorlijke verstoring van het ideale beeld.
+ Bij Ernst valt dat wat minder op,
+ want hij geeft voor deze situatie juist minder detail.
+ Het is wel duidelijk,
+ dat de sloot niet helemaal compatibel te maken is met zuiver horizontale en verticale stroming,
+ tenzij de sloot wordt teruggebracht tot een punt die verder niets doet.
+\end_layout
+
+\begin_layout Standard
+Afb.
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Numerieke-doorrekening-reeele-dsn"
+plural "false"
+caps "false"
+noprefix "false"
+nolink "false"
+
+\end_inset
+
+/4 is de superpositie van Afb.
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Numerieke-doorrekening-reeele-dsn"
+plural "false"
+caps "false"
+noprefix "false"
+nolink "false"
+
+\end_inset
+
+/2 en Afb.
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Numerieke-doorrekening-reeele-dsn"
+plural "false"
+caps "false"
+noprefix "false"
+nolink "false"
+
+\end_inset
+
+/3.
+ Het lijnenpatroon laat duidelijk zien dat de sloot een verstorende factor is,
+ want een behoorlijke deel van de grondwaterstroom wordt nu kortgesloten via de sloot.
+ Het oorspronkelijke idee van een stroombeeld dat de som is van zuiver horizontale en zuiver verticale stroming is onmogelijk met sloot;
+ de sloot hoort gewoon niet in deze Afbeelding maar is vereist voor een valide superpositie.
+\end_layout
+
+\begin_layout Standard
+Afb.
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Numerieke-doorrekening-reeele-dsn"
+plural "false"
+caps "false"
+noprefix "false"
+nolink "false"
+
+\end_inset
+
+/5 ontstaat door de uniforme onttrekking aan de verticale lijn onder e sloot in Afb.
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Numerieke-doorrekening-reeele-dsn"
+plural "false"
+caps "false"
+noprefix "false"
+nolink "false"
+
+\end_inset
+
+/2 en deze in Afb.
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Numerieke-doorrekening-reeele-dsn"
+plural "false"
+caps "false"
+noprefix "false"
+nolink "false"
+
+\end_inset
+
+/3 onder te sloot nu te infiltreren.
+ Dit geïnfiltreerde water wordt dan automatisch via de sloot afgevoerd,
+ zoals goed te zien is aan het plaatje.
+ Afwijkingen door de hier ruimtelijk aanwezige sloot zijn er ook wel,
+ maar zijn aan dit plaatje op het oog niet goed te zien.
+ Het is gewoon een mooi plaatje,
+ precies zoals je het zou verwachten.
+\end_layout
+
+\begin_layout Standard
+Door de stromingssituaties van Afb.
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Numerieke-doorrekening-reeele-dsn"
+plural "false"
+caps "false"
+noprefix "false"
+nolink "false"
+
+\end_inset
+
+/2,
+ 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Numerieke-doorrekening-reeele-dsn"
+plural "false"
+caps "false"
+noprefix "false"
+nolink "false"
+
+\end_inset
+
+/3 en 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Numerieke-doorrekening-reeele-dsn"
+plural "false"
+caps "false"
+noprefix "false"
+nolink "false"
+
+\end_inset
+
+/5 bij elkaar op te tellen ontstaat het samengestelde stroombeeld van 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Numerieke-doorrekening-reeele-dsn"
+plural "false"
+caps "false"
+noprefix "false"
+nolink "false"
+
+\end_inset
+
+/6 (het oorspronkelijke plaatje),
+ dat geheel consistent is met enerzijds de stromingsrandvoorwaarden en anderzijds de sloot met gegeven stijghoogte.
+ De waterscheiding,
+ de basis en de verticaal onder de sloot vormen een enkele stroomlijn.
+ De flux die over het freatisch vlak binnenkomt is gelijk aan 
+\begin_inset Formula $N$
+\end_inset
+
+ en alle stroomlijnen verdwijnen loodrecht op de slootwand in de sloot.
+\end_layout
+
+\begin_layout Standard
+Net als voor de geïdealiseerde doorsnede kan de opbouw van de stijghoogte langs het boven- en ondervlak van de doorsnede worden getekend (Afb.
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Stijghoogte-aan-de-top-en-basis-reele-dsn"
+plural "false"
+caps "false"
+noprefix "false"
+nolink "false"
+
+\end_inset
+
+).
+ Alle lijnen zijn nu ten opzichte van het slootpeil.
+ De blauwe lijnen geven de situatie volgens Afb.
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Numerieke-doorrekening-reeele-dsn"
+plural "false"
+caps "false"
+noprefix "false"
+nolink "false"
+
+\end_inset
+
+/4,
+ in essentie Dupuit,
+ waarbij de stijghoogte aan de basis 
+\begin_inset Formula $ND/\left(2k\right)$
+\end_inset
+
+ lager is dan het freatisch vlak.
+ De rode lijnen geven de stijghoogte aan de top en de basis weer door uitsluitend de contractiestroming in afb.
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Numerieke-doorrekening-reeele-dsn"
+plural "false"
+caps "false"
+noprefix "false"
+nolink "false"
+
+\end_inset
+
+/5.
+ De groene lijnen Afb.
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Numerieke-doorrekening-reeele-dsn"
+plural "false"
+caps "false"
+noprefix "false"
+nolink "false"
+
+\end_inset
+
+/6 zijn de superpositie van Afb.
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Numerieke-doorrekening-reeele-dsn"
+plural "false"
+caps "false"
+noprefix "false"
+nolink "false"
+
+\end_inset
+
+/2,
+ /3,
+ /5 of van Afb.
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Numerieke-doorrekening-reeele-dsn"
+plural "false"
+caps "false"
+noprefix "false"
+nolink "false"
+
+\end_inset
+
+/4 en /5.
+ De blauwe plus de rode lijnen geven de groene.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+placement document
+alignment document
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\begin_inset Graphics
+	filename ../images/ErnstNumeriekPhimaaiveld_456_freat.png
+	width 60text%
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:Stijghoogte-aan-de-top-en-basis-reele-dsn"
+
+\end_inset
+
+Stijghoogte aan de top en basis van het watervoerende pakket van Afb.
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Numerieke-doorrekening-reeele-dsn"
+plural "false"
+caps "false"
+noprefix "false"
+nolink "false"
+
+\end_inset
+
+ voor stroming met en zonder contractie van de stroomlijnen en de stroming door de contractie zelf.
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Laten we in deze reële doorsnede de radiale weerstand in Afb.
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Stijghoogte-aan-de-top-en-basis-reele-dsn"
+plural "false"
+caps "false"
+noprefix "false"
+nolink "false"
+
+\end_inset
+
+ bepalen en vergelijken met die in geïdealiseerde doorsnede in Afb.
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Stijghoogte-langs-top-en-basis"
+plural "false"
+caps "false"
+noprefix "false"
+nolink "false"
+
+\end_inset
+
+ voor een radius gelijk aan de halve slootbreedte.
+ Het stijghoogteverlies door de radiale weerstand voor de reële doorsnede van Ernst is af te lezen in Afb.
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Stijghoogte-aan-de-top-en-basis-reele-dsn"
+plural "false"
+caps "false"
+noprefix "false"
+nolink "false"
+
+\end_inset
+
+.
+ Het is de hoogte van de rode lijnen op grotere afstand van de sloot.
+ Hier dus ca.
+ 54 cm.
+ De sloot heeft een halve breedte van 
+\begin_inset Formula $r=2$
+\end_inset
+
+ m.
+ Kijken we in Afb.
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Stijghoogte-langs-top-en-basis"
+plural "false"
+caps "false"
+noprefix "false"
+nolink "false"
+
+\end_inset
+
+,
+ de geïdealiseerde doorsnede,
+ naar het stijghoogteverval door radiale weerstand voor 
+\begin_inset Formula $r=2$
+\end_inset
+
+m,
+ dan blijkt dat 47cm te zijn (blauwe bol in Afb.
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Stijghoogte-langs-top-en-basis"
+plural "false"
+caps "false"
+noprefix "false"
+nolink "false"
+
+\end_inset
+
+).
+ De benaderende formule voor 
+\begin_inset Formula $r=2$
+\end_inset
+
+ m geeft 30 cm (rode bol in Afb.
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Stijghoogte-langs-top-en-basis"
+plural "false"
+caps "false"
+noprefix "false"
+nolink "false"
+
+\end_inset
+
+) dus duidelijk minder.
+ We zien hieruit dat de nauwkeurigheid van de benadering (
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "eq:dphi-aniso-x2"
+plural "false"
+caps "false"
+noprefix "false"
+nolink "false"
+
+\end_inset
+
+),
+ zoals eerder gezegd,
+ gering is zodra de radius van de sloot groter is dan ca.
+ 
+\begin_inset Formula $0.1D$
+\end_inset
+
+.
+ Dat is wellicht onverwacht,
+ want we gebruiken allemaal deze benadering,
+ maar zijn geringe nauwkeurigheid volgt eenduidig uit de analyse en is nu ook geïllustreerd aan de numerieke berekeningen.
+ Is er dan een betere formule?
+ Ja,
+ namelijk gewoon de analytische formule voor de stijghoogte door de contractiestroom langs het bovenvlak:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{equation}
+\boxed{\Delta\phi=\frac{2Q}{\pi k}\,\ln\left(2\sinh\left(\frac{\pi x}{2D}\right)\right)-\frac{Q}{D}x}\label{eq:dphi-sloot-r}
+\end{equation}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+w & =\left|\frac{\Delta\phi}{Q}\right|
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+De absoluut-haken zijn omdat 
+\begin_inset Formula $\phi<0$
+\end_inset
+
+ en dus 
+\begin_inset Formula $w<0$
+\end_inset
+
+ voor 
+\begin_inset Formula $Q>0$
+\end_inset
+
+ (onttrekking),
+ terwijl we liever een positieve waarde voor de weerstand hebben.
+ Vergelijking 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "eq:dphi-sloot-r"
+plural "false"
+caps "false"
+noprefix "false"
+nolink "false"
+
+\end_inset
+
+ is veel beter dan vergelijking 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "eq:dphi-aniso-x2"
+plural "false"
+caps "false"
+noprefix "false"
+nolink "false"
+
+\end_inset
+
+ voor sloten met een wat grotere radius.
+\end_layout
+
+\begin_layout Section
+De hoogte 
+\begin_inset Formula $D^{*}$
+\end_inset
+
+ in Afb.7b van Ernst (1962),
+ wat is dat precies?
+\end_layout
+
+\begin_layout Standard
+Ernst heeft in zijn afb.7b (alleen verticale stroming) een bijna horizontale stippellijn getekend,
+ die we hier nu ook hebben gereproduceerd als de lijn met dezelfde stijghoogte als de sloot.
+ De overeenkomst is heel mooi.
+ Ernst zegt over deze stippellijn dat hij ongeveer horizontaal verloopt,
+ ongeveer gelijk met de hoogte van de onderzijde van de sloot en tekent hem ook zo.
+ Hij blijkt ietsjes hoger te liggen,
+ maar het is toch frappant hoe nauwkeurig Ernst ook hier was,
+ vermoedelijk zonder computer.
+ Hij zegt over deze lijn:
+ 
+\begin_inset Quotes pld
+\end_inset
+
+De figuur toont aan dat dat het betrokken stijghoogteverschil alleen van betekenis kan zijn bij een slecht doorlatende bovenlaag
+\begin_inset Quotes prd
+\end_inset
+
+.Wat wilde Ernst nu eigenlijk zeggen?
+ Hij vergelijkt het freatisch vlak behorend bij Afb.1a met het freatisch vlak behorend bij de stroming in Afb.1b.
+ Twee situaties die feitelijk weinig met elkaar te maken hebben.
+ De punten boven de stippellijn in Afb.1b hebben een een lagere stijghoogte dan de sloot,
+ want het freatisch vlak ligt te hoog voor de stromingssituatie in Afb.1b.
+ De vraag intrigeert,
+ omdat deze zelfde 
+\begin_inset Formula $D^{*}$
+\end_inset
+
+ terugkomt in Ernst's formule 33 die met de eenzijdige aanstroming in dit artikel en 
+\begin_inset Formula $b=L/2$
+\end_inset
+
+ overgaat in:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{equation}
+\frac{\Delta h}{N}=\frac{D^{*}}{k}+\frac{b^{2}}{2kD}+bw\label{eq:Ernst-33}
+\end{equation}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Hierin is 
+\begin_inset Formula $\Delta h$
+\end_inset
+
+ het verschil tussen het hoogste punt van het freatisch vlak en het slootpeil.
+ 
+\begin_inset Formula $w$
+\end_inset
+
+ is de slootweerstand [d/m] voor eenzijdige toestroming met halve perceelbreedte 
+\begin_inset Formula $b$
+\end_inset
+
+.
+ Ernst schrijft verder:
+ 
+\begin_inset Quotes pld
+\end_inset
+
+Daar voor 
+\begin_inset Formula $D^{*}$
+\end_inset
+
+ vrijwel altijd geldt dat 
+\begin_inset Formula $D^{*}/L\ll L/8D$
+\end_inset
+
+,
+ mag bij een homogeen doorlatende laag de eerste term rechts van het gelijkteken ...
+ worden verwaarloosd.
+\begin_inset Quotes prd
+\end_inset
+
+ We hebben het dus het stijghoogteverval over de dikte van de maximale opbolling ten opzichte van de maximale opbolling zelf:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\frac{ND^{*}}{k}\ll\frac{Nb^{2}}{2kD}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Voor zover ik kan zien is 
+\begin_inset Formula $D^{*}/k$
+\end_inset
+
+ de verticale weerstand over het traject boven het slootpeil dat van belang kan worden wanneer de opbolling groot is,
+ dus bij kleine 
+\begin_inset Formula $k$
+\end_inset
+
+,
+ wat wordt verwaarloosd door met een constante dikte te rekenen zoals in (
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "eq:Ernst-33"
+plural "false"
+caps "false"
+noprefix "false"
+nolink "false"
+
+\end_inset
+
+);
+ het is de verticale weerstand binnen de opbolling zelf.
+ In de numerieke doorsnede is deze correctie niet nodig.
+ En zoals Ernst zelf schreef,
+ in de meeste gevallen verwaarloosbaar.
+\end_layout
+
+\begin_layout Standard
+\begin_inset CommandInset line
+LatexCommand rule
+offset "0.5ex"
+width "100col%"
+height "1pt"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+Appendix contractie van stroomlijnen
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+placement document
+alignment document
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\begin_inset Graphics
+	filename ../images/radial_flow_deriv.png
+	width 60text%
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:Complexe-potentiaal-contractie"
+
+\end_inset
+
+Complexe potentiaal voor onttrekking in 
+\begin_inset Formula $\zeta=0$
+\end_inset
+
+ en met uniforme tegenstroom 
+\begin_inset Formula $-Q\zeta/D$
+\end_inset
+
+ erop gesuperponeerd.
+ 
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Voor het afleiden van de weerstand door contractie van stroomlijnen middels een conforme afbeelding leggen we de onttrekking gemakshalve op 
+\begin_inset Formula $\zeta=0$
+\end_inset
+
+.
+ Het stagnatiepunt ligt dan op 
+\begin_inset Formula $\zeta=-iD$
+\end_inset
+
+.
+ De aquifer is dicht op 
+\begin_inset Formula $x=0$
+\end_inset
+
+ en loopt oneindig ver door voor 
+\begin_inset Formula $x>0$
+\end_inset
+
+.
+ We hebben onttrekking 
+\begin_inset Formula $Q$
+\end_inset
+
+ in 
+\begin_inset Formula $\zeta=0$
+\end_inset
+
+.
+ De complexe potentiaal voor deze situatie is te bepalen met een standaard conforme transformatie.
+ Vermenigvuldig de aquifer-coördinaten 
+\begin_inset Formula $\zeta$
+\end_inset
+
+ met het complexe getal 
+\begin_inset Formula $i$
+\end_inset
+
+ om hem om de oorsprong over 
+\begin_inset Formula $\pi/2$
+\end_inset
+
+ tegen de klok in te draaien.
+ Schaal met 
+\begin_inset Formula $(\pi/2)/D$
+\end_inset
+
+ om het stagnatiepunt op 
+\begin_inset Formula $\pi/2$
+\end_inset
+
+ te leggen.
+ Neem de 
+\begin_inset Formula $\sin$
+\end_inset
+
+ om de verticale aquifer-bodem naar rechts op de reële as te klappen zodat de aquifer nu wordt afgebeeld op het vlak 
+\begin_inset Formula $\eta>0,\nu>0$
+\end_inset
+
+.
+ De stijghoogtelijnen zijn nu kwart cirkels geworden en de stroomlijnen rechte lijnen vanuit de oorsprong.
+ Neem de logaritme zodat de isohypsen nu verticale lijnen worden en de stroomlijnen horizontale tussen 0 en 
+\begin_inset Formula $\pi/2$
+\end_inset
+
+.
+ Deel door 
+\begin_inset Formula $\pi/2$
+\end_inset
+
+ en vermenigvuldig met 
+\begin_inset Formula $Q$
+\end_inset
+
+ zodat de stroomlijnen nu variëren tussen 0 en 
+\begin_inset Formula $iQ$
+\end_inset
+
+.
+ We hebben hiermee de complexe potentiaal verkregen (Afb.
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Complexe-potentiaal-contractie"
+plural "false"
+caps "false"
+noprefix "false"
+nolink "false"
+
+\end_inset
+
+ boven):
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\Omega(\zeta)=\frac{2Q}{\pi}\ln\left(\sin\left(i\frac{\pi\zeta}{2D}\right)\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Tel hierbij de uniforme horizontale tegen stroom 
+\begin_inset Formula $-Q$
+\end_inset
+
+ bij o,p zodat de stroming op 
+\begin_inset Formula $x\to\infty$
+\end_inset
+
+ nul wordt en precies deze tegenstroom 
+\begin_inset Formula $-Q$
+\end_inset
+
+ op 
+\begin_inset Formula $x=0$
+\end_inset
+
+ aanwezig is
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\Omega(\zeta)=\frac{2Q}{\pi}\ln\left(\sin\left(i\frac{\pi\zeta}{2D}\right)\right)-\frac{Q}{D}z
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Tel hierbij de constante 
+\begin_inset Formula $2Q/\pi\ln2$
+\end_inset
+
+ op,
+ om de potentiaal op 
+\begin_inset Formula $x\to\infty$
+\end_inset
+
+ nul te maken
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\Omega(\zeta)=\frac{2Q}{\pi}\ln\left(\sin\left(i\frac{\pi\zeta}{2D}\right)\right)-\frac{Q}{D}\zeta+\frac{2Q}{\pi}\ln2
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+ofwel (Afb.
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Complexe-potentiaal-contractie"
+plural "false"
+caps "false"
+noprefix "false"
+nolink "false"
+
+\end_inset
+
+ onder):
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{equation}
+\Omega\left(\zeta\right)=\frac{2Q}{\pi}\ln\left(2\sin\left(i\frac{\pi\zeta}{2D}\right)\right)-\frac{Q}{D}\zeta\label{eq:dOmega}
+\end{equation}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Een benadering voor de radiale weerstand krijgen we door de limit te nemen voor 
+\begin_inset Formula $\zeta\to0$
+\end_inset
+
+ met 
+\begin_inset Formula $\sin iz=i\sinh z\approx iz$
+\end_inset
+
+ en verder 
+\begin_inset Formula $\zeta=re^{i\theta}$
+\end_inset
+
+ vereenvoudigt (
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "eq:dOmega"
+plural "false"
+caps "false"
+noprefix "false"
+nolink "false"
+
+\end_inset
+
+) tot
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+\lim_{\zeta\to0}\Omega\left(\zeta\right) & =\frac{2Q}{\pi}\ln\left(i\frac{\pi r}{D}e^{i\theta}\right)\\
+ & =\frac{2Q}{\pi}\left(\ln i+\ln\left(\frac{\pi r}{D}\right)+i\theta\right)
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+En met 
+\begin_inset Formula $\ln i=\ln e^{i\frac{\pi}{2}}=\frac{\pi}{2}$
+\end_inset
+
+ volgt
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\lim_{\zeta\to0}\Omega\left(\zeta\right)=\frac{2Q}{\pi}\ln\left(\frac{\pi r}{D}\right)+i\left(\frac{\pi}{2}+\theta\right),\;\text{met}\;\frac{\pi}{2}\le\theta\le0
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Het extra stijghoogteverval 
+\begin_inset Formula $\Delta\phi=\Delta\Phi/k$
+\end_inset
+
+ door radiale weerstand voor kleine 
+\begin_inset Formula $r$
+\end_inset
+
+ is dan
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\Delta\phi=\frac{2Q}{\pi k}\ln\left(\frac{\pi r}{D}\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Deze stijghoogteverandering is negatief wanneer 
+\begin_inset Formula $Q$
+\end_inset
+
+ positief is,
+ als onttrekking.
+ In de tekst is aangetoond dat het nauwkeurigheidsbereik beperkt is tot ca.
+ 
+\begin_inset Formula $r<0.1D$
+\end_inset
+
+.
+ Gebruik voor een hoge nauwkeurigheid liever formule 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "eq:dOmega"
+plural "false"
+caps "false"
+noprefix "false"
+nolink "false"
+
+\end_inset
+
+ en vul voor 
+\begin_inset Formula $\zeta$
+\end_inset
+
+ de halve slootbreedte in.
+\end_layout
+
+\begin_layout Bibliography
+\begin_inset CommandInset bibitem
+LatexCommand bibitem
+label "Van Bakek (1996)"
+key "vB96"
+literal "false"
+
+\end_inset
+
+Bakel,
+ J.
+ van (1996) De hydrologische grootheid 'Ernst'.
+ In:
+ Stromingen,
+ vol (2) nr.
+ 2,
+ pag.17-21
+\end_layout
+
+\begin_layout Bibliography
+\begin_inset CommandInset bibitem
+LatexCommand bibitem
+label "Ernst (1962)"
+key "Ernst62"
+literal "false"
+
+\end_inset
+
+Ernst,
+ L.F.
+ (1962) Grondwaterstromingen in de verzadigde zone en hun berekening bij de aanwezigheid van horizontale evenwijdige leidingen.
+ Verslagen van de landbouwkundige onderzoekingen.
+ Pudoc Nr.
+ 67.15,
+ Wageningen.
+ 189p.
+\end_layout
+
+\begin_layout Bibliography
+\begin_inset CommandInset bibitem
+LatexCommand bibitem
+label "De Lange et al. (2025)"
+key "dLea25"
+literal "false"
+
+\end_inset
+
+Lange,
+ W.J.
+ de,
+ J.
+ Van Bakel,
+ P.
+ Torfs,
+ H.,
+ Bootsman,
+ J.
+ Hoogewoud (2026) De interactie tussen grondwater en oppervlaktewater:
+ Valkuilen bij het modelleren van waterlopen.
+ Stromingen,
+ vol.
+ 31,
+ no.4,
+ pag.
+ 5-21
+\end_layout
+
+\begin_layout Bibliography
+\begin_inset CommandInset bibitem
+LatexCommand bibitem
+label "Huisman (1972)"
+key "Huisman72"
+literal "false"
+
+\end_inset
+
+Huisman,
+ L.
+ (1972) Groundwater Recovery.
+ MacMillan,
+ SBN 333 09870 6,
+ Piman Press,
+ Bath.
+ 336.
+\end_layout
+
+\begin_layout Bibliography
+\begin_inset CommandInset bibitem
+LatexCommand bibitem
+label "Verruijt (1970)"
+key "Verruijt70"
+literal "false"
+
+\end_inset
+
+Verrijt,
+ A.
+ (1970) Theory of Groundwater Flow.
+ MacMillan,
+ Pitman Press Bath,
+ 190p.
+\end_layout
+
+\begin_layout Abstract
+Abstract
+\end_layout
+
+\begin_layout Abstract
+This paper presents a non-trivial,
+ quantitative unraveling and back-substitution of the cross section shown in Fig.
+ 7 of the well-known dissertation by Ernst (1962).
+ First,
+ the idealized cross section is analytically decomposed,
+ assuming a constant aquifer thickness and reducing the ditch to a point.
+ Next,
+ the cross section is analysed as originally drawn by Ernst,
+ i.e.
+ with a strongly bulging phreatic surface and realistic ditch dimensions.
+ The differences between the two representations are discussed.
+ Subsequently,
+ the radial resistance caused by a shallow ditch is analytically developed up to the asymptotic approximation presented by both Ernst(1962) and Huisman(1972),
+ while it is also demonstrated that its range of validity is quite limited.
+ An approximation applicable to substantially larger ditch radii is proposed.
+ The treatment is then extended to show how vertical anisotropy must be incorporated into the resistance formula.
+ Finally,
+ attention is given to the dashed line in Ernst’s Fig.
+ 7b and to the interpretation of the somewhat enigmatic quantity 
+\begin_inset Formula $D^{∗}$
+\end_inset
+
+ in Ernst's cross section.
+\end_layout
+
+\end_body
+\end_document
