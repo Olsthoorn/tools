@@ -18,8 +18,8 @@ import scipy.sparse as sp
 import scipy.sparse.linalg as la
 import scipy.special as spec
 import matplotlib.pylab as plt
-import etc
-from fdm.src import mfgrid
+import tools.etc
+from tools.fdm.src import mfgrid
 
 def quivdata(Out, x, y, iz=0):
     """Returns vector data for plotting velocity vectors.
