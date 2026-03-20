@@ -23,8 +23,8 @@ import numpy as np
 from collections import namedtuple
 import pdb
 
-import fdm
-import mfgrid
+from .fdm3 import fdm3
+from . import mfgrid
 
 def AND(*args):
     L = args[0]
@@ -901,27 +901,27 @@ def setupAndRunFDM_model(gridpar, k, hbound):
 
     IBOUND = gr.const(1)
 
-    if not (hW is None):
+    if hW is not None:
         IBOUND[:, 0, :] = -1
         FH[:, 0, :] = hW
-    if not hE is None:
+    if hE is not None:
         IBOUND[:, -1, :] = -1
         FH[:, -1, :] = hE
-    if not hN is None:
+    if hN is not None:
         IBOUND[0, :, :] = -1
         FH[0, :, :] =  hN
-    if not hS is None:
+    if hS is not None:
         IBOUND[-1, :, :] = -1
         FH[-1, :, :] = hS
-    if not hT is None:
+    if hT is not None:
         IBOUND[:, :, 0] = -1
         FH[:, :, 0] = hT
-    if not hB is None:
+    if hB is not None:
         IBOUND[:, :, -1] = -1
         FH[:, :, -1] = hB
 
     # Solve for the heads:
-    Out = fdm.fdm3(gr, (K, K, K), FQ, FH, IBOUND)
+    Out = fdm3(gr, (K, K, K), FQ, FH, IBOUND)
 
     return Out, gr, IBOUND
 

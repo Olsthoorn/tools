@@ -16,6 +16,7 @@ from pathlib import Path
 import types
 import importlib.util
 
+# --- See __all__ at the bottom of this file (exports functions and classes)
 
 # %%
 
@@ -37,6 +38,39 @@ def show_progress(nloops, step=10, bar_length=40):
 
     print(flush=True)  # newline at end
 
+# %%
+def logo(fig, script_name=None):
+    """Put a small logo (filename timestamp) in lower left corner of fig.
+    
+    Parameters
+    ----------
+    fig: figure
+        Figure on which to put the logo
+    script_name: str | None
+        name of the current script (if a notebook,
+        a python file knows its name but a notebook does not)
+        If None parameter NOTEBOOK_NAME is tried.
+        IF that fails, "interactive" is used as a stand-in.
+        
+        You can always use __file__ to get the name of the current .py file.
+    
+    @ TO 2026-03-17
+    """
+    from datetime import datetime
+    
+    if script_name is None:
+        script_name = globals().get("NOTEBOOK_NAME", "interactive")
+  
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")     
+    label = f"{script_name} | {timestamp}"
+    
+    fig.text(0.01, 0.01, label,
+             fontsize=8,
+             color='gray',
+             ha='left',
+             va='bottom',
+             alpha=0.7)
+   
 
 # %% # --- convert decimal years to datetime64 objects with day accuracy
 
@@ -456,8 +490,11 @@ def get_outliers(ds, inner=1.5, outer=3.0):
     else:
         print('No outliers in df.')
 
-
-__all__ =[name for name, obj in globals().items() if isinstance(obj, types.FunctionType)
-           and not name.startswith('_')]
-
+__all__ = [
+    name for name, obj in globals().items()
+    if (
+        isinstance(obj, (types.FunctionType, type))
+        and not name.startswith('_')
+    )
+]
 # %%

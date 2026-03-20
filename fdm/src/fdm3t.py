@@ -26,9 +26,9 @@ from scipy.sparse.linalg import spsolve # to use its short name
 from scipy.interpolate import RegularGridInterpolator
 
 # In Tools folder:
-from analytic.hantush_convolution import Wh
-from fdm.src.mfgrid import Grid
-from etc import newfig, color_cycler
+from ...analytic.hantush_convolution import Wh
+from .mfgrid import Grid
+from ...etc import newfig, color_cycler
 
 # --- Check Hantush's well function outcomes
 # print('Wh(0.001, 0.3)  =', Wh(0.001, 0.3))
@@ -271,7 +271,7 @@ def fdm3t(gr=None, t=None, k=None, c=None, ss=None, fh=None, ghb=None,
                 Phi[it][Ifh] = hfh
                 fh_rhs = (A + sp.diags(dia))[:, Ifh].dot(Phi[it][Ifh])
                 act_it = np.logical_and(active, np.logical_not(isfh))
-                rhs -= fh_rhs.toarray().flatten()
+                rhs -= fh_rhs.flatten()
 
         Phi[it][act_it] = spsolve( (A + sp.diags(dia))[act_it][:,act_it], rhs[act_it])
 

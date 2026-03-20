@@ -15,8 +15,4 @@ Created on Thu Sep 22 00:35:12 2016
 
 @author: Theo
 """
-# Get these in mflab's namespace
-#import .mfgrid
-#import .fdm3t
-#import .fdm3
-#import .mfpath
+from . import src

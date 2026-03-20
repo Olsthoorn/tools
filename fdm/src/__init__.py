@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # Get these in mflab's namespace
-#import .mfgrid
-#import .fdm3t
-#import .fdm3
-#import .mfpath
+from . import mfgrid
+from . import fdm3t
+from . import fdm3
+from . import mfpath

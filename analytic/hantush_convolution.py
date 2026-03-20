@@ -1,21 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #%%
-
-tools = '/Users/Theo/GRWMODELS/python/tools/'
-
-import sys
-import os
-
-if not tools in sys.path:
-    sys.path.insert(0, tools)
-
 import numpy as np
 import matplotlib.pyplot as plt 
 from scipy import signal
 from scipy.integrate import quad
-from etc import newfig
 import pandas as pd
+
+from ..etc import newfig
+
 
 #%%
 def Wh(u, rho):
