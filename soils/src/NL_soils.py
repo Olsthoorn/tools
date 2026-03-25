@@ -17,6 +17,10 @@
 # %%
 import os
 import sys
+
+for p in sys.path:
+    print(p)
+
 from pathlib import Path
 import numpy as np
 import matplotlib.pyplot as plt
@@ -26,10 +30,10 @@ from importlib import reload
 from functools import cached_property
 from scipy.interpolate import PchipInterpolator
 
-import etc
-reload(sys.modules['etc'])
+from tools.etc import etc
+# reload(sys.modules['etc'])
 
-from .soil_base import SoilBase # noqa
+from tools.soils.src.soil_base import SoilBase # noqa
 
 wbook_folder = os.path.join(Path(__file__).resolve().parent.parent, 'data')
 # %% Define soil Van Genughten properties (from Heinen et al (2018) for Dutch soils: Staring Series
@@ -60,16 +64,19 @@ class Soil(SoilBase):
             raise ValueError("Missing positional argument 'soil_code'")
 
         # Additional properties
+        pF_wp = 4.2 # pF of the wilting point
+        
         self.props['el'] = 0.5
         self.props['m'] = 1 - 1 / self.props['n']
+        self.props['S_wp'] = self.S_fr_psi(10 ** pF_wp)
         self.code = soil_code
+
 
         # Set HBW boolean to True of False to choose conductiviy model to be
         # either according to Heinen, Bakker and Wösten (2018) or
         # according to Vn Genughten and Mualem (1980) using "el" l=0.5.
         # Because we obtain all parameters from HBW, HBW = True is default.
         self.HBW = HBW
-        self.Slim = 1e-12
 
 
     @classmethod
@@ -141,10 +148,10 @@ class Soil(SoilBase):
         return -(1 / (alpha * n * m)) *(S ** (-1/m) - 1) ** (-1 + 1/n) * S ** (-1 - 1/m)
 
     # Van Genughten and Mualem
-    def K_VGM_fr_S(self, S: float | np.ndarray, S_limit: float = 1e-12)-> float | np.ndarray:
+    def K_VGM_fr_S(self, S: float | np.ndarray)-> float | np.ndarray:
         """Return K(S)"""
         Ks, el, m = self.props['Ks'], self.props['el'], self.props['m']
-        S = np.atleast_1d(S).clip(S_limit, 1.0)
+        S = np.atleast_1d(S).clip(self.props['S_wp'], 1.0)
 
         B = 1 - ((1 - S) ** (1/m)) ** m
         K = Ks * S ** el * B ** 2
@@ -153,7 +160,7 @@ class Soil(SoilBase):
     def dK_VGM_dS(self, S: float | np.ndarray)-> float | np.ndarray:
         """Return dK/dS"""
         Ks, el, m = self.props['Ks'], self.props['el'], self.props['m']
-        S = np.atleast_1d(S).clip(self.Slim, 1.0)
+        S = np.atleast_1d(S).clip(self.props['S_wp'], 1.0)
 
         B = 1 - ((1 - S) ** (1/m)) ** m
         dBdS = (1 - S ** (1 / m)) ** (m - 1) * S ** (-1 + 1 / m)
@@ -165,14 +172,19 @@ class Soil(SoilBase):
         Ks = self.props['Ks']
         n, m, lambda_ =self.props['n'], self.props['m'], self.props['lambda']
 
-        S = np.atleast_1d(S).clip(self.Slim, 1.0)
-        K = Ks * S ** (lambda_ + 2) * (S ** (-1) - (S ** (-1 / m) - 1) ** (1 - 1 / n)) ** 2
+        S = np.atleast_1d(S).clip(self.props['S_wp'], 1.0)
+        # --- Stable range for computation
+        psi_wp = 10 ** 4.2
+        S_wp = self.S_fr_psi(psi_wp)
+        S[S < S_wp] = S_wp
+        
+        K = Ks * S ** (lambda_ + 2)  * (S ** (-1) - (S ** (-1/m) - 1) ** m) ** 2
         return K.item() if K.size == 1 else K
 
     def dK_HBW_dS(self, S: float | np.ndarray)-> float | np.ndarray:
         """Return K(S) according to Heinen, Bakker and Wösten (2018)"""
         Ks, n, m, lambda_ = self.props['Ks'], self.props['n'], self.props['m'], self.props['lambda']
-        S = np.atleast_1d(S).clip(self.Slim, 1.0 - 1e-16)
+        S = np.atleast_1d(S).clip(self.props['S_wp'], 1.0 - 1e-16)
 
         A = S ** (-1) - (S ** (-1/m) - 1) ** (1-1/n)
         dAdS = -S ** (-2) - (1 - 1/n) * (S ** (-1/m) - 1) ** (-1/n) * (-1/m) * S ** (-1-1/m)
@@ -192,7 +204,7 @@ class Soil(SoilBase):
         else:
             K_fr_S_exact = self.K_VGM_fr_S
 
-        S = np.linspace(self.Slim, 1, 100)
+        S = np.linspace(self.props['S_wp'], 1, 100)
 
         KfrS = K_fr_S_exact(S=S)
 
@@ -214,10 +226,11 @@ class Soil(SoilBase):
             dK_dS_exact = self.dK_HBW_dS
         else:
             dK_dS_exact = self.dK_VGM_dS
+            
 
-        S = np.linspace(self.Slim, 1, 100)
+        S = np.linspace(self.props['S_wp'], 1, 100)
 
-        dKdS = dK_dS_exact(S)
+        dKdS = dK_dS_exact(S).clip(1e-100)
 
         ln_dKdS = PchipInterpolator(S, np.log(dKdS))
 
@@ -239,30 +252,30 @@ def _smoke_test():
     soil_code = 'O01'
     soil = Soil(soil_code)
 
-    S = np.linspace(0.1, 1.0, 5)
+    S = np.linspace(soil.props['S_wp'], 1.0, 5)
     K = soil.K_fr_S(S)
     print("K(S) =", K)
 
     # Test the interpolator
-    K_test = [2.0, 5.0, 9.0]
+    K_test = np.array([2.0, 5.0, 9.0])
     print("S(K) =", soil.S_fr_K(K_test))
 
 # %%
 if __name__ == "__main__":
-    # wbook = os.path.join('../data', 'NL_VG_soilprops.xlsx')
+    # wbook = os.path.join(wbook_folder, 'NL_VG_soilprops.xlsx')
     # Soil.load_soils(wbook) # load once
 
     _smoke_test()
 
 
-    # %% SGet the soil data from the Excel workbook
-    wbook = os.path.join('../data', 'NL_VG_soilprops.xlsx')
+    # %% --- SGet the soil data from the Excel workbook
+    wbook = os.path.join(wbook_folder, 'NL_VG_soilprops.xlsx')
     Soil.load_soils(wbook) # load once
     Soil.pretty_data()
     sand_b = Soil("O01")
     sand_o = Soil("B01")
 
-    # %% Show the parametr values parameters
+    # %% --- Show the parametr values parameters
 
     for BO in ['Boverngronden', 'Ondergronden']:
         title = f'K(theta) bij Veldcapaciteit van {BO} van de Staringreeks'
@@ -294,13 +307,13 @@ if __name__ == "__main__":
         plt.tight_layout()
 
 
-    # %% Get soil_codes of sands of "Benedengronden"
+    # %% --- Get soil_codes of sands of "Benedengronden"
 
     soil_codes = Soil.data.index[Soil.data.loc[:, 'Hoofdsoort'] == 'Zand']
     soil_codes = [code for code in soil_codes if code.startswith('B')]
 
 
-    # %% psi(theta)
+    # %% --- psi(theta)
 
     title = r"$\psi$ [cm] as a function of $\theta$, $\psi(\theta)$, with field capacity and wilting point"
     ax=etc.newfig(title, r'$\theta$', r'pF = log$_{10}(\psi$ [cm])', yscale='linear')
@@ -332,7 +345,7 @@ if __name__ == "__main__":
     ax.legend(title="Legenda voor sands Bovengronden")
 
 
-    # %% Show dtheta/dpsi for all sands.
+    # %% --- Show dtheta/dpsi for all sands.
 
     title = r"$\psi(\theta)$ and $\psi(\theta(\psi))$ for US soils using Van Genughten relations"
     ax = etc.newfig(title, r'$\psi$', r'-d$\theta$/d$\psi$ [cm]',
@@ -352,7 +365,7 @@ if __name__ == "__main__":
     ax.legend(loc='upper right')
 
 
-    # %% Show K(theta)
+    # %% --- Show K(theta)
 
     psi = np.logspace(0, 4.2)
 
@@ -382,7 +395,7 @@ if __name__ == "__main__":
         ax.legend(loc='lower right')
 
 
-    # %% Show the throttle function to throttle ET depending on theta
+    # %% --- Show the throttle function to throttle ET depending on theta
 
     soil = sand_o
 
@@ -406,7 +419,7 @@ if __name__ == "__main__":
 
     # Add the responsen
 
-    # %% Compute the Impulse Response
+    # %% --- Compute the Impulse Response
 
     q_avg = .2 # cm/d
     t = np.linspace(0, 750, 751)[1:]
@@ -427,7 +440,7 @@ if __name__ == "__main__":
     ax.legend(loc='best')
     # plt.show()
 
-    # %% Compute the analytic Step Response
+    # %% --- Compute the analytic Step Response
 
     q_avg = .2 # cm/d
     t = np.linspace(0, 750, 751)[1:]
@@ -449,7 +462,7 @@ if __name__ == "__main__":
     ax.legend(loc='best')
     # plt.show()
 
-    # %% Compute the Block Response
+    # %% --- Compute the Block Response
 
     q_avg = 0.2 # cm/d
     t = np.linspace(0, 750, 751)[1:]
@@ -473,7 +486,7 @@ if __name__ == "__main__":
     ax.legend(loc='best')
     # plt.show()
 
-    # %% Show ratio  dK(theta)/dtheta / K(theta)
+    # %% --- Show ratio  dK(theta)/dtheta / K(theta)
 
     psi = np.logspace(0, 4.2)
 
@@ -494,14 +507,15 @@ if __name__ == "__main__":
     ax.legend()
 
 
-    # %% Show theta_fr_V(v)
+    # %% --- Show theta_fr_V(v)
 
     # The distance travelled from the release time of particles is their speed, which is
     # always constant, in fact even at a sharp front, but that it hold for the point that
     # at time t has just reached the shock front.
 
-    dtype = np.dtype([('t', '<f8'), ('tst', '<f8'), ('z', '<f8'), ('theta', '<f8'), ('v', '<f8')])
+    dtype = np.dtype([('t', '<f8'), ('t_start', '<f8'), ('z', '<f8'), ('theta', '<f8'), ('v', '<f8')])
 
+    # --- Profile is a recarray showing time t_start, z, theta, v
     N = 20
     profile = np.zeros(N, dtype=dtype).copy()
     prf = profile
@@ -510,29 +524,29 @@ if __name__ == "__main__":
     dz = np.linspace(dzmin, dzmax, 20)
 
     profile['z'] = Zmax * np.cumsum(dz) / np.sum(dz)
-    profile['tst']= np.linspace(0, 101, 20)
-    profile['theta'] = soil.theta_fr_psi(300)
+    profile['t_start']= np.linspace(0, 101, 20)
+    profile['theta'] = soil.theta_fr_psi(300) # --- psi = 300 is about field capacity
     profile['v'] = soil.K_fr_theta(profile['theta'])
 
     v_avg = np.zeros(N)
 
     times = np.linspace(0, 100, 101)
 
-    ax = etc.newfig("Updating thetas", "z [m]", "theta [-]")
+    ax = etc.newfig("Updating thetas", "z [cm]", "theta [-]")
 
     for t, dt in zip(times[1:], np.diff(times)):
-        mask = t > prf['tst']
+        mask = t > prf['t_start']
         if np.all(mask) is False:
             continue
 
-        v_avg[mask] = prf['z'][mask] / (t - prf['tst'][mask])
+        v_avg[mask] = prf['z'][mask] / (t - prf['t_start'][mask])
         prf['theta'][mask] = soil.theta_fr_V(v_avg[mask])
         prf['t'] = t
         ax.plot(prf['z'], prf['theta'], label=f"t={t:.3f} d")
 
         prf['z'] += prf['v'] * dt
 
-        ax.plot(prf['z'], prf['theta'], label=f"t={t}")
+        ax.plot(prf['z'][mask], prf['theta'][mask], label=f"t={t}")
     ax.legend()
 
     def f(frame, args=(times, profile)):

@@ -23,12 +23,12 @@ from itertools import cycle
 from importlib import reload
 from pathlib import Path
 
-import etc
-reload(sys.modules['etc'])
+from tools.etc import etc
 
-from .soil_base import SoilBase  #noqa
+from tools.soils.src.soil_base import SoilBase, scalar_aware  #noqa
 
 wbook_folder = os.path.join(Path(__file__).resolve().parent.parent, 'data')
+
 
 # %% Define soil properties (from Charbeneau (2000), yet without their uncertainties.
 class Soil(SoilBase):
@@ -52,6 +52,8 @@ class Soil(SoilBase):
         # Any additional self.props parameters go here
         # self.props['el'] = 0.5
         # ...
+        pF_wp = 4.2 # Wilting point
+        self.props['S_wp'] = self.S_fr_psi(10 ** pF_wp)
         self.code = soil_code
 
 
@@ -104,32 +106,42 @@ class Soil(SoilBase):
                 f"Missing in DataFrame: {missing_in_df}, Extra in DataFrame: {extra_in_df}"
             )
 
+    @scalar_aware
     def S_fr_psi(self, psi: float | np.ndarray)-> float | np.ndarray:
         """Return S(psi)"""
         psi_b, lambda_ = self.props['psi_b'], self.props['lambda']
         return (psi_b / psi) ** lambda_
 
+    @scalar_aware
     def psi_fr_S(self, S: float | np.ndarray)-> float | np.ndarray:
             """Return psi(S)"""
+            S = np.clip(S, self.props['S_wp'], None)
             return self.props['psi_b'] * S ** (-1 / self.props['lambda'])
 
+    @scalar_aware
     def dS_dpsi(self, psi: float | np.ndarray)-> np.ndarray:
         """Return dS_dpsi"""
         lambda_, psi_b= self.props['lambda'], self.props['psi_b']
         return - lambda_ / psi_b * (psi / psi_b) ** (-1 -lambda_)
 
+    @scalar_aware
     def dpsi_dS(self, S: float | np.ndarray)-> np.ndarray:
         """dpsi/dS"""
+        S = np.clip(S, self.props['S_wp'], None)
         psi_b, lambda_ = self.props['psi_b'], self.props['lambda']
-        return -psi_b / lambda_ * S ** (-1 - 1 /lambda_)
+        return -psi_b / lambda_ * S ** (-1 - 1 /lambda_)        
 
+    @scalar_aware
     def K_fr_S(self, S: float | np.ndarray)-> float | np.ndarray:
         """Return K(S)"""
+        S = np.clip(S, self.props['S_wp'], None)
         Ks, lambda_ = self.props['Ks'], self.props['lambda']
         return Ks * S ** (3 + 2  / lambda_)
-
+      
+    @scalar_aware
     def dK_dS(self, S: float | np.ndarray)-> float | np.ndarray:
         """Return dK/dS"""
+        S = np.clip(S, self.props['S_wp'], None)
         epsilon = 3 + 2  / self.props['lambda']
         return self.props['Ks'] * epsilon * S ** (epsilon - 1)
 

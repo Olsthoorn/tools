@@ -1,0 +1,1521 @@
+#LyX 2.4 created this file. For more info see https://www.lyx.org/
+\lyxformat 620
+\begin_document
+\begin_header
+\save_transient_properties true
+\origin unavailable
+\textclass article
+\begin_preamble
+%\usepackage{epstopdf} % to include .eps graphics files with pdfLaTeX
+\usepackage{flafter}   % Don't place floats before their definition
+%\usepackage{topcapt}  % Define \topcation for placing captions above tables (not in gwTeX)
+
+\usepackage{xurl}      % better URL setting, uses old url package
+
+\usepackage{amsmath}
+
+\DeclareMathOperator{\erfc}{erfc}
+\DeclareMathOperator{\erf}{erf}
+\DeclareMathOperator{\W}{W}
+
+
+\usepackage{xcolor}
+\definecolor{darkblue}{rgb}{0,0,0.4}
+\usepackage[]{hyperref} % Generates all cross references
+\hypersetup{            % Setting options for hyperref package
+	breaklinks=true,    % break line with long hyperlinks
+	colorlinks=true,    % coloured links
+	linkcolor=blue,
+	filecolor=magenta,
+	urlcolor=darkblue,
+	citecolor=blue,
+	backref=page
+} 
+
+\usepackage{memhfixc}  % remove conflict between the memoir class & hyperref
+\usepackage{pdfsync}   % enable tex source and pdf output syncronicity
+
+\usepackage{memhfixc}  % remove conflict between the memoir class & hyperref
+\usepackage{pdfsync}   % enable tex source and pdf output syncronicity
+
+\usepackage{alltt}
+
+% \usepackage{listings}
+% \usepackage{xcolor}
+
+% \lstdefinestyle{mystyle}{
+%   language=Python,
+%   numbers=left
+% }
+
+% Put lstset here, after lstdefinestyle
+% \lstset{style=mystyle}
+\end_preamble
+\use_default_options true
+\maintain_unincluded_children no
+\language dutch
+\language_package default
+\inputencoding utf8
+\fontencoding auto
+\font_roman "default" "default"
+\font_sans "default" "default"
+\font_typewriter "default" "default"
+\font_math "auto" "auto"
+\font_default_family default
+\use_non_tex_fonts false
+\font_sc false
+\font_roman_osf false
+\font_sans_osf false
+\font_typewriter_osf false
+\font_sf_scale 100 100
+\font_tt_scale 100 100
+\use_microtype false
+\use_dash_ligatures true
+\graphics default
+\default_output_format pdf2
+\output_sync 0
+\bibtex_command biber
+\index_command default
+\float_placement h
+\float_alignment center
+\paperfontsize default
+\spacing single
+\use_hyperref false
+\papersize default
+\use_geometry true
+\use_package amsmath 1
+\use_package amssymb 1
+\use_package cancel 1
+\use_package esint 1
+\use_package mathdots 1
+\use_package mathtools 1
+\use_package mhchem 1
+\use_package stackrel 1
+\use_package stmaryrd 1
+\use_package undertilde 1
+\cite_engine biblatex
+\cite_engine_type authoryear
+\biblio_options hyperref=true, backref=true, backrefstyle=three,backreffloats=true,indexing=bib,date=year
+\biblatex_bibstyle authoryear
+\biblatex_citestyle authoryear
+\use_bibtopic false
+\use_indices false
+\paperorientation portrait
+\suppress_date false
+\justification true
+\use_refstyle 1
+\use_formatted_ref 0
+\use_minted 0
+\use_lineno 0
+\index Index
+\shortcut idx
+\color #008000
+\end_index
+\leftmargin 1in
+\topmargin 1in
+\rightmargin 1in
+\bottommargin 1in
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation indent
+\paragraph_indentation default
+\is_math_indent 0
+\math_numbering_side default
+\quotes_style polish
+\dynamic_quotes 0
+\papercolumns 1
+\papersides 1
+\paperpagestyle default
+\tablestyle default
+\listings_params "language=Python,extendedchars=false,frameround=fttt,numbers=left,% line numbers use none,numberstyle={\tiny},stepnumber=2,% line numbers only every so many,numbersep=9pt,% how far line numbers from text?,showspaces=false,showstringspaces=false,showtabs=false,tab={\rightarrowfill},basicstyle={\small},keywordstyle={\color{blue}},commentstyle={\color{green}},stringstyle={\ttfamily \color{magenta}},identifierstyle={\color{black}}"
+\tracking_changes false
+\output_changes false
+\change_bars false
+\postpone_fragile_content false
+\html_math_output 0
+\html_css_as_file 0
+\html_be_strict false
+\docbook_table_output 0
+\docbook_mathml_prefix 1
+\end_header
+
+\begin_body
+
+\begin_layout Title
+Onverzadigde zone - Staringreeks
+\end_layout
+
+\begin_layout Author
+T.N.Olsthoorn
+\end_layout
+
+\begin_layout Date
+24-03-2026
+\end_layout
+
+\begin_layout Abstract
+Voor de modules Soils (Kinematic Wave en Munsflow) heb ik alle bodems van de Staringreeks gemodelleerd volgens Heinen,
+ Bakker en Wösen (2018@@) samen met de US-soil volgens Charbeneau (2000).
+ Ik heb ze allemaal geïmplemeneerd in python en in jupyter notebooks.
+ Ik ben ze afleidingen alleen kwijtgeraakt.
+ In dit document probeer ik dat weer zo goed mogelijk te herstellen.
+\end_layout
+
+\begin_layout Section
+Introductie
+\end_layout
+
+\begin_layout Standard
+De waterretentiekarakteristiek volgens Van Genughten (1980) en de waterdoorlatendheidskarakteristiek volgens Mualem (1976) zijn geformuleerd door 6 parameters:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\boxed{\theta_{r},\theta_{s},\alpha,n,\lambda,K_{s};\;NB:m=1-1/n}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Waarin:
+\end_layout
+
+\begin_layout Description
+\begin_inset Formula $\theta$
+\end_inset
+
+ [-] volumetrisch watergehalte
+\end_layout
+
+\begin_layout Description
+\begin_inset Formula $\theta_{r}$
+\end_inset
+
+ [-] residueel volumetrisch watergehalte (
+\begin_inset Formula $\theta$
+\end_inset
+
+ vooor 
+\begin_inset Formula $h\to\infty$
+\end_inset
+
+)
+\end_layout
+
+\begin_layout Description
+\begin_inset Formula $\theta_{s}$
+\end_inset
+
+ [-] Volumetrisch watergehalte bij verzadiging
+\end_layout
+
+\begin_layout Description
+\begin_inset Formula $\alpha$
+\end_inset
+
+ [cm
+\begin_inset Formula $^{-1}$
+\end_inset
+
+]vormparameter
+\end_layout
+
+\begin_layout Description
+\begin_inset Formula $\lambda$
+\end_inset
+
+ [-] vormparameter
+\end_layout
+
+\begin_layout Description
+\begin_inset Formula $n,m$
+\end_inset
+
+ [-] vormparameters
+\end_layout
+
+\begin_layout Description
+\begin_inset Formula $h$
+\end_inset
+
+ [cm] drukhoogte 
+\begin_inset Formula $\left(\phi=z\right)$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Description
+\begin_inset Formula $\phi$
+\end_inset
+
+ [ m] zuigspanning 
+\begin_inset Formula $\left(-h\right)$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Description
+\begin_inset Formula $K$
+\end_inset
+
+ [cm/d] hydraulische doorlatendheid
+\end_layout
+
+\begin_layout Description
+\begin_inset Formula $K_{s}$
+\end_inset
+
+ [cm/d] hydraulische doorlatendheid bij verzadiging
+\end_layout
+
+\begin_layout Description
+\begin_inset Formula $S$
+\end_inset
+
+ [-] Verzadiging 
+\begin_inset Formula $\frac{\theta-\theta_{r}}{\theta_{s}-\theta_{r}}$
+\end_inset
+
+ Dit wordt 
+\begin_inset Quotes pld
+\end_inset
+
+reduced satuartion genoemd door Charbeneau (2000,
+ p196)
+\end_layout
+
+\begin_layout Description
+\begin_inset Formula $z$
+\end_inset
+
+ [m] afstand tot het grondwater,
+ naar beneden positief.
+\end_layout
+
+\begin_layout Description
+\begin_inset Formula $q$
+\end_inset
+
+ [cm/d] neerwaartse fluxdichtheid
+\end_layout
+
+\begin_layout Standard
+De waterretentiekaraketeristiek volgens Van Genughten (1980):
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{equation}
+S\left(\theta\right)=\frac{\theta-\theta_{r}}{\theta_{s}-\theta_{r}}=\left(\frac{1}{1+\left|\alpha h\right|^{n}}\right)^{m}\label{eq:wateretentiekar-vG80}
+\end{equation}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+De waterdoorlatendheidskarateristiek volgens Mualem (1976;
+ zie ook Van Genughten (1980) onder de voorwaarde dat 
+\begin_inset Formula $m=1-1/n$
+\end_inset
+
+ is
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{equation}
+K\left(h\right)=K_{s}\frac{\left(\left(1+\left|\alpha h\right|^{n}\right)^{m}-\left|\alpha h\right|^{n-1}\right)^{2}}{\left(1+\left|\alpha h^{n}\right|\right)^{m\left(\lambda+2\right)}}\label{eq:doorlatendheidskarMuelem76}
+\end{equation}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+In (
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "eq:wateretentiekar-vG80"
+plural "false"
+caps "false"
+noprefix "false"
+nolink "false"
+
+\end_inset
+
+) en (
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "eq:doorlatendheidskarMuelem76"
+plural "false"
+caps "false"
+noprefix "false"
+nolink "false"
+
+\end_inset
+
+) mag 
+\begin_inset Formula $h$
+\end_inset
+
+ door 
+\begin_inset Formula $\psi$
+\end_inset
+
+ worden vervangen.
+ Ik werk liever met 
+\begin_inset Formula $\psi$
+\end_inset
+
+ omdat 
+\begin_inset Formula $\phi>0$
+\end_inset
+
+ in de onverzadigde zone.
+\end_layout
+
+\begin_layout Section
+Richards vergelijking
+\end_layout
+
+\begin_layout Standard
+De Richards vergelijking stuurt de verticale onverzadigde stroming.
+ Verondersteld wordt dat de stroming volledig verticaal is.
+\end_layout
+
+\begin_layout Standard
+De Richards-vergelijking voor onverzadigde stroming volgt uit een combinatie van continuïteit en de wet van Darcy.
+ Continuïteit vergt
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\frac{\partial\theta}{\partial t}=-\frac{\partial q}{\partial z}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Darcy
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+q=-K\frac{\partial\phi}{\partial z}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Hierin is 
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\nospellcheck off
+\bar no
+\strikeout off
+\xout off
+\uuline off
+\uwave off
+\noun off
+\color none
+de stijghoogte 
+\begin_inset Formula $\phi=\zeta+h,$
+\end_inset
+
+met 
+\begin_inset Formula $h$
+\end_inset
+
+ de drukhoogte en 
+\begin_inset Formula $\zeta$
+\end_inset
+
+ de hoogte boven een referentieniveau.
+ De afstand 
+\begin_inset Formula $z$
+\end_inset
+
+ beneden de basis van de wortelzone op niveau 
+\begin_inset Formula $\zeta_{0}$
+\end_inset
+
+ is dan 
+\begin_inset Formula $z=\zeta_{0}-\zeta$
+\end_inset
+
+ zodat
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+q & =-K\frac{\partial}{\partial z}\left(\zeta_{0}-z+h\right)\\
+ & =K\left(-\frac{\partial h}{\partial z}+1\right)
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Met 
+\begin_inset Formula $h=-\psi$
+\end_inset
+
+ met 
+\begin_inset Formula $\psi$
+\end_inset
+
+ de zuigspanning in dezelfde eenheden als 
+\begin_inset Formula $h$
+\end_inset
+
+ krijgen we
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+q=K\left(\frac{\partial\psi}{\partial z}+1\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+De differentiaalvergelijking combineert de continuïteit met de flux tot de Richards-vergelijking:
+\begin_inset Formula 
+\begin{equation}
+\frac{\partial\theta}{\partial t}=-\frac{\partial}{\partial z}\left[K\left(\frac{\partial\psi}{\partial z}+1\right)\right]\label{eq:Rechargds-verg-1}
+\end{equation}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\frac{\partial\theta}{\partial t}=\frac{\partial}{\partial z}\left[-K\frac{\partial\psi}{\partial z}-K\right]
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Omschrijven naar een vergelijking met 
+\begin_inset Formula $\theta$
+\end_inset
+
+ als enige afhankelijke variabele
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\frac{\partial\theta}{\partial t}=\frac{\partial}{\partial z}\left[-K-K\frac{\partial\psi}{\partial\theta}\frac{\partial\theta}{\partial z}\right]
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+met
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+S=-\frac{d\theta}{d\psi}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\frac{\partial\theta}{\partial t}=\frac{\partial}{\partial z}\left[-K+\frac{K}{S}\frac{\partial\theta}{\partial z}\right]
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+In munsflow wordt 
+\begin_inset Formula $D=K/S$
+\end_inset
+
+ constant genomen wat leidt tot
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\frac{\partial\theta}{\partial t}=-K\frac{\partial\theta}{\partial z}+D\frac{\partial^{2}\theta}{\partial z^{2}}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+Kinematic Wave
+\end_layout
+
+\begin_layout Standard
+De benadering Voor de kinematic wave is het weglaten van de capillaire spanning uit de Richardsvergelijking
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+\frac{\partial\theta}{\partial t} & =-\frac{\partial K}{\partial z}\\
+ & =-\frac{dK}{d\theta}\frac{\partial\theta}{\partial z}
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Schrijf dit als
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+0=\frac{\partial\theta}{\partial t}+\frac{\partial\theta}{\partial z}\frac{dK}{d\theta}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Vergelijk met totale potentiaal
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+d\theta=\frac{\partial\theta}{\partial t}dt+\frac{\partial\theta}{\partial z}dz
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Deze zijn gelijk wanneer
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+0=\frac{1}{dt}+\frac{1}{dz}\frac{dK}{d\theta}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Wat leidt tot
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\frac{dz}{dt}=V=-\frac{dK}{d\theta}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+Functies voor de onverzadigde zone (
+\begin_inset CommandInset citation
+LatexCommand cite
+key "Char2000"
+literal "false"
+
+\end_inset
+
+,
+ 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "Hei2020"
+literal "false"
+
+\end_inset
+
+)
+\end_layout
+
+\begin_layout Standard
+Range voor de zuigspanning 
+\begin_inset Formula $\psi$
+\end_inset
+
+ [cm].
+ De minimum waarde is een eigenschap or 1 cm.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\psi_{min}<\psi<10^{4.2},\;\psi_{min}=\psi_{b}|1
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Maximaal beschikbaar bodemvocht.
+ 
+\begin_inset Formula $pF_{fc}=2.5$
+\end_inset
+
+ en 
+\begin_inset Formula $pF_{wp}=4.2$
+\end_inset
+
+ Soms wordt 
+\begin_inset Formula $pF_{fc}=2.0$
+\end_inset
+
+ genomen,
+ maar 2.5 lijkt beter.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\text{available moisture}=\theta\left(pF_{fc}\right)-\theta\left(pF_{wp}\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\theta_{fc}=\theta\left(\psi=10^{2.5}\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\theta_{wp}=\theta\left(\psi=10^{4.2}\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Verzadiging of reduced moisture content 
+\begin_inset Formula $S$
+\end_inset
+
+.
+ Charbeneau (2000) gebruikt een hoofdletter 
+\begin_inset Formula $\Theta$
+\end_inset
+
+ maar die is niet goed te onderscheiden van 
+\begin_inset Formula $\theta$
+\end_inset
+
+.
+ Vandaar dat hier 
+\begin_inset Formula $S$
+\end_inset
+
+ wordt gebruikt.
+ 
+\begin_inset Formula $S$
+\end_inset
+
+ is de belangrijkste parameter en alle relaties worden ook uitgedrukt als functie van 
+\begin_inset Formula $S$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+S\left(\theta\right)=\frac{\theta-\theta_{r}}{\theta_{s}-\theta_{r}}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\theta\left(S\right)=\theta_{r}+\left(\theta_{s}-\theta_{r}\right)S
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\frac{\partial S}{\partial\theta}=\frac{\theta}{\theta_{s}-\theta_{r}}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\frac{\partial\theta}{\partial S}=\theta_{s}-\theta_{r}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Saturatie 
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+Sat\left(\theta\right)=\frac{\theta}{\theta_{S}}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+Sat\left(S\right)=Sat\left(\theta\left(S\right)\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Mualem Van Genughten (zie Heinen,
+ Bakker en Wösten),
+ afhankelijkheid van de zuigspanning 
+\begin_inset Formula $\psi$
+\end_inset
+
+:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+S\left(\theta\right)=\frac{\theta-\theta_{r}}{\theta_{s}-\theta_{r}}=\left(\frac{1}{1+\left(\alpha\psi\right)^{n}}\right)^{m}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+S\left(\psi\right)=\left(\frac{1}{1+\left(\alpha\psi\right)^{n}}\right)^{m}=\left(1+\left(\alpha\psi\right)^{n}\right)^{-m}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\frac{\partial S}{\partial\psi}=-\alpha mn\left(1+\left(\alpha\psi\right)^{n}\right)^{-1-m}\left(\alpha\psi\right)^{n-1}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\psi\left(S\right)=\frac{1}{\alpha}\left(S^{-1/m}-1\right)^{1/n}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\frac{\partial\psi}{\partial S}=\frac{-1}{\alpha nm}\left(S^{-1/m}-1\right)^{-1+1/n}S^{-1-1/m}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Doorlatendheid (Heinen,
+ Bakker en Wösten (2020):
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+K\left(\psi\right)=K_{s}\frac{\left(\left(1+\left(\alpha\psi\right)^{n}\right)^{m}-\left(\alpha\psi\right)^{n-1}\right)^{2}}{\left(1+\left(\alpha\psi\right)^{n}\right)^{m\left(\lambda+2\right)}}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+S=\left(1+\left(\alpha\psi\right)^{n}\right)^{-m}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+S^{-1/m} & =1+\left(\alpha\psi\right)^{n}\\
+\left(\alpha\psi\right)^{n} & =S^{-1/m}-1
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+\left(\alpha\psi\right)^{n-1} & =\left(\left(S^{-1/m}-1\right)^{1/n}\right)^{n-1}\\
+ & =\left(S^{-1/m}-1\right)^{1-1/n}
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+K\left(\psi\right)=K_{s}S^{\lambda+2}\left(S^{-1}-\left(S^{-1/m}-1\right)^{1-1/n}\right)^{2}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+K_{HBW}\left(S\right) & =K_{s}S^{\lambda+2}\left(S^{-1}-\left(S^{-1/m}-1\right)^{1-1/n}\right)^{2}.
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+\frac{\partial K_{HBW}\left(S\right)}{\partial S} & =...\\
+A & =S^{-1}-\left(S^{-1/m}-1\right)^{1-1/n}\\
+\frac{\partial A}{\partial S} & =-S^{-2}-\left(1-\frac{1}{n}\right)\left(S^{-1/m}-1\right)^{-1/n}\times\frac{-1}{m}S^{-1-1/m}\\
+\frac{\partial K_{HBW}}{\partial S} & =K_{s}\left(\left(\lambda+2\right)S^{\lambda+1}A^{2}+2S^{\lambda+2}A\frac{\partial A}{\partial S}\right)
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Relaties die direct volgen uit de voorgaande
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\frac{d\theta\left(\psi\right)}{d\psi}=\frac{d\theta}{dS}\frac{dS\left(\psi\right)}{d\psi}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\frac{d\psi}{d\theta}=\frac{d\psi}{dS}\frac{dS\left(\theta\right)}{d\theta}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\psi\left(\theta\right)=\psi\left(S\left(\theta\right)\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\theta\left(\psi\right)=\theta\left(S\left(\psi\right)\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Vochtcapaciteit
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+C\left(S\right)=-\frac{d\theta\left(\psi\left(S\right)\right)}{d\psi}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+C\left(\psi\right)=-\frac{d\theta\left(\psi\right)}{d\psi}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+C\left(\theta\right)=-\frac{d\theta\left(\psi\left(\theta\right)\right)}{d\psi}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+D\left(S\right)=\frac{K\left(S\right)}{C\left(S\right)}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+D\left(\psi\right)=D\left(S\left(\psi\right)\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+D\left(\theta\right)=D\left(S\left(\theta\right)\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+K\left(\theta\right)=K\left(S\left(\theta\right)\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\frac{\partial K}{\partial\theta}=\frac{\partial K\left(S\left(\theta\right)\right)}{\partial S}\frac{\partial S\left(\theta\right)}{\partial\theta}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+K\left(\psi\right)=K\left(S\left(\psi\right)\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\frac{\partial K}{\partial\psi}=\frac{\partial K\left(S\left(\psi\right)\right)}{\partial S}\frac{\partial S\left(\psi\right)}{\partial\psi}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+K_{vGM}\left(S\right) & =K_{s}S^{l}\left(1-\left(\left(1-S\right)^{1/m}\right)^{m}\right)^{2}
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+\frac{\partial K_{vGM}}{\partial S} & =...\\
+B & =1-\left(\left(1-S\right)^{1/m}\right)^{m}\\
+\frac{\partial B}{\partial S} & =\left(1-S^{1/m}\right)^{m-1}S^{-1+1/m}\\
+\frac{\partial K_{vGM}}{\partial S} & =K_{s}lS^{l-1}B^{2}+2S^{l}B\frac{\partial B}{\partial S}
+\end{align*}
+
+\end_inset
+
+
+\begin_inset Newline newline
+\end_inset
+
+
+\begin_inset Formula 
+\begin{align*}
+K_{HBW}\left(S\right) & =K_{s}S^{\lambda+2}\left(S^{-1}-\left(S^{-1/m}-1\right)^{1-1/n}\right)^{2}.
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+\frac{\partial K_{HBW}\left(S\right)}{\partial S} & =...\\
+A & =S^{-1}-\left(S^{-1/m}-1\right)^{1-1/n}\\
+\frac{\partial A}{\partial S} & =-S^{-2}-\left(1-\frac{1}{n}\right)\left(S^{-1/m}-1\right)^{-1/n}\times\frac{-1}{m}S^{-1-1/m}\\
+\frac{\partial K_{HBW}}{\partial S} & =K_{s}\left(\left(\lambda+2\right)S^{\lambda+1}A^{2}+2S^{\lambda+2}A\frac{\partial A}{\partial S}\right)
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+De 
+\begin_inset Formula $K$
+\end_inset
+
+ is een van de twee,
+ afhankelijk van de keuze vGM (Van Genughten Mualem (1980,
+ 1976) of Heinen,
+ Bakker Wösten (2020).
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+K\left(S\right)=K_{vGM}\left(S\right)|K_{HBW}\left(S\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\frac{\partial K}{\partial S}=\frac{\partial K_{vGM}\left(S\right)}{\partial S}|\frac{\partial K_{HBW}\left(S\right)}{\partial S}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula $S\left(K\right)$
+\end_inset
+
+ Moet worden berekend middels een interpolator.
+ Genereer eerst de interpolator als functie van 
+\begin_inset Formula $S$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+s=\text{logspace}\left(-8,0\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+k=K\left(s\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+s_{lnk}=\text{PchipInterpolator}\left(\ln\left(k\right),s\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\text{S}\left(k\right)=s_{lnk}\left(\ln\left(k\right)\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula $\theta\left(V\right)$
+\end_inset
+
+ wordt ook via interpolator berekend 
+\begin_inset Formula $V=\frac{\partial K\left(\theta\right)}{\partial\theta}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+s=\text{logspace}\left(-8,0,100\right)
+\]
+
+\end_inset
+
+
+\begin_inset Formula 
+\[
+\theta=\theta\left(S\right)
+\]
+
+\end_inset
+
+
+\begin_inset Newline newline
+\end_inset
+
+
+\begin_inset Formula 
+\[
+V=\frac{\partial K\left(\theta\right)}{\partial\theta}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\text{lnVinterp}=\text{PchipInterpolator\left(\ln V,\theta\right)}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\theta\left(V\right)=\text{lnVinterp\left(\ln\left(V\right)\right)}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+=====
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\theta\left(K\right)=\theta\left(S\left(K\right)\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Snelheid 
+\begin_inset Formula $v$
+\end_inset
+
+ en diffusiviteit 
+\begin_inset Formula $D$
+\end_inset
+
+ benodigd voor Munsflow.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+vD\left(q\right) & =...\\
+S & =S\left(K\left(k_{0}\right)\right)\\
+v & =\frac{\partial K\left(S\right)}{\partial\theta}\\
+D & =D\left(S\right)\\
+... & =\left(v,D\right)
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Vochtpunt snelheid
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+V & =\frac{\partial K\left(\theta\right)}{\partial\theta}
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\frac{dz_{f}}{dt}=\frac{K\left(\theta_{1}\right)-K\left(\theta_{2}\right)}{\theta_{1}-\theta_{2}}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Verticale snelheid van het water
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+q_{z} & =K\left(\theta\right)\\
+v_{z} & =\frac{K\left(\theta\right)}{\theta}
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Bibliography
+\begin_inset CommandInset bibitem
+LatexCommand bibitem
+label "Charbneau (2000)"
+key "Char2000"
+literal "false"
+
+\end_inset
+
+Charbeneau,
+ R.J.
+ (2000) Groundwater Hydraulics and Pollutant Transport.
+ Prentice Hall.
+ ISBN 0-13-9756167.
+ 593pp.
+\end_layout
+
+\begin_layout Bibliography
+\begin_inset CommandInset bibitem
+LatexCommand bibitem
+label "Heinen et al (2020)"
+key "Hei2020"
+literal "false"
+
+\end_inset
+
+Heinen M.,
+ G.Bakker & J.H.N.
+ Wösten (2020) Waterretentie- en doorlatendheidskarakteristieken van boven- en ondergronden in Nederland:
+ de Staringreeks;
+ Update 2018.
+ Wageningen.
+ Wageningen Environmental Research,
+ Rapport 2978.
+ 78 blz;
+ 6 fig.;
+ 4 tab.;
+ 22 ref.
+\end_layout
+
+\end_body
+\end_document

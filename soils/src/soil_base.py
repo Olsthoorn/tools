@@ -1,6 +1,7 @@
 # Soil base Class
 
 from abc import ABC, abstractmethod
+from functools import wraps
 from pathlib import Path
 import numpy as np
 
@@ -11,6 +12,20 @@ from scipy.special import gammaln, erfc
 from scipy.stats import gamma
 from scipy.interpolate import PchipInterpolator
 from typing import Callable
+
+def scalar_aware(func):
+    @wraps(func)
+    def wrapper(self, x, *args, **kwargs):
+        x_arr = np.asarray(x)
+        is_scalar = x_arr.ndim == 0
+
+        # compute using array form
+        y = func(self, x_arr, *args, **kwargs)
+
+        # unwrap if needed
+        return y.item() if is_scalar else y
+
+    return wrapper
 
 
 class SoilBase(ABC):
@@ -75,22 +90,24 @@ class SoilBase(ABC):
     def sat_fr_theta(self, theta: float | np.ndarray) -> float | np.ndarray:
         """Saturation θ / n = θ / θ_s."""
         return self.theta / self.theta_s
-    
+
     def sat_fr_S(self, S: float | np.ndarray)-> float |  np.ndarray:
         """Return saturation given S.
         
         Note that S = (theta - theta_r) / (theta_s - theta_r)
         and sat = theta / theta_s
         """
+        S = np.clip(S, self.props['S_wp'], None)
         return self.sat_fr_theta(self.theta_fr_S(S))
     
     # === Basic relations S_fr_theta and S_fr_psi ===
     # from defintion of S = (theta - theta_r) / (theta_S - theta_r)
     # S <--> theta
     def theta_fr_S(self, S: float | np.ndarray, eps: float = 1e-12)-> float | np.ndarray:
-        """Return theta(S)"""        
+        """Return theta(S)"""
+        S = np.clip(S, self.props['S_wp'], None)        
         return self.theta_r + (self.theta_s - self.theta_r) * np.clip(S, eps, 1 - eps)
-
+    
     def S_fr_theta(self, theta: float | np.ndarray, eps: float = 1e-12
                    )-> float | np.ndarray: 
         r"""Return $S(\theta)$"""                      
@@ -114,9 +131,8 @@ class SoilBase(ABC):
         dtheta/dS is a fixed number, but we keep the size of S to remain consistent
         with all other methods.
         """
-        S = np.atleast_1d(S)
-        dth_dS = np.ones_like(S) * (self.theta_s - self.theta_r)
-        return dth_dS if len(dth_dS > 1) else dth_dS.item()
+        S = np.clip(S, self.props['S_wp'], None)
+        return np.ones_like(S) * (self.theta_s - self.theta_r)        
   
     def psispace(self, N: int = 50)-> np.ndarray:
         """Return a proper psi range for this soil (psi_b <= psi <= 10 ** 4.2)"""
@@ -149,7 +165,7 @@ class SoilBase(ABC):
         """Return dpsi/dS"""        
         pass
     
-    # dtheta_dpsi and dpsi_dtheta
+    # dtheta_dpsi and dpsi_dtheta    
     def dtheta_dpsi(self, psi: float | np.ndarray)-> np.ndarray:
         """Return dpsi/dS"""
         S = self.S_fr_psi(psi)
@@ -157,18 +173,18 @@ class SoilBase(ABC):
 
     def dpsi_dtheta(self, theta: float | np.ndarray)-> np.ndarray:
         """Return dpsi/dS"""
-        S = self.S_fr_theta(theta)
+        S = self.S_fr_theta(theta).clip(self.props['S_wp'])
         return self.dpsi_dS(S) * self.dS_dtheta(theta)
     
     # psi(theta) and theta(psi)
     def psi_fr_theta(self, theta: float | np.ndarray) -> float | np.ndarray:
         """Return psi_fr_theta."""
-        S = self.S_fr_theta(theta)
+        S = self.S_fr_theta(theta).clip(self.props['S_wp'])
         return self.psi_fr_S(S)        
         
     def theta_fr_psi(self, psi: float | np.ndarray) -> float:
         """Volumetric water content θ(h) as a function of suctioin head psi."""
-        S = self.S_fr_psi(psi)
+        S = np.clip(self.S_fr_psi(psi), self.props['S_wp'], None)
         return self.theta_fr_S(S)
         
   
@@ -179,31 +195,31 @@ class SoilBase(ABC):
     
     def K_fr_theta(self, theta: float | np.ndarray) -> float | np.ndarray:
         """Hydraulic conductivity K(theta) as a function of theta."""
-        S = self.S_fr_theta(theta)
+        S = np.clip(self.S_fr_theta(theta), self.props['S_wp'], None)
         return self.K_fr_S(S)
 
     def K_fr_psi(self, psi: float | np.ndarray) -> float | np.ndarray:
         """Hydraulic conductivity K(psi) as a function of suction head psi."""
-        S = self.S_fr_psi(psi)
+        S = np.clip(self.S_fr_psi(psi), self.props['S_wp'], None)
         return self.K_fr_S(S)
         
     @abstractmethod
     def dK_dS(S: float | np.ndarray)-> float | np.ndarray:
         """Return dK/dS"""
         pass
-    
+        
     def dK_dtheta(self, theta: float | np.ndarray) -> float | np.ndarray:
         """Return dK/dtheta""" 
-        S = self.S_fr_theta(theta)
+        S = np.clip(self.S_fr_theta(theta), self.props['S_wp'], None)
         dKdth = self.dK_dS(S) * self.dS_dtheta(theta)
         return dKdth if len(dKdth) > 1 else dKdth.item()
     
     def dK_dpsi(self, psi: float | np.ndarray) -> float | np.ndarray:
         """Return dK/dpsi"""
-        S = self.S_fr_psi(psi)
+        S = np.clip(self.S_fr_psi(psi), self.props['S_wp'], None)
         return self.dK_dS(S) * self.dS_dpsi(psi)
 
-    # available moister, theta_fc and theta_wp        
+    # available moisture, theta_fc and theta_wp        
     def available_moisture(self, pfc: float = 2.5, pfw: float = 4.2) -> float:
         """Return available moisture to plants (between fc and wp)."""
         return self.theta_fc(pfc) - self.theta_wp(pfw)
@@ -219,7 +235,8 @@ class SoilBase(ABC):
         return self.theta_fr_psi(psi_wp)
 
     # --- C(psi) and C(theta), moisture capacity
-    def C_fr_S(self, S: float | np.ndarray)-> float | np.ndarray:        
+    def C_fr_S(self, S: float | np.ndarray)-> float | np.ndarray:  
+        S = np.clip(S, self.props['S_wp'], None)      
         return -self.dtheta_dpsi(self.psi_fr_S(S))
     
     def C_fr_psi(self, psi: float) -> float:
@@ -233,16 +250,17 @@ class SoilBase(ABC):
     # --- D(psi) and D(theta): Diffusivity
     def D_fr_S(self, S: float | np.ndarray)-> float | np.ndarray:
         """Return diffusivity as a function of S"""
+        S = np.clip(S, self.props['S_wp'], None)
         return self.K_fr_S(S) / self.C_fr_S(S)
         
     def D_fr_psi(self, psi: float) -> float:
         """Diffusivity."""
-        S = self.psi_fr_S(psi)        
+        S = np.clip(self.psi_fr_S(psi), self.props['S_wp'], None)
         return self.D_fr_S(S)
     
     def D_fr_theta(self, theta: float) -> float:
         """Diffusivity.""" 
-        S = self.theta_fr_S(theta)       
+        S = np.clip(self.theta_fr_S(theta), self.props['S_wp'], None)
         return self.D_fr_S(S)
 
     # --- Throttling function that limit ET in rootmodel
@@ -436,12 +454,8 @@ class SoilBase(ABC):
         log10_S_limit = -8
         
         # --- Get S and K values
-        S = np.logspace(log10_S_limit, 0)        
+        S = np.logspace(np.log10(self.props['S_wp']), 0)        
         K = self.K_fr_S(S)
-        
-        # --- Remove computational artefacts
-        S = S[K > 0]
-        K = K[K > 0]
         
         # --- Guarantee that k always rises        
         rises = np.ones_like(K, dtype=bool)
@@ -462,8 +476,7 @@ class SoilBase(ABC):
 
     def S_fr_K(self, k: float | np.ndarray, tol: float = 1e-8)-> float | np.ndarray:
         """Return S(K), saturation given K (by interpolation) """
-        if k < tol:            
-            k = np.fmax(tol, k)            
+        k = np.fmax(tol, k)            
         return self._S_fr_K_cached(k)
     
     @cached_property
@@ -473,7 +486,7 @@ class SoilBase(ABC):
         To compute the theta in the Kinematic Wave approach for given
         velocity v = dk(theta)/dtheta we generate an interpolator.
         """        
-        S = np.logspace(np.log10(self.Slim), 0, 100)
+        S = np.logspace(np.log10(self.props['S_wp']), 0, 100)
         theta = self.theta_fr_S(S)              
         V = self.dK_dtheta(theta)
         
@@ -510,7 +523,7 @@ class SoilBase(ABC):
     def get_vD(self, q_avg: float)-> tuple[float, float]:
         """Return v = dK_dtheta(theta_avg)) and D(theta_abg) =k0(theta_avg) h1(theta_avg)"""        
         k0 = q_avg
-        S = self.S_fr_K(k0).item()        
+        S = self.S_fr_K(k0).clip(self.props['S_wp']).item()        
         v = self.dK_dtheta(self.theta_fr_S(S))
         D = self.D_fr_S(S).item()
         return v, D

@@ -1,11 +1,11 @@
-**/.DS_Store
-**/*.pkl
-**/__pycache__/
-**/*.zip
-**/*.db
-**/*.mp4
-**/*.pptx
-**/Interactive*
-**/*.*~
+.DS_Store
+.venv
+*.pkl
+__pycache__/
+*.zip
+*.db
+*.mp4
+Interactive*
+*~
 # Ignore LyX autosaves
 *#*.lyx#
