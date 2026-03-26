@@ -14,9 +14,9 @@ from scipy.signal import lfilter
 from scipy.integrate import simpson
 from pathlib import Path
 # %%
-import etc
-from soils.src.NL_soils import Soil # noqa
-from root_zone.src.root_zone_model import get_deBilt_recharge # noqa
+from tools.etc import etc
+from tools.soils.src.NL_soils import Soil # noqa
+from tools.root_zone.src.root_zone_model import get_deBilt_recharge # noqa
 
 # %%
 image_folder = os.path.join(Path("__file__").resolve().parent, 'images')

@@ -18,7 +18,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 from matplotlib.animation import FuncAnimation  # , FFMpegWriter
 from pathlib import Path
-import etc
+from tools.etc import etc
 
 import cProfile
 import pstats
@@ -27,10 +27,10 @@ data_folder = os.path.join(Path("__file__").resolve().parent, 'data')
 images_folder = os.path.join(Path("__file__").resolve().parent, 'images')    
 video_folder = os.path.join(Path("__file__").resolve().parent, 'videos')
 
-from root_zone.src.root_zone_model  import get_deBilt_recharge # noqa
-from soils.src.NL_soils import Soil #noqa
+from tools.root_zone.src.root_zone_model  import get_deBilt_recharge # noqa
+from tools.soils.src.NL_soils import Soil #noqa
 
-from Stromingen.Munsflow95.src.Munsflow import simulate_munsflow # noqa
+from tools.Stromingen.Munsflow95.src.Munsflow import simulate_munsflow # noqa
 
 # --- update figure settings
 plt.rcParams.update({
@@ -170,8 +170,8 @@ class Kinematic_wave():
         float
             Velocity of the wave profile (m/d).
         """        
-        theta_s = soil.theta_s
-        theta_r = soil.theta_r
+        theta_s = self.soil.theta_s
+        theta_r = self.soil.theta_r
         
         thetaL, thetaR = np.atleast_1d(thetaL, thetaR)  # Ensure inputs are arrays
         
@@ -442,7 +442,7 @@ class Kinematic_wave():
             self.profile = self.profile[1:]
         
         # --- get theta pertaining to current q (K(theta) = q)
-        thetaL = max(soil.theta_fc(), soil.theta_fr_K(q))
+        thetaL = max(self.soil.theta_fc(), self.soil.theta_fr_K(q))
         thetaR = previous['thetaL']    
         
         # --- a front is when theta of current point > theta previous point
@@ -735,17 +735,17 @@ def make_animation(profiles: dict, soil: Soil, zwt: float)->tuple:
     ax.set_ylim(theta_min, theta_max)
 
     # --- static reference lines (drawn once, stay forever) ---    
-    ax.axhline(y=soil.theta_fc(),      color='g', label='field capacity')
-    ax.axhline(y=soil.theta_fr_K(0.1), color='m', label='theta q=1 mm/d')
-    ax.axhline(y=soil.theta_fr_K(0.2), color='r', label='theta q=2 mm/d')
+    ax.axhline(y=soil.theta_fc(),      lw=0.5, color='g', label='field capacity')
+    ax.axhline(y=soil.theta_fr_K(0.1), lw=0.5, color='m', label='theta q=1 mm/d')
+    ax.axhline(y=soil.theta_fr_K(0.2), lw=0.5, color='r', label='theta q=2 mm/d')
     
     # --- animated artists (updated ech frame) ---
     line, = ax.plot([], [], lw=2)
     points, = ax.plot([], [], 'ro')
     
-    txt = ax.text(0.4, 0.5, f"t = {0.:.0f} d",
+    txt = ax.text(0.1, 0.9, f"t = {0.:.0f} d",
                    transform=ax.transAxes,
-                   ha='center', va='center',
+                   ha='left', va='center',
                    bbox=dict(
                         facecolor="gold",   # background color
                         edgecolor="black",  # border color
@@ -770,6 +770,7 @@ def make_animation(profiles: dict, soil: Soil, zwt: float)->tuple:
     
     # --- Update_func: uses the closure to access `line` and `profiles`
     def update_func(frame):
+        # --- Get next profile from the stored profiles
         p = profiles[frame]
         
         # --- get line and date
@@ -829,7 +830,7 @@ def test_accuracy(self):
                 sl.theta_fr_V(sl.dK_dtheta(theta))))
 
 
-def change_meteo_for_testing(meteo: pd.DataFrame, N: float=180, m:float = 1)-> pd.DataFrame:
+def change_meteo_for_testing(meteo: pd.DataFrame, N: float=180, m:float = 1, q0:float=20)-> pd.DataFrame:
     """Return meteo with adapted 'RCH' for easier testing and checking."""
     
     qrz = meteo['RCH'].values
@@ -837,7 +838,7 @@ def change_meteo_for_testing(meteo: pd.DataFrame, N: float=180, m:float = 1)-> p
     
     # --- Make m N-day blocks of continuous q alternating between 0 and 1 mm/d ---
     for i in np.arange(0, 2 * N * m, 2 * N):        
-        qrz[i + N:i + 2 * N] = 2. # mm/d
+        qrz[i + N:i + 2 * N] = q0 # mm/d
         
     meteo.loc[:, 'RCH'] = qrz
     return meteo

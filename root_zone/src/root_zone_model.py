@@ -26,7 +26,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.integrate import solve_ivp
 import pandas as pd
-import etc
+from tools.etc import etc
 from itertools import cycle
 from typing import Any
 from pathlib import Path

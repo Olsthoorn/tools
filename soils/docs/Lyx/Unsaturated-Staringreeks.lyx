@@ -959,6 +959,17 @@ S=\left(1+\left(\alpha\psi\right)^{n}\right)^{-m}
 
 \begin_layout Standard
 \begin_inset Formula 
+\[
+K\left(\psi\right)=S^{\lambda+2}\left(S^{-1}-\left(\alpha\psi\right)^{n-1}\right)^{2}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
 \begin{align*}
 S^{-1/m} & =1+\left(\alpha\psi\right)^{n}\\
 \left(\alpha\psi\right)^{n} & =S^{-1/m}-1
@@ -973,7 +984,7 @@ S^{-1/m} & =1+\left(\alpha\psi\right)^{n}\\
 \begin_inset Formula 
 \begin{align*}
 \left(\alpha\psi\right)^{n-1} & =\left(\left(S^{-1/m}-1\right)^{1/n}\right)^{n-1}\\
- & =\left(S^{-1/m}-1\right)^{1-1/n}
+ & =\left(S^{-1/m}-1\right)^{m}
 \end{align*}
 
 \end_inset
@@ -984,8 +995,55 @@ S^{-1/m} & =1+\left(\alpha\psi\right)^{n}\\
 \begin_layout Standard
 \begin_inset Formula 
 \[
-K\left(\psi\right)=K_{s}S^{\lambda+2}\left(S^{-1}-\left(S^{-1/m}-1\right)^{1-1/n}\right)^{2}
+K\left(S\right)=S^{\lambda+2}\left(S^{-1}-\left(S^{-1/m}-1\right)^{m}\right)^{2}
 \]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+\xi & =\left(S^{-1/m}-1\right)^{m}\\
+ & =\left(S^{-1/m}\left(1-S^{-1/m}\right)\right)^{m}\\
+ & =S^{-1}\left(1-S^{-1/m}\right)^{m}
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+K\left(S\right) & =K_{s}S^{\lambda+2}\left(S^{-1}-S^{-1}\left(1-S^{-1/m}\right)^{m}\right)^{2}\\
+ & =K_{s}S^{\lambda+2}S^{-2}\left(1-\left(1-S^{-1/m}\right)^{m}\right)^{2}\\
+ & =K_{s}S^{\lambda}\left(1-\left(1-S^{-1/m}\right)^{m}\right)^{2}
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+gebruik:
+ 
+\begin_inset Formula $m=1-1/n$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+K\left(\psi\right) & =K_{s}S^{\lambda+2}\left(S^{-1}-\left(S^{-1/m}-1\right)^{m}\right)^{2}\\
+ & =K_{s}S^{\lambda+2}\left(S^{-1}-\left(S^{m}S^{-1/m}-S^{m}S^{1/m}\right)^{m}\right)^{2}
+\end{align*}
 
 \end_inset
 
@@ -1018,8 +1076,36 @@ A & =S^{-1}-\left(S^{-1/m}-1\right)^{1-1/n}\\
 \end_layout
 
 \begin_layout Standard
+Nog een keer:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+\left(\alpha\psi\right)^{n} & =S^{-1/m}-1\\
+\left(\alpha\phi\right)^{n-1} & =\left(S^{-1/m}-1\right)^{\left(n-1\right)/n}
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
 \begin_inset Formula 
 \[
+x=\left(\alpha\psi\right)^{n}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+S=\left(1+x\right)^{-m}\to x=S^{-1/m}-1
 \]
 
 \end_inset
