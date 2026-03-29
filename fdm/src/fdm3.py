@@ -18,7 +18,7 @@ import scipy.sparse as sp
 import scipy.sparse.linalg as la
 import scipy.special as spec
 import matplotlib.pylab as plt
-import tools.etc
+from tools.etc import etc
 from tools.fdm.src import mfgrid
 
 def quivdata(Out, x, y, iz=0):
