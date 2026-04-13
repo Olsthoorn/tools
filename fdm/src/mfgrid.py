@@ -923,7 +923,25 @@ class Grid:
 
     @property
     def extent(self):
+        """Return (xmin, xmax, ymin, ymax)."""
         return self.x[0], self.x[-1], self.y[-1], self.y[0]
+
+    @property
+    def xy_extent(self):
+        """Return (xmin, xmax, ymin, ymax)."""
+        return self.x[0], self.x[-1], self.y[-1], self.y[0]
+
+    @property
+    def xz_extent(self):
+        """Return (xmin, xmax, zmin, zmax)."""
+        return self.x[0], self.x[-1], self.z[-1], self.z[0]
+    
+    @property
+    def yz_extent(self):
+        """Return (xmin, xmax, ymin, ymax)"""
+        return self.y[-1], self.y[0], self.z[-1], self.z[0]
+
+
 
     @property
     def z(self):
@@ -1327,7 +1345,7 @@ class Grid:
         
         Parameters
         ----------
-        cells: np.ndarray of bool
+        cells: np.ndarray or bool
             Boolean array telling which cells of the grid are involved in the GHB
         hds: float or np.ndarray of float
             the heads should be full array or an array with length equal to the number Trues in GHB
@@ -3379,6 +3397,10 @@ class Grid:
         return self.contour(A, filled=filled, **kwargs)
 
 
+    def spy(self, A, **kwargs):
+        self.imshow(A, **kwargs)
+
+
     def imshow(self, A, **kwargs):
         """Show array A using imshow.
 
@@ -3393,18 +3415,33 @@ class Grid:
             addtional kwargs are passed on to ax.imshow
         """
         fig, ax = plt.subplots()
+        
+        if 'size_inches' in kwargs:
+            fig.set_size_inches(kwargs.pop('size_inches'))
 
+        ax.grid(True)
+
+
+        # -- axes and title labels
         ax.set_xlabel(kwargs.pop('xlabel', 'ix'))
         ax.set_ylabel(kwargs.pop('ylabel', 'iy'))
         ax.set_title(kwargs.pop('title', 'gr.imshow()'))
+        
+        # -- axes lmits
         if 'xlim' in kwargs:
             ax.set_xlim(kwargs.pop('xlim'))
         if 'ylim' in kwargs:
             ax.set_ylim(kwargs.pop('xlim'))
-        if 'size_inches' in kwargs:
-            fig.set_size_inches(kwargs.pop('size_inches'))
-        ax.grid(True)
-        ax.imshow(A)  #, extent=(*self.xm[[0, -1]], *self.ym[[-1, 0]]), **kwargs)
+            
+        # --- imshow, passing remaining kwargs
+        if isinstance(A.dtype, np.integer):
+            classes = np.unique(A)
+            cmap = plt.get_cmap('tab20', len(classes) - 1)
+        else:
+            cmap = kwargs.pop('cmap', plt.get_cmap('viridis'))
+        mappable = ax.imshow(A, cmap=cmap, **kwargs)
+        fig.colorbar(mappable)
+        plt.show()
 
 
     def contour(self, A, filled=False,  **kwargs):
@@ -3665,23 +3702,122 @@ class Grid:
                             Out.Qy[iz, -1, :].reshape((1, 1, nx))), axis=1).reshape((ny,nx))
         return X, Y, U, V
 
+    def patch_extent(self, arr=None, value=0, extent=None):
+        """Return array patched with value within given extent.
+        
+        Parameters:
+        ===========
+        arr: array of gr.shape
+            the array to be patched
+        value: int | float
+            the replacement value to be patched in
+        extent: 6 floats
+            xmin, xmax, ymin, ymax, zmin, zmax
+            if a min value is None --> -np.inf is used
+            if a max value is None --> +np.inf is used
+        """
+        return self.patch_bbox(self, arr=arr, value=value, bbox=extent)
+    
+    def patch_bbox(self, arr=None, value=0, bbox=None):
+        """Patch the current array with value according to the 3D bbox.
+        
+        Parameters:
+        -----------
+        arr: array of self.shape
+            Array to be patched.
+        value:
+            value to be put into patch zone
+        bbox: 3D bounding box of patch zone
+            xmin, xmax, ymin, ymax, zmin, zmax
+            if a min value is None --> -np.inf is used
+            if a max value is None --> +np.inf is used            
+        """
+        xmin, xmax, ymin, ymax, zmin, zmax = bbox
+        if xmin is None: xmin = -np.inf
+        if xmax is None: xmax = +np.inf
+        if ymin is None: ymin = -np.inf
+        if ymax is None: ymax = +np.inf
+        if zmin is None: zmin = -np.inf
+        if zmax is None: zmax = +np.inf
+
+        mask = np.logical_and.reduce(
+                                        self.XM > xmin,
+                                        self.XM < xmax,
+                                        self.YM > ymin,
+                                        self.YM < ymax,
+                                        self.ZM > zmin,
+                                        self.ZM < zmax
+        )
+        arr[mask] = value
+        return arr
+        
+    def cells_in_extent(self, extent):
+        """Return the global cell indices of cell centeres inside extent.
+        
+        Parameters:
+        -----------
+        extent: 6 floats
+            xmin, xmax, ymin, ymax, zmin, zmax
+            if min value(s) are None --> -np.inf is used
+            if max value(s) are None --> +np.inf is used
+        """
+        xmin, xmax, ymin, ymax, zmin, zmax = extent
+        if xmin is None:
+            xmin = -np.inf
+        if xmax is None:
+            xmax = +np.inf
+        if ymin is None:
+            ymin = -np.inf
+        if ymax is None:
+            ymax = +np.inf
+        if zmin is None:
+            zmin = -np.inf
+        if zmax is None:
+            zmax = +np.inf
+
+        mask = np.logical_and.reduce(
+                                        self.XM > xmin,
+                                        self.XM < xmax,
+                                        self.YM > ymin,
+                                        self.YM < ymax,
+                                        self.ZM > zmin,
+                                        self.ZM < zmax
+        )
+        return self.NOD[mask]
+
 
     def inblock(self, xx=None, yy=None, zz=None):
-        """Return logical array denoting cells in given block."""
+        """Return logical array denoting cells in given block.
+        
+        Parameters:
+        -----------
+        xx: array of floats
+            min(xx) and max(xx) are used as block boundaries
+        yy: array of floats
+            min(yy) and max(yy) are used as block boundaries
+        zz: array of floats
+            min(zz) and max(zz) are used as block boundaries
+        """
         if xx is None:
-            Lx = self.const(0) > -np.inf # alsways false
-        else:
-            Lx = np.logical_and(self.XM >= min(xx), self.XM <= max(xx))
+            xx = np.array([-np.inf, np.inf])
         if yy is None:
-            Ly = self.const(0) > -np.inf  # always false
-        else:
-            Ly = np.logical_and(self.YM >= min(yy), self.YM <= max(yy))
+            yy = np.array([-np.inf, np.inf])
         if zz is None:
-            Lz = self.const(0) > -np.inf  # always false
-        else:
-            Lz = np.logical_and(self.ZM >= min(zz), self.ZM <= max(zz))
-            #L = np.logical_and( np.logical_and(Lx, Ly), Lz)
-        return np.logical_and( np.logical_and(Lx, Ly), Lz)
+            zz = np.array([-np.inf, np.inf])
+            
+        xmin, xmax = xx.min(), xx.max()
+        ymin, ymax = yy.min(), yy.max()
+        zmin, zmax = zz.min(), zz.max()
+
+        mask = np.logical_and.reduce((
+                                        self.XM > xmin,
+                                        self.XM < xmax,
+                                        self.YM > ymin,
+                                        self.YM < ymax,
+                                        self.ZM > zmin,
+                                        self.ZM < zmax)
+        )
+        return mask
 
 
     def from_shape(self, rdr, var, out=None, dtype=float, row=None):
@@ -3784,31 +3920,118 @@ class Grid:
                     np.hstack((zT, self.z, zB)))
 
 
-    def inpoly(self, pgcoords, row=None, world=False):
-        """Return bolean array [ny, nx] or [nz, nx] telling which cells are within a horizontal or vertical polygon.
+    def cells_inpoly(self, pgcoords, lay=None, row=None, col=None, world=False):
+        """Return array of cell Id's inside the polygon.
+        
+        Parameters
+        ----------
+        pgcoords: np.ndarray shape (n, 2)
+            [(x,y)], or [(x,z)] or [(y,z)] coordinates of the polygon
+        lay: float | None
+            layer number.            
+            If lay is given, row and col are ignored.
+            If lay, col and row are None --> lay=0 is assumed.
+            The returned cell Id's are elements of self.NOD[ilay,:,:]   
+        row: float | None
+            if lay is not None --> row and col are ignored
+            If row not None --> (x,z) coordinates are assumed
+            The cells are elements of self.NOD[:,row,:]
+        col: float | None
+            if row or lay is not None --> col is ignored.
+            if col is not None --> (y,z) pgcoords are assumed.
+            The cells are elements of self.NOD[:,:,col]        
+        """
+        if lay is not None:
+            assert 0 <= lay <= self.nz, f"lay must be between 0 and {self.nz}"
+            row, col = None, None
+        elif row is not None:
+            assert 0 <= row <= self.ny, f"row must be between 0 and {self.ny}"
+            col = None
+        elif col is not None:
+            assert 0 <= col <= self.nx, f"col must be between 0 and {self.nx}"
+        else:
+            lay = 0
+        
+        mask = self.inpoly(pgcoords, lay=lay, row=row, col=col, world=world)
+        
+        mask_all = self.const(0, dtype=bool)
+        
+        if lay is not None:
+            mask_all[0] = mask
+        elif row is not None:
+            mask_all[:,row,:] = mask
+        elif col is not None:
+            mask_all[:,:,col] = mask
+        else:
+            raise ValueError("lay, row and col must not all be None")
+        
+        return self.NOD[mask_all]
+
+        
+    def inpoly(self, pgcoords, lay=None, row=None, col=None, world=False):
+        """Return mask (ny, nx) or (nz, nx) or (nz, nx) which
+        tells which cells are within the polygon.
+                
+        See also
+        --------
+        cells_inpoly
 
         Parameters
         ----------
-        pgcoords: like [(0, 1),(2, 3), ...] or an (n, 2) np.ndarray
-            polygon coordinates
-        row: row number of None
-            If None, polygon is horizontal and pgcoords are assumed xy coordinates.
-            A boolean xy grid is returned.
-            If row is int, then pgcoordinates are assumed vertical (x, z) and are
-            in the cross section (iy) of the center of a given row.
-            A boolean (z, x) array is then returned.
-        """
+        pgcoords: [(n, 2)] array of polygon coordinates.
+            Coordinates of the polygon (x, y), (x, z) or (y, z)
+        lay: float | None
+            Layer Number
+        row: float | None
+            Row number        
+        col: float | None
+            Col number
+            
+        Remarks:
+            Precedence
+            If lay and row and col are all None
+                lay = 0 is assumed.
+                pgcoords are assumed (x,y)
+                mask is of shape (ny,nx)                
+            if row != 0:
+                col is ignored
+                pgcoords are assumed (x,z)
+                mask is of shape (nz,nx)
+            if col != 0:
+                pgcoords are assumed (y,z)
+                mask if of shape (nz,ny)                        
+        """        
+        if lay is not None:
+            assert 0 <= lay <= self.nz, f"lay must be between 0 and {self.nz}"
+            row, col = None, None
+        elif row is not None:
+            assert 0 <= row <= self.ny, f"row must be between 0 and {self.ny}"
+            col = None
+        elif col is not None:
+            assert 0 <= col <= self.nx, f"col must be between 0 and {self.nx}"
+        else:
+            lay = 0
+
         if world:
             if row is None:
                 return inpoly(self.Xmw, self.Ymw, pgcoords)
             else:
                 return inpoly(self.XMw[:, row, :], self.ZM[:, row, :], pgcoords)
+
         else:
-            if row is None:
+            if lay is not None:
+                # --- pgcoords in the xy plane
                 return inpoly(self.Xm, self.Ym, pgcoords)
-            else:
+            elif row is not None:
+                # --- pgcoords in the xz plane
                 return inpoly(self.XM[:, row, :], self.ZM[:, row, :], pgcoords)
-            
+            elif col is not None:
+                # ---pgcoords in the zy plane
+                return inpoly(self.YM[:, :, col], self.ZM[:, :, col], pgcoords)
+            else:
+                raise ValueError("Not all lay, row and col should be None")
+
+
     def refine_vertically(self, layers=[(0, 3), (1, 4)], params_dict=None, verbose=False):
         """Return new grid object with layers subdivided.
         
