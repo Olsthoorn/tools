@@ -497,75 +497,6 @@ def lrc_from_xyz(xyz, xyzGr):
         LRC.insert(0, index(x, xGr))
     return LRC
 
-def psi_row(frf, row=-1, verbose=True):
-    """Return stream function in row (x-section along x-axis).
-    
-    Parameters
-    ----------
-    frf: flow right face (nd_array)
-        3D array of flow right face.
-    row: int
-        zero based row number for which the stream function is desired.
-    verbose: bool
-        warn user with disclaimer about stream function.
-        
-    Returns
-    -------
-    Psi (zx +1, ny - 1) array for for (x, z) coordinates except for first and last row.
-    
-    """
-    if verbose:
-        warnings.warn("psi_row only works when there is no flow along columns.")
-    fr = frf[:, row, :-1]
-    fr = np.vstack((fr, np.zeros_like(fr[0:1])))
-    psi = fr[::-1].cumsum(axis=0)[::-1]
-    return psi
-    
-   
-def psi_col(fff, col=0, verbose=True):
-    """Return stream function in column (cross section along y axis).
-    
-    Parameters
-    ----------
-    fff: flow front face (nd_array)
-        3D array of flow right face.
-    row: int
-        zero based row number for which the stream function is desired.
-        
-    Returns
-    -------
-    Psi (nz, ny - 1) array for all (y, z) coordinates except the first and last column. (See Yp)
-    """
-    if verbose:
-        warnings.warn("psi_col only works when there is no flow along rows.")
-    ff = fff[:, :-1, col]
-    ff = np.vstack((ff, np.zeros_like(ff[0:1])))
-    psi = ff[::-1].cumsum(axis=0)[::-1]
-    return psi
-
-
-def psi_lay(Q, lay=0, verbose=True):
-    """Return stream function in layer.
-    
-    Parameters
-    ----------
-    Q: net flow into layer (nd_array)
-        3D array of Q
-    lay: int
-        zero based layer number for which the stream function is desired.
-        
-    Return stream function at the conrner points of the layer (ny +1, nx + 1)
-    
-    """
-    if verbose:
-        warnings.warn("psi_lay only works when there is no flow between layers.")
-    Q2 = Q[lay, :, :]
-    Q2 = np.hstack((np.zeros_like(Q2[:, 0]), Q2, np.zeros_like(Q2[:, -1])))
-    Q2 = np.vstack((np.zeros_like(Q2[0]), Q2, np.zeros_like(Q2[-1])))
-    psi = -Q2[::-1].cummsum(axis=0)[::-1]
-    return psi
-
-
 # --- this is the most important class of this module, the class
 # is instantiated to know the Modflow Grid, after which any
 # grid info can be supplied bt the methods and properties in this
@@ -2075,38 +2006,51 @@ class Grid:
             flow right face.
         row: int, default zero
             row number for which the stream function is desired.
-        """        
-        return psi_row(frf, row=row)
+        """
+        warnings.warn("This only works when all flow is within plane zx given by row")
+        if np.all(frf.shape == self.shape):
+            frf = frf[:, row, :-1]
+        else:
+            frf = frf[:,  row, :]
+        return np.cumsum(np.vstack((frf, np.zeros_like(frf[0])))[::-1], axis=0)[::-1]
         
     def psi_col(self, fff, col=0):
-        """Return stream function for column.
+        """Return stream function in place given by column.
         
         Parameters
         ----------
         fff: np.ndarray (self.shape)
-            flow front face.
+            flow front face (Modflow jargon).
         row: int
-            col number for which the stream function is desired.
+            column number for which the stream function is desired.
         """
-        return psi_col(fff, col=col)
+        warnings.warn("This only works when all flow is within the zx plane given by col")
+        if np.all(fff.shape == gr.shape):
+            fff = fff[:, :-1, col]
+        else:
+            fff = fff[:, :, col]
+        return np.cumsum(np.vstack((fff, np.zeros_like(fff[0])))[::-1], axis=0)[::-1]        
     
-    def psi_lay(self, Q):
-        """Return stream function for layer.
+    def psi_lay(self, frf, lay=0):
+        """Return stream function for layer (flow in xy plane).
+        
+        This will only work of all flow is inside xy plane and none perpendicular to it.
+        We use the frf not the flf of Modflow!! Hence Qx not Qz of fdm.
         
         Parameters
         ----------
-        Q: np.ndarray (self.shape)
-            total net injection into cells
-        layer: int
-            layer number for which the stream function is desired.
+        frf: np.array of Qx.
+            flow right face from Modflow or out['Qx'] from Fdm3.
+            Note flow lower face is not used.        
         """
-        if len(Q.shape) == 2:
-            assert np.all(Q.shape == self.shape[1:]), "Shapef of Q must be {}".format(self.shape[1:])
-        elif len(Q.shape) == 3:
-            assert np.all(Q.shape == self.shape), "Shape of Q must be {}".format(self.shape)
-            Q = Q.sum(axis=0)
-            warnings.warn("Stream function of total Q over full depth of model. Should be steady without recharge.")
-        return np.cumsum(np.vstack((Q, np.zeros(Q.shape[1])))[::-1], axis=0)[::-1]
+        warnings.warn(
+            """
+            frf must be the flow right face (Modlfow) or out['Qx'] (Fdm3).
+            The stream function is only valid when all flow is within the XY plane given by row.
+            Branchcuts caused by point extractions will be towards largest y (northward).
+            """)
+        frf = frf[lay, :, :-1]
+        return np.cumsum(np.vstack((frf, np.zeros_like(frf[0])))[::-1], axis=0)[::-1]
         
     @property
     def xp(self):
@@ -3800,10 +3744,16 @@ class Grid:
         """
         if xx is None:
             xx = np.array([-np.inf, np.inf])
+        else:
+            xx = np.array(xx)
         if yy is None:
             yy = np.array([-np.inf, np.inf])
+        else:
+            yy = np.array(yy)
         if zz is None:
             zz = np.array([-np.inf, np.inf])
+        else:
+            zz = np.array(zz)
             
         xmin, xmax = xx.min(), xx.max()
         ymin, ymax = yy.min(), yy.max()

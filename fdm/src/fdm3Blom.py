@@ -40,7 +40,7 @@ from scipy.special import k1 as K1
 from tools.fdm.src import mfgrid
 from tools.etc.etc import logo
 
-import wellfunctionalities as wf
+import tools.fdm.src.wellfunctionalities as wf
     
 class Dirs:
     """Namespace for directories in project"""
@@ -135,7 +135,7 @@ def psi(Qx, row=0):
 class Fdm3():
     """Finite difference model class."""
     # dtypes for the boundary types (alike those of flopy)    
-    dtype = {
+    dtypes = {
             "drn":  np.dtype([('Ig', int), ('h', float), ('C', float)]),
             "riv":  np.dtype([('Ig', int), ('h', float), ('C', float), ('rbot', float)]),
             "ghb":  np.dtype([('Ig', int), ('h', float), ('C', float)]),
@@ -164,7 +164,7 @@ class Fdm3():
         c: np.ndarray (nlay - 1, nrow, ncol) or None of not used
             Resistance agains vertical flow between the layers [d]
         S: np.ndarray or float
-            Storage coefficients for the cells. Currently these are used as a semi-transient simulation
+            Specific storage coefficients for the cells. Currently these are used as a semi-transient simulation
             just to make sure that non-linear boundaries can be smoothly determined.
             It will be straightforward to convert this in a full-scale transient model.
             In the current steady state model, S will be multiplied by gr.Area. and divided
@@ -187,6 +187,7 @@ class Fdm3():
             
         @TO 20250322
         """
+        # --- Basic properties and shape
         self.gr = gr
         self.c = c
         self.IBOUND = IBOUND
@@ -196,16 +197,20 @@ class Fdm3():
         Nz, Ny, Nx = self.gr.shape
         nod = self.gr.nod
 
+        # --- Differentiate between regular or axially symmetric grid.
         if self.gr.axial is True:
             print("axial==True so that y coordinates and ky are ignored")
             print("            and x stands for r, so that all x coordinates must be >= 0.")
-        if isinstance(K, np.ndarray): # only one ndaray was given
+            
+        # --- Complete K = (kx, ky, kz) if necessary
+        if isinstance(K, np.ndarray): # --- Only one ndaray was given
             kx, ky, kz = K.copy(), K.copy(), K.copy()
         elif isinstance(K, tuple): # 3-tuple of ndarrays was given
             kx, ky, kz = K[0].copy(), K[1].copy(), K[2].copy()
         else:
             raise ValueError("", "K must be an narray of shape (Ny,Nx,Nz) or a 3tuple of ndarrays")
 
+        # --- Assert proper shapes
         if kx.shape != self.gr.shape:
             raise AssertionError("shape of kx {0} differs from that of model {1}".format(kx.shape, self.gr.shape))
         if ky.shape != self.gr.shape:
@@ -213,24 +218,27 @@ class Fdm3():
         if kz.shape != self.gr.shape:
             raise AssertionError("shape of kz {0} differs from that of model {1}".format(kz.shape, self.gr.shape))
 
+        # --- Store
         self.kx, self.ky, self.kz = kx, ky, kz
 
-        # from this we have the width of columns, rows and layers
+        # --- From this we have the width of columns, rows and layers
         dx = self.gr.dx.reshape(1, 1, Nx)
         dy = self.gr.dy.reshape(1, Ny, 1)
         dz = self.gr.dz.reshape(Nz, 1, 1)
 
+        # --- Single out inactive cells
         inact  = (self.IBOUND==0).reshape(nod,) # boolean vector denoting inactive cells
         
+        # --- Axially symmetric case computes matrix coeff. differently
         if self.gr.axial is False:
             Rx2 = 0.5 * dx / (dy * dz) / kx
             Rx1 = 0.5 * dx / (dy * dz) / kx
             Ry  = 0.5 * dy / (dz * dx) / ky
             Rz  = 0.5 * dz / (dx * dy) / kz
             if c is not None:
-                Rc  =        c / (dx * dy)
-            #half cell resistances regular grid
+                Rc  =        c / (dx * dy)            
         else:
+            # --- Regular grid, we use half cell distances and add resistances in series
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore", RuntimeWarning) # Division by zero for x=0
                 Rx2 = 1 / (2 * np.pi * kx[:,:, 1: ] * dz) * np.log(gr.xm[ 1:]/gr.x[1:-1]).reshape((1, 1, Nx-1))
@@ -240,10 +248,9 @@ class Fdm3():
             Ry = np.inf * np.ones(self.gr.shape)
             Rz = 0.5 * dz.reshape((Nz, 1, 1))  / (np.pi * (gr.x[1:]**2 - gr.x[:-1]**2).reshape((1, 1, Nx)) * kz)
             if c is not None:
-                Rc = c  / (np.pi * (gr.x[1:]**2 - gr.x[:-1]**2).reshape((1, 1, Nx)))
-            #half cell resistances with grid interpreted as axially symmetric
+                Rc = c  / (np.pi * (gr.x[1:]**2 - gr.x[:-1]**2).reshape((1, 1, Nx)))            
 
-        # set flow resistance in inactive cells to infinite
+        # --- set flow resistance in inactive cells to infinite
         Rx2 = Rx2.reshape(nod,)
         Rx2[inact] = np.inf
         Rx2=Rx2.reshape(self.gr.shape)
@@ -260,7 +267,7 @@ class Fdm3():
         Rz[ inact] = np.inf
         Rz=Rz.reshape(self.gr.shape)
         
-        #Grid resistances between nodes
+        # --- Compute conductances using grid resistances between nodes
         Cx = 1 / (Rx1[:, :,:-1] + Rx2[:, :,1:])
         Cy = 1 / (Ry[:, :-1, :] + Ry[:, 1:, :])
         if self.c is None:
@@ -268,7 +275,7 @@ class Fdm3():
         else:
             Cz = 1 / (Rz[:-1, :, :] + Rc + Rz[:-1, :,:])
             
-        #Gobal indices for neighboring cells
+        # --- Gobal indices for neighboring cells
         IE = self.gr.NOD[:, :, 1: ]  # east neighbor cell numbers
         IW = self.gr.NOD[:, :, :-1] # west neighbor cell numbers
         IN = self.gr.NOD[:, :-1, :] # north neighbor cell numbers
@@ -276,23 +283,24 @@ class Fdm3():
         IT = self.gr.NOD[:-1, :, :] # top neighbor cell numbers
         IB = self.gr.NOD[ 1:, :, :]  # bottom neighbor cell numbers
         
+        # --- Convenience shorthand for x.ravel()
         def R(x):
             """Shorthand for x.ravel()."""
             return x.ravel()
 
-        # notice the call  csc_matrix( (data, (rowind, coind) ), (M,N))  tuple within tuple
-        # also notice that Cij = negative but that Cii will be positive, namely -sum(Cij)        
+        # --- Notice the call  csc_matrix( (data, (rowind, coind) ), (M,N))  tuple within tuple
+        #     also notice that Cij = negative but that Cii will be positive, namely -sum(Cij)        
         self.A = sp.csc_matrix((
                 -np.concatenate(( R(Cx), R(Cx), R(Cy), R(Cy), R(Cz), R(Cz)) ),\
                 (np.concatenate(( R(IE), R(IW), R(IN), R(IS), R(IB), R(IT)) ),\
                 np.concatenate(( R(IW), R(IE), R(IS), R(IN), R(IT), R(IB)) ),\
                         )),(nod, nod))
         
-        # Diagonal as a 1D vector
+        # --- Diagonal as a 1D vector
         self.adiag = np.array(-self.A.sum(axis=1))[:,0]
         self.Cx, self.Cy, self.Cz = Cx, Cy, Cz
         
-        # Get storage from input line if None or not None
+        # --- Get storage from input line for S=None or S is not None
         if S is None:
             Sy, Ss = 0.2, 2e-5
             if gr.nz > 2:
@@ -484,33 +492,33 @@ class Fdm3():
 
         # DRN boundaries
         if DRN is not None:
-            if not DRN.dtype == Fdm3.dtype['drn']:
+            if not DRN.dtype == Fdm3.dtypes['drn']:
                 raise ValueError(
-                    f"""DRN must have dtype:\n{Fdm3.dtype['drn']}\nnot\n{DRN.dtype}"""
+                    f"""DRN must have dtype:\n{Fdm3.dtypes['drn']}\nnot\n{DRN.dtype}"""
                 )
             DRN = Fdm3.extend_dtype(DRN, fields=[('Q', float), ('q', float), ('phi', float), ('fmask', float)])
             
         # RIV boundaries
         if RIV is not None:
-            if not RIV.dtype == Fdm3.dtype['riv']:
+            if not RIV.dtype == Fdm3.dtypes['riv']:
                 raise ValueError(
-                    f"""RIV must have dtype:\n{Fdm3.dtype['riv']}\nnot\n{RIV.dtype}"""
+                    f"""RIV must have dtype:\n{Fdm3.dtypes['riv']}\nnot\n{RIV.dtype}"""
                 )
             RIV = Fdm3.extend_dtype(RIV, fields=[('Q', float), ('q', float),  ('phi', float), ('fmask', float)])
 
             
         # General head boundaries
         if GHB is not None:
-            if not GHB.dtype == Fdm3.dtype['ghb']:
+            if not GHB.dtype == Fdm3.dtypes['ghb']:
                 raise ValueError(
-                    f"""GHB must have dtype:\n{Fdm3.dtype['ghb']}\nnot\n{GHB.dtype}""")
+                    f"""GHB must have dtype:\n{Fdm3.dtypes['ghb']}\nnot\n{GHB.dtype}""")
             GHB = Fdm3.extend_dtype(GHB, fields=[('Q', float), ('q', float), ('phi', float),('fmask', float)])
             
         # Free drainage boundaries (kind of drains)
         if FDR is not None:
-            if not FDR.dtype == Fdm3.dtype['fdr']:
+            if not FDR.dtype == Fdm3.dtypes['fdr']:
                 raise ValueError(
-                    f"""FDR must have dtype:\n{Fdm3.dtype['fdr']}\nnot\n{FDR.dtype}"""
+                    f"""FDR must have dtype:\n{Fdm3.dtypes['fdr']}\nnot\n{FDR.dtype}"""
                 )
             FDR = Fdm3.extend_dtype(FDR, fields=[('Q', float), ('q', float), ('C', float), ('cdr', float), ('c', float),
                                                              ('gamma', float), ('eta', float), ('beta', float), ('ge', float)])    
@@ -1106,19 +1114,19 @@ def oneD_all_boundary_types(kw):
     Ig = gr.NOD[0].ravel()
     
     # --- General head boundarie recarray
-    GHB = np.zeros(len(Ig), dtype=Fdm3.dtype['ghb'])
+    GHB = np.zeros(len(Ig), dtype=Fdm3.dtypes['ghb'])
     GHB['Ig'], GHB['h'], GHB['C'] = Ig, kw['h'], gr.Area.ravel() / kw['c']
         
     # --- Drain boundary recarray
     DRN = GHB.copy() # Same parameters
     
     # --- River boundary recarray
-    RIV = np.zeros(len(Ig), dtype=Fdm3.dtype['riv'])
+    RIV = np.zeros(len(Ig), dtype=Fdm3.dtypes['riv'])
     RIV['Ig'], RIV['h'], RIV['C'], RIV['rbot'] = Ig, kw['h'], gr.Area.ravel() / kw['c'], kw['h']
     
     # --- Free drainage boundaries
     # --- Parameters required for both FDR variants:
-    FDR = np.zeros(len(Ig), dtype=Fdm3.dtype['fdr'])
+    FDR = np.zeros(len(Ig), dtype=Fdm3.dtypes['fdr'])
     
     Nc = kw['N'] * kw['c']
     
@@ -1136,9 +1144,9 @@ def oneD_all_boundary_types(kw):
     drncond = DRNcond(h0=kw['h'] - kw['y0'], hN=kw['h'], cN=kw['c'], N=kw['N'])
     
     nDrn = 1
-    DRNn = np.zeros(len(Ig) * nDrn, dtype=Fdm3.dtype['drn'])    
+    DRNn = np.zeros(len(Ig) * nDrn, dtype=Fdm3.dtypes['drn'])    
     DC, hdr = drncond.get_ch(n=nDrn)
-    DRNn = np.zeros(len(hdr) * gr.nx, dtype=Fdm3.dtype['drn'])
+    DRNn = np.zeros(len(hdr) * gr.nx, dtype=Fdm3.dtypes['drn'])
     for i, (DCi, hi) in enumerate(zip(DC, hdr)):
         i1, i2 = i * len(Ig), (i + 1) * len(Ig)
         DRNn[i1:i2]['Ig']= Ig
@@ -1249,21 +1257,21 @@ def axial_all_boundary_types(kw):
     Ig = gr.NOD[0].ravel()
     
     # --- General head boundary conditions
-    GHB = np.zeros(len(Ig), dtype=Fdm3.dtype['ghb'])
+    GHB = np.zeros(len(Ig), dtype=Fdm3.dtypes['ghb'])
     GHB['Ig'], GHB['h'], GHB['C'] = Ig, kw['h'], gr.Area.ravel() / kw['c']
         
     # --- Drain boundary conditions. Take the same parameters.
     DRN = GHB.copy()
     
     # --- River boundary conditions
-    RIV = np.zeros(len(Ig), dtype=Fdm3.dtype['riv'])
+    RIV = np.zeros(len(Ig), dtype=Fdm3.dtypes['riv'])
     RIV['Ig'], RIV['h'], RIV['C'], RIV['rbot'] = (
         Ig, kw['h'], gr.Area.ravel() / kw['c'], kw['h']
     )
     
     # --- Free drainage boundary conditioins, two variants
     # --- Parameters that are the same for both variants
-    FDR = np.zeros(len(Ig), dtype=Fdm3.dtype['fdr'])    
+    FDR = np.zeros(len(Ig), dtype=Fdm3.dtypes['fdr'])    
     FDR['Ig'], FDR['phi'], FDR['h'], FDR['h0'], FDR['N'], FDR['w'], FDR['L'] = (
         Ig, kw['h'] + Nc, kw['h'], kw['h'] - kw['y0'], kw['N'], kw['w1'], kw['L']
     )
@@ -1281,9 +1289,9 @@ def axial_all_boundary_types(kw):
     drncond = DRNcond(h0=kw['h'] - kw['y0'], hN=kw['h'], cN=kw['c'], N=kw['N'])
     nDrn = 4
     
-    DRNn = np.zeros(len(Ig) * nDrn, dtype=Fdm3.dtype['drn'])    
+    DRNn = np.zeros(len(Ig) * nDrn, dtype=Fdm3.dtypes['drn'])    
     DC, hdr = drncond.get_ch(n=nDrn)
-    DRNn = np.zeros(len(hdr) * gr.nx, dtype=Fdm3.dtype['drn'])
+    DRNn = np.zeros(len(hdr) * gr.nx, dtype=Fdm3.dtypes['drn'])
     for i, (DCi, hi) in enumerate(zip(DC, hdr)):
         i1, i2 = i * len(Ig), (i + 1) * len(Ig)
         DRNn[i1:i2]['Ig']= Ig
