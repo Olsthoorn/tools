@@ -889,6 +889,15 @@ class Grid:
             return self._Z * np.ones((1, self._ny, self._nx))
         else:
             return self._Z.copy()# prevent ref. to original
+        
+    @property
+    def Z_corners(self):
+        """Return Z of all cell corners [nz+1, ny+1, nx+1]."""
+        if self._full is False:
+            return self._Z * np.ones((1, self._ny + 1, self._nx + 1))
+        else:
+            raise ValueError("Can't produce cell corners for an irregular Z-array.")
+        
 
     @property
     def shape(self, cbd=False):
