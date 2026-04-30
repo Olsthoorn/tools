@@ -7,6 +7,7 @@ Created on Mon Jun 18 00:23:37 2018
 """
 import os
 import sys
+import pickle
 import numpy as np
 import pandas as pd
 import calendar
@@ -15,6 +16,7 @@ import itertools
 from pathlib import Path
 import types
 import importlib.util
+from typing import Any
 
 # --- See __all__ at the bottom of this file (exports functions and classes)
 
@@ -71,6 +73,41 @@ def logo(fig, script_name=None):
              va='bottom',
              alpha=0.7)
    
+   
+# --- Pickling
+def pickleto(var:Any, path: str):
+    """Pickle var to os.path.join(dirs.data, basename).
+    
+    Parameters
+    ----------
+    var: Python object
+        any object that one want to pickle
+    path: str
+        full of the file to pickle to.
+    """
+    if not path.endswith('.pkl'):
+        path += ".pkl"
+    
+    with open(path, 'wb') as f:
+        print(f"Pickled {os.path.basename} --> {path}")        
+        pickle.dump(var, f)
+
+# --- Unpickling
+def picklefrom(path:str)->Any:
+    """Unpickle varname from path).
+    
+    Parameters
+    ----------
+    path: str
+        Path of the file to pickle from. 
+    """
+    if not path.endswith(".pkl"):
+        path += ".pkl"
+              
+    with open(path, 'rb') as f:
+        print(f"Loaded {os.path.basename} <-- {path}")        
+        return pickle.load(f)
+
 
 # %% # --- convert decimal years to datetime64 objects with day accuracy
 
@@ -454,7 +491,6 @@ def get_outliers(ds, inner=1.5, outer=3.0):
     >>> df.loc[[2, 5], 'b'] = [2.4, -10]
     >>> col = 'b'
     >>> get_outliers(df[col])  # ds[col] is a pd.Series not a pd.DataFrame !
-
 
     @ TO 2018-06-22 12:30
     '''
