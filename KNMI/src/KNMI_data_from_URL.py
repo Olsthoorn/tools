@@ -22,6 +22,7 @@ Default is ALL.
 
 # %%
 import os
+import numbers
 import requests
 import numpy as np
 import matplotlib.pyplot as plt
@@ -48,7 +49,7 @@ class Weather_stn():
     """
     def __init__(self, what='weather',
                  start='19600101', end='20260701',
-                 stn='260', vars=['PRCP'], fmt='csv', folder=None):
+                 stns=260, vars=['PRCP'], fmt='csv', folder=None):
         """Return KNMI weerstation or precip station data.
         
         Parameters
@@ -60,9 +61,9 @@ class Weather_stn():
             start date
         endtt: 'yyyymmdd'
             end date
-        stn: int like '260' or int
+        stns: int like 260 or sequence of ints
             You can use stn='260' for weather station De Bilt and '550' for precip station De Bilt.
-        vars: list of str
+        vars: sequence of str
             list of fields or fiedl groups (see on top of this file).
         fmt: str
             file format
@@ -75,6 +76,8 @@ class Weather_stn():
             self.what = 'daggegevens'
         elif what == 'precipitation':
             self.what = 'monv/reeksen'
+        elif what == 'hourly':
+            self.what = 'uurgegevens'
         else:
             raise ValueError(f"What must be 'weather' or 'precipitation' not '{what}'")
             
@@ -86,37 +89,59 @@ class Weather_stn():
         self.start = start
         self.end = end
         
-        if stn is None:
-            raise ValueError("stn must not be None! Use 260 for De Bilt.")
-        
-        self.stn  = stn
-        self.stns = [stn]
-        self.vars = vars
+        # --- Prepare stns for payload
+        if stns is None:
+            raise ValueError("stns must not be None!\n" +
+                    "Use 260 for De Bilt of a sequence of station numbers.")
+        elif isinstance(stns, (str, numbers.Integral)):
+            self.stns = str(stns)
+        else:
+            stns = ':'.join(map(str, stns))
+            
+        # --- Prepare vars for payload
+        if vars is None:
+            self.vars = vars
+        else:
+            self.vars = vars if isinstance(vars, str) else ':'.join(vars)
+            
+        # --- Not used, use .csv always
         self.fmt  = fmt
-        
+                
+        # --- Folder where to store the data .csv file
         self.folder = folder
         if not os.path.isdir(folder):
             raise FileNotFoundError("Not a folder: '{folder}'")
                 
+        # --- Request's payload
         self.payload = {'start': self.start,
                         'end': self.end,
                         'stns': self.stns,
                         'vars': self.vars,
                         'fmt': 'csv'}
 
+        # --- Generate outfile name (.csv file)
         if self.what == 'daggegevens':
-            self.outfile = f"weer_{self.stn}_{start}_{end}.txt"
-        else:
-            self.outfile = f"prec_{self.stn}_{start}_{end}.txt" 
-
+            self.outfile = f"weer_{self.stns}_{start}_{end}.txt"
+        elif self.what == 'monv/reeksen':
+            self.outfile = f"prec_{self.stns}_{start}_{end}.txt"
+        elif self.what == 'uurgegevens':
+            self.outfile = f"uur_{self.stns}_{start}_{end}.txt"
+            
+        # === Get the data
         if os.path.isfile(os.path.join(self.folder, self.outfile)):
+            # --- Data was already downloaded, skip
             print(f"Outfile {self.outfile} already exists in '{self.folder}', request skipped.")
             self.result = None
+            
         else:
+            # --- Issue the request for the data ----
             self.result = requests.get(self.URL, params=self.payload)
+            
+            # --- Verify the success of the request
             assert self.result.ok, f"Response is not ok, status_code = {self.result.status_code}"
             print("Request result ok.")
                     
+            # --- Write the request reseult to a .csv file (outfile)
             with open(os.path.join(self.folder, self.outfile), 'w') as f:
                 f.write(self.result.text)
                 print(f"KNMI-file {os.path.basename(self.outfile)} written to {self.folder}.")
@@ -139,80 +164,87 @@ class Weather_stn():
             else:
                 break
             
-        # --- Store the header line with explications
+        # --- Store the header line with the data explications
         self.headers = headers[:-1]
             
         # --- Column headers are in the last line starting with #
         self.columns = [k.strip() for k in headers[-1].strip().split(',')]
         
+        # --- Only keep the data lines after the headers
         data = data[idx:]
+        
+        # --- Drop last line if corrupt or incomplete
         if len(data[-1]) <= 1:
             data.pop()
                 
-        # --- Remove ',' from each data line
+        # --- Remove spaces and the split on ',' for each data line
         data = [d.strip().replace(' ', '').split(',') for d in data]
-                        
-        if self.what == 'daggegevens':
-            if self.vars[0] == 'PRCP':
-                df = pd.DataFrame(data, columns=self.columns)
-                
-                # --- Remove lines with an empty 'RH' field
-                df = df[df['RH'] != ""]
-                
-                # --- Set column types
-                df = df.astype({'DR': float, 'RH': float, 'EV24': float})
-                
-            else: # --- individual fields specified
-                df = pd.DataFrame(data, columns=self.columns)
-                
-                # --- Remove lines with an empty 'RH' field
-                df = df[df['RH'] != ""]
-
-            # --- Replace the index by column 'YYYYMMDD'
-            #     after converting it into np.datetime64 or pd.timestamp
-            df.index = [np.datetime64(f'{d[:4]}-{d[4:6]}-{d[6:]}') for d in df['YYYYMMDD']]
-            df.index.name = 'datetime'
-            
-            # --- No need for the these colunmns anymore
-            df = df.drop(columns=['STN', 'YYYYMMDD'])
         
-            # --- Convert the columns in group PRCP from tenth of mm to mm/d
+        # --- Convert data into DataFrame
+        df = pd.DataFrame(data, columns=self.columns)
+
+        # --- Remove lines with an empty field
+        df = df.replace('', np.nan)
+        df = df.astype(float)
+        df = df.dropna()
+
+        # --- Replace the index by column 'YYYYMMDD' after conversion to timestamp
+        df.index  = pd.to_datetime(df['YYYYMMDD'], format='%Y%m%d')
+        df.index.name = 'datetime'
+        
+        # --- No need for the these colunmns anymore
+        df = df.drop(columns=['STN', 'YYYYMMDD'])
+
+                      
+        # === Daggegevens ===
+        if self.what == 'daggegevens':
+        
+            # --- Convert the columns in group PRCP from tenths of mm/d to mm/d
             if self.vars[0] == 'PRCP':
                 df['EV24'] /= 10 # mm/d
                 df['RH'  ] /= 10 # mm/d
                 df.loc[df['RH'] < 0, 'RH'] = 0.025 # mm/d
                 df['RH'  ] = np.round(df['RH'], 1)
                 df['DR'  ] /= 10 # h/d rainfall duration
+
+
+        # === Uurgegevens ===
+        if self.what == 'uurgegevens':
+
+            # --- Add hour to the index
+            df = df.astype({'HH': int})
+            df.index += pd.to_timedelta(df['HH'], unit='h')
             
-            # --- Adapt index to start of next day (tricky, don't do that)!!
-            # df.index += np.timedelta64(1, 'D') # End of 24h period in which the rain fell.
+            # --- No need for the this colunmn anymore
+            df = df.drop(columns=['HH'])
         
+            # --- Convert the columns in group PRCP from tenth of mm to mm/d
+            if self.vars[0] == 'PRCP':                
+                df['RH'  ] /= 10 # mm/d
+                df.loc[df['RH'] < 0, 'RH'] = 0.025 # mm/d
+                df['RH'  ] = np.round(df['RH'], 1)
+                df['DR'  ] /= 10 # h/d rainfall duration
+
+
+        # === monv/reeksen (precipitation) ====
         elif self.what == 'monv/reeksen':
-            df = pd.DataFrame(data, columns=self.columns)
-            
-            df =df[df['RD'] != ""]
                         
-            df = df.astype({'RD':float, 'SX':int})
+            # --- Set the type of SX (sneeuwdek index)
+            df = df.astype({'SX':int})
                         
-            # --- Convert columns 'YYYYMMDD' into np.datetime64 index (or pd.timestamp)
-            df.index = [np.datetime64(f'{d[:4]}-{d[4:6]}-{d[6:]}') for d in df['YYYYMMDD']]
-            df.index.name = 'datetime'
-            
             # --- Shift time index to end of 24 h period in which the rain fell
             df.index += np.timedelta64(8, 'h') # End of 24 h period in which the rain fell
-            
-            # --- No need for these columsn anymre
-            df = df.drop(columns=['STN', 'YYYYMMDD'])
-                        
+                                    
             # --- Convert from tenths of mm/d to mm/d
             df['RD'] /= 10 # mm/d
             df.loc[df['RD'] < 0, 'RD'] = 0.025 # mm/d
             df.loc[:, 'RD'] = np.round(df['RD'], 1)
         
+        # === Only retain the data after the last data gap
         # --- Get all  indices where data start missing
         _I = np.where(np.diff(df.index) > np.timedelta64(1, 'D'))[0]
         
-        # --- Start the df after the last hole in the data!!
+        # --- If there are gaps, then keep the df after the last hole in the data.
         if len(_I) > 0:            
             df = df.iloc[_I[-1] + 1:]
         # --- Return the DataFrame
@@ -224,34 +256,43 @@ def datetime2knmi_date(dt):
     return f"{ddtt.year:4s}{ddtt.month:02s}{ddtt.day:02s}"
 
 
+# === Namespace for project directories
+class Dirs():
+    def __init__(self):
+        self.data = '/Users/Theo/Development/python/hydro_tools/tools/KNMI/data'
+
+
 # %%
 if __name__ == '__main__':
     # %%    
     # --- Data period:
     startt = '19600101'
     endt =   '20260701'
-
-    
-    # --- Namespace for project directories
-    class Dirs():
-        def __init__(self):
-            self.data = '/Users/Theo/Development/python/hydro_tools/tools/KNMI/data'
             
     dirs = Dirs()
       
     # %% --- Request data from KNMI or use file if it already exists.
           
-    # --- Just get the weather for De Bilt (Weather station 260)
-    DeBilt260 = Weather_stn(what='weather', start=start, end=endt, stn='260', vars=['PRCP'], fmt='csv', folder=dirs.data)
+    # --- Weather data for De Bilt (Weather station 260)
+    DeBilt260 = Weather_stn(what='weather', start=start, end=endt, stns='260', vars=['PRCP'], fmt='csv', folder=dirs.data)
     
     # --- Return as pd.DataFrame
     dB260 = DeBilt260.df
 
-    # --- And the rain for De Bilt (Rain station 550)
-    DeBilt550 = Weather_stn(what='precipitation', start=startt, end=endt, stn='550', vars=['PRCP'], fmt='csv', folder=dirs.data)
+    # --- Precipitation data for De Bilt (Rain station 550)
+    DeBilt550 = Weather_stn(what='precipitation', start=startt, end=endt, stns='550', vars=['PRCP'], fmt='csv', folder=dirs.data)
     
     # --- Return as pd.DataFrame
     dB550 = DeBilt550.df
+    
+    # --- Hourly weather data (here just rain)
+    # dBiltUur = Weather_stn(what='hourly', start=20260101, end=20260501, stns='260', vars=['PRCP'], fmt='csv', folder=dirs.data)
+    # dB260h = dBiltUur.df
+    
+    # --- Hourly weather data (here just rain)
+    dBiltUur = Weather_stn(what='hourly', start=20260101, end=20260501, stns='260', vars=['P', 'RH', 'FH', 'DD', 'U'], fmt='csv', folder=dirs.data)
+    dB260h = dBiltUur.df
+
 
         
     # %% --- Show neerslagstations KNMI anno 2021
@@ -311,12 +352,12 @@ if __name__ == '__main__':
         knmi = Weather_stn(what='precipitation',
                            start=startt,
                            end=endt,
-                           stn=stn_meta['STN'],
+                           stns=stn_meta['STN'],
                            folder=dirs.data)        
              
 
     # %% --- Precipitation - Makkink evapotranspiration for De Bilt
-    DeBilt260 = Weather_stn(what='weather', start=startt, end=endt, stn='260', vars=['PRCP'], fmt='csv', folder=dirs.data)
+    DeBilt260 = Weather_stn(what='weather', start=startt, end=endt, stns='260', vars=['PRCP'], fmt='csv', folder=dirs.data)
     dB260 = DeBilt260.df
 
     fig, ax = plt.subplots()
@@ -337,16 +378,16 @@ if __name__ == '__main__':
     rdf = {}
     for stn in stns:
         rdf[stn]=Weather_stn(what='precipitation',
-                             start=startt, end=endt, stn=stn, vars=['PRCP'], fmt='csv', folder=dirs.data).df
+                             start=startt, end=endt, stns=stn, vars=['PRCP'], fmt='csv', folder=dirs.data).df
 
     # --- Tackle weerstation De Bilt separately
-    stn = 260
-    rdf[260]=Weather_stn(what='weather',
-                start=startt, end=endt, stn=260, vars=['PRCP'], fmt='csv', folder=dirs.data).df
+    deBilt260 = 260
+    rdf[deBilt260]=Weather_stn(what='weather',
+                start=startt, end=endt, stns=deBilt260, vars=['PRCP'], fmt='csv', folder=dirs.data).df
 
-    rdf[260].loc[:, 'RD'] = rdf[stn].loc[:, 'RH']
+    rdf[deBilt260].loc[:, 'RD'] = rdf[deBilt260].loc[:, 'RH']
     # --- Shift index 1D and 8 hours to make the indexes compatible
-    rdf[260].index += np.timedelta64(32, 'h') # Shift
+    rdf[deBilt260].index += np.timedelta64(32, 'h') # Shift
     
     print("STN lines")
     for stn, df in rdf.items():
@@ -398,7 +439,7 @@ if __name__ == '__main__':
         
         proxy = Weather_stn(what='weather',
                             start=startt, end=endt,
-                            stn=stns['deBilt'], folder=dirs.data).df
+                            stns=stns['deBilt'], folder=dirs.data).df
         proxy = proxy.drop(columns=['DR'])
         
         # --- Shift index over 1D + 8 hours so that EV24 is the accumulated
@@ -407,10 +448,10 @@ if __name__ == '__main__':
         
         spakenb = Weather_stn(what='precipitation',
                             start=startt, end=endt,
-                            stn=stns['spakenb'], folder=dirs.data).df
+                            stns=stns['spakenb'], folder=dirs.data).df
         laren = Weather_stn(what='precipitation',
                             start=startt, end=endt,
-                            stn=stns['laren'], folder=dirs.data).df
+                            stns=stns['laren'], folder=dirs.data).df
 
         # --- First index of spakenb is not in DeBilt remove it
         spakenb = spakenb.iloc[1:, :]
@@ -448,7 +489,7 @@ if __name__ == '__main__':
     # %% --- Plot rain surplus between october and july for every year since 2060
     
     deBilt =Weather_stn(what='weather',
-                start=startt, end=endt, stn=260, vars=['PRCP'], fmt='csv', folder=dirs.data).df
+                start=startt, end=endt, stns=260, vars=['PRCP'], fmt='csv', folder=dirs.data).df
     
     fig, ax = plt.subplots()
     
