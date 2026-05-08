@@ -96,13 +96,13 @@ class Weather_stn():
         elif isinstance(stns, (str, numbers.Integral)):
             self.stns = str(stns)
         else:
-            stns = ':'.join(map(str, stns))
+            self.stns = ':'.join(map(str, stns))
             
         # --- Prepare vars for payload
         if vars is None:
             self.vars = vars
         else:
-            self.vars = vars if isinstance(vars, str) else ':'.join(vars)
+            self.vars = vars if isinstance(vars, str) else '_'.join(vars)
             
         # --- Not used, use .csv always
         self.fmt  = fmt
@@ -112,20 +112,24 @@ class Weather_stn():
         if not os.path.isdir(folder):
             raise FileNotFoundError("Not a folder: '{folder}'")
                 
+        # --- Uurgegeven does not accept group parameters and has no EV24        
+        if self.what == 'uurgegevens' and self.vars=='PRCP':
+            self.vars = 'RH'
+
         # --- Request's payload
         self.payload = {'start': self.start,
                         'end': self.end,
                         'stns': self.stns,
-                        'vars': self.vars,
-                        'fmt': 'csv'}
+                        'vars': None if self.vars is None else self.vars.replace('_',':'),
+                        'fmt': 'csv'}            
 
         # --- Generate outfile name (.csv file)
         if self.what == 'daggegevens':
-            self.outfile = f"weer_{self.stns}_{start}_{end}.txt"
+            self.outfile = f"weer_{self.stns}_{self.vars}_{start}_{end}.csv"
         elif self.what == 'monv/reeksen':
-            self.outfile = f"prec_{self.stns}_{start}_{end}.txt"
+            self.outfile = f"prec_{self.stns}_{start}_{end}.csv"
         elif self.what == 'uurgegevens':
-            self.outfile = f"uur_{self.stns}_{start}_{end}.txt"
+            self.outfile = f"uur_{self.stns}_{self.vars}_{start}_{end}.csv"
             
         # === Get the data
         if os.path.isfile(os.path.join(self.folder, self.outfile)):
@@ -139,7 +143,18 @@ class Weather_stn():
             
             # --- Verify the success of the request
             assert self.result.ok, f"Response is not ok, status_code = {self.result.status_code}"
+            
+            if self.result.text.lstrip().startswith('<!DOCTYPE html>'):
+                raise ValueError(
+                    "KNMI returned HTML instead of data.\n"
+                    "Possible causes:\n"
+                    "- requested period too large\n"
+                    "- invalid variable combination\n"
+                    "- invalid station\n"
+                )
+
             print("Request result ok.")
+                
                     
             # --- Write the request reseult to a .csv file (outfile)
             with open(os.path.join(self.folder, self.outfile), 'w') as f:
@@ -195,20 +210,21 @@ class Weather_stn():
         # --- No need for the these colunmns anymore
         df = df.drop(columns=['STN', 'YYYYMMDD'])
 
-                      
-        # === Daggegevens ===
-        if self.what == 'daggegevens':
-        
-            # --- Convert the columns in group PRCP from tenths of mm/d to mm/d
-            if self.vars[0] == 'PRCP':
-                df['EV24'] /= 10 # mm/d
-                df['RH'  ] /= 10 # mm/d
-                df.loc[df['RH'] < 0, 'RH'] = 0.025 # mm/d
-                df['RH'  ] = np.round(df['RH'], 1)
-                df['DR'  ] /= 10 # h/d rainfall duration
+        # --- Convert the columns in group PRCP from tenths of mm/d to mm/d
+        if 'EV24' in df.columns:
+            df['EV24'] /= 10 # mm/d
+            df.loc[df['EV24'] < 0, 'EV24'] = 0.025 # mm/d
+            df['EV24'] = np.round(df['EV24'], 1)
+            
+        if 'RH' in df.columns:
+            df['RH'] /= 10 # mm/d
+            df.loc[df['RH'] < 0, 'RH'] = 0.025 # mm/d
+            df['RH'] = np.round(df['RH'], 1)
+            
+        if 'RD' in df.columns:
+            df['RD'] /= 10 # h/d rainfall duration
 
-
-        # === Uurgegevens ===
+        # === Uurgegevens add hour to index ===
         if self.what == 'uurgegevens':
 
             # --- Add hour to the index
@@ -218,15 +234,8 @@ class Weather_stn():
             # --- No need for the this colunmn anymore
             df = df.drop(columns=['HH'])
         
-            # --- Convert the columns in group PRCP from tenth of mm to mm/d
-            if self.vars[0] == 'PRCP':                
-                df['RH'  ] /= 10 # mm/d
-                df.loc[df['RH'] < 0, 'RH'] = 0.025 # mm/d
-                df['RH'  ] = np.round(df['RH'], 1)
-                df['DR'  ] /= 10 # h/d rainfall duration
 
-
-        # === monv/reeksen (precipitation) ====
+        # === monv/reeksen (precipitation) add 8h to index ====
         elif self.what == 'monv/reeksen':
                         
             # --- Set the type of SX (sneeuwdek index)
@@ -234,12 +243,7 @@ class Weather_stn():
                         
             # --- Shift time index to end of 24 h period in which the rain fell
             df.index += np.timedelta64(8, 'h') # End of 24 h period in which the rain fell
-                                    
-            # --- Convert from tenths of mm/d to mm/d
-            df['RD'] /= 10 # mm/d
-            df.loc[df['RD'] < 0, 'RD'] = 0.025 # mm/d
-            df.loc[:, 'RD'] = np.round(df['RD'], 1)
-        
+                   
         # === Only retain the data after the last data gap
         # --- Get all  indices where data start missing
         _I = np.where(np.diff(df.index) > np.timedelta64(1, 'D'))[0]
