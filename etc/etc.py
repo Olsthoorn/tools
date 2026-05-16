@@ -267,7 +267,27 @@ dt2dn = npDatetime2mlDatenum
 def attr(obj):
     """Return the attributes of an object that do not start with '_'."""
     return [o for o in dir(obj) if not o.startswith('_')]
+
+def vars_(obj):
+    """Return the attributes of an object with values that do not start with '_'.
     
+    Nice: pprint(etc.vars(obj))
+    
+    """    
+    return  {k:v for k, v in vars(obj).items() if not k.startswith('_')}
+    
+def descr(obj):
+    """Describe the attributes of an object with values that do not start with '_'."""
+    for k, v in vars(obj).items():
+        if k.startswith('_'):
+            continue
+
+        if isinstance(v, np.ndarray):
+            print(f"{k:20} {v.shape} {v.dtype}")
+        else:
+            print(f"{k:20} {v}")
+    return  None
+
 
 linestyles_ = ['-', '--', '-.', ':']
 colors_ = ['b', 'r', 'g', 'k', 'm', 'c', 'brown', 'orange', 'gold', 'beige']

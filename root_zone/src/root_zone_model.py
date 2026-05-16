@@ -21,12 +21,20 @@ It stores the results in a specified directory for further analysis or reporting
 
 # %%
 import os
+import sys
+
+print("sys.executable =", sys.executable)
+print("sys.path =")
+for p in sys.path:
+    print(p)
+print()
+
 from abc import ABC, abstractmethod
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.integrate import solve_ivp
 import pandas as pd
-from tools.etc import etc
+from tools.etc import etc, descr
 from itertools import cycle
 from typing import Any
 from pathlib import Path
@@ -39,136 +47,88 @@ class RechargeBase(ABC):
 
     month_names = 'jan feb mar apr may jun jul aug sep okt nov dec'.split()
     
-    def __init__(self, Smax_I: float = 2.5, Smax_R: float = 100., **_: Any)-> None:
-        self.Smax_I = Smax_I
-        self.Smax_R = Smax_R
-        self.S_I = 0.
-        self.S_R = 0.
-            
-    def dt_hit_interception(self, P: float, E: float)->float:
-        """Return S, t, point where S hits top or bottom of  reservoir."""
-        Smin, Smax, Dt = 0., self.Smax_I, self.dt
+    def __init__(self, Smax_I: float=None, Smax_R: float=None, Scrit_R: float=None, **_: Any)-> None:
+        """Sets reservoir capacities [mm]. The Scrit_R is only used in the
+        Earth model. It's the root zone capacity below which evaporation
+        will be linearly reduced. It's set to np.Inf to exclude its use.
         
-        S0 = self.S_I # current interception storage
-        
-        # New guessed reservoir contents update
-        S1 = S0 + (P - E) * Dt
+        TO 2026-06-14
+        """
+        self.Smax_I = Smax_I # --- Interception reservoir capacity [mm]
+        self.Smax_R = Smax_R # --- Root_zone reservoir capacity [mm]
+        self.Scrit_R = Scrit_R # --- Root_zone critical capacity [mm] in Earthmodel 
+        self.S_I = 0. # --- Interception reservoir initial capacity [mm]
+        self.S_R = 0. # --- Root zone reservoir initial capacity [mm]
 
-        # Get S, dt
-        if np.isclose(P, E): # Nothing changes
-            return S1, Dt
-        elif P > E:          # Reservoir fills up and may overflow at Dt < dt
-            dt = (Smax  - S0) / (P - E)
-            if dt <= Dt:     # Moment when reservoir becamse full.
-                return Smax, dt
-            else:
-                return S1, Dt
-        elif P < E:          # Reservoir is emptied
-            dt = (Smin - S0) / (P - E) # Moment when reservoir became empty
-            if dt <= Dt:
-                return Smin, dt
-            else:            # Reservoir neither overflows not empties
-                return S1, Dt 
-        else:
-            raise ValueError("Didn't expect to get here in t_hit")
      
-     
-    def interception(self, P0: float, E0: float)-> float:
-        """Accept P0, E0 and return q, E1
+    def interception(self, S: float, P: float, E: float, Dt: float)-> float:
+        """Accept P, E and return S, q, EA
         
         Parameters
         ----------
+        S: float
+            Filling of the interception reservoir [mm]
         P: float
-            Precipitation
-        E0: float
-            Potential evaporation
+            Precipitation [mm/d]
+        E: float
+            Potential evaporation [mm/d]
+        Dt: float
+            Time step
 
         Returns                
         -------
+        S: float
+            filling of reservoir at end of time step
         q: float
-            downward outflow of inerception (fall-thorugh)
-        E1: float
-            Evaporaton from interception resrvoir
+            downward outflow of inerception (fall-thruogh)
+            averaged over the time step.
+        EA: float
+            Actual evaporaton from interception reservoir
         """
-        Dt = self.dt
-        S0 = self.S_I
-                
-        S, dt1 = self.dt_hit_interception(P0, E0)
+        # --- Current interception storage level        
+        S0, Smin, Smax, q = S, 0., self.Smax_I, 0.
+        Dt = self.Dt
         
-        self.S_I = S
+        def EA(P, S, S0, q, Dt):
+            # --- Actual evporation from interception reservoir
+            return np.round(P - (S - S0) / Dt - q, 4)
         
-        dt1 = min(dt1, Dt)
-        dt2 = max(Dt - dt1, 0)
-
-        if np.isclose(P0, E0):
-            q = 0.
-            E1 = E0
+        if np.isclose(P, E) or np.isclose(Smin, Smax): # --- Nothing happens
+            return S, q, E            
+                    
+        if P > E: # --- Fills
+            dt = (Smax - S) / (P - E)
+            if dt < Dt: # -- Full
+                dt2 = Dt - dt
+                q = (P - E) * dt2 / Dt
+                return Smax, q, EA(P, Smax, S0, q, Dt)
+            else: # --- Stuck in the middle
+                S += (P - E) * Dt
+                return S, q, EA(P, S,  S0, q, Dt)
             
-        if P0 > E0:
-            q = (P0 - E0) * dt2 / Dt
-            E1 = P0 - (S - S0 ) / Dt - q
-            
-        elif P0 < E0:
-            q = 0.
-            E1 = P0 - (S - S0 ) / Dt - q
-            
-        B = P0 - E1 - (S - S0) / Dt - q
-            
-        return q, E1, B
+        elif P < E: # --- Empties
+            dt = (Smin- S) / (P - E)
+            if dt < Dt: # --- Empty
+                return Smin, q, EA(P, Smin, S0, q, Dt)
+            else:
+                S += (P - E) * Dt
+                return S, q, EA(P, S, S0, q, Dt)
+        else:
+            raise ValueError("Should never have gotten here.")
 
         
     # May be overwritten
     @abstractmethod
-    def S_rootzone(self, P: float, E: float, Dt:float)-> float:
-        """Compute the root zone filling at the dt = t - t0."""
-        pass
-    
-    @abstractmethod    
-    def dt_hit_root_zone(self, P: float, E: float, Dt: float)->float:
-        """Return S, t, point where S hits top or bottom of  root-zone reservoir."""
-        pass
-    
-    
-    def root_zone(self, P: float, E: float)-> float:
-        """Accept P, E and return q, E1
+    def root_zone(self, S: float, P: float, E: float, Dt:float)-> tuple:
+        """Compute the root zone filling at the dt = t - t0.
         
-        Parameters
-        ----------
-        P: float
-            Precipitation
-        E: float
-            Potential evaporation after interception
-
-        Returns                
+        Returns
         -------
-        q: float
-            downward outflow from root zone
-        E1: float
-            Evapo-transpiration from root zonen reservoir
+        S, q, EA
+        
         """
-        Dt = self.dt
-        S0 = self.S_R
-                
-        S, dt1 = self.dt_hit_root_zone(P, E, Dt)
-        
-        self.S_R = S # The new value at Dt
-        
-        dt2 = Dt - dt1 # Always >= 0 after dt_hit_root_zone
-        
-        if np.isclose(dt2, 0):
-            q = 0   
-        elif P >= E:            
-            q = (P - E) * dt2 / Dt
-        else:
-            q = 0
-        
-        E1 = P - (S - S0 ) / Dt - q         
-                
-        # Budget:
-        B = P - E1 - (S - S0) - q 
-        
-        return q, E1, B
-
+        pass
+            
     
     def check_data(self, PE: pd.DataFrame)-> np.ndarray:
         """Verify input before simulation and prepare Out.
@@ -185,37 +145,39 @@ class RechargeBase(ABC):
             The index of PE is included in the field 't'
         """
            
-        # Checks for data consistency
-
-        # Required columns present?
+        # --- Required columns present?
         missing_columns = {'RH', 'EV24'} - set(PE.columns)
         if missing_columns:
             raise KeyError("Missing columns {missing_columns}")
         
-        # index in np.datetime64 time stamp format?
+        # --- Is index in np.datetime64 of pd.Timestamp format?
         if not isinstance(PE.index[0], (pd.Timestamp, np.datetime64)):
             raise TypeError("Index of wheather series should be np.datetime64")
 
-        # Data in mm/d?
-        # if PE['EV24'].mean() > 0.01: # 1 cm/d
+        # --- Are data in mm/d?
         #     raise ValueError("Date probably not in m/d.")        
         if PE['EV24'].mean() < 0.01:
             raise ValueError("Date probably not in mm/d.")        
        
-       # Initialyze the storage
-        self.S_I = self.Smax_I
-        self.S_R = self.Smax_R / 2.
+        # --- Initialyze the interception and root zone storage
+        if self.Smax_I is not None:
+           self.S_I = self.Smax_I / 2        
+        if self.Smax_R is not None:
+            self.S_R = self.Smax_R / 2.
         
-        # Get the time step length in days
-        self.dt = (np.diff(PE.index) / np.timedelta64(1, 'D'))[0]
+        # --- Get the time step length in days
+        self.Dt = (np.diff(PE.index) / np.timedelta64(1, 'D'))[0]
 
+        # --- Convert pd.DataFrame to numpy record array
         PE = PE.loc[:, ['RH', 'EV24']].to_records()
         
-        # Don't need the index, its kept
-        dtype = np.dtype([('t', 'datetime64[ns]'), ('RH', float), ('EV24', float), ('STO', float),
+        # --- Don't need the index, its kept
+        dtype = np.dtype([('t', 'datetime64[ns]'),
+                          ('RH', float), ('EV24', float), ('STO', float),
                           ('IC', float), ('EA', float), ('RCH', float), ('BI', float), ('BR', float)]) 
        
-        # Prepare the output array with specified dtype, that also holds the intput and timestamps
+        # --- Prepare the output array with a dtype
+        #     that also holds the intput and the timestamps
         Out = np.zeros(len(PE), dtype=dtype)  
         Out['t']  = PE.index      
         Out['RH'] = PE['RH']
@@ -241,23 +203,42 @@ class RechargeBase(ABC):
         PE['EA' ] = 0. # Actual evapotranspiration [mm/d]
         PE['RCH'] = 0. # Actual recharge [mm/d]
         """
-        # Out is empty recarray with the proper fields
+        # --- Out is empty recarray with the proper dtype
         Out = self.check_data(PE)
+        Dt = self.Dt
+        
+        # --- Makkink case
+        if self.Smax_I is None or self.Smax_R is None:            
+            Out['EA'] = Out['EV24']
+            Out['RCH'] = Out['RH'] - Out['EV24']
+            return pd.DataFrame(data=Out, index=Out['t']).drop(['t'], axis=1)            
+        
+        # --- Start values for simulation
+        SI0 = self.Smax_I / 2
+        SR0 = self.Smax_R / 2
             
+        # --- Run of each record of the record-array
         for pe in Out: # dt = datetime
             
+            # --- Pecipiation and Makkink E from pd.DataFrame
             P0 = pe['RH']
             E0 = pe['EV24']    # Open water evap. during assumed 12h daytime (/0.8?)
-            if P0 > 20:
-                pass
-            P1, E1, BI = self.interception(P0, E0)
-            rch, Ea, BR = self.root_zone(  P1, E0 - E1)
             
-            if Ea > 15:
+            # --- Compute interception and rootzone changes during time step
+            if P0==16.2 and E0==1.6:
                 pass
+            SI, P1,  E1 = self.interception(SI0, P0, E0,      Dt)
+            SR, rch, Ea = self.root_zone(   SR0, P1, E0 - E1, Dt)
+                        
+            # --- Water budgets
+            BI = P0 - E1 - (SI - SI0) / Dt - P1
+            BR = P1 - Ea - (SR - SR0) / Dt - rch
             
+            SI0, SR0 = SI, SR
+            
+            # --- Store in DataFrame
             pe['IC']  = pe['RH'] - P1  # intercepted
-            pe['STO'] = self.S_R       # Current storage level
+            pe['STO'] = SR             # Current storage level
             pe['EA']  = Ea             # Actual expo-transpiration
             pe['RCH'] = rch            # Recharge (to percolation zone)
             pe['BI'] = BI              # Budget Interception
@@ -268,120 +249,193 @@ class RechargeBase(ABC):
 
 # %% Recharge according to P - Emakkink
 class RchMak(RechargeBase):
-        """Compute recharge without interception and rootzone.
-        Given E0  =(Emak / 0.8) as input Emx = 0.8 E0 ??
-        The recharge must be P - 0.8 E0 ??
-        Where E0 = E_makkink/0.8. ??
+    """Compute recharge without interception and rootzone.
+    Given E0  =(Emak / 0.8) as input Emx = 0.8 E0 ??
+    The recharge must be P - 0.8 E0 ??
+    Where E0 = E_makkink/0.8. ??
     """
-        def __init__(self, Smax_I: float = 2.5, Smax_R: float = 100., **_: Any)-> None:
-            super().__init__(Smax_I, Smax_R)
+    def __init__(self, **_):
+        super().__init__()
+        self.name = 'RchMak'
+    
+    def root_zone(self, S: float, P: float, E: float, Dt: float)->tuple:
+        """Return the rootzone reservoir filling. Does nothing in this model."""  
+        q = 0.          
+        return S, q, E
             
-        def dt_hit_root_zone(self, P: float, E: float, Dt: float)->float:
-            """Return Smax, dt, does nothing in this model."""
-            return self.Smax_R, Dt
-
-        def S_rootzone(self, P: float, E: float, Dt: float)->float:
-            """Return the rootzone reservoir filling. Does nothing in this model."""
-            S = self.S_R
-            return S
-            
-        def interception(self, P: float, E0: float)-> float:
-            """Return fall through and left over of E0 after interception"""
-            # Just return the intput, no interception used            
-            return P, E0
+    def interception(self, S:float, P: float, E: float)-> tuple:
+        """Return fall through and left over of E0 after interception"""
+        # Just return the intput, no interception used
+        P1 = 0.           
+        return S, P1, E
             
 # %% Recharge with interception and a root-zone bin without E throttling until empty
 class RchBin(RechargeBase):
     """Compute recharge with interception and root_zone storage assuming
     that the evapotranspiration is not throttled.
     """
-    def __init__(self, Smax_I: float = 2.5, Smax_R: float = 100., **_: Any)-> None:
-            super().__init__(Smax_I, Smax_R)
-            
-    def S_rootzone(self, P: float, E: float, Dt: float)->float:
-        """Return rootzone filling after arbirtrary time Dt"""      
-        return self.S_R + (P- E) * Dt
-    
-    def dt_hit_root_zone(self, P: float, E: float, Dt: float)->float:
-        """Return S, t, point where S hits top or bottom of  root-zone reservoir."""
-        Smin, Smax= 0., self.Smax_R
-        
-        S0 = self.S_R # current interception storage
-        
-        # New guessed reservoir contents update
-        S1 = self.S_rootzone(P, E, Dt)
+    def __init__(self, Smax_I, Smax_R, **_):
+        super().__init__(Smax_I=Smax_I, Smax_R=Smax_R)
+        self.name = 'RchBin'
 
-        # Get S, dt
-        if np.isclose(P, E): # Nothing changes
-            return S1, Dt
-        elif P > E:          # Reservoir fills up and may overflow at Dt < dt
-            dt = (Smax  - S0) / (P - E)
-            if dt <= Dt:     # Moment when reservoir becamse full.
-                return Smax, dt
+    def root_zone(self, S: float, P: float, E: float, Dt: float)-> tuple:
+        """Accept P, E and return q, E1
+        
+        Parameters
+        ----------
+        S: float [mm]
+            Fill of reservoir
+        P: float [mm/d]
+            Overflow from interception
+        E: float [mm/d]
+            Potential ET after interception
+        Dt: float [d]
+            Length of time step
+
+        Returns                
+        -------
+        q: float [mm/d] average over Dt
+            downward outflow from root zone
+        EA: float [mm/d]
+            E from root zone reservoir
+        """                
+        def EA(P, S, S0, Dt, q):
+            # --- Actual evapotranspiration over the entire time step
+            return np.round(P - (S - S0) / Dt - q, 4)
+        
+        S0, Smax, Smin, q = S, self.Smax_R, 0., 0.
+        
+        if np.isclose(P, E):            
+            return S, q, EA(P, S, S0, Dt, q)
+        
+        if P > E: # --- Fills
+            dt = (Smax - S) / (P - E)
+            if dt < Dt: # --- Full
+                dt2 = Dt - dt
+                q = (P - E) * dt2 / Dt                
+                return Smax, q, EA(P, Smax, S0, Dt, q)
             else:
-                return S1, Dt
-        elif P < E:          # Reservoir is emptied
-            dt = (Smin - S0) / (P - E) # Moment when reservoir became empty
-            if dt <= Dt:
-                return Smin, dt
-            else:            # Reservoir neither overflows not empties
-                return S1, Dt 
+                S += (P - E)  * Dt
+                return S, q, EA(P, S, S0, Dt, q)
+            
+        elif P < E: # --- Empties
+            dt = (Smin - S) / (P - E)
+            if dt < Dt: # --- Empty
+                return Smin, q, EA(P, Smin, S0, Dt, q)
+            else:
+                S += (P - E) * Dt
+                return S, q, EA(P, S, S0, Dt, q)
+
         else:
-            raise ValueError("Didn't expect to get here in t_hit")
+            raise ValueError("Should never have gotten here.")
+
 
 
 # %% Recharge with interception and linear throttling of E
 class RchEarth(RechargeBase):
-    """Compute recharge with interception and root_zone storage assuming
-    that the evapotranspiration from th eroot zone is reduced by factor S/Smax.
-                
-    Decay of storage in root zone  is computed analytically.
+    """Compute recharge with interception and root_zone storage.
+    
+    The RchEarth model assumes E is not restraint as long as SR>Scrit_R
+    and linearly restraint when SR< Scrit_R.
     """
+    def __init__(self, Smax_I, Smax_R, Scrit_R, **_):
+        super().__init__(Smax_I=Smax_I, Smax_R=Smax_R, Scrit_R=Scrit_R)
+        self.name = 'RchEarth'
+        
+        self.Scrit_R = max(0, min(self.Scrit_R, self.Smax_R))
+                
+    def rootzone_top(self, S: float, P: float, E: float, Dt:float)-> float:
+        """Compute S, q and E when SR>Scrit_R.
+        
+        Report dt, to signal if Scrit was hit during the time step.
+        """
+        Smax, Smin, q = self.Smax_R, self.Scrit_R, 0.
+        
+        if np.isclose(P, E) or np.isclose(Smin, Smax):
+            return S, q, E
+        
+        if P > E: # --- Fills        
+            dt = (Smax - S) / (P - E)
+            if dt < Dt: # --- Full
+                dt2 = Dt - dt
+                q = (P - E) * dt2  / Dt                
+                return Smax, q, Dt
+            else:
+                S += (P - E)  * Dt
+                return S, q, Dt
+            
+        elif P < E: # --- Empties
+            dt = (Smin - S) / (P - E)
+            if dt < Dt: # --- (S=Scrit)                                
+                return Smin, q, dt
+            else:
+                S += (P - E) * Dt
+                return S, q, Dt
+
+        else:
+            raise ValueError("Should never have gotten here.")
     
-    def __init__(self, Smax_I: float = 2.5, Smax_R: float = 100., **_: Any)-> None:    
-        super().__init__(Smax_I, Smax_R)
-        return
+
+    def rootzone_bot(self, S: float, P: float, E: float, Dt:float)-> float:
+        """Compute S, q and E when S < Scrit.
         
-    def S_rootzone(self, P: float, E: float, Dt:float)-> float:
-        """Compute (predict) the reservoir filling after arabitrary time Dt.
+        Report dt to signal if S hits Scrit during the time step.
         
-        Don't take into account any reservoir boundaries, just integrate
-        over time Dt keeping P and E constant during Dt
+        q is always zero when S<=Scrit.
         """        
-        S0, Smax = self.S_R, self.Smax_R
-        p, r, x0 = P / Smax, E / Smax, S0 /Smax
+        S0, Smax, q = S, self.Scrit_R, 0.
         
-        if np.isclose(E, 0): # no evaporation just precipitation
-            x = x0 + p * Dt
-        else:            
-            x = p / r - (p / r - x0) * np.exp(- r * Dt)
-        return Smax * x
-    
-    def dt_hit_root_zone(self, P: float, E: float, Dt:float)->float:
-        """Return S, t, point where S hits top or bottom of  root-zone reservoir."""
-        S0, Smax = self.S_R, self.Smax_R
+        if np.isclose(P, E) or np.isclose(Smax, 0): # --- Nothing happens
+            return S, Dt
         
-        # S1 is the predicted storage after Dt it can be too high of too low
-        S1 = self.S_rootzone(P, E, Dt)
-        
-        # Get S, dt
-        if np.isclose(P, E): # Nothing changes
-            return S1, Dt
-        elif np.isclose(E, 0):
+        if np.isclose(E, 0): # --- P > 0, E == 0 --> Linear
             dt = (Smax - S0) / P
             if dt < Dt:
                 return Smax, dt
             else:
-                return S1, Dt
-        elif P < E:
-            return S1, Dt
-        else:
-            dt = Smax / E * np.log((P - E * S0 / Smax) / (P - E))
-            if dt < Dt:
+                S += P * Dt
+                return S, Dt
+        
+        # --- System characteristic time
+        T = Smax / E
+              
+        if P > E: # --- Fills
+            dt = T * np.log((1 - P/E)/(S/Smax - P/E))
+            if dt < Dt: # --- Full                                    
                 return Smax, dt
-            else:
-                return S1, Dt
-
+            
+        # --- All other cases must succeed        
+        S = Smax * (P/E - (P/E - S0/Smax) * np.exp(-Dt / T))
+        return S, Dt
+    
+    
+    def root_zone(self, S: float, P: float, E: float, Dt:float)-> float:
+        
+        S0, Scrit, Smax, q = S, self.Scrit_R, self.Smax_R, 0.
+        
+        def EA(P, S, S0, Dt, q):
+            # --- Actual evapotranspiration over the entire time step
+            return np.round(P - (S - S0) / Dt - q, 4)
+        
+        if np.isclose(P, E):
+            return S, q, E        
+        if Scrit <= S <= Smax:
+            S, q, dt = self.rootzone_top(S0, P, E, Dt)
+            if P > E:
+                pass  # --- Done: works as linear model         
+            elif dt < Dt:
+                # --- Continue bottom reservoir for the remaining time
+                S, dt = self.rootzone_bot(S, P, E, Dt-dt)
+                                    
+        else:
+            S, dt = self.rootzone_bot(S0, P, E, Dt)
+            if dt < Dt:
+                # --- Storage passes top of bottom root zone
+                #     Continue in upper (linear) root zone for the remaining time.
+                S, q, _ = self.rootzone_top(S, P, E, Dt - dt)
+                                
+        return S, q, EA(P, S, S0, Dt, q)
+    
 
 # %% Recharge with throttlling of E according to root S/Smax
     
@@ -398,69 +452,89 @@ class RchLam(RechargeBase):
     lambda = 1 yields the same reults as the RchEarth object.
     """
     def __init__(self, Smax_I: float = 2.5, Smax_R: float = 100., lam: float = 0.5, **_: Any)-> None:    
-        super().__init__(Smax_I, Smax_R)
-        
+        super().__init__(Smax_I=Smax_I, Smax_R=Smax_R)        
+        self.name = 'RchLam'        
         self.lam = lam
         
         self.event_y_eq_1.terminal = True
         self.event_y_eq_0.terminal = True
         
-        self.event_y_eq_1.direction = +1
-        self.event_y_eq_0.direction = -1
+        self.event_y_eq_1.direction = +1 # --- Smax passed from below
+        self.event_y_eq_0.direction = -1 # --- Smin passed from above
         
+        # --- Events to check along the way during integration
         self.events = [self.event_y_eq_1, self.event_y_eq_0]
                 
     @staticmethod
-    def rhs(t, x, p, r, lam):
-        return p - r * (np.clip(x, 0, None) ** lam)
+    def rhs(t, y, p, r, lam):
+        """Return p - r y^lam."""
+        return p - r * (np.clip(y, 0, None) ** lam)
 
     eps = 1e-6
 
     @staticmethod
     def event_y_eq_1(t, y, *_):
+        """Return y-1, to track overshoot."""
         return y[0] - (1.0 - RchLam.eps)
     
     @staticmethod
     def event_y_eq_0(t, y, *_):
+        """Return y to track undershoot."""        
         return y[0] - RchLam.eps
     
-            
-    def S_rootzone(self, P: float, E:float, Dt: float)->  float:        
-        """Return relative filling of reservoir using exact method.        
-        """
-        return 0.
 
-    def dt_hit_root_zone(self, P: float, E: float, Dt: float)->float:        
-        """Return t when reservoir hits a target filling x0.
+    def root_zone(self, S: float, P: float, E: float, Dt: float)->float:        
+        """Return S, q, E.
         """
-        S0, Smax = self.S_R, self.Smax_R        
-        p, r, x0 = P / Smax, E / Smax, S0 / Smax
+        # --- Note q is the recharge in mm/d
+        S0, Smax, q = S, self.Smax_R, 0.
+
+        # --- Nothing happens
+        if np.isclose(P, E):
+            return S0, q, E
+        
+        # --- Use dimensionless variables
+        p, r, y = P / Smax, E / Smax, S0 / Smax
                 
+        # --- Protect against overreach
         small_tol = 0.1 / Smax
-        xbase, xtop = small_tol, 1 - small_tol
+        ybase, ytop = small_tol, 1 - small_tol
         
-
-        xacc = p - r * x0 ** self.lam
-        if x0 > xtop:
-            if xacc >= 0:
-                return Smax, 0               
-        elif x0 < xbase:
-            if xacc <= 0:
-                return 0., Dt
+        # ---- dy/dt
+        yacc = p - r * y ** self.lam
+        if y > ytop: # --- Full
+            if yacc >= 0:
+                q = (P - E) * Dt
+                return Smax, q, E               
+        elif y < ybase: # --- Empty
+            if yacc <= 0:
+                E = P
+                return 0., q, E
             else:
-                x0 = xbase
+                y = ybase
         
-        sol = solve_ivp(self.rhs, [0, Dt], [x0], method='RK45', args=(p,r,self.lam),
+        # --- scipy's initial value ODE solver, using method RK45
+        sol = solve_ivp(self.rhs, [0, Dt], [y], method='RK45', args=(p,r,self.lam),
                 events=self.events, dense_output=True)
         
+        # --- Handle results
         if sol.success:
-            if len(sol.t_events[0]) > 0:                
-                x1 = sol.y_events[0].ravel()[-1]
+            if len(sol.t_events[0]) > 0:
+                # --- Get last time and event value.
+                y1 = sol.y_events[0].ravel()[-1]
                 dt = sol.t_events[0].ravel()[-1]
             else:
-                x1 = sol.y.ravel()[-1]
+                # --- Get last time and value of the integration.
+                y1 = sol.y.ravel()[-1]
                 dt = sol.t.ravel()[-1]
-            return Smax * x1, dt                
+            if dt < Dt: # --- Overflow for the remainder of the time step
+                if P > E:
+                    q = (P - E) * (Dt - dt)/Dt
+                else:
+                    q = 0
+            S = Smax * y1
+            EA = P - (S - S0) / Dt - q
+            return S, q, EA
         else:
             raise RuntimeError("Runge Kutta did not finish successfully exit status {soi.status}")
 
@@ -473,22 +547,22 @@ class RchLam(RechargeBase):
         lam = float | iterable of float
         """
         
-        x = np.linspace(0., 1.0, 200)
+        y = np.linspace(0., 1.0, 200)
         lambdas = np.atleast_1d(np.asarray(lam))
         
-        ax = etc.newfig(r"Efect of throttling E by $\lambda$: ($E = E_0 \cdot x^\lambda$)",
-                        r"$x = S/S_{max}$",
-                        r"$x^\lambda$")
+        ax = etc.newfig(r"Efect of throttling E by $\lambda$: ($E = E_0 \cdot y^\lambda$)",
+                        r"$y = S/S_{max}$",
+                        r"$y^\lambda$")
         
         for lam in lambdas:
-            ax.plot(x, x ** lam, label=fr"\ambda = {lam:3g}")
+            ax.plot(y, y ** lam, label=fr"\ambda = {lam:3g}")
             
         ax.legend(loc="lower right")
         return ax
         
         
     def show_effect_of_lam(self, x0=[0.5], PE=((2, 1)), lam=0.5, t=1.0, ax=None):
-        """Show x(t)=S(t)/Smaxfor different p and r and given lambda
+        """Show y(t)=S(t)/Smaxfor different p and r and given lambda
 
         This is just to show the course of the storage under constant P and E.
 
@@ -519,7 +593,7 @@ class RchLam(RechargeBase):
             ax = etc.newfig(
             fr"Show effect for $\lambda$ of different $P$ and $E$, [Smax={self.Smax_R} mm]",
                             "time [d]",
-                            r"$x=S/S_{max}$")
+                            r"$y=S/S_{max}$")
         
         if True: # sol.success:
             events = len(sol.t_events[0]) > 0
@@ -656,9 +730,6 @@ if __name__ == "__main__":
     
     # deBilt_short = change_meteo(deBilt_short)
     
-    # Storage capacity
-    Smax_I, Smax_R = 1.5, 100 # mm
-    
     date_span = (np.datetime64("2020-01-01"), np.datetime64("2021-03-31"))
     date_span = (deBilt_short.index[0], deBilt_short.index[-1])
     
@@ -668,17 +739,34 @@ if __name__ == "__main__":
     idx = ((deBilt_short.index >= date_span[0]) &
                                (deBilt_short.index <= date_span[1]))
 
-    labels = ['Makkink', 'bin', 'earth', 'lambda'][1:]
-    rchClasses = [RchMak, RchBin, RchEarth, RchLam][1:]
+    labels = ['Makkink', 'bin', 'earth', 'lambda']
+    rchClasses = [RchMak, RchBin, RchEarth, RchLam]
+    
+    
+    # --- Loop control, chooses which models
+    i1, i2 = 1, len(labels) + 1
+    
+    # --- Storage capacity
+    Smax_I, Smax_R = 1.5, 100 # mm
+
+    # --- Power lam model
+    lam = 0.5
+
     
     if True:
         ax1, ax2, ax3 = etc.newfigs(('EV24 and EA', 'P and RCH', 'STO'),
                 'time', ('mm/d', 'mm/d', 'mm' ), figsize=(12, 10))
-
-        lam = 0.25
         
-        for rchClass, label in zip(rchClasses, labels):
-            rch_simulator = rchClass(Smax_I=Smax_I, Smax_R=Smax_R, lam=lam)
+        for rchClass, label in zip(rchClasses[i1:i2], labels[i1:i2]):
+            if label == 'earth':
+                Scrit_R = 0.3 * Smax_R
+            else:
+                Scrit_R = np.inf
+                
+            print(f"=== Running model = {label} ===")
+                
+            rch_simulator = rchClass(Smax_I=Smax_I, Smax_R=Smax_R,
+                                     Scrit_R=Scrit_R, lam=lam)
             rch = rch_simulator.simulate(deBilt_short)
             
             clr = next(clrs)
@@ -694,7 +782,7 @@ if __name__ == "__main__":
         
         # fig.savefig(os.path.join(dirs.images, f'rch_{stn}.png'))
 
-        plt.show()
+    plt.show()
         
     if False:
         rchlam = RchLam()
