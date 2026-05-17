@@ -86,11 +86,10 @@
 \use_package stackrel 1
 \use_package stmaryrd 1
 \use_package undertilde 1
-\cite_engine biblatex
-\cite_engine_type authoryear
+\cite_engine basic
+\cite_engine_type default
+\biblio_style plain
 \biblio_options hyperref=true, backref=true, backrefstyle=three,backreffloats=true,indexing=bib,date=year
-\biblatex_bibstyle authoryear
-\biblatex_citestyle authoryear
 \use_bibtopic false
 \use_indices false
 \paperorientation portrait
@@ -139,15 +138,21 @@ Recharge-Interception-root-zone model
 \end_layout
 
 \begin_layout Author
-T.N.
- Olsthoorn
+T.N.Olsthoorn
 \end_layout
 
 \begin_layout Date
-September 12,
- 2025,
- May 16,
+May 18,
  2026
+\end_layout
+
+\begin_layout Standard
+\begin_inset CommandInset toc
+LatexCommand tableofcontents
+
+\end_inset
+
+
 \end_layout
 
 \begin_layout Section
@@ -249,7 +254,15 @@ kinematic wave
 \begin_inset Quotes erd
 \end_inset
 
- approach or by modeling the unsaturated zone in full using an unsaturated zone model.
+ approach or by modeling the unsaturated zone in full using an unsaturated zone model 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "Olst26"
+literal "false"
+
+\end_inset
+
+.
 \end_layout
 
 \begin_layout Standard
@@ -263,7 +276,7 @@ The time is divided into daily time steps that run from 08:00 to 08:00 the next 
  
 \end_layout
 
-\begin_layout Subsection
+\begin_layout Section
 Interception reservoir
 \end_layout
 
@@ -595,12 +608,20 @@ During time steps in which
  a way to bypass the interception without changing the overall recharge model.
 \end_layout
 
-\begin_layout Subsection
+\begin_layout Section
 Root-zone reservoir
 \end_layout
 
 \begin_layout Standard
-To generalize the root-zone reservoir according to Feddes (year),
+To generalize the root-zone reservoir according to 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "Fed82"
+literal "false"
+
+\end_inset
+
+,
  we divide it into two parts.
  The bottom part between 
 \begin_inset Formula $0\le S\le S_{crit}$
@@ -622,6 +643,57 @@ To generalize the root-zone reservoir according to Feddes (year),
 
  and will stay so for the remainder of the time step.
  We then use the linear throttling which depends of the fraction of the filling of the bottom part of the root zone reservoir.
+\end_layout
+
+\begin_layout Subsection
+Bin model and earth model
+\end_layout
+
+\begin_layout Standard
+The 
+\series bold
+bin model
+\series default
+ has a root zone in which the evaporation is not throttled.
+ It consists of the root zone top reservoir only.
+ The 
+\series bold
+earth model
+\series default
+ has a double root zone,
+ split at storage levels 
+\begin_inset Formula $Scrit_{R}$
+\end_inset
+
+.
+ Below this level the throttling is linear.
+ Below we just derive the equations for the unthrottled model and for the linearly throttled model.
+ We'll just use the unthrottled model (root zone top reservoir) for the separate bin model.
+ The bin model is equivalent to the earth model when we set 
+\begin_inset Formula $Scrit_{R}=0$
+\end_inset
+
+ in the earth model.
+ By setting 
+\begin_inset Formula $Scrit_{R}=Smax_{R}$
+\end_inset
+
+ we cancel the unthrottled top reservoir from the root zone,
+ so that the entire root zone will be throttled linearly.
+ The latter model and the bin model can be made equivalent to the lambda model derived further down,
+ by setting 
+\begin_inset Formula $\lambda=1$
+\end_inset
+
+ and 
+\begin_inset Formula $\lambda=0$
+\end_inset
+
+ respectively.
+\end_layout
+
+\begin_layout Subsection
+Root zone top reservoir
 \end_layout
 
 \begin_layout Standard
@@ -780,8 +852,8 @@ Then,
 and we are in the bottom reservoir and handle the situation accordingly.
 \end_layout
 
-\begin_layout Subsubsection
-The bottom reservoir
+\begin_layout Subsection
+Root zone bottom reservoir
 \end_layout
 
 \begin_layout Standard
@@ -1259,6 +1331,10 @@ which is always correct.
  which is exactly what should happen.
 \end_layout
 
+\begin_layout Section
+Lambda model
+\end_layout
+
 \begin_layout Subsection
 Throttling the evaporation using 
 \begin_inset Formula $\left(S/S_{max}\right)^{\lambda}$
@@ -1401,7 +1477,7 @@ needs to be carried out to get a solution.
  We should be careful to prevent numerical overshooting and undershooting.
 \end_layout
 
-\begin_layout Subsubsection
+\begin_layout Subsection
 Scipy's initial values ODE solver scipy.integrate.solve_ivp
 \end_layout
 
@@ -1614,6 +1690,618 @@ The event function to track overshooting
 \end_inset
 
 .
+\end_layout
+
+\begin_layout Section
+Water budget
+\end_layout
+
+\begin_layout Standard
+The interception model accepts precipitation 
+\begin_inset Formula $P_{0}$
+\end_inset
+
+,
+ potential evaporation
+\begin_inset Formula $E_{0}$
+\end_inset
+
+,
+ and the current storage state of the interception reservoir 
+\begin_inset Formula $S_{I0}$
+\end_inset
+
+.
+ Its output is the state of the interception reservoir at the end of the time step 
+\begin_inset Formula $S_{I}$
+\end_inset
+
+,
+ the amount that reaches the ground 
+\begin_inset Formula $P_{1}$
+\end_inset
+
+ and the actual evaporation from the interception reservoir 
+\begin_inset Formula $E_{I}$
+\end_inset
+
+.
+ The water budget of the interception reservoir during each time step in the code reads:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+B_{I}=P_{0}-E_{I}-\left(S_{I}-S_{I0}\right)/\Delta t-P_{1}=0
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The sum of the right-hand terms is zero,
+ which is also verified during the simulation.
+\end_layout
+
+\begin_layout Standard
+Then follows the root zone,
+ which starts with its current status 
+\begin_inset Formula $S_{R0}$
+\end_inset
+
+,
+ and accepts 
+\begin_inset Formula $P_{1}$
+\end_inset
+
+ and the remainder of the potential evaporation 
+\begin_inset Formula $E_{0}-E_{I}$
+\end_inset
+
+.
+ What comes out is the state of the root zone reservoir at the end of the time step 
+\begin_inset Formula $S_{R}$
+\end_inset
+
+ the recharge 
+\begin_inset Formula $rch$
+\end_inset
+
+ which is the overflow of the root zone reservoir averaged over the time step and 
+\begin_inset Formula $E_{r}$
+\end_inset
+
+ the actual evaporation from the root zone.
+ The water budget for the root zone reads
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+B_{R}=P_{1}-\left(E_{0}-E_{1}\right)-\left(S_{R}-S_{R0}\right)/\Delta t-rch=0
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The sum of the right-hand terms also equals zero in every time step and is verified during the simulation.
+ The overall water budget equals 
+\begin_inset Formula $B_{I}+B_{R}=0$
+\end_inset
+
+,
+ so we have
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+B_{I}+B_{R} & =P_{0}-E_{1}-\left(S_{I}-S_{I0}\right)/\Delta t-P_{1}+P_{1}-E_{R}+\left(S_{R}-S_{R0}\right)/\Delta t-rch\\
+0 & =P_{0}-\left(E_{I}+E_{R}\right)-\left(\left(S_{I}-S_{I0}\right)+\left(S_{R}-S_{R0}\right)\right)/\Delta t-rch
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+So we have precipitation 
+\begin_inset Formula $P_{0}$
+\end_inset
+
+,
+ overall actual evaporation
+\begin_inset Formula $E_{A}=E_{I}+E_{R}$
+\end_inset
+
+,
+ the total storage change 
+\begin_inset Formula $(S_{I}-S_{I0}+S_{R}-S_{R0})/\Delta t$
+\end_inset
+
+ and recharge 
+\begin_inset Formula $rch$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The model starts with a pd.DataFrame with fields 
+\begin_inset Quotes eld
+\end_inset
+
+RH
+\begin_inset Quotes erd
+\end_inset
+
+ and 
+\begin_inset Quotes eld
+\end_inset
+
+EV24
+\begin_inset Quotes erd
+\end_inset
+
+ which hold the precipitation and potential evaporation provided by the weather station converted to mm/d.
+ The outcome is the same DataFrame but with more columns holding the results for each time step.
+ Currently the time steps are generally 1D,
+ but in fact,
+ any time step size will work,
+ because the length of the time step is obtained from the datetime index of the data frame.
+ The added columns are
+\end_layout
+
+\begin_layout Description
+IC In volume that was interecepte during the time step:
+ 
+\begin_inset Formula $IC=\left(P_{0}-P_{I}\right)\Delta t$
+\end_inset
+
+ [mm]
+\end_layout
+
+\begin_layout Description
+STO The storage level at the end of the time step 
+\begin_inset Formula $STO=S_{I}+S_{R}$
+\end_inset
+
+ [mm]
+\end_layout
+
+\begin_layout Description
+EA The actual evaporation during the time step:
+ 
+\begin_inset Formula $EA=\left(E_{I}+E_{R}\right)\Delta t$
+\end_inset
+
+ [mm]
+\end_layout
+
+\begin_layout Description
+RCH The recharge during the time step:
+ 
+\begin_inset Formula $RCH=rch\times\Delta t$
+\end_inset
+
+ [mm]
+\end_layout
+
+\begin_layout Description
+BI The interception water budget:
+ 
+\begin_inset Formula $BI=\left(P_{0}-E_{I}-\left(S_{I}-S_{I0}\right)/\Delta t-P_{I}\right)\Delta t$
+\end_inset
+
+ [mm] (must be 0)
+\end_layout
+
+\begin_layout Description
+BR The root zone water budget:
+ 
+\begin_inset Formula $BR=\left(P_{I}-E_{R}-\left(S_{R}-S_{R0}\right)/\Delta t-rch\right)\Delta t$
+\end_inset
+
+ [mm] (must be 0)
+\end_layout
+
+\begin_layout Standard
+Therefore,
+ all columns IC,
+ STO,
+ EA,
+ RCH,
+ BI and BR have dimension [mm] over the time step,
+ while the storage is in mm valid for the end of the time step,
+ and,
+ therefore for the beginning of the next time step.
+ This implies that the precipitation columns RH and the potential evaporation columns EV24 must also be in mm over the time step.
+ This will be automatically true for daily values from weather stations and time steps of 1 d.
+ However the model will also work with any other time step but then the user must assure that P and EV24 must be the accumulated values during the chosen time step.
+ In fact,
+ the model will even work should the time step length vary from time step to time step.
+\end_layout
+
+\begin_layout Section
+Example
+\end_layout
+
+\begin_layout Standard
+Fig.
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Example-deBilt260"
+plural "false"
+caps "false"
+noprefix "false"
+nolink "false"
+
+\end_inset
+
+ shows the result of three root-zone recharge models with the daily precipitation and Makkink (well-watered grass) evaporation of De Bilt as input.
+ The bin model has no throttling of the evaporation,
+ the earth model has linear throttling when 
+\begin_inset Formula $S<Scrit_{R}$
+\end_inset
+
+ and the lambda model has throttling of the evaporation according to 
+\begin_inset Formula $E_{a}=E\left(\frac{S}{Smax_{R}}\right)^{\lambda}$
+\end_inset
+
+.
+ The values for 
+\begin_inset Formula $Smax_{I}$
+\end_inset
+
+,
+ 
+\begin_inset Formula $Scrit_{R}$
+\end_inset
+
+ and 
+\begin_inset Formula $Smax_{R}$
+\end_inset
+
+ and 
+\begin_inset Formula $\lambda$
+\end_inset
+
+ are given in the header of the figure.
+ The top figure shows the original EV24 (Makkink data) and the computed actual evapotranspiration 
+\begin_inset Formula $E_{A}$
+\end_inset
+
+,
+ which,
+ of course is the throttled 
+\begin_inset Formula $EV24$
+\end_inset
+
+.
+ The second axes show the precipitation and the actual recharge and the third axes shows the storage of the root zone over time for the three models.
+ It's clear that the storage values and,
+ therefore,
+ the 
+\begin_inset Formula $E_{A}$
+\end_inset
+
+ and recharge values do not different much between the models.
+\end_layout
+
+\begin_layout Standard
+The models can be run with 
+\begin_inset Formula $Smax_{I}=0$
+\end_inset
+
+,
+ which effectively cancels the interception reservoir.
+ Furthermore,
+ setting 
+\begin_inset Formula $Scrit_{R}=0$
+\end_inset
+
+ cancels throttling of the evaporation in the 
+\series bold
+earth model
+\series default
+ until the root zone is completely empty,
+ making this version of the 
+\series bold
+earth model
+\series default
+ behave exactly like the 
+\series bold
+bin model
+\series default
+.
+ Lastly,
+ the 
+\begin_inset Formula $Scrit_{R}$
+\end_inset
+
+ can be set equal to 
+\begin_inset Formula $Smax_{R}$
+\end_inset
+
+ which cancels the unrestrained top reservoir of the 
+\series bold
+earth model
+\series default
+ making the throttling of the evaporation linear all along the entire root zone,
+ which is equivalent to using 
+\begin_inset Formula $\lambda=1$
+\end_inset
+
+ in the 
+\series bold
+lambda model
+\series default
+.
+ Note that the 
+\series bold
+bin model
+\series default
+ is equivalent to using 
+\begin_inset Formula $\lambda=0$
+\end_inset
+
+ in the 
+\series bold
+lambda model
+\series default
+.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+placement document
+alignment document
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\begin_inset Graphics
+	filename /Users/Theo/Development/python/hydro_tools/tools/root_zone/images/rch_dBilt.pdf
+	width 100text%
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:Example-deBilt260"
+
+\end_inset
+
+Example using precipitation and Makkink evaporation from De Bilt weather station together with the actual evaporation,
+ recharge and running root-zone storage of the three models.
+ The dots show the data.
+ During summer when the root zone is not full there is not recharge and so the dots showing the actual precipitation 
+\begin_inset Quotes eld
+\end_inset
+
+fly
+\begin_inset Quotes erd
+\end_inset
+
+ in the second axes,
+ while in the winter whenever the root zone overflows,
+ and evaporation is almost zero,
+ precipitation and recharge are almost the same.
+ Simillarly,
+ whenever the root zone reservoir is low,
+ actual evaporation is much lower than the potential evaporation shown by the dots in the upper axes.
+ The lower axes shows that the root zone empties fully for the unthrottled bin model but neither for the earth model nor for the lambda model.
+ Notice that the interception and root-zone data are shown in the heading of the figure.
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsubsection
+Throttling in the lambda model
+\end_layout
+
+\begin_layout Standard
+Fig.
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Amount-of-throttling"
+plural "false"
+caps "false"
+noprefix "false"
+nolink "false"
+
+\end_inset
+
+ shows the 
+\begin_inset Formula $y=E_{a}/E=\left(S/Smax_{R}\right)^{\lambda}$
+\end_inset
+
+ as a function of the degree of filling of the root zone for different values of 
+\begin_inset Formula $\lambda$
+\end_inset
+
+.
+ For 
+\begin_inset Formula $\lambda=0$
+\end_inset
+
+ (not shown) we always have 
+\begin_inset Formula $E_{a}=E$
+\end_inset
+
+.
+ For 
+\begin_inset Formula $\lambda$
+\end_inset
+
+=1 throttling is linear,
+ so 
+\begin_inset Formula $E_{a}/E$
+\end_inset
+
+ increases linearly with the degree of filling.
+ For 
+\begin_inset Formula $0<\lambda<1$
+\end_inset
+
+ the throttling increases progressively with emptying of the root zone.
+ In practice,
+ judging from the curves a values of 
+\begin_inset Formula $\lambda$
+\end_inset
+
+ between say 0.1 and 0.25 may well resemble the real-world relation.
+ Which,
+ of course,
+ should be verified on the hand of real-world data.
+ Linear throttling or throttling in accordance with 
+\begin_inset Formula $\lambda=0.5$
+\end_inset
+
+ intuitively seems too mild as evaporation will be hardly reduced as long as the degree of filling is above 0.5 to 0.7.
+ This is why in the earth model,
+ we split the root zone into two parts,
+ an upper part with a filling between 
+\begin_inset Formula $Scrit_{R}$
+\end_inset
+
+ and 
+\begin_inset Formula $Smax_{R}$
+\end_inset
+
+ in which no throttling takes place and a lower part with filling between 
+\begin_inset Formula $0$
+\end_inset
+
+ and 
+\begin_inset Formula $Scrit_{R}$
+\end_inset
+
+ in which the throttling is linear.
+ This way the lambda model and the earth model can be made to react more or less the same for most practical situations.
+ The earth model in which the 
+\begin_inset Formula $Scrit_{R}$
+\end_inset
+
+ plays a role is the model mostly using in practice.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+placement document
+alignment document
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\begin_inset Graphics
+	filename /Users/Theo/Development/python/hydro_tools/tools/root_zone/images/throttling_by_lambda.pdf
+	width 80text%
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:Amount-of-throttling"
+
+\end_inset
+
+Remaining evaporation as fraction of potential evaporation as a function of the degree of filling of the root zone for different values of 
+\begin_inset Formula $\lambda$
+\end_inset
+
+.
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Bibliography
+\begin_inset CommandInset bibitem
+LatexCommand bibitem
+label "Feddes (1982)"
+key "Fed82"
+literal "false"
+
+\end_inset
+
+Feddes,
+ R.
+ A.
+ (1982).
+ Simulation of field water use and crop yield.
+ In F.
+ W.
+ T.
+ Penning de Vries,
+ & H.
+ H.
+ van Laar (Eds.),
+ Simulation of plant growth and crop production (pp.
+ 194-209).
+ (Simulation monographs).
+ Pudoc.
+ https://edepot.wur.nl/172222.
+\end_layout
+
+\begin_layout Bibliography
+\begin_inset CommandInset bibitem
+LatexCommand bibitem
+label "Olsthoorn (2026)"
+key "Olst26"
+literal "false"
+
+\end_inset
+
+Olsthoorn T.N.
+ (2026) Percolatie door dikke onverzadigde zones - Munsflow versus Kinematic Wave.
+ Stromingen 2026/01,
+ p17-31
 \end_layout
 
 \end_body

@@ -34,12 +34,22 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.integrate import solve_ivp
 import pandas as pd
-from tools.etc import etc, descr
+from tools.etc import etc, descr, logo
 from itertools import cycle
 from typing import Any
 from pathlib import Path
 
-data_folder  = os.path.join(Path(__file__).resolve().parent.parent, 'data')
+class Dirs():
+    """Namespace project directories."""
+    def __init__(self, home=None):
+        if home is None:
+            home = '/Users/Theo/Development/python/hydro_tools/tools/root_zone'
+        self.home = home
+        self.data = os.path.join(self.home, 'data')
+        self.images = os.path.join(self.home, 'images')
+        
+dirs = Dirs()
+
 
 # %% Recharge function
 
@@ -93,11 +103,15 @@ class RechargeBase(ABC):
             # --- Actual evporation from interception reservoir
             return np.round(P - (S - S0) / Dt - q, 4)
         
-        if np.isclose(P, E) or np.isclose(Smin, Smax): # --- Nothing happens
-            return S, q, E            
+        if np.isclose(Smin, Smax): # --- No interception basin
+            # --- pass on S0, P and E
+            return S0, P, 0.
+                    
+        if np.isclose(P, E): # --- Nothing happens
+            return S0, q, E            
                     
         if P > E: # --- Fills
-            dt = (Smax - S) / (P - E)
+            dt = (Smax - S0) / (P - E)
             if dt < Dt: # -- Full
                 dt2 = Dt - dt
                 q = (P - E) * dt2 / Dt
@@ -107,7 +121,7 @@ class RechargeBase(ABC):
                 return S, q, EA(P, S,  S0, q, Dt)
             
         elif P < E: # --- Empties
-            dt = (Smin- S) / (P - E)
+            dt = (Smin- S0) / (P - E)
             if dt < Dt: # --- Empty
                 return Smin, q, EA(P, Smin, S0, q, Dt)
             else:
@@ -172,16 +186,18 @@ class RechargeBase(ABC):
         PE = PE.loc[:, ['RH', 'EV24']].to_records()
         
         # --- Don't need the index, its kept
-        dtype = np.dtype([('t', 'datetime64[ns]'),
+        dtype = np.dtype([('t', 'datetime64[ns]'), ('Dt', float),
                           ('RH', float), ('EV24', float), ('STO', float),
                           ('IC', float), ('EA', float), ('RCH', float), ('BI', float), ('BR', float)]) 
        
         # --- Prepare the output array with a dtype
         #     that also holds the intput and the timestamps
         Out = np.zeros(len(PE), dtype=dtype)  
-        Out['t']  = PE.index      
-        Out['RH'] = PE['RH']
-        Out['EV24'] = PE['EV24']
+        Out['t']      = PE.index
+        Out['Dt'][1:] = np.diff(Out['t']) / np.timedelta64(1, 'D')
+        Out['Dt'][0]  = Out['Dt'][1]
+        Out['RH']     = PE['RH']
+        Out['EV24']   = PE['EV24']
         return Out
 
     
@@ -198,14 +214,14 @@ class RechargeBase(ABC):
         We assume E0 = EV24 / 0.8 ??
 
         # Te following columns will be added or replaced:
+        PE['Dt']  = time step length in D from PE.index
         PE['STO'] = 0. # Current root-zone zone storage [mm]
         PE['IC' ] = 0. # Actual interception [mm/d]
         PE['EA' ] = 0. # Actual evapotranspiration [mm/d]
         PE['RCH'] = 0. # Actual recharge [mm/d]
         """
         # --- Out is empty recarray with the proper dtype
-        Out = self.check_data(PE)
-        Dt = self.Dt
+        Out = self.check_data(PE)        
         
         # --- Makkink case
         if self.Smax_I is None or self.Smax_R is None:            
@@ -223,26 +239,26 @@ class RechargeBase(ABC):
             # --- Pecipiation and Makkink E from pd.DataFrame
             P0 = pe['RH']
             E0 = pe['EV24']    # Open water evap. during assumed 12h daytime (/0.8?)
+            Dt = pe['Dt']
             
             # --- Compute interception and rootzone changes during time step
-            if P0==16.2 and E0==1.6:
-                pass
-            SI, P1,  E1 = self.interception(SI0, P0, E0,      Dt)
-            SR, rch, Ea = self.root_zone(   SR0, P1, E0 - E1, Dt)
+            SI, PI,  EI = self.interception(SI0, P0, E0,      Dt)
+            SR, rch, ER = self.root_zone(   SR0, PI, E0 - EI, Dt)
                         
             # --- Water budgets
-            BI = P0 - E1 - (SI - SI0) / Dt - P1
-            BR = P1 - Ea - (SR - SR0) / Dt - rch
+            BI = P0 - EI - (SI - SI0) / Dt - PI
+            BR = PI - ER - (SR - SR0) / Dt - rch
             
             SI0, SR0 = SI, SR
             
+            
             # --- Store in DataFrame
-            pe['IC']  = pe['RH'] - P1  # intercepted
-            pe['STO'] = SR             # Current storage level
-            pe['EA']  = Ea             # Actual expo-transpiration
-            pe['RCH'] = rch            # Recharge (to percolation zone)
-            pe['BI'] = BI              # Budget Interception
-            pe['BR'] = BR              # Budget root zone
+            pe['IC']  = (P0 - PI) * Dt  # [mm] intercepted
+            pe['STO'] = SR + SI         # [mm] Current total storage at end of time step
+            pe['EA']  = (EI + ER) * Dt  # [mm] Actual evapo-transpiration
+            pe['RCH'] = rch * Dt        # [mm] Recharge (to percolation zone)
+            pe['BI'] = BI * Dt          # [mm] Budget Interception
+            pe['BR'] = BR * Dt          # [mm] Budget root zone
                
         Out = pd.DataFrame(data=Out, index=Out['t']).drop(['t'], axis=1)
         return Out
@@ -351,7 +367,10 @@ class RchEarth(RechargeBase):
         """
         Smax, Smin, q = self.Smax_R, self.Scrit_R, 0.
         
-        if np.isclose(P, E) or np.isclose(Smin, Smax):
+        if np.isclose(Smin, Smax):
+            return S, P, 0.
+        
+        if np.isclose(P, E):
             return S, q, E
         
         if P > E: # --- Fills        
@@ -400,12 +419,12 @@ class RchEarth(RechargeBase):
         T = Smax / E
               
         if P > E: # --- Fills
-            dt = T * np.log((1 - P/E)/(S/Smax - P/E))
+            dt = T * np.log((S/Smax - P/E)/(1 - P/E))
             if dt < Dt: # --- Full                                    
                 return Smax, dt
             
         # --- All other cases must succeed        
-        S = Smax * (P/E - (P/E - S0/Smax) * np.exp(-Dt / T))
+        S = Smax * (P/E + (S0/Smax - P/E) * np.exp(-Dt / T))
         return S, Dt
     
     
@@ -433,6 +452,7 @@ class RchEarth(RechargeBase):
                 # --- Storage passes top of bottom root zone
                 #     Continue in upper (linear) root zone for the remaining time.
                 S, q, _ = self.rootzone_top(S, P, E, Dt - dt)
+                q *= (Dt - dt) / Dt
                                 
         return S, q, EA(P, S, S0, Dt, q)
     
@@ -497,7 +517,7 @@ class RchLam(RechargeBase):
         p, r, y = P / Smax, E / Smax, S0 / Smax
                 
         # --- Protect against overreach
-        small_tol = 0.1 / Smax
+        small_tol = 0.001 / Smax
         ybase, ytop = small_tol, 1 - small_tol
         
         # ---- dy/dt
@@ -550,14 +570,14 @@ class RchLam(RechargeBase):
         y = np.linspace(0., 1.0, 200)
         lambdas = np.atleast_1d(np.asarray(lam))
         
-        ax = etc.newfig(r"Efect of throttling E by $\lambda$: ($E = E_0 \cdot y^\lambda$)",
+        ax = etc.newfig(r"Effect of throttling E by $\lambda$: ($E = E_0 \cdot y^\lambda$)",
                         r"$y = S/S_{max}$",
                         r"$y^\lambda$")
         
         for lam in lambdas:
-            ax.plot(y, y ** lam, label=fr"\ambda = {lam:3g}")
+            ax.plot(y, y ** lam, label=fr"\lambda = {lam:3g}")
             
-        ax.legend(loc="lower right")
+        ax.legend(loc="lower right")        
         return ax
         
         
@@ -653,7 +673,7 @@ def get_deBilt_recharge(Smax_I=0.5, Smax_R=100, lam=0.25, datespan=("2020-01-01"
     -------
     pd.DataFrame with fields in deBilt with field 'RCH' added.
     """
-    meteo_csv = os.path.join(data_folder, "DeBilt.csv")
+    meteo_csv = os.path.join(dirs.data, "DeBilt.csv")
     os.path.isfile(meteo_csv)
     deBilt = pd.read_csv(meteo_csv, header=0, parse_dates=True, index_col=0)
 
@@ -723,7 +743,7 @@ if __name__ == "__main__":
     # TO 2025-09-05
 
     # Get the meteodata in a pd.DataFrame
-    meteo_csv = os.path.join(data_folder, "DeBilt.csv")
+    meteo_csv = os.path.join(dirs.data, "DeBilt.csv")
     os.path.isfile(meteo_csv)
     deBilt = pd.read_csv(meteo_csv, header=0, parse_dates=True, index_col=0)
     deBilt_short = deBilt.loc[deBilt.index >= np.datetime64("2020-01-01"), :]
@@ -741,27 +761,26 @@ if __name__ == "__main__":
 
     labels = ['Makkink', 'bin', 'earth', 'lambda']
     rchClasses = [RchMak, RchBin, RchEarth, RchLam]
+    linewidths = [0.25, 0.50, 0.75, 1.0]
     
     
     # --- Loop control, chooses which models
-    i1, i2 = 1, len(labels) + 1
+    i1, i2 = 1, 4 # len(labels) + 1
     
     # --- Storage capacity
-    Smax_I, Smax_R = 1.5, 100 # mm
+    Smax_I, Smax_R, Scrit_R = 1.5, 100, 50. # mm
 
     # --- Power lam model
-    lam = 0.5
+    lam = 0.25
 
-    
-    if True:
+    if True:        
         ax1, ax2, ax3 = etc.newfigs(('EV24 and EA', 'P and RCH', 'STO'),
                 'time', ('mm/d', 'mm/d', 'mm' ), figsize=(12, 10))
+                
+        ax1.plot(deBilt_short.index, deBilt_short['EV24'], 'k.', ms=2, label='EV24')
+        ax2.plot(deBilt_short.index, deBilt_short['RH']  , 'k.', ms=2, label='Precip')
         
-        for rchClass, label in zip(rchClasses[i1:i2], labels[i1:i2]):
-            if label == 'earth':
-                Scrit_R = 0.3 * Smax_R
-            else:
-                Scrit_R = np.inf
+        for rchClass, label, lw in zip(rchClasses[i1:i2], labels[i1:i2], linewidths[i1:i2]):
                 
             print(f"=== Running model = {label} ===")
                 
@@ -770,31 +789,43 @@ if __name__ == "__main__":
             rch = rch_simulator.simulate(deBilt_short)
             
             clr = next(clrs)
-            ax2.plot(rch.index[idx], rch['RH'][idx], '-',  lw=0.25, color=next(clrs),  label=label + ' P')
-            ax1.plot(rch.index[idx], rch['EV24'][idx], '-',lw=0.25, color=next(clrs),  label=label + ' EV24')
-            ax1.plot(rch.index[idx], rch['EA' ][idx], '-', lw=0.75, color=next(clrs),  label=label + ' EA')
-            ax2.plot(rch.index[idx], rch['RCH'][idx], '-', lw=0.75, color=next(clrs),  label=label + 'RCH')
-            ax3.plot(rch.index[idx], rch['STO'][idx], '-', lw=0.75, color=next(clrs),  label=label + ' STO')        
+            ax1.plot(rch.index[idx], rch['EA' ][idx], '-', lw=lw, color=clr,  label=label + ' EA')
+            ax2.plot(rch.index[idx], rch['RCH'][idx], '-', lw=lw, color=clr,  label=label + 'RCH')
+            ax3.plot(rch.index[idx], rch['STO'][idx], '-', lw=lw, color=clr,  label=label + ' STO')        
             print(f'Recharge according to method {label}:\n', rch.loc[idx].mean(), '\n')
 
         for ax in [ax1, ax2, ax3]:
-            ax.legend(loc='upper right')    
+            ax.legend(loc='upper right') 
+            
+        fig = plt.gcf()
+        logo(fig, os.path.basename(os.__file__))
+        fig.suptitle(("Different recharge models" + "\n" +
+                      rf"Smax_I={Smax_I} mm, Smax_R={Smax_R} mm, Scrit_R={Scrit_R} mm, $\lambda$={lam}")
+        ) 
         
-        # fig.savefig(os.path.join(dirs.images, f'rch_{stn}.png'))
+        fig.savefig(os.path.join(dirs.images, 'rch_dBilt.pdf'))
+             
 
-    plt.show()
-        
+
     if False:
         rchlam = RchLam()
         
         rchlam.show_throttling_E_by_lam(lam=[0.1, 0.25, 0.5, 1.0])
-        
+        fig = plt.gcf()
+        logo(fig, os.path.basename(os.__file__))
+        fig.savefig(os.path.join(dirs.images, "throttling_by_lambda.pdf"))
+
+
         PE = [(0, 0), (1, 0), (0, 1), (1, 1), (4, 3.5)]
         
         ax = None
         for lam in [0.1, 0.25, 0.5, 1.0]:
             ax = rchlam.show_effect_of_lam(x0=0.5, PE=PE, lam=lam, t=250.0, ax=ax)
+        logo(fig, os.path.basename(os.__file__))
+        fig.savefig(os.path.join(dirs.images, "effect_of_lam_constant_P_E.pdf"))
+
         
-        plt.show()
+        
+    plt.show()
 
 # %%
