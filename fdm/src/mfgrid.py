@@ -855,7 +855,8 @@ class Grid:
     @property
     def extent(self):
         """Return (xmin, xmax, ymin, ymax)."""
-        return self.x[0], self.x[-1], self.y[-1], self.y[0]
+        raise ValueError("Did you mean xy_extent, xz_extent or yz_extent?")
+        return None
 
     @property
     def xy_extent(self):
