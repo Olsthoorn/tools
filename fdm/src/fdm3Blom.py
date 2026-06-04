@@ -271,9 +271,9 @@ class Fdm3():
         Cx = 1 / (Rx1[:, :,:-1] + Rx2[:, :,1:])
         Cy = 1 / (Ry[:, :-1, :] + Ry[:, 1:, :])
         if self.c is None:
-            Cz = 1 / (Rz[:-1, :, :] + Rz[:-1, :,:])
+            Cz = 1 / (Rz[:-1, :, :] + Rz[1:, :,:])
         else:
-            Cz = 1 / (Rz[:-1, :, :] + Rc + Rz[:-1, :,:])
+            Cz = 1 / (Rz[:-1, :, :] + Rc + Rz[1:, :,:])
             
         # --- Gobal indices for neighboring cells
         IE = self.gr.NOD[:, :, 1: ]  # east neighbor cell numbers
@@ -943,472 +943,473 @@ class DRNcond:
             cond[phi >= hi] += DCi
         return cond, phi
 
-# %%
-def show_conductances(h0=None, hN=None, cN=None, N=None):
-    r"""Show the continuous discharge with free drainage and with conductance steps.
-    
-    The drainage is defined by $q = N \frac{y}{y_N}^2$ in which
-    y is the depth of the water course (ditch), i.e. water stage minus bottom elevation.
-
-    It is shown how the continuous discharge with a continously
-    linearly increasing conductance is approached by using a
-    set of equal conductances at differente levels. This way
-    the continuous conductance can be approach by a model
-    such as Modlow using multiple drains in the same cell.
-    
-    The continuous conductance follows from
-
-           $$C = \frac{dq}{dy} = 2 frac{N}{y_N^2} \frac y$$
-           
-    The steps start at y=0 (phi = h0) and do not inlcude $y=y_N$.
-    Hence, the conductance is >0 from $y=0$.
-    
-    Not that the more steps, the lower the discharge, with
-    a minimum equal to the continous discharge for $n=\infty$.
-    
-    Parameters
-    ----------
-    h0: float
-        Elevation of surfce water bottoms.
-    hN: float
-        Surface water level at which discharge equals N.
-    cN: float
-        Leakage resistance in reference situation with dicharge = N
-    N: float
-        Preciptaton surplus [m/d].
-    
-    TO 2026-03-19
-    """
-    cN = np.atleast_1d(cN)[0].item() # --- force scalar
-    Cs = 1 / cN
-
-    drnc = DRNcond(h0=h0, hN=hN, cN=cN, N=N)
-    
-    # --- show the discharge continuous and with conductivy steps
-
-    fig, (ax1, ax2) = plt.subplots(1, 2, sharey=True, figsize=(10, 6))
-    fig.suptitle("Waterdiepte als functie van lek q en conductantie.\n"
-       + fr"$h_N$={hN} m, $h_0$={h0} m, $N$={N} m/d, $c_{{dr}}$={cN}, $C_s$={Cs:.3g} 1/d")
-       
-    ax1.set(title="Discharge [m/d]", xlabel=r"$q$ [m/d]", ylabel=r"$\phi - h_0$")
-    ax2.set(title="Specific conductance [1/d]", xlabel=r"$cond$ [m/d]", ylabel=r"$\phi - h_0$")
-
-    q, phi = drnc.q()
-    ax1.plot(q, phi - h0, '-', label="q, continuous")
-
-    cond, phi = drnc.cond()
-    ax2.plot(cond, phi - h0, '-', label = 'total conducance, continuous')
-    
-    # --- discharge Compute for different number of steps
-    for n in [1, 2, 4]:
-        # --- Show the discharge continous and with conductance steps
-
-        qCsteps, phiCsteps = drnc.qCsteps(n=n)
+if __name__ == '__main__':
+    # %%
+    def show_conductances(h0=None, hN=None, cN=None, N=None):
+        r"""Show the continuous discharge with free drainage and with conductance steps.
         
-        ax1.plot(qCsteps, phiCsteps - h0, '+', label=f"n_steps={n}")        
+        The drainage is defined by $q = N \frac{y}{y_N}^2$ in which
+        y is the depth of the water course (ditch), i.e. water stage minus bottom elevation.
+
+        It is shown how the continuous discharge with a continously
+        linearly increasing conductance is approached by using a
+        set of equal conductances at differente levels. This way
+        the continuous conductance can be approach by a model
+        such as Modlow using multiple drains in the same cell.
         
-        # --- show the total conductance continuous and in steps
+        The continuous conductance follows from
+
+            $$C = \frac{dq}{dy} = 2 frac{N}{y_N^2} \frac y$$
+            
+        The steps start at y=0 (phi = h0) and do not inlcude $y=y_N$.
+        Hence, the conductance is >0 from $y=0$.
         
-        condSteps, phiSteps = drnc.condSteps(n=n)
+        Not that the more steps, the lower the discharge, with
+        a minimum equal to the continous discharge for $n=\infty$.
         
-        ax2.step(condSteps, phiSteps - h0, label = f'n_steps={n}')        
+        Parameters
+        ----------
+        h0: float
+            Elevation of surfce water bottoms.
+        hN: float
+            Surface water level at which discharge equals N.
+        cN: float
+            Leakage resistance in reference situation with dicharge = N
+        N: float
+            Preciptaton surplus [m/d].
         
+        TO 2026-03-19
+        """
+        cN = np.atleast_1d(cN)[0].item() # --- force scalar
+        Cs = 1 / cN
 
-    ax1.plot(N, phi[-1] - h0, 'o', mec='k', mfc='r', label=fr"$q(\phi_N)$={N} m/d")
-
-    ax1.grid(); ax2.grid()
-    ax1.legend(); ax2.legend()
-    logo(fig, os.path.basename(__file__))
-    fig.savefig(os.path.join(dirs.images, "VAW-phi_vs_q_en_cond.png"))
-
-    
-    # --- Revert the x and y axes for better comprehension
-    fig, (ax1, ax2) = plt.subplots(1, 2, sharey=True, figsize=(10, 6))
-    fig.suptitle(r"Lek en specifieke conductantie als functie van $\phi - h_0$." + "\n"
-       + fr"$h_N$={hN} m, $h_0$={h0} m, $N$={N} m/d, $c_{{dr}}$={cN}, $C_s$={Cs:.3g} 1/d")
-       
-    ax1.set(title="Discharge [m/d]", xlabel=r"Waterdiepte $\phi - h_0$", ylabel=r"$q$ [m/d]")
-    ax2.set(title="Specific conductance [1/d]", xlabel=r"$\phi - h_0$", ylabel=r"$cond$ [m/d]")
-
-    q, phi = drnc.q()
-    ax1.plot(phi - h0, q, '-', label="q, continuous")
-
-    cond, phi = drnc.cond()    
-    ax2.plot(phi - h0, cond, '-', label = 'total conducance, continuous')
-
-    # --- discharge Compute for different number of steps
-    for n in [1, 2, 4]:
-        # --- Show the discharge continous and with conductance steps
-
-        qCsteps, phiCsteps = drnc.qCsteps(n=n)
+        drnc = DRNcond(h0=h0, hN=hN, cN=cN, N=N)
         
-        ax1.plot(phiCsteps - h0, qCsteps,  '+', label=f"n_steps={n}")
+        # --- show the discharge continuous and with conductivy steps
+
+        fig, (ax1, ax2) = plt.subplots(1, 2, sharey=True, figsize=(10, 6))
+        fig.suptitle("Waterdiepte als functie van lek q en conductantie.\n"
+        + fr"$h_N$={hN} m, $h_0$={h0} m, $N$={N} m/d, $c_{{dr}}$={cN}, $C_s$={Cs:.3g} 1/d")
         
-        # --- show the total conductance continuous and in steps
+        ax1.set(title="Discharge [m/d]", xlabel=r"$q$ [m/d]", ylabel=r"$\phi - h_0$")
+        ax2.set(title="Specific conductance [1/d]", xlabel=r"$cond$ [m/d]", ylabel=r"$\phi - h_0$")
+
+        q, phi = drnc.q()
+        ax1.plot(q, phi - h0, '-', label="q, continuous")
+
+        cond, phi = drnc.cond()
+        ax2.plot(cond, phi - h0, '-', label = 'total conducance, continuous')
         
-        condSteps, phiSteps = drnc.condSteps(n=n)
+        # --- discharge Compute for different number of steps
+        for n in [1, 2, 4]:
+            # --- Show the discharge continous and with conductance steps
+
+            qCsteps, phiCsteps = drnc.qCsteps(n=n)
+            
+            ax1.plot(qCsteps, phiCsteps - h0, '+', label=f"n_steps={n}")        
+            
+            # --- show the total conductance continuous and in steps
+            
+            condSteps, phiSteps = drnc.condSteps(n=n)
+            
+            ax2.step(condSteps, phiSteps - h0, label = f'n_steps={n}')        
+            
+
+        ax1.plot(N, phi[-1] - h0, 'o', mec='k', mfc='r', label=fr"$q(\phi_N)$={N} m/d")
+
+        ax1.grid(); ax2.grid()
+        ax1.legend(); ax2.legend()
+        logo(fig, os.path.basename(__file__))
+        fig.savefig(os.path.join(dirs.images, "VAW-phi_vs_q_en_cond.png"))
+
         
-        ax2.step(phiSteps -h0, condSteps, label = f'n_steps={n}')
+        # --- Revert the x and y axes for better comprehension
+        fig, (ax1, ax2) = plt.subplots(1, 2, sharey=True, figsize=(10, 6))
+        fig.suptitle(r"Lek en specifieke conductantie als functie van $\phi - h_0$." + "\n"
+        + fr"$h_N$={hN} m, $h_0$={h0} m, $N$={N} m/d, $c_{{dr}}$={cN}, $C_s$={Cs:.3g} 1/d")
         
-    ax1.plot(phi[-1] - h0, N, 'o', mec='k', mfc='r', label=fr"$q(\phi_N)$={N} m/d")
+        ax1.set(title="Discharge [m/d]", xlabel=r"Waterdiepte $\phi - h_0$", ylabel=r"$q$ [m/d]")
+        ax2.set(title="Specific conductance [1/d]", xlabel=r"$\phi - h_0$", ylabel=r"$cond$ [m/d]")
 
-    ax1.grid(); ax2.grid()
-    ax1.legend(); ax2.legend()
-    logo(fig, os.path.basename(__file__))
-    
-    fig.savefig(os.path.join(dirs.images, "VAW-q-cond-vs-y.png"))
-    plt.plot()
-    
-show_conductances(h0=-1., hN=0., cN=200, N=0.001)
+        q, phi = drnc.q()
+        ax1.plot(phi - h0, q, '-', label="q, continuous")
 
-  
-# %%
-def oneD_all_boundary_types(kw):
-    """Run 1D cross section examples, using all available boundary types,
-    just a single layer to simulate drainage:
-        GHB General head boundaries
-        DRN drains.
-        RIV river cells. Setting h=rbot, so that RIV is equivalent to DRN
-        FDR free drainage, once using math resitance, once using physical drainage resistance
-            1. Mathamatical drainage resistance.
-            2. Physical drainage resistance
-    
-    Simulating leakage using boundary types instead of a resistance layer.
-    
-    This allows using only a single aquifer.
-    
-    With a single aquifer, resistance layers (c) cannot be used.
-    """
-    # --- Transmissivty regional aquifer
-    kD = (kw['k'] * kw['D'])[-1]
-    
-    # --- Spreading length lambda regional aquifer
-    lambda_  = np.sqrt(kD * float(np.squeeze(kw['c'])))
-    
-    # --- Set up the grid
-    x = np.linspace(0, 2000., 201)
-    # --- One layer only
-    z = (kw['z0'] - np.cumsum(np.hstack((0., kw['D']))))[1:]
-    
-    # --- The grid
-    gr = mfgrid.Grid(x, None, z, axial=False)
-    
-    # --- Given (Fixed) flows
-    FQ = gr.const(0.)                   # m3/d fixed flows
-    FQ[0] = gr.Area * kw['N']           # Recharge area
-    FQ[-1, 0, 0] += kw['Q']             # Add extraction   
-    
-    # --- Initial heads
-    HI = (kw['h'] + kw['N'] * kw['c']) * gr.const(1.)
-    
-    # --- Modflow-like boundary array
-    IBOUND = gr.const(1, dtype=int)
-    
-    # --- Full 3D array of hydraulic conductivities
-    k = gr.const(kw['k'][-1])
-    
-    # --- Set up the various boundary types
-    # --- to be used in turn for comparison
-    
-    # --- Cells taking part in the boundary
-    Ig = gr.NOD[0].ravel()
-    
-    # --- General head boundarie recarray
-    GHB = np.zeros(len(Ig), dtype=Fdm3.dtypes['ghb'])
-    GHB['Ig'], GHB['h'], GHB['C'] = Ig, kw['h'], gr.Area.ravel() / kw['c']
+        cond, phi = drnc.cond()    
+        ax2.plot(phi - h0, cond, '-', label = 'total conducance, continuous')
+
+        # --- discharge Compute for different number of steps
+        for n in [1, 2, 4]:
+            # --- Show the discharge continous and with conductance steps
+
+            qCsteps, phiCsteps = drnc.qCsteps(n=n)
+            
+            ax1.plot(phiCsteps - h0, qCsteps,  '+', label=f"n_steps={n}")
+            
+            # --- show the total conductance continuous and in steps
+            
+            condSteps, phiSteps = drnc.condSteps(n=n)
+            
+            ax2.step(phiSteps -h0, condSteps, label = f'n_steps={n}')
+            
+        ax1.plot(phi[-1] - h0, N, 'o', mec='k', mfc='r', label=fr"$q(\phi_N)$={N} m/d")
+
+        ax1.grid(); ax2.grid()
+        ax1.legend(); ax2.legend()
+        logo(fig, os.path.basename(__file__))
         
-    # --- Drain boundary recarray
-    DRN = GHB.copy() # Same parameters
-    
-    # --- River boundary recarray
-    RIV = np.zeros(len(Ig), dtype=Fdm3.dtypes['riv'])
-    RIV['Ig'], RIV['h'], RIV['C'], RIV['rbot'] = Ig, kw['h'], gr.Area.ravel() / kw['c'], kw['h']
-    
-    # --- Free drainage boundaries
-    # --- Parameters required for both FDR variants:
-    FDR = np.zeros(len(Ig), dtype=Fdm3.dtypes['fdr'])
-    
-    Nc = kw['N'] * kw['c']
-    
-    FDR['Ig'], FDR['phi'], FDR['h'], FDR['h0'], FDR['N'], FDR['w'], FDR['L'] = (
-        Ig, kw['h'] + Nc, kw['h'], kw['h'] - kw['y0'], kw['N'], kw['w1'], kw['L']
-    )
-
-    # --- First FDR variant    
-    FDR1 = FDR
-    # --- Second FDR variant
-    FDR2 = FDR.copy()    
-    FDR2['w'], FDR2['L'] = kw['w2'], kw['L']
-    
-    # --- Using 6 drn levels between h-y0 and h
-    drncond = DRNcond(h0=kw['h'] - kw['y0'], hN=kw['h'], cN=kw['c'], N=kw['N'])
-    
-    nDrn = 1
-    DRNn = np.zeros(len(Ig) * nDrn, dtype=Fdm3.dtypes['drn'])    
-    DC, hdr = drncond.get_ch(n=nDrn)
-    DRNn = np.zeros(len(hdr) * gr.nx, dtype=Fdm3.dtypes['drn'])
-    for i, (DCi, hi) in enumerate(zip(DC, hdr)):
-        i1, i2 = i * len(Ig), (i + 1) * len(Ig)
-        DRNn[i1:i2]['Ig']= Ig
-        DRNn[i1:i2]['h'] = hi
-        DRNn[i1:i2]['C'] = DCi * gr.Area
-
-    # --- Instantiate the Fdm3 model using different boundaries in turn
-    mdl = Fdm3(gr=gr, K=k, c=None, IBOUND=IBOUND, HI=HI, FQ=FQ)
-     
-    # --- Run model, one variant at a time
-    out_ghb = mdl.simulate(GHB=GHB) # run model
-    out_drn = mdl.simulate(DRN=DRN,   tm=[1., 5.])
-    out_riv = mdl.simulate(RIV=RIV,   tm=[1., 5.])
-    out_fdr1 = mdl.simulate(FDR=FDR1, tm=[1., 5.])
-    out_fdr2 = mdl.simulate(FDR=FDR2, tm=[1., 5.])
-    out_drnn = mdl.simulate(DRN=DRNn, tm=[1., 5.])
-    
-    # --- Show the results
-    
-    # --- Plot the heads
-    title = kw['title'] + ' (Using GHB)'
-    fig, ax = plt.subplots(figsize=(10, 6))
-
-    ax.set(title=title, xlabel='x [m]', ylabel='s [m]', xscale='linear', xlim=[1e-3, x[-1]])
-
-    # --- Plot analytical results
-    ax.plot(gr.xm, Nc.item() + kw['Q'] * lambda_ / kD * np.exp(-gr.xm / lambda_),'+', label='Mazure')
-
-    # --- Plot numerical results
-    ax.plot(gr.xm, out_ghb[ 'Phi'][-1, 0, :],      label='GHB')
-    ax.plot(gr.xm, out_drn[ 'Phi'][-1, 0, :], 'x', label='DRN')
-    ax.plot(gr.xm, out_riv[ 'Phi'][-1, 0, :],      label='RIV, h=rbot')
-    ax.plot(gr.xm, out_fdr1['Phi'][-1, 0, :],      label='FDR, math. drainage')
-    ax.plot(gr.xm, out_fdr2['Phi'][-1, 0, :],      label='FDR, phys. drainage')
-    ax.plot(gr.xm, out_drnn['Phi'][-1, 0, :],      label=f'DRN{nDrn} drainage levels')
-    
+        fig.savefig(os.path.join(dirs.images, "VAW-q-cond-vs-y.png"))
+        plt.plot()
         
-    ax.grid()
-    ax.legend()
-    
-    # --- Plot the leakage
-    title="Infiltration or leakage m/d"
-    fig, ax = plt.subplots(figsize=(10, 6))
-    ax.set(title=title, xlabel='x [m]', ylabel='q [m/d]', xscale='linear', xlim=[1e-3, x[-1]])
-    
-    ax.plot(gr.XM.ravel()[out_ghb['GHB']['Ig']], out_ghb[ 'GHB']['q'],      label='Fdm3 GHB')
-    ax.plot(gr.XM.ravel()[out_drn['DRN']['Ig']], out_drn[ 'DRN']['q'],      label='Fdm3 DRN')
-    ax.plot(gr.XM.ravel()[out_riv['RIV']['Ig']], out_riv[ 'RIV']['q'], '+', label='Fdm3 RIV')
-    ax.plot(gr.XM.ravel()[out_fdr1['FDR']['Ig']], out_fdr1[ 'FDR']['q'],    label='Fdm3 FDR1 math. drainage')
-    ax.plot(gr.XM.ravel()[out_fdr2['FDR']['Ig']], out_fdr2[ 'FDR']['q'],    label='Fdm3 FDR2 phys. drainage')
-    ax.plot(gr.XM.ravel()[out_drnn['DRN']['Ig']], out_drnn[ 'DRN']['q'],    label='Fdm3 DRNn drainage levels')
-    ax.grid()
-    ax.legend()
-    
-    # --- Return the ressults in a dictionary
-    return {'ghb': out_ghb, 'drn': out_drn, 'riv': out_riv, 'fdr1': out_fdr1, 'fdr2': out_fdr2}
-
-
-def axial_all_boundary_types(kw):
-    """Run Axial symmetric examples, but now using GHB each of the boundary types instead,
-    just a single layer so simulate drainage:
-        GHB General head boundaries
-        DRN drains.
-        RIV river cells. Setting h=rbot, so that RIV is equivalent to DRN
-        FDR free drainage, once using math resitance, once using physical drainage resistance
-    
-    Simulating leakage using boundary types instead of a resistance layer. Allows using only a single
-    aquifer.
-    With a single aquifer, resistance layers (c) cannot be used.
-    """
-    
-    # --- Transmissivity of the regional aquifer
-    kD = (kw['k'] * kw['D'])[-1]
-    
-    # --- Spreading length of the regional aquifer
-    lambda_  = np.sqrt(kD * float(np.squeeze(kw['c'])))
-    
-    # --- Setup of the grid of the axial-symmetric model
-    r = np.hstack((0., kw['rw'], kw['r'][kw['r'] > kw['rw']]))
-    
-    # --- A single layer, not top aquifer
-    z = (kw['z0'] - np.cumsum(np.hstack((0., kw['D']))))[1:]
-    
-    # --- The grid
-    gr = mfgrid.Grid(r, None, z, axial=True)   # generate grid
-    
-    # --- Boundary conditions
-    
-    # --- Fixed heads recarray
-    FQ = gr.const(0.)                   # m3/d fixed flows
-    FQ[0] = gr.Area * kw['N']           # Recharge areal
-    FQ[-1, 0, 0] += kw['Q']             # Add extraction
-    Nc = kw['N'] * kw['c']
-    
-    # --- Initial heads
-    HI = (kw['h'] + Nc) * gr.const(1.)                   # m, initial heads
-    
-    # --- Modflow like boundary array
-    IBOUND = gr.const(1, dtype=int)
-    
-    # --- full 3D array of hydraulic conductivities
-    k = gr.const(kw['k'][-1])
-    
-    # --- Setup of the various boundary types
-    # --- to be used in turn for comparison
-    
-     # --- Cell Ids taking part in the boundary conditions
-    Ig = gr.NOD[0].ravel()
-    
-    # --- General head boundary conditions
-    GHB = np.zeros(len(Ig), dtype=Fdm3.dtypes['ghb'])
-    GHB['Ig'], GHB['h'], GHB['C'] = Ig, kw['h'], gr.Area.ravel() / kw['c']
-        
-    # --- Drain boundary conditions. Take the same parameters.
-    DRN = GHB.copy()
-    
-    # --- River boundary conditions
-    RIV = np.zeros(len(Ig), dtype=Fdm3.dtypes['riv'])
-    RIV['Ig'], RIV['h'], RIV['C'], RIV['rbot'] = (
-        Ig, kw['h'], gr.Area.ravel() / kw['c'], kw['h']
-    )
-    
-    # --- Free drainage boundary conditioins, two variants
-    # --- Parameters that are the same for both variants
-    FDR = np.zeros(len(Ig), dtype=Fdm3.dtypes['fdr'])    
-    FDR['Ig'], FDR['phi'], FDR['h'], FDR['h0'], FDR['N'], FDR['w'], FDR['L'] = (
-        Ig, kw['h'] + Nc, kw['h'], kw['h'] - kw['y0'], kw['N'], kw['w1'], kw['L']
-    )
-
-    # --- Parameters of first variant
-    FDR1 = FDR.copy()
-    # --- Parameters of second variant
-    FDR2 = FDR.copy()
-    FDR2['w'], FDR2['L'] = kw['w2'], kw['L']
-    
-    # --- Instantiate the model
-    mdl = Fdm3(gr=gr, K=k, c=None, IBOUND=IBOUND, HI=HI, FQ=FQ) # run model  
-    
-    # --- Using n drn levels between h-y0 and h
-    drncond = DRNcond(h0=kw['h'] - kw['y0'], hN=kw['h'], cN=kw['c'], N=kw['N'])
-    nDrn = 4
-    
-    DRNn = np.zeros(len(Ig) * nDrn, dtype=Fdm3.dtypes['drn'])    
-    DC, hdr = drncond.get_ch(n=nDrn)
-    DRNn = np.zeros(len(hdr) * gr.nx, dtype=Fdm3.dtypes['drn'])
-    for i, (DCi, hi) in enumerate(zip(DC, hdr)):
-        i1, i2 = i * len(Ig), (i + 1) * len(Ig)
-        DRNn[i1:i2]['Ig']= Ig
-        DRNn[i1:i2]['h'] = hi
-        DRNn[i1:i2]['C'] = DCi
-        
-    # --- Run the model for each set of boundary coditions in turn  
-    out_ghb = mdl.simulate(GHB=GHB) # run model
-    out_drn = mdl.simulate(DRN=DRN, tm=[1., 5.])
-    out_riv = mdl.simulate(RIV=RIV, tm=[1., 5.])
-    out_fdr1 = mdl.simulate(FDR=FDR1, tm=[1., 5.])
-    out_fdr2 = mdl.simulate(FDR=FDR2, tm=[1., 5.])
-    out_drn6 = mdl.simulate(DRN=DRNn, tm=[1., 5.]) 
-    
-    # --- Show the results
-    
-    # --- The heads
-    title = kw['title'] + ' (Using GHB)'
-    fig, ax = plt.subplots(figsize=(10, 6))
-    ax.set(title=title, xlabel='r [m]', ylabel='s [m]', xscale='linear', xlim=[1e-3, r[-1]])
-    
-    # --- Plot analytical results
-    ax.plot(gr.xm, Nc.item() + kw['Q']/(2 * np.pi * kD) * K0(gr.xm / lambda_) / (kw['rw']/ lambda_ * K1(kw['rw']/ lambda_)), '+',label='De Glee Analytic')
-    
-    # --- Numerical results
-    ax.plot(gr.xm, out_ghb[ 'Phi'][-1, 0, :],      label='GHB')
-    ax.plot(gr.xm, out_drn[ 'Phi'][-1, 0, :], 'x', label='DRN 1 drainage level')
-    ax.plot(gr.xm, out_riv[ 'Phi'][-1, 0, :],      label='RIV h=rbot')
-    ax.plot(gr.xm, out_fdr1['Phi'][-1, 0, :],      label='FDR math. drainage')
-    ax.plot(gr.xm, out_fdr2['Phi'][-1, 0, :],      label='FDR phys. drainage')
-    ax.plot(gr.xm, out_drn6['Phi'][-1, 0, :],      label=f'DRN {nDrn} drainage levels')
-    ax.set_xlim(0, 2000)
-    ax.set_ylim(-3., 1.)
-    ax.grid()
-    ax.legend()
-    
-    # --- The flows
-    title = "Axial symmetric flow, discharges q [m/d]"
-    fig, ax = plt.subplots(figsize=(10, 6))
-    ax.set(title=title, xlabel='r [m]', ylabel='s [m]', xscale='linear',
-           xlim=(0, 2000.), ylim=(-0.002, 0.0012))
-
-    # --- Plot numerical results
-    ax.plot(gr.XM.ravel()[out_ghb['GHB']['Ig']], out_ghb[ 'GHB']['q'],      label='GHB')
-    ax.plot(gr.XM.ravel()[out_drn['DRN']['Ig']], out_drn[ 'DRN']['q'],      label='DRN 1 drainage level')
-    ax.plot(gr.XM.ravel()[out_riv['RIV']['Ig']], out_riv[ 'RIV']['q'], '+', label='RIV h = rbot')
-    ax.plot(gr.XM.ravel()[out_fdr1['FDR']['Ig']], out_fdr1[ 'FDR']['q'],    label='FDR1 math. drainage')
-    ax.plot(gr.XM.ravel()[out_fdr2['FDR']['Ig']], out_fdr2[ 'FDR']['q'],    label='FDR2 phys. drainage')
-    ax.plot(gr.XM.ravel()[out_drn6['DRN']['Ig']], out_drn6[ 'DRN']['q'],    label=f'DRN {nDrn} drainage levels')
-    ax.grid()
-    ax.legend()
-    
-    return {'ghb': out_ghb, 'drn': out_drn, 'riv': out_riv, 'fdr1': out_fdr1, 'fdr2': out_fdr2}
-
-cases = {
-    'sectioin1D_data': {
-        'title': '1D Cross section',
-        'comment': """Drainage in a 1D cross section.
-        
-        Mazure was Dutch professor in the 1930s, concerned with leakage from
-        polders that were pumped dry. His situation is a cross section perpendicular
-        to the dike of a regional aquifer covered by a semi-confining layer with
-        a maintained head in it. The head in the regional aquifer at the dike was
-        given as well. The head obeys the following analytical expression
-        phi(x) - hp = (phi(0)-hp) * exp(-x/B), B = sqrt(kDc)
-        To compute we use 2 model layers and define the values such that we obtain
-        the Mazure result.
-        """,
-        'Q': -1.5,                
-        },
-    'axial_data': {
-        'title': 'Axially symmetric flow',
-        'comment': """Axial symmetric examples. All for a well simulating
-                extraction in a aquifer with drainage. The drainage is simulated
-                using different boundary conditions, both linear and non-linear:
-                GHB: Gneral Head Boundaries.            
-                DRN: drain boundaries. (Non linear).
-                RIV: riv boundaries. (Non linear, made idential to DRN by setting h=rbot).
-                FDR: free drainage boundaries
-                    Version one: drainage resistance using a math root function.
-                    Version two: drainage resistance using a physical function with ditch width.
-                """,
-        'Q': -2500.,
-        'rw':   .25,
-        'r': np.logspace(-1, 4, 201)         
-    },
-    'general_data': {        
-        'z0': 0.,                
-        'D' : np.array([10., 50.]),
-        'c' : np.array([[200.]]),      # Layer resistances [0] is top.
-        'k' : np.array([np.inf, 10]),  # m/d conductivity of regional aquifer        
-        'N' : 0.001, # Reference recharge
-        'h' : 0.0, # drainage basis reference situation
-        'y0': 1.0, # Ditch depth for reference situation        
-        'w1' : np.nan, # Use math function for drainage resistance
-        'w2' : 1.0,    # Ditch width, use physical formula for dr. res.
-        'L' : 100. # Distance between the ditches.
-    }
-}
-
-if __name__ == "__main__":
-    
     show_conductances(h0=-1., hN=0., cN=200, N=0.001)
 
     
-    out1D_all = oneD_all_boundary_types(cases['sectioin1D_data'] | cases['general_data'])
-    
-    if False:
-        outax_all = axial_all_boundary_types(cases['axial_data'    ] | cases['general_data'])
-    
-    for name, out in out1D_all.items():
-        print(name)
-        watbal(out)
+    # %%
+    def oneD_all_boundary_types(kw):
+        """Run 1D cross section examples, using all available boundary types,
+        just a single layer to simulate drainage:
+            GHB General head boundaries
+            DRN drains.
+            RIV river cells. Setting h=rbot, so that RIV is equivalent to DRN
+            FDR free drainage, once using math resitance, once using physical drainage resistance
+                1. Mathamatical drainage resistance.
+                2. Physical drainage resistance
         
-    if False:
-        for name, out in outax_all.items():
+        Simulating leakage using boundary types instead of a resistance layer.
+        
+        This allows using only a single aquifer.
+        
+        With a single aquifer, resistance layers (c) cannot be used.
+        """
+        # --- Transmissivty regional aquifer
+        kD = (kw['k'] * kw['D'])[-1]
+        
+        # --- Spreading length lambda regional aquifer
+        lambda_  = np.sqrt(kD * float(np.squeeze(kw['c'])))
+        
+        # --- Set up the grid
+        x = np.linspace(0, 2000., 201)
+        # --- One layer only
+        z = (kw['z0'] - np.cumsum(np.hstack((0., kw['D']))))[1:]
+        
+        # --- The grid
+        gr = mfgrid.Grid(x, None, z, axial=False)
+        
+        # --- Given (Fixed) flows
+        FQ = gr.const(0.)                   # m3/d fixed flows
+        FQ[0] = gr.Area * kw['N']           # Recharge area
+        FQ[-1, 0, 0] += kw['Q']             # Add extraction   
+        
+        # --- Initial heads
+        HI = (kw['h'] + kw['N'] * kw['c']) * gr.const(1.)
+        
+        # --- Modflow-like boundary array
+        IBOUND = gr.const(1, dtype=int)
+        
+        # --- Full 3D array of hydraulic conductivities
+        k = gr.const(kw['k'][-1])
+        
+        # --- Set up the various boundary types
+        # --- to be used in turn for comparison
+        
+        # --- Cells taking part in the boundary
+        Ig = gr.NOD[0].ravel()
+        
+        # --- General head boundarie recarray
+        GHB = np.zeros(len(Ig), dtype=Fdm3.dtypes['ghb'])
+        GHB['Ig'], GHB['h'], GHB['C'] = Ig, kw['h'], gr.Area.ravel() / kw['c']
+            
+        # --- Drain boundary recarray
+        DRN = GHB.copy() # Same parameters
+        
+        # --- River boundary recarray
+        RIV = np.zeros(len(Ig), dtype=Fdm3.dtypes['riv'])
+        RIV['Ig'], RIV['h'], RIV['C'], RIV['rbot'] = Ig, kw['h'], gr.Area.ravel() / kw['c'], kw['h']
+        
+        # --- Free drainage boundaries
+        # --- Parameters required for both FDR variants:
+        FDR = np.zeros(len(Ig), dtype=Fdm3.dtypes['fdr'])
+        
+        Nc = kw['N'] * kw['c']
+        
+        FDR['Ig'], FDR['phi'], FDR['h'], FDR['h0'], FDR['N'], FDR['w'], FDR['L'] = (
+            Ig, kw['h'] + Nc, kw['h'], kw['h'] - kw['y0'], kw['N'], kw['w1'], kw['L']
+        )
+
+        # --- First FDR variant    
+        FDR1 = FDR
+        # --- Second FDR variant
+        FDR2 = FDR.copy()    
+        FDR2['w'], FDR2['L'] = kw['w2'], kw['L']
+        
+        # --- Using 6 drn levels between h-y0 and h
+        drncond = DRNcond(h0=kw['h'] - kw['y0'], hN=kw['h'], cN=kw['c'], N=kw['N'])
+        
+        nDrn = 1
+        DRNn = np.zeros(len(Ig) * nDrn, dtype=Fdm3.dtypes['drn'])    
+        DC, hdr = drncond.get_ch(n=nDrn)
+        DRNn = np.zeros(len(hdr) * gr.nx, dtype=Fdm3.dtypes['drn'])
+        for i, (DCi, hi) in enumerate(zip(DC, hdr)):
+            i1, i2 = i * len(Ig), (i + 1) * len(Ig)
+            DRNn[i1:i2]['Ig']= Ig
+            DRNn[i1:i2]['h'] = hi
+            DRNn[i1:i2]['C'] = DCi * gr.Area
+
+        # --- Instantiate the Fdm3 model using different boundaries in turn
+        mdl = Fdm3(gr=gr, K=k, c=None, IBOUND=IBOUND, HI=HI, FQ=FQ)
+        
+        # --- Run model, one variant at a time
+        out_ghb = mdl.simulate(GHB=GHB) # run model
+        out_drn = mdl.simulate(DRN=DRN,   tm=[1., 5.])
+        out_riv = mdl.simulate(RIV=RIV,   tm=[1., 5.])
+        out_fdr1 = mdl.simulate(FDR=FDR1, tm=[1., 5.])
+        out_fdr2 = mdl.simulate(FDR=FDR2, tm=[1., 5.])
+        out_drnn = mdl.simulate(DRN=DRNn, tm=[1., 5.])
+        
+        # --- Show the results
+        
+        # --- Plot the heads
+        title = kw['title'] + ' (Using GHB)'
+        fig, ax = plt.subplots(figsize=(10, 6))
+
+        ax.set(title=title, xlabel='x [m]', ylabel='s [m]', xscale='linear', xlim=[1e-3, x[-1]])
+
+        # --- Plot analytical results
+        ax.plot(gr.xm, Nc.item() + kw['Q'] * lambda_ / kD * np.exp(-gr.xm / lambda_),'+', label='Mazure')
+
+        # --- Plot numerical results
+        ax.plot(gr.xm, out_ghb[ 'Phi'][-1, 0, :],      label='GHB')
+        ax.plot(gr.xm, out_drn[ 'Phi'][-1, 0, :], 'x', label='DRN')
+        ax.plot(gr.xm, out_riv[ 'Phi'][-1, 0, :],      label='RIV, h=rbot')
+        ax.plot(gr.xm, out_fdr1['Phi'][-1, 0, :],      label='FDR, math. drainage')
+        ax.plot(gr.xm, out_fdr2['Phi'][-1, 0, :],      label='FDR, phys. drainage')
+        ax.plot(gr.xm, out_drnn['Phi'][-1, 0, :],      label=f'DRN{nDrn} drainage levels')
+        
+            
+        ax.grid()
+        ax.legend()
+        
+        # --- Plot the leakage
+        title="Infiltration or leakage m/d"
+        fig, ax = plt.subplots(figsize=(10, 6))
+        ax.set(title=title, xlabel='x [m]', ylabel='q [m/d]', xscale='linear', xlim=[1e-3, x[-1]])
+        
+        ax.plot(gr.XM.ravel()[out_ghb['GHB']['Ig']], out_ghb[ 'GHB']['q'],      label='Fdm3 GHB')
+        ax.plot(gr.XM.ravel()[out_drn['DRN']['Ig']], out_drn[ 'DRN']['q'],      label='Fdm3 DRN')
+        ax.plot(gr.XM.ravel()[out_riv['RIV']['Ig']], out_riv[ 'RIV']['q'], '+', label='Fdm3 RIV')
+        ax.plot(gr.XM.ravel()[out_fdr1['FDR']['Ig']], out_fdr1[ 'FDR']['q'],    label='Fdm3 FDR1 math. drainage')
+        ax.plot(gr.XM.ravel()[out_fdr2['FDR']['Ig']], out_fdr2[ 'FDR']['q'],    label='Fdm3 FDR2 phys. drainage')
+        ax.plot(gr.XM.ravel()[out_drnn['DRN']['Ig']], out_drnn[ 'DRN']['q'],    label='Fdm3 DRNn drainage levels')
+        ax.grid()
+        ax.legend()
+        
+        # --- Return the ressults in a dictionary
+        return {'ghb': out_ghb, 'drn': out_drn, 'riv': out_riv, 'fdr1': out_fdr1, 'fdr2': out_fdr2}
+
+
+    def axial_all_boundary_types(kw):
+        """Run Axial symmetric examples, but now using GHB each of the boundary types instead,
+        just a single layer so simulate drainage:
+            GHB General head boundaries
+            DRN drains.
+            RIV river cells. Setting h=rbot, so that RIV is equivalent to DRN
+            FDR free drainage, once using math resitance, once using physical drainage resistance
+        
+        Simulating leakage using boundary types instead of a resistance layer. Allows using only a single
+        aquifer.
+        With a single aquifer, resistance layers (c) cannot be used.
+        """
+        
+        # --- Transmissivity of the regional aquifer
+        kD = (kw['k'] * kw['D'])[-1]
+        
+        # --- Spreading length of the regional aquifer
+        lambda_  = np.sqrt(kD * float(np.squeeze(kw['c'])))
+        
+        # --- Setup of the grid of the axial-symmetric model
+        r = np.hstack((0., kw['rw'], kw['r'][kw['r'] > kw['rw']]))
+        
+        # --- A single layer, not top aquifer
+        z = (kw['z0'] - np.cumsum(np.hstack((0., kw['D']))))[1:]
+        
+        # --- The grid
+        gr = mfgrid.Grid(r, None, z, axial=True)   # generate grid
+        
+        # --- Boundary conditions
+        
+        # --- Fixed heads recarray
+        FQ = gr.const(0.)                   # m3/d fixed flows
+        FQ[0] = gr.Area * kw['N']           # Recharge areal
+        FQ[-1, 0, 0] += kw['Q']             # Add extraction
+        Nc = kw['N'] * kw['c']
+        
+        # --- Initial heads
+        HI = (kw['h'] + Nc) * gr.const(1.)                   # m, initial heads
+        
+        # --- Modflow like boundary array
+        IBOUND = gr.const(1, dtype=int)
+        
+        # --- full 3D array of hydraulic conductivities
+        k = gr.const(kw['k'][-1])
+        
+        # --- Setup of the various boundary types
+        # --- to be used in turn for comparison
+        
+        # --- Cell Ids taking part in the boundary conditions
+        Ig = gr.NOD[0].ravel()
+        
+        # --- General head boundary conditions
+        GHB = np.zeros(len(Ig), dtype=Fdm3.dtypes['ghb'])
+        GHB['Ig'], GHB['h'], GHB['C'] = Ig, kw['h'], gr.Area.ravel() / kw['c']
+            
+        # --- Drain boundary conditions. Take the same parameters.
+        DRN = GHB.copy()
+        
+        # --- River boundary conditions
+        RIV = np.zeros(len(Ig), dtype=Fdm3.dtypes['riv'])
+        RIV['Ig'], RIV['h'], RIV['C'], RIV['rbot'] = (
+            Ig, kw['h'], gr.Area.ravel() / kw['c'], kw['h']
+        )
+        
+        # --- Free drainage boundary conditioins, two variants
+        # --- Parameters that are the same for both variants
+        FDR = np.zeros(len(Ig), dtype=Fdm3.dtypes['fdr'])    
+        FDR['Ig'], FDR['phi'], FDR['h'], FDR['h0'], FDR['N'], FDR['w'], FDR['L'] = (
+            Ig, kw['h'] + Nc, kw['h'], kw['h'] - kw['y0'], kw['N'], kw['w1'], kw['L']
+        )
+
+        # --- Parameters of first variant
+        FDR1 = FDR.copy()
+        # --- Parameters of second variant
+        FDR2 = FDR.copy()
+        FDR2['w'], FDR2['L'] = kw['w2'], kw['L']
+        
+        # --- Instantiate the model
+        mdl = Fdm3(gr=gr, K=k, c=None, IBOUND=IBOUND, HI=HI, FQ=FQ) # run model  
+        
+        # --- Using n drn levels between h-y0 and h
+        drncond = DRNcond(h0=kw['h'] - kw['y0'], hN=kw['h'], cN=kw['c'], N=kw['N'])
+        nDrn = 4
+        
+        DRNn = np.zeros(len(Ig) * nDrn, dtype=Fdm3.dtypes['drn'])    
+        DC, hdr = drncond.get_ch(n=nDrn)
+        DRNn = np.zeros(len(hdr) * gr.nx, dtype=Fdm3.dtypes['drn'])
+        for i, (DCi, hi) in enumerate(zip(DC, hdr)):
+            i1, i2 = i * len(Ig), (i + 1) * len(Ig)
+            DRNn[i1:i2]['Ig']= Ig
+            DRNn[i1:i2]['h'] = hi
+            DRNn[i1:i2]['C'] = DCi
+            
+        # --- Run the model for each set of boundary coditions in turn  
+        out_ghb = mdl.simulate(GHB=GHB) # run model
+        out_drn = mdl.simulate(DRN=DRN, tm=[1., 5.])
+        out_riv = mdl.simulate(RIV=RIV, tm=[1., 5.])
+        out_fdr1 = mdl.simulate(FDR=FDR1, tm=[1., 5.])
+        out_fdr2 = mdl.simulate(FDR=FDR2, tm=[1., 5.])
+        out_drn6 = mdl.simulate(DRN=DRNn, tm=[1., 5.]) 
+        
+        # --- Show the results
+        
+        # --- The heads
+        title = kw['title'] + ' (Using GHB)'
+        fig, ax = plt.subplots(figsize=(10, 6))
+        ax.set(title=title, xlabel='r [m]', ylabel='s [m]', xscale='linear', xlim=[1e-3, r[-1]])
+        
+        # --- Plot analytical results
+        ax.plot(gr.xm, Nc.item() + kw['Q']/(2 * np.pi * kD) * K0(gr.xm / lambda_) / (kw['rw']/ lambda_ * K1(kw['rw']/ lambda_)), '+',label='De Glee Analytic')
+        
+        # --- Numerical results
+        ax.plot(gr.xm, out_ghb[ 'Phi'][-1, 0, :],      label='GHB')
+        ax.plot(gr.xm, out_drn[ 'Phi'][-1, 0, :], 'x', label='DRN 1 drainage level')
+        ax.plot(gr.xm, out_riv[ 'Phi'][-1, 0, :],      label='RIV h=rbot')
+        ax.plot(gr.xm, out_fdr1['Phi'][-1, 0, :],      label='FDR math. drainage')
+        ax.plot(gr.xm, out_fdr2['Phi'][-1, 0, :],      label='FDR phys. drainage')
+        ax.plot(gr.xm, out_drn6['Phi'][-1, 0, :],      label=f'DRN {nDrn} drainage levels')
+        ax.set_xlim(0, 2000)
+        ax.set_ylim(-3., 1.)
+        ax.grid()
+        ax.legend()
+        
+        # --- The flows
+        title = "Axial symmetric flow, discharges q [m/d]"
+        fig, ax = plt.subplots(figsize=(10, 6))
+        ax.set(title=title, xlabel='r [m]', ylabel='s [m]', xscale='linear',
+            xlim=(0, 2000.), ylim=(-0.002, 0.0012))
+
+        # --- Plot numerical results
+        ax.plot(gr.XM.ravel()[out_ghb['GHB']['Ig']], out_ghb[ 'GHB']['q'],      label='GHB')
+        ax.plot(gr.XM.ravel()[out_drn['DRN']['Ig']], out_drn[ 'DRN']['q'],      label='DRN 1 drainage level')
+        ax.plot(gr.XM.ravel()[out_riv['RIV']['Ig']], out_riv[ 'RIV']['q'], '+', label='RIV h = rbot')
+        ax.plot(gr.XM.ravel()[out_fdr1['FDR']['Ig']], out_fdr1[ 'FDR']['q'],    label='FDR1 math. drainage')
+        ax.plot(gr.XM.ravel()[out_fdr2['FDR']['Ig']], out_fdr2[ 'FDR']['q'],    label='FDR2 phys. drainage')
+        ax.plot(gr.XM.ravel()[out_drn6['DRN']['Ig']], out_drn6[ 'DRN']['q'],    label=f'DRN {nDrn} drainage levels')
+        ax.grid()
+        ax.legend()
+        
+        return {'ghb': out_ghb, 'drn': out_drn, 'riv': out_riv, 'fdr1': out_fdr1, 'fdr2': out_fdr2}
+
+    cases = {
+        'sectioin1D_data': {
+            'title': '1D Cross section',
+            'comment': """Drainage in a 1D cross section.
+            
+            Mazure was Dutch professor in the 1930s, concerned with leakage from
+            polders that were pumped dry. His situation is a cross section perpendicular
+            to the dike of a regional aquifer covered by a semi-confining layer with
+            a maintained head in it. The head in the regional aquifer at the dike was
+            given as well. The head obeys the following analytical expression
+            phi(x) - hp = (phi(0)-hp) * exp(-x/B), B = sqrt(kDc)
+            To compute we use 2 model layers and define the values such that we obtain
+            the Mazure result.
+            """,
+            'Q': -1.5,                
+            },
+        'axial_data': {
+            'title': 'Axially symmetric flow',
+            'comment': """Axial symmetric examples. All for a well simulating
+                    extraction in a aquifer with drainage. The drainage is simulated
+                    using different boundary conditions, both linear and non-linear:
+                    GHB: Gneral Head Boundaries.            
+                    DRN: drain boundaries. (Non linear).
+                    RIV: riv boundaries. (Non linear, made idential to DRN by setting h=rbot).
+                    FDR: free drainage boundaries
+                        Version one: drainage resistance using a math root function.
+                        Version two: drainage resistance using a physical function with ditch width.
+                    """,
+            'Q': -2500.,
+            'rw':   .25,
+            'r': np.logspace(-1, 4, 201)         
+        },
+        'general_data': {        
+            'z0': 0.,                
+            'D' : np.array([10., 50.]),
+            'c' : np.array([[200.]]),      # Layer resistances [0] is top.
+            'k' : np.array([np.inf, 10]),  # m/d conductivity of regional aquifer        
+            'N' : 0.001, # Reference recharge
+            'h' : 0.0, # drainage basis reference situation
+            'y0': 1.0, # Ditch depth for reference situation        
+            'w1' : np.nan, # Use math function for drainage resistance
+            'w2' : 1.0,    # Ditch width, use physical formula for dr. res.
+            'L' : 100. # Distance between the ditches.
+        }
+    }
+
+    if __name__ == "__main__":
+        
+        show_conductances(h0=-1., hN=0., cN=200, N=0.001)
+
+        
+        out1D_all = oneD_all_boundary_types(cases['sectioin1D_data'] | cases['general_data'])
+        
+        if False:
+            outax_all = axial_all_boundary_types(cases['axial_data'    ] | cases['general_data'])
+        
+        for name, out in out1D_all.items():
             print(name)
             watbal(out)
-        
-    plt.show()
+            
+        if False:
+            for name, out in outax_all.items():
+                print(name)
+                watbal(out)
+            
+        plt.show()
