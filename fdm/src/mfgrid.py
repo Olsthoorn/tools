@@ -1187,7 +1187,35 @@ class Grid:
         valid = AND(lrc['ic'][:, 0] >=0, lrc['ic'][:, 1] >=0, lrc['ic'][:, 2] >= 0)
         
         return lrc[valid]
+    
+    def iz_above(self, z):
+        """Return index of layer just below z.
+        @ TO 2026-06-05
+        """
+        try:
+            iz = np.searchsorted(-self.z, -z) - 1
+            if iz < 0:
+                raise(IndexError)
+        except IndexError as er:
+            raise er("Index out of bounds (higher than top of model)")
+        return iz
 
+    def ilay_above(self, z):
+        return self.iz_above(z)
+
+    def iz_below(self, z):
+        """Return index of layer just below z.
+        @ TO 2026-06-05
+        """
+        try:
+            iz = np.searchsorted(-self.z, -z)
+        except IndexError as er:
+            raise er("Index out of bounds (lower than bottom of model)")
+        return iz
+    
+    def ilay_below(self, z):
+        return self.iz_below(z)
+    
 
     def Ix(self, x):
         """Return column index for points x."""

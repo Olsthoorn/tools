@@ -29,6 +29,16 @@ run from the above-mentioned jupyter notebook.
 # %%
 
 import os
+import sys
+print()
+print("os.getcwd():", os.getcwd())
+print("sys.executable = ", sys.executable)
+print("ARGV", sys.argv)
+print("sys.path:")
+for p in sys.path:
+    print(p)
+print()
+
 import warnings
 
 import matplotlib.pylab as plt
@@ -38,7 +48,7 @@ import scipy.sparse.linalg as la
 from scipy.special import k0 as K0
 from scipy.special import k1 as K1
 from tools.fdm.src import mfgrid
-from tools.etc.etc import logo
+from tools.etc import logo
 
 import tools.fdm.src.wellfunctionalities as wf
     
@@ -486,7 +496,7 @@ class Fdm3():
 
         #cell numbers for neighbors
         active = (self.IBOUND > 0).reshape(nod,)  # boolean vector denoting the active cells
-        inact  = (self.IBOUND ==0).reshape(nod,) # boolean vector denoting inacive cells
+        inact  = (self.IBOUND ==0).reshape(nod,)  # boolean vector denoting inacive cells
         fxhd   = (self.IBOUND < 0).reshape(nod,)  # boolean vector denoting fixed-head cells
 
 
@@ -661,7 +671,7 @@ class Fdm3():
                 adiag += self.Sto.ravel() / dt
                 RHS += self.Sto.ravel() / dt * HI
                 
-                Phi[active] = la.spsolve((self.A + sp.diags(adiag, 0))[active][:,active], RHS[active] )                
+                Phi[active] = la.spsolve((self.A + sp.diags(adiag, 0))[active][:,active], RHS[active] )
                 # Phi[active], info = la.cg((self.A + sp.diags(adiag, 0))[active][:,active], RHS[active], x0=HI[active], rtol=rtol, atol=atol, maxiter=250)                
                 err = np.abs(Phi[active] - HI[active]).max()
                 errBalance = (self.Sto.ravel() * (Phi - HI)).sum()
@@ -678,7 +688,7 @@ class Fdm3():
                     HI[:] = Phi
                     dt *= dtmult                     
             else:
-                Phi[active] = la.spsolve((self.A + sp.diags(adiag, 0))[active][:,active], RHS[active] )                
+                Phi[active] = la.spsolve((self.A + sp.diags(adiag, 0))[active][:,active], RHS[active] )
                 print("No outer iterations needed.")
                 break
 
