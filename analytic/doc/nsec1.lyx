@@ -1,0 +1,2626 @@
+#LyX 2.4 created this file. For more info see https://www.lyx.org/
+\lyxformat 620
+\begin_document
+\begin_header
+\save_transient_properties true
+\origin unavailable
+\textclass article
+\begin_preamble
+%\usepackage{epstopdf} % to include .eps graphics files with pdfLaTeX
+\usepackage{flafter}   % Don't place floats before their definition
+%\usepackage{topcapt}  % Define \topcation for placing captions above tables (not in gwTeX)
+
+\usepackage{xurl}      % better URL setting, uses old url package
+
+\usepackage{xcolor}
+\definecolor{darkblue}{rgb}{0,0,0.4}
+\usepackage[]{hyperref} % Generates all cross references
+\hypersetup{            % Setting options for hyperref package
+	breaklinks=true,    % break line with long hyperlinks
+	colorlinks=true,    % coloured links
+	linkcolor=blue,
+	filecolor=magenta,
+	urlcolor=darkblue,
+	citecolor=blue,
+	backref=page
+} 
+
+\usepackage{memhfixc}  % remove conflict between the memoir class & hyperref
+\usepackage{pdfsync}   % enable tex source and pdf output syncronicity
+
+\usepackage{memhfixc}  % remove conflict between the memoir class & hyperref
+\usepackage{pdfsync}   % enable tex source and pdf output syncronicity
+
+\usepackage{alltt}
+
+% \usepackage{listings}
+% \usepackage{xcolor}
+
+% \lstdefinestyle{mystyle}{
+%   language=Python,
+%   numbers=left
+% }
+
+% Put lstset here, after lstdefinestyle
+% \lstset{style=mystyle}
+\end_preamble
+\use_default_options true
+\maintain_unincluded_children no
+\language dutch
+\language_package default
+\inputencoding utf8
+\fontencoding auto
+\font_roman "default" "default"
+\font_sans "default" "default"
+\font_typewriter "default" "default"
+\font_math "auto" "auto"
+\font_default_family default
+\use_non_tex_fonts false
+\font_sc false
+\font_roman_osf false
+\font_sans_osf false
+\font_typewriter_osf false
+\font_sf_scale 100 100
+\font_tt_scale 100 100
+\use_microtype false
+\use_dash_ligatures true
+\graphics default
+\default_output_format pdf2
+\output_sync 0
+\bibtex_command biber
+\index_command default
+\float_placement h
+\float_alignment center
+\paperfontsize default
+\spacing single
+\use_hyperref false
+\papersize default
+\use_geometry true
+\use_package amsmath 1
+\use_package amssymb 1
+\use_package cancel 1
+\use_package esint 1
+\use_package mathdots 1
+\use_package mathtools 1
+\use_package mhchem 1
+\use_package stackrel 1
+\use_package stmaryrd 1
+\use_package undertilde 1
+\cite_engine basic
+\cite_engine_type default
+\biblio_style plain
+\biblio_options hyperref=true, backref=true, backrefstyle=three,backreffloats=true,indexing=bib,date=year
+\use_bibtopic false
+\use_indices false
+\paperorientation portrait
+\suppress_date false
+\justification true
+\use_refstyle 1
+\use_formatted_ref 0
+\use_minted 0
+\use_lineno 0
+\index Index
+\shortcut idx
+\color #008000
+\end_index
+\leftmargin 1in
+\topmargin 1in
+\rightmargin 1in
+\bottommargin 1in
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation indent
+\paragraph_indentation default
+\is_math_indent 0
+\math_numbering_side default
+\quotes_style polish
+\dynamic_quotes 0
+\papercolumns 1
+\papersides 1
+\paperpagestyle default
+\tablestyle default
+\listings_params "language=Python,extendedchars=false,frameround=fttt,numbers=left,% line numbers use none,numberstyle={\tiny},stepnumber=2,% line numbers only every so many,numbersep=9pt,% how far line numbers from text?,showspaces=false,showstringspaces=false,showtabs=false,tab={\rightarrowfill},basicstyle={\small},keywordstyle={\color{blue}},commentstyle={\color{green}},stringstyle={\ttfamily \color{magenta}},identifierstyle={\color{black}}"
+\tracking_changes false
+\output_changes false
+\change_bars false
+\postpone_fragile_content false
+\html_math_output 0
+\html_css_as_file 0
+\html_be_strict false
+\docbook_table_output 0
+\docbook_mathml_prefix 1
+\end_header
+
+\begin_body
+
+\begin_layout Title
+Nsec1 (Semi-confined,
+ steady,
+ 1-layer flow in consecutive sections)
+\end_layout
+
+\begin_layout Author
+T.N.Olsthoorn
+\end_layout
+
+\begin_layout Date
+11/06/2026
+\end_layout
+
+\begin_layout Section
+Intro
+\end_layout
+
+\begin_layout Standard
+Nsec1 is een analytisch model voor het berekenen van 1 dimensionale stationaire stroming in een aantal gekoppelde secties van een semi-gespannen pakket.
+ Zie het als een doorsnede door een aantal polders,
+ elk met eigen 
+\begin_inset Formula $kD$
+\end_inset
+
+,
+ eigen 
+\begin_inset Formula $c$
+\end_inset
+
+-waarde en eigen polderpeil,
+ 
+\begin_inset Formula $h$
+\end_inset
+
+.
+ Aan de uiteinden wordt ofwel een gegeven stijghoogte 
+\begin_inset Formula $\phi$
+\end_inset
+
+,
+ danwel een gegeven stroming 
+\begin_inset Formula $Qx$
+\end_inset
+
+ opgelegd.
+ Op de knooppunten tussen de secties geldt continuïteit van de stijghoogte en de stroming,
+ met dien verstande daar op deze knooppunten ook een stroom water 
+\begin_inset Formula $Q$
+\end_inset
+
+ kan worden geïnfiltreerd of onttrokken.
+\end_layout
+
+\begin_layout Standard
+Nsec1 is de 1-laags variant van 
+\series bold
+nsecn
+\series default
+ in Python,
+ een vergelijkbaar analytisch model voor meer lagen,
+ dat ik rond 2000 ontwikkelde in Matlab,
+ maar dat nog altijd niet naar Python is vertaald.
+\end_layout
+
+\begin_layout Standard
+
+\series bold
+nsec1
+\series default
+ is zowel in een python file 
+\series bold
+nsec1.py
+\series default
+ als in een notebook 
+\series bold
+nsec1.ipynb
+\series default
+ geïmplementeerd onder de 
+\series bold
+tools/anlytic
+\series default
+ en 
+\series bold
+tools/analytic/notebooks
+\series default
+ directories.
+\end_layout
+
+\begin_layout Subsection
+Afleiding
+\end_layout
+
+\begin_layout Standard
+De stroming in een sectie tussen 
+\begin_inset Formula $0\le x\le L$
+\end_inset
+
+ wordt analytisch beschreven door
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\phi-h=Ae^{-x/\lambda}+Be^{-\left(L-x\right)/\lambda}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Hierin is
+\end_layout
+
+\begin_layout Description
+\begin_inset Formula $\phi$
+\end_inset
+
+ [m] de stijghoogte in het watervoerende pakket
+\end_layout
+
+\begin_layout Description
+\begin_inset Formula $h$
+\end_inset
+
+ [m] het lokale polderpeil
+\end_layout
+
+\begin_layout Description
+\begin_inset Formula $L$
+\end_inset
+
+ [m] de lengte van de sectie
+\end_layout
+
+\begin_layout Description
+\begin_inset Formula $x$
+\end_inset
+
+ [m] de coördinaat langs de sectie met 
+\begin_inset Formula $0\le x\le L$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Description
+\begin_inset Formula $\lambda$
+\end_inset
+
+ [m] de spreidingslengte 
+\begin_inset Formula $\lambda=\sqrt{kDc}$
+\end_inset
+
+ 
+\end_layout
+
+\begin_layout Description
+\begin_inset Formula $c$
+\end_inset
+
+ [d] de verticale weerstand van de deklaag
+\end_layout
+
+\begin_layout Description
+\begin_inset Formula $kD$
+\end_inset
+
+ [m
+\begin_inset Formula $^{2}$
+\end_inset
+
+/d] het doorlaatvermogen van het watervoerend pakket
+\end_layout
+
+\begin_layout Description
+\begin_inset Formula $A$
+\end_inset
+
+ [m] constante te bepalen uit de randvoorwaarden op 
+\begin_inset Formula $x=0$
+\end_inset
+
+ en 
+\begin_inset Formula $x=L$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Description
+\begin_inset Formula $B$
+\end_inset
+
+ [m] constante te bepalen uit de randvoorwaarden op 
+\begin_inset Formula $x=0$
+\end_inset
+
+ en 
+\begin_inset Formula $x=L$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Description
+\begin_inset Formula $Q_{x}$
+\end_inset
+
+ [m
+\begin_inset Formula $^{2}$
+\end_inset
+
+/d] de horizontale stroming in het watervoerende pakket in positieve 
+\begin_inset Formula $x$
+\end_inset
+
+-richting.
+\end_layout
+
+\begin_layout Standard
+Deze stroming volgt met door differentiëren van de stijghoogte naar 
+\begin_inset Formula $x$
+\end_inset
+
+ en vermenigvuldiging met 
+\begin_inset Formula $-kD$
+\end_inset
+
+:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+Q_{x}=\frac{kD}{\lambda}\left(Ae^{-x/\lambda}-Be^{-\left(L-x\right)/\lambda}\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Door invullen van de randvoorwaarden 
+\begin_inset Formula $\phi\left(0\right)$
+\end_inset
+
+ of 
+\begin_inset Formula $Q_{x}\left(0\right)$
+\end_inset
+
+ en 
+\begin_inset Formula $\phi\left(L\right)$
+\end_inset
+
+ of 
+\begin_inset Formula $Q_{x}\left(L\right)$
+\end_inset
+
+ krijgen we twee concrete vergelijkingen met twee onbekenden,
+ waaruit 
+\begin_inset Formula $A$
+\end_inset
+
+ en 
+\begin_inset Formula $B$
+\end_inset
+
+ kunnen worden opgelost en vervolgens 
+\begin_inset Formula $\phi$
+\end_inset
+
+ en 
+\begin_inset Formula $Q_{x}$
+\end_inset
+
+ voor elke 
+\begin_inset Formula $x$
+\end_inset
+
+ binnen het traject kunnen worden berekend.
+\end_layout
+
+\begin_layout Section
+Meerdere gekoppelde secties
+\end_layout
+
+\begin_layout Standard
+Bij meer secties gelden twee dezelfde vergelijkingen voor elk daarvan,
+ elk met hun eigen constanten 
+\begin_inset Formula $A_{i}$
+\end_inset
+
+ en 
+\begin_inset Formula $B_{i}$
+\end_inset
+
+ en natuurlijk ook 
+\begin_inset Formula $L_{i}$
+\end_inset
+
+,
+ 
+\begin_inset Formula $kD_{i}$
+\end_inset
+
+,
+ 
+\begin_inset Formula $c_{i}$
+\end_inset
+
+ en 
+\begin_inset Formula $\lambda_{i}$
+\end_inset
+
+.
+ Deze secties worden met elkaar verknoopt op de contactpunten.
+ Op elk daarvan geldt continuïteit van de stijghoogte en continuïteit van de stroming.
+\end_layout
+
+\begin_layout Subsection
+Continuïteit van de stijghoogte op de knooppunten
+\end_layout
+
+\begin_layout Standard
+De index 
+\begin_inset Formula $i$
+\end_inset
+
+ verwijst naar het sectienummer maar ook naar het linker beginpunt van de sectie.
+ Het rechter punt heeft dan index 
+\begin_inset Formula $i+1$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+Voor sectie 
+\begin_inset Formula $i-1$
+\end_inset
+
+ geldt
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\phi\left(x\right)-h_{i-1}=A_{i-1}e^{-\frac{x-X_{i-1}}{\lambda_{i-1}}}+B_{i-1}e^{-\frac{X_{i-1}-x}{\lambda_{i-1}}},\;X_{i-1}\le x\le X_{i}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+en voor sectie 
+\begin_inset Formula $i$
+\end_inset
+
+ ernaast
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\phi\left(x\right)-h_{i}=A_{i}e^{-\frac{x-X_{i}}{\lambda_{i}}}+B_{i}e^{-\frac{X_{i}-x}{\lambda_{i}}},\;X_{i}\le x\le X_{i+1}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Op het punt 
+\begin_inset Formula $i$
+\end_inset
+
+,
+ het punt waar deze secties koppelen geldt dat de stijghoogte 
+\begin_inset Formula $\phi\left(X_{i}\right)$
+\end_inset
+
+ in beide secties hetzelfde is
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+A_{i-1}e^{-\frac{L_{i-1}}{\lambda_{i-1}}}+B_{i-1}+h_{i-1}=A_{i}+B_{i}e^{-\frac{L_{i}}{\lambda_{i}}}+h_{i}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Dus,
+ de continuïteit van de stijghoogte op knooppunt 
+\begin_inset Formula $X_{i}$
+\end_inset
+
+ leidt tot onderstaande vergelijking
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+A_{i-1}e^{-\frac{L_{i-1}}{\lambda_{i-1}}}+B_{i-1}-A_{i}-B_{i}e^{-\frac{L_{i}}{\lambda_{i}}}=h_{i}-h_{i-1}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Op ditzelfde punt geldt ook continuïteit van de stroming
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+Q_{x}=\frac{kD_{i-1}}{\lambda_{i-1}}\left(A_{i-1}e^{-x/\lambda_{i-1}}-B_{i-1}e^{-\left(X_{i}-x\right)/\lambda_{i-1}}\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+Q_{x}=\frac{kD_{i}}{\lambda_{i}}\left(A_{i}e^{-x/\lambda_{i}}-B_{i}e^{-\left(x-X_{i}\right)/\lambda_{i}}\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+De waterbalans voor punt 
+\begin_inset Formula $X_{i}$
+\end_inset
+
+ luidt:
+ Stroming van links + stroming van rechts plus injectie 
+\begin_inset Formula $Q_{i}$
+\end_inset
+
+ is nul:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+A_{i-1}\frac{kD_{i-1}}{\lambda_{i-1}}e^{-L_{i-1}/\lambda_{i-1}}-B_{i-1}\frac{kD_{i-1}}{\lambda_{i-1}}-A_{i}\frac{kD_{i}}{\lambda_{i}}+B_{i}\frac{kD_{i}}{\lambda_{i}}e^{-L_{i}/\lambda_{i}}=-Q_{_{i}}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Uitgedrukt in matrixvorm en met,
+ kortheidshalve,
+ 
+\begin_inset Formula $\kappa=\frac{kD}{\lambda}$
+\end_inset
+
+ ,
+ volgt hier de kernel,
+ voor vergelijkingen geldend voor knooppunt 
+\begin_inset Formula $i$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\left[\begin{array}{cccc}
+e^{-\frac{L_{i-1}}{\lambda_{i-1}}} & 1 & -1 & -e^{-\frac{L_{i}}{\lambda_{i}}}\\
+\kappa_{i-1}e^{-\frac{L_{i-1}}{\lambda_{i-1}}} & -\kappa_{i-1} & -\kappa_{i} & \kappa_{i}e^{-\frac{L_{i}}{\lambda_{i}}}
+\end{array}\right]\times\left[\begin{array}{c}
+A_{i-1}\\
+B_{i-1}\\
+A_{i}\\
+B_{i}
+\end{array}\right]=\left[\begin{array}{c}
+h_{i}-h_{i-1}\\
+-Q_{i}
+\end{array}\right]
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Bij elk knooppunt zijn dus 4 coëfficiënten betrokken.
+ Bij het linker punt van de meest linkse sectie met index 
+\begin_inset Formula $i=0$
+\end_inset
+
+ vallen de termen met 
+\begin_inset Formula $i-1$
+\end_inset
+
+ weg.
+ Dat zijn de twee linker kolommen van deze kernel-matrix,
+ de coëfficiënten 
+\begin_inset Formula $A_{i-1}$
+\end_inset
+
+ en 
+\begin_inset Formula $B_{i-1}$
+\end_inset
+
+ en het polderpeil 
+\begin_inset Formula $h_{i-1}$
+\end_inset
+
+.
+ De kernel wordt daar,
+ met 
+\begin_inset Formula $i=0$
+\end_inset
+
+,
+ met 
+\begin_inset Formula $\phi_{0}$
+\end_inset
+
+ op 
+\begin_inset Formula $X_{0}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\left[\begin{array}{cc}
+-1 & -e^{-\frac{L_{0}}{\lambda_{0}}}\\
+-\kappa_{0} & \kappa_{0}e^{-\frac{L_{0}}{\lambda_{0}}}
+\end{array}\right]\times\left[\begin{array}{c}
+A_{0}\\
+B_{0}
+\end{array}\right]=\left[\begin{array}{c}
+h_{0}-\phi_{0}\\
+-Q_{0}
+\end{array}\right]
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Dit is direct de specificatie voor de randvoorwaarde op 
+\begin_inset Formula $x=X_{0}$
+\end_inset
+
+,
+ waarvan de eerste regel geldt wanneer daar de stijghoogte 
+\begin_inset Formula $\phi_{0}=h_{0}$
+\end_inset
+
+ is gegeven en de tweede regel wanneer daar de injectie 
+\begin_inset Formula $Q=Q_{0}$
+\end_inset
+
+ is gegeven.
+\end_layout
+
+\begin_layout Standard
+Het meest rechts gelegen knooppunt heeft index 
+\begin_inset Formula $N$
+\end_inset
+
+ (de meest rechts gelegen sectie heeft index 
+\begin_inset Formula $N-1$
+\end_inset
+
+).
+ Hier vallen alle sectie-paramaters weg met index 
+\begin_inset Formula $N$
+\end_inset
+
+.
+ Wat voor dit randpunt 
+\begin_inset Formula $X_{N}$
+\end_inset
+
+overblijft van de kernel is,
+ met 
+\begin_inset Formula $i=N$
+\end_inset
+
+ en 
+\begin_inset Formula $\phi_{N}$
+\end_inset
+
+ op 
+\begin_inset Formula $X_{N}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\left[\begin{array}{cc}
+e^{-\frac{L_{N-1}}{\lambda_{N-1}}} & 1\\
+\kappa_{N-1}e^{-\frac{L_{N-1}}{\lambda_{N-1}}} & -\kappa_{N-1}
+\end{array}\right]\times\left[\begin{array}{c}
+A_{N-1}\\
+B_{N-1}
+\end{array}\right]=\left[\begin{array}{c}
+-h_{N-1}+\phi_{N}\\
+-Q_{N}
+\end{array}\right]
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Dit is de specificatie van de randvoorwaarde van 
+\begin_inset Formula $x=X_{N}$
+\end_inset
+
+ waarvan de eerste regel geldt wanneer daar de stijghoogte 
+\begin_inset Formula $\phi_{N}$
+\end_inset
+
+ is opgegeven en de tweede regel wanneer daar in plaats van de stijghoogte de stroming (injectie positief) als randvoorwaarde geldt.
+\end_layout
+
+\begin_layout Section
+Systeem matrix
+\end_layout
+
+\begin_layout Standard
+In de voorgaand sectie zijn alle vergelijkingen van dit systeem bekend per knooppunt.
+ Deze moeten nu in een systeem worden samengevat bestaande uit een systeemmatrix met de bekende sectie eigenschappen voor elk knooppunt,
+ een kolom met de te bepalen coëfficiënten en een kolom die voortvloeit uit de continuïteitseisen op elk knooppunt.
+\end_layout
+
+\begin_layout Standard
+Er moeten twee constanten per sectie worden bepaald.
+ Bij 
+\begin_inset Formula $N$
+\end_inset
+
+ secties leidt dit tot een systeem van 2N vergelijkingen met 2N onbekenden.
+ We hebben echter steeds twee vergelijkingen per knooppunt en met 
+\begin_inset Formula $N+1$
+\end_inset
+
+ knooppunten krijgen we 
+\begin_inset Formula $2\left(N+1\right)$
+\end_inset
+
+ vergelijkingen.
+ Het aantal kolommen is 4 per knooppunt,
+ waarbij er steeds twee overlappen.
+ Alleen voor de twee uiterste knooppunten krijgen we maar 2 kolommen.
+ Dat geeft 
+\begin_inset Formula $2\left(N+1\right)-2=2N$
+\end_inset
+
+ kolommen.
+ Dus de systeem matrix heeft 
+\begin_inset Formula $2N+2$
+\end_inset
+
+ rijen en 
+\begin_inset Formula $2N$
+\end_inset
+
+ kolommen.
+ Echter vanwege de linker randvoorwaarde is van de eerste twee rijen er maar een geldig (stijghoogte of stroming op punt 0) en evenzo is vanwege de rechter randvoorwaarde van de laatste twee rijen er maar een geldig afhankelijk of daar de stijghoogte danwel de stroming als randvoorwaarde wordt opgelegd.
+ Hiermee blijven er in een berekening exact 
+\begin_inset Formula $2N$
+\end_inset
+
+ vergelijkingen met 
+\begin_inset Formula $2N$
+\end_inset
+
+ onbekenden over.
+\end_layout
+
+\begin_layout Standard
+Het zelfde geldt voor de 
+\begin_inset Formula $R$
+\end_inset
+
+ kolom in de matrix vergelijking (kolom rechts van het '=' teken) met de bekende eisen voor elke vergelijking.
+ Ook dit zijn er 
+\begin_inset Formula $2\left(N+1\right)$
+\end_inset
+
+ waarvan maar één van de eerste twee waarden en één van de laatste twee waarden geldt afhankelijk van de daar gekozen randvoorwaarden,
+ zodat er exact 
+\begin_inset Formula $2N$
+\end_inset
+
+ waarden in de RHS over blijven.
+\end_layout
+
+\begin_layout Standard
+De systeem matrix wordt opgebouwd door steeds de bovengenoemde kernel matrix te berekenen en die in de systeem matrix te plaatsen.
+ Voor het linker knooppunt worden alleen de twee rechter kolommen geplaatst;
+ voor het rechter uiterste knooppunt alleen de twee linker kolommen.
+ Voor het oplossen van het systeem in de vorm van 
+\begin_inset Formula $A\times C=R$
+\end_inset
+
+ met 
+\begin_inset Formula $A$
+\end_inset
+
+ de systeem matrix,
+ 
+\begin_inset Formula $C$
+\end_inset
+
+ de vector onbekende constanten en 
+\begin_inset Formula $R$
+\end_inset
+
+ de 
+\begin_inset Quotes pld
+\end_inset
+
+right hand side
+\begin_inset Quotes prd
+\end_inset
+
+ met constanten,
+ wordt eerste een boolean vector 
+\begin_inset Quotes pld
+\end_inset
+
+active
+\begin_inset Quotes prd
+\end_inset
+
+ gegeneerd met met lengte 
+\begin_inset Formula $2\left(N+1\right)$
+\end_inset
+
+ met alle waarden True,
+ waarna een van de twee bovenste en een van de twee onderste waarden False worden gemaakt om de regels met de randvoorwaarden die niet gelden uit te sluiten zowel in de systeem matrix als in de 
+\begin_inset Formula $R$
+\end_inset
+
+ vector.
+ Op deze wijze berekend:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+C=A[active]^{-1}R[active]
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+krijgen we exact de 
+\begin_inset Formula $2N$
+\end_inset
+
+ coëfficiënten waarvan de even nummers,
+ 
+\begin_inset Formula $C[::2]$
+\end_inset
+
+,
+ de 
+\begin_inset Formula $A$
+\end_inset
+
+ waarden zijn en de oneven nummers,
+ 
+\begin_inset Formula $C[1::1]$
+\end_inset
+
+,
+ de 
+\begin_inset Formula $B$
+\end_inset
+
+-waarden.
+ Met deze nu bekende 2 coëfficiënten per sectie kunnen de stijghoogte en de stroming voor elke sectie voor elk punt binnen de sectie worden uitgerend onafhankelijk van alle andere secties.
+ Door deze grafisch weer te geven blijkt dat zowel de stijghoogte als de stroming op de knooppunten continu zijn,
+ dat de randvoorwaarden worden gehonoreerd en dat het verloop luistert naar de afzonderlijke polderpeilen en andere sectie-parameters.
+\end_layout
+
+\begin_layout Section
+Voorbeeld
+\end_layout
+
+\begin_layout Standard
+Fig.
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Met-nsec1-berekend-voorbeeld"
+plural "false"
+caps "false"
+noprefix "false"
+nolink "false"
+
+\end_inset
+
+ geeft een voorbeeld van een berekening met nsec1.
+ De uitgangsgegevens staan vermeld in de inzet-table in de bovenste figuur.
+ Deze toont het continue verloop van de berekende stijghoogte samen met de stijghoogte in de knooppunten en het 
+\begin_inset Quotes pld
+\end_inset
+
+polderpeil.
+ De onderste figuur geeft het berekende continue verloop van de totale stroming in 
+\begin_inset Formula $x$
+\end_inset
+
+-richting.
+ Deze stroming is ook continue,
+ maar de afgeleide niet.
+ Waar de stroming 0 is,
+ is de stijghoogtelijn horizontaal.
+ Waar de stroming maximaal of minimaal is,
+ is er een buigpunt in de stijghoogtelijn.
+ Deze buigpunten liggen steeds op scheiding tussen twee polder waarvan minstens een van de sectie-eigenschappen verschilt met die ernaast.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+placement document
+alignment document
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\begin_inset Graphics
+	filename /Users/Theo/Development/python/hydro_tools/tools/analytic/images/example_nsec1.pdf
+	width 80text%
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:Met-nsec1-berekend-voorbeeld"
+
+\end_inset
+
+Met nsec1 berekend verloop van de stijghoogte en de stroming binnen een aantal koppelde secties,
+ waarvan de gegevens in de inzet-tabel staan vermeld.
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+Listing
+\end_layout
+
+\begin_layout Standard
+\begin_inset listings
+inline false
+status open
+
+\begin_layout Plain Layout
+
+import os
+\end_layout
+
+\begin_layout Plain Layout
+
+import numpy as np
+\end_layout
+
+\begin_layout Plain Layout
+
+import matplotlib.pyplot as plt
+\end_layout
+
+\begin_layout Plain Layout
+
+from tools.etc import logo
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\begin_layout Plain Layout
+
+NOTEBOOK_NAME = 'nsec1.ipynb'
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\begin_layout Plain Layout
+
+"""Analytic groundwater 1 layer steady 1D flow simulation in a series of adjaect polders.
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\begin_layout Plain Layout
+
+ Same as the old nsecn multilayer Matlab version,
+ but now only 1 layer.
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\begin_layout Plain Layout
+
+@TO 2026-06-11
+\end_layout
+
+\begin_layout Plain Layout
+
+"""
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\begin_layout Plain Layout
+
+class Nsec1():
+\end_layout
+
+\begin_layout Plain Layout
+
+    """Class to analytically simulate stead state flow in a linked leaky aquifer.
+\end_layout
+
+\begin_layout Plain Layout
+
+    The 1D single layer aquifer consits of sections of length L[i].
+\end_layout
+
+\begin_layout Plain Layout
+
+    Each section has its now vertical resistance and its own transmissivity.
+\end_layout
+
+\begin_layout Plain Layout
+
+    At each connection point a flow Q may be injected.
+\end_layout
+
+\begin_layout Plain Layout
+
+    At both outer boundaries a head or a flow may be specified.
+\end_layout
+
+\begin_layout Plain Layout
+
+    Afterwords the head and flow along all sections can can be simulated.
+\end_layout
+
+\begin_layout Plain Layout
+
+    
+\end_layout
+
+\begin_layout Plain Layout
+
+    Simplified version of nsecn made in 2000.
+\end_layout
+
+\begin_layout Plain Layout
+
+    
+\end_layout
+
+\begin_layout Plain Layout
+
+    @ TO 2026-0610
+\end_layout
+
+\begin_layout Plain Layout
+
+    """
+\end_layout
+
+\begin_layout Plain Layout
+
+    
+\end_layout
+
+\begin_layout Plain Layout
+
+    def __init__(self,
+ kD=None,
+ c=None,
+ L=None,
+ X0=0.0,
+ Np=51):
+\end_layout
+
+\begin_layout Plain Layout
+
+        self.kD = np.array(kD,
+ dtype=float)
+\end_layout
+
+\begin_layout Plain Layout
+
+        self.c  = np.array( c,
+ dtype=float)
+\end_layout
+
+\begin_layout Plain Layout
+
+        self.L  = np.array( L,
+ dtype=float)        
+\end_layout
+
+\begin_layout Plain Layout
+
+        if not all(np.array([len(kD),
+ len(c),
+ len(L)]) == len(kD)):
+\end_layout
+
+\begin_layout Plain Layout
+
+            raise ValueError("1D vectors kD,
+ c and L must all have the same length.")
+\end_layout
+
+\begin_layout Plain Layout
+
+        self.X0 = X0
+\end_layout
+
+\begin_layout Plain Layout
+
+        self.Np = Np
+\end_layout
+
+\begin_layout Plain Layout
+
+        
+\end_layout
+
+\begin_layout Plain Layout
+
+    @property
+\end_layout
+
+\begin_layout Plain Layout
+
+    def X(self):
+\end_layout
+
+\begin_layout Plain Layout
+
+        """Return section end points as array."""
+\end_layout
+
+\begin_layout Plain Layout
+
+        return self.X0 + np.hstack((0,
+ np.cumsum(self.L)))
+\end_layout
+
+\begin_layout Plain Layout
+
+        
+\end_layout
+
+\begin_layout Plain Layout
+
+        
+\end_layout
+
+\begin_layout Plain Layout
+
+    @property
+\end_layout
+
+\begin_layout Plain Layout
+
+    def x(self):
+\end_layout
+
+\begin_layout Plain Layout
+
+        """Return x coordinates spanning the entire area.
+\end_layout
+
+\begin_layout Plain Layout
+
+        
+\end_layout
+
+\begin_layout Plain Layout
+
+        You may inject the number of points per section by
+\end_layout
+
+\begin_layout Plain Layout
+
+        injectiong the variable Np into the instantiated class.
+\end_layout
+
+\begin_layout Plain Layout
+
+        
+\end_layout
+
+\begin_layout Plain Layout
+
+        mdl = Nsec1(...)
+\end_layout
+
+\begin_layout Plain Layout
+
+        mdl.Np = 51
+\end_layout
+
+\begin_layout Plain Layout
+
+        
+\end_layout
+
+\begin_layout Plain Layout
+
+        """
+\end_layout
+
+\begin_layout Plain Layout
+
+        x = np.array([self.X[0]],
+ dtype=float)
+\end_layout
+
+\begin_layout Plain Layout
+
+        for x1,
+ x2 in zip(self.X[:-1],
+ self.X[1:]):
+\end_layout
+
+\begin_layout Plain Layout
+
+            x = np.hstack((x,
+ np.linspace(x1,
+ x2,
+ self.Np)[1:]))
+\end_layout
+
+\begin_layout Plain Layout
+
+        return x
+\end_layout
+
+\begin_layout Plain Layout
+
+        
+\end_layout
+
+\begin_layout Plain Layout
+
+    @property
+\end_layout
+
+\begin_layout Plain Layout
+
+    def Nsec(self):
+\end_layout
+
+\begin_layout Plain Layout
+
+        """Return number of sections."""
+\end_layout
+
+\begin_layout Plain Layout
+
+        return len(self.kD)
+\end_layout
+
+\begin_layout Plain Layout
+
+        
+\end_layout
+
+\begin_layout Plain Layout
+
+    @property
+\end_layout
+
+\begin_layout Plain Layout
+
+    def lam(self):
+\end_layout
+
+\begin_layout Plain Layout
+
+        """Return spreading lengths."""
+\end_layout
+
+\begin_layout Plain Layout
+
+        return np.sqrt(self.kD * self.c)
+\end_layout
+
+\begin_layout Plain Layout
+
+    
+\end_layout
+
+\begin_layout Plain Layout
+
+    # --- Matrix coordinates kernel (submatrix)
+\end_layout
+
+\begin_layout Plain Layout
+
+    def coefsAB(self,
+ i):
+\end_layout
+
+\begin_layout Plain Layout
+
+        """Return 2x4 kernel coefficient matrix truncated to 2x2 at both outer nodes.
+\end_layout
+
+\begin_layout Plain Layout
+
+        
+\end_layout
+
+\begin_layout Plain Layout
+
+        Note 0 is the left node of section 0
+\end_layout
+
+\begin_layout Plain Layout
+
+        
+\end_layout
+
+\begin_layout Plain Layout
+
+        """
+\end_layout
+
+\begin_layout Plain Layout
+
+        N = len(self.kD)
+\end_layout
+
+\begin_layout Plain Layout
+
+        
+\end_layout
+
+\begin_layout Plain Layout
+
+        eL = 0 if i<0   else np.exp(-self.L[i-1] / self.lam[i-1])
+\end_layout
+
+\begin_layout Plain Layout
+
+        eR = 0 if i>= N else np.exp(-self.L[i]   / self.lam[i])
+\end_layout
+
+\begin_layout Plain Layout
+
+        
+\end_layout
+
+\begin_layout Plain Layout
+
+        fL = 0 if i<0  else self.kD[i-1] / self.lam[i-1]
+\end_layout
+
+\begin_layout Plain Layout
+
+        fR = 0 if i>=N else self.kD[i]   / self.lam[i]
+\end_layout
+
+\begin_layout Plain Layout
+
+        
+\end_layout
+
+\begin_layout Plain Layout
+
+        M = np.array([
+\end_layout
+
+\begin_layout Plain Layout
+
+            [     eL,
+   1,
+  -1,
+     -eR],
+\end_layout
+
+\begin_layout Plain Layout
+
+            [fL * eL,
+ -fL,
+ -fR,
+ fR * eR],
+\end_layout
+
+\begin_layout Plain Layout
+
+        ],
+ dtype=float)
+\end_layout
+
+\begin_layout Plain Layout
+
+        if i == 0:
+\end_layout
+
+\begin_layout Plain Layout
+
+            M = M[:,
+ 2:]
+\end_layout
+
+\begin_layout Plain Layout
+
+        if i == N:
+\end_layout
+
+\begin_layout Plain Layout
+
+            M = M[:,
+ :2]
+\end_layout
+
+\begin_layout Plain Layout
+
+        return M
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\begin_layout Plain Layout
+
+    @property
+\end_layout
+
+\begin_layout Plain Layout
+
+    def coefMat(self):
+\end_layout
+
+\begin_layout Plain Layout
+
+        """Return coefficient matrix."""
+\end_layout
+
+\begin_layout Plain Layout
+
+        N = len(self.kD)
+\end_layout
+
+\begin_layout Plain Layout
+
+        A = np.zeros((2*(N + 1),
+ 2*N))
+\end_layout
+
+\begin_layout Plain Layout
+
+        for i in range(N + 1):
+\end_layout
+
+\begin_layout Plain Layout
+
+            M = self.coefsAB(i)            
+\end_layout
+
+\begin_layout Plain Layout
+
+            
+\end_layout
+
+\begin_layout Plain Layout
+
+            j0 = max(0,
+ 2 * (i - 1))
+\end_layout
+
+\begin_layout Plain Layout
+
+            j1 = min(2 * N,
+ j0 + M.shape[1])
+\end_layout
+
+\begin_layout Plain Layout
+
+                
+\end_layout
+
+\begin_layout Plain Layout
+
+            A[2*i:2*i+2,
+ j0:j1] = M
+\end_layout
+
+\begin_layout Plain Layout
+
+        return A
+\end_layout
+
+\begin_layout Plain Layout
+
+    
+\end_layout
+
+\begin_layout Plain Layout
+
+    def set_boundaries(self,
+ Phi=None,
+ Q=None):
+\end_layout
+
+\begin_layout Plain Layout
+
+        # --- Boundary conditions
+\end_layout
+
+\begin_layout Plain Layout
+
+        RHS = np.zeros(2*(self.Nsec + 1))
+\end_layout
+
+\begin_layout Plain Layout
+
+        h = np.hstack((Phi[0],
+ self.h,
+ Phi[-1]))
+\end_layout
+
+\begin_layout Plain Layout
+
+        RHS[::2] = + h[1:] - h[:-1]
+\end_layout
+
+\begin_layout Plain Layout
+
+        RHS[1::2] = Q
+\end_layout
+
+\begin_layout Plain Layout
+
+        
+\end_layout
+
+\begin_layout Plain Layout
+
+        # --- Make Q equation or Phi equation at left and right inactive depending boundary type.
+\end_layout
+
+\begin_layout Plain Layout
+
+        active = np.ones(2 * (self.Nsec + 1),
+ dtype=bool)
+\end_layout
+
+\begin_layout Plain Layout
+
+        
+\end_layout
+
+\begin_layout Plain Layout
+
+        if not np.isnan(Phi[0]):
+\end_layout
+
+\begin_layout Plain Layout
+
+            # --- Phi is given at left end
+\end_layout
+
+\begin_layout Plain Layout
+
+            # --- Q equation is inactive
+\end_layout
+
+\begin_layout Plain Layout
+
+            # RHS[0] = -Phi[0]
+\end_layout
+
+\begin_layout Plain Layout
+
+            active[0] = True
+\end_layout
+
+\begin_layout Plain Layout
+
+            active[1] = False
+\end_layout
+
+\begin_layout Plain Layout
+
+        else:
+\end_layout
+
+\begin_layout Plain Layout
+
+            # --- Q is given at left end
+\end_layout
+
+\begin_layout Plain Layout
+
+            # --- Phi equation is inactive
+\end_layout
+
+\begin_layout Plain Layout
+
+            active[0] = False
+\end_layout
+
+\begin_layout Plain Layout
+
+            active[1] = True    
+\end_layout
+
+\begin_layout Plain Layout
+
+            
+\end_layout
+
+\begin_layout Plain Layout
+
+        if not np.isnan(Phi[-1]):
+\end_layout
+
+\begin_layout Plain Layout
+
+            # --- Phi is given at right end
+\end_layout
+
+\begin_layout Plain Layout
+
+            # --- Q equation inactive
+\end_layout
+
+\begin_layout Plain Layout
+
+            # RHS[-2] = Phi[-1]
+\end_layout
+
+\begin_layout Plain Layout
+
+            active[-2] = True
+\end_layout
+
+\begin_layout Plain Layout
+
+            active[-1] = False
+\end_layout
+
+\begin_layout Plain Layout
+
+        else:
+\end_layout
+
+\begin_layout Plain Layout
+
+            # --- Q given at right end
+\end_layout
+
+\begin_layout Plain Layout
+
+            # --- Phi-equation inactive    
+\end_layout
+
+\begin_layout Plain Layout
+
+            active[-2] = False
+\end_layout
+
+\begin_layout Plain Layout
+
+            active[-1] = True
+\end_layout
+
+\begin_layout Plain Layout
+
+        return RHS,
+ active
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\begin_layout Plain Layout
+
+    def simulate(self,
+ Phi=None,
+ Q=None,
+ h=None,
+ x=None,
+ Np=51):
+\end_layout
+
+\begin_layout Plain Layout
+
+        """Return heads and flow given the boundaries.
+\end_layout
+
+\begin_layout Plain Layout
+
+        
+\end_layout
+
+\begin_layout Plain Layout
+
+        Parameters
+\end_layout
+
+\begin_layout Plain Layout
+
+        ----------
+\end_layout
+
+\begin_layout Plain Layout
+
+        Phi:
+ sequence of 2
+\end_layout
+
+\begin_layout Plain Layout
+
+            Heads at left and righ boundary.
+ Use np.nan to use Q as boundary.
+\end_layout
+
+\begin_layout Plain Layout
+
+        Q:
+ None | sequence of 2 or sequence of Nsec + 1 (numer of Nodes)
+\end_layout
+
+\begin_layout Plain Layout
+
+            Flow boundary conditions.
+ None to use zeros,
+ seq.
+ of 2 to use these
+\end_layout
+
+\begin_layout Plain Layout
+
+            at either end and 0 for intermediate points.
+ Use squence of Nsec + 1 
+\end_layout
+
+\begin_layout Plain Layout
+
+            to specify Q at all intermediate points.
+\end_layout
+
+\begin_layout Plain Layout
+
+            Specificagion of Phi determines wheather the edge Q values will be used.
+\end_layout
+
+\begin_layout Plain Layout
+
+        h:
+ sequence of float (Nsec)
+\end_layout
+
+\begin_layout Plain Layout
+
+            Adjacent head in each section ("polder level")
+\end_layout
+
+\begin_layout Plain Layout
+
+        x:
+ None or seqence of increasing x-coordinates
+\end_layout
+
+\begin_layout Plain Layout
+
+           None will span x between self.X with Np points per section
+\end_layout
+
+\begin_layout Plain Layout
+
+        Np:
+ int
+\end_layout
+
+\begin_layout Plain Layout
+
+           Number of coordinates per sectioin if x is None
+\end_layout
+
+\begin_layout Plain Layout
+
+           You may inject it into the instantiated class:
+\end_layout
+
+\begin_layout Plain Layout
+
+           
+\end_layout
+
+\begin_layout Plain Layout
+
+           mdl = Nsec1(...)
+\end_layout
+
+\begin_layout Plain Layout
+
+           mdl.Np = 51
+\end_layout
+
+\begin_layout Plain Layout
+
+           
+\end_layout
+
+\begin_layout Plain Layout
+
+        """
+\end_layout
+
+\begin_layout Plain Layout
+
+        self.Np = Np
+\end_layout
+
+\begin_layout Plain Layout
+
+        
+\end_layout
+
+\begin_layout Plain Layout
+
+        if h is None:
+\end_layout
+
+\begin_layout Plain Layout
+
+            self.h = np.zeros(self.Nsec)
+\end_layout
+
+\begin_layout Plain Layout
+
+        else:
+\end_layout
+
+\begin_layout Plain Layout
+
+            self.h = np.array(h,
+ dtype=float)
+\end_layout
+
+\begin_layout Plain Layout
+
+            if len(self.h) != self.Nsec:
+\end_layout
+
+\begin_layout Plain Layout
+
+                raise ValueError(f"Number of heads must equal number of sections {self.Nsec}")
+\end_layout
+
+\begin_layout Plain Layout
+
+        
+\end_layout
+
+\begin_layout Plain Layout
+
+        # --- Boundary Q and injection at connection points
+\end_layout
+
+\begin_layout Plain Layout
+
+        if Q is None:
+\end_layout
+
+\begin_layout Plain Layout
+
+            Q = np.zeros(self.Nsec + 1)
+\end_layout
+
+\begin_layout Plain Layout
+
+        else:
+\end_layout
+
+\begin_layout Plain Layout
+
+            Q = np.array(Q,
+ dtype=float)
+\end_layout
+
+\begin_layout Plain Layout
+
+            assert len(Q) == 2 or len(Q) == self.Nsec + 1,
+ f"Q must have length 2 or {self.Nsec + 1} or be None."
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\begin_layout Plain Layout
+
+        # --- Coordinates for plotting        
+\end_layout
+
+\begin_layout Plain Layout
+
+        if x is None:
+\end_layout
+
+\begin_layout Plain Layout
+
+            x = self.x
+\end_layout
+
+\begin_layout Plain Layout
+
+        
+\end_layout
+
+\begin_layout Plain Layout
+
+        # --- Coefficient matrix
+\end_layout
+
+\begin_layout Plain Layout
+
+        A = self.coefMat
+\end_layout
+
+\begin_layout Plain Layout
+
+        
+\end_layout
+
+\begin_layout Plain Layout
+
+        # --- RHS
+\end_layout
+
+\begin_layout Plain Layout
+
+        RHS,
+ active = self.set_boundaries(Phi=Phi,
+ Q=Q)
+\end_layout
+
+\begin_layout Plain Layout
+
+        
+\end_layout
+
+\begin_layout Plain Layout
+
+        # --- Solve for coefficients
+\end_layout
+
+\begin_layout Plain Layout
+
+        coefs = np.linalg.solve(A[active],
+ RHS[active])
+\end_layout
+
+\begin_layout Plain Layout
+
+        
+\end_layout
+
+\begin_layout Plain Layout
+
+        # --- Compute heads and flows for all x
+\end_layout
+
+\begin_layout Plain Layout
+
+        phi,
+ Qx = self.get_phi_Q(coefs,
+ x)
+\end_layout
+
+\begin_layout Plain Layout
+
+        
+\end_layout
+
+\begin_layout Plain Layout
+
+        return {'phi':
+ phi,
+ 'Qx':Qx}        
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\begin_layout Plain Layout
+
+    def get_phi_Q(self,
+ coefs,
+ x):
+\end_layout
+
+\begin_layout Plain Layout
+
+        """Return heads and flows."""
+\end_layout
+
+\begin_layout Plain Layout
+
+        CA,
+ CB = coefs[0::2],
+ coefs[1::2]
+\end_layout
+
+\begin_layout Plain Layout
+
+        
+\end_layout
+
+\begin_layout Plain Layout
+
+        # --- Initialize heads and flows
+\end_layout
+
+\begin_layout Plain Layout
+
+        phi = np.zeros_like(x,
+ dtype=float)
+\end_layout
+
+\begin_layout Plain Layout
+
+        Q   = np.zeros_like(x,
+ dtype=float)
+\end_layout
+
+\begin_layout Plain Layout
+
+        
+\end_layout
+
+\begin_layout Plain Layout
+
+        # --- For each section compute heads and flows
+\end_layout
+
+\begin_layout Plain Layout
+
+        for i in range(self.Nsec):
+\end_layout
+
+\begin_layout Plain Layout
+
+            mask = (x >= self.X[i]) & (x <= self.X[i+1])
+\end_layout
+
+\begin_layout Plain Layout
+
+            eL = np.exp(-(x[mask] - self.X[i  ]) / self.lam[i])
+\end_layout
+
+\begin_layout Plain Layout
+
+            eR = np.exp(-(self.X[i+1] - x[mask]) / self.lam[i])    
+\end_layout
+
+\begin_layout Plain Layout
+
+            phi[mask] = CA[i] * eL + CB[i] * eR + self.h[i]
+\end_layout
+
+\begin_layout Plain Layout
+
+            Q[ mask]  = self.kD[i] / self.lam[i] * (CA[i] * eL - CB[i] * eR)
+\end_layout
+
+\begin_layout Plain Layout
+
+        return phi,
+ Q
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\begin_layout Plain Layout
+
+# --- Aquifer traject properties
+\end_layout
+
+\begin_layout Plain Layout
+
+L = np.array([800.,
+ 800.,
+ 800.,
+ 800,
+ 800.,
+ 800.])
+\end_layout
+
+\begin_layout Plain Layout
+
+c = np.array([200.,
+ 200.,
+ 200.,
+ 200.,
+ 200.,
+ 200.])
+\end_layout
+
+\begin_layout Plain Layout
+
+kD = np.array([800.,
+ 800.,
+ 800.,
+ 800.,
+ 200.,
+ 200.]) / 4
+\end_layout
+
+\begin_layout Plain Layout
+
+h = np.array([1.,
+ 0.,
+ 3.,
+ -1.,
+ 2,
+ -4])
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\begin_layout Plain Layout
+
+# =Q =========================== Specify injections at every node including the outer two
+\end_layout
+
+\begin_layout Plain Layout
+
+Q = np.array([0.,
+ 0.,
+ 0.,
+ 0.,
+ 0.,
+ 0.,
+ 0.])
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\begin_layout Plain Layout
+
+# =HEAD======================
+\end_layout
+
+\begin_layout Plain Layout
+
+Phi = np.array([5.,
+ 2.])
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\begin_layout Plain Layout
+
+# --- Coordinates of the nodes (must (or should be) incresing)
+\end_layout
+
+\begin_layout Plain Layout
+
+X = np.hstack((0,
+ np.cumsum(L)))
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\begin_layout Plain Layout
+
+# --- Any set of coordinates will do.
+ The nodes are included automatically.
+\end_layout
+
+\begin_layout Plain Layout
+
+x = np.unique(np.hstack((np.linspace(0,
+ np.sum(L),
+ 161),
+ np.cumsum(L))))
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\begin_layout Plain Layout
+
+Xp = np.hstack((0,
+ np.cumsum(L)))
+\end_layout
+
+\begin_layout Plain Layout
+
+x  = np.linspace(Xp[0],
+ Xp[-1],
+ 201)
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\begin_layout Plain Layout
+
+mdl = Nsec1(kD=kD,
+ c=c,
+ L=L)
+\end_layout
+
+\begin_layout Plain Layout
+
+Xp = mdl.X
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\begin_layout Plain Layout
+
+outx = mdl.simulate(Phi=Phi,
+ Q=Q,
+ h=h,
+ x=None)
+\end_layout
+
+\begin_layout Plain Layout
+
+outp = mdl.simulate(Phi=Phi,
+ Q=Q,
+ h=h,
+ x=Xp)    
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\begin_layout Plain Layout
+
+fig,
+ (ax1,
+ ax2) = plt.subplots(2,
+ 1,
+ figsize=(10,
+ 10))
+\end_layout
+
+\begin_layout Plain Layout
+
+ax1.step(mdl.X,
+ np.hstack((mdl.h,
+ mdl.h[-1])),
+ where='post',
+ label='polder levels')
+\end_layout
+
+\begin_layout Plain Layout
+
+ax1.plot(mdl.x,
+  outx['phi'],
+ label='phi [m]')
+\end_layout
+
+\begin_layout Plain Layout
+
+ax1.plot(Xp,
+     outp['phi'],
+ 'o',
+ mec='k',
+ label='sectioin end points')
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\begin_layout Plain Layout
+
+ax2.plot(mdl.x,
+ outx['Qx'],
+  label='Qx [m2/d]') 
+\end_layout
+
+\begin_layout Plain Layout
+
+ax2.plot(mdl.X,
+ outp['Qx'],
+ 'o',
+ mec='k',
+ label='section end points') 
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\begin_layout Plain Layout
+
+# --- Inset table with used properties
+\end_layout
+
+\begin_layout Plain Layout
+
+props_txt = [
+\end_layout
+
+\begin_layout Plain Layout
+
+    f"L  = {',
+ '.join([f'{el:6.0f}' for el in  L])} {'m':4}",
+\end_layout
+
+\begin_layout Plain Layout
+
+    f"kD = {',
+ '.join([f'{kd:6.0f}' for kd in kD])} {'m2/d'}",
+\end_layout
+
+\begin_layout Plain Layout
+
+    f"c  = {',
+ '.join([f'{c_:6.0f}' for c_ in  c])} {'d':4}",
+\end_layout
+
+\begin_layout Plain Layout
+
+    f"hp = {',
+ '.join([f'{h_:6.2f}' for h_ in  h])} {'m':4}",
+ 
+\end_layout
+
+\begin_layout Plain Layout
+
+]
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\begin_layout Plain Layout
+
+ax1.text(
+\end_layout
+
+\begin_layout Plain Layout
+
+    0.05,
+ 0.05,
+ '
+\backslash
+n'.join(props_txt),
+\end_layout
+
+\begin_layout Plain Layout
+
+    transform=ax1.transAxes,
+\end_layout
+
+\begin_layout Plain Layout
+
+    ha='left',
+ va='bottom',
+\end_layout
+
+\begin_layout Plain Layout
+
+    family='monospace',
+\end_layout
+
+\begin_layout Plain Layout
+
+    fontsize=8,
+\end_layout
+
+\begin_layout Plain Layout
+
+    bbox=dict(facecolor='white',
+ edgecolor='0.5',
+ linewidth=0.5,
+ alpha=0.8)
+\end_layout
+
+\begin_layout Plain Layout
+
+)
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\begin_layout Plain Layout
+
+ax1.set_title('Head(x) [m]')
+\end_layout
+
+\begin_layout Plain Layout
+
+ax1.set(xlabel='x [m]',
+ ylabel='head[m]')
+\end_layout
+
+\begin_layout Plain Layout
+
+ax1.grid(True)
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\begin_layout Plain Layout
+
+ax2.set_title('Qx [m2/d]')
+\end_layout
+
+\begin_layout Plain Layout
+
+ax2.set(xlabel='x [m]',
+ ylabel='flow Qx [m2/d]')
+\end_layout
+
+\begin_layout Plain Layout
+
+ax2.grid(True)
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\begin_layout Plain Layout
+
+ax1.legend()
+\end_layout
+
+\begin_layout Plain Layout
+
+ax2.legend()
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\begin_layout Plain Layout
+
+logo(fig,
+ NOTEBOOK_NAME)
+\end_layout
+
+\begin_layout Plain Layout
+
+images = '/Users/Theo/Development/python/hydro_tools/tools/analytic/images'
+\end_layout
+
+\begin_layout Plain Layout
+
+fig.savefig(os.path.join(images,
+ 'example_nsec1.pdf'))
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_body
+\end_document
