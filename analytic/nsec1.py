@@ -191,9 +191,9 @@ class Nsec1():
         coefs = np.linalg.solve(A[active], RHS[active])
         
         # --- Compute heads and flows for all x
-        phi, Qx = self.get_phi_Q(coefs, x)
+        phi, Qx, x = self.get_phi_Q(coefs, x)
         
-        return {'phi': phi, 'Qx':Qx}        
+        return {'x':x, 'phi': phi, 'Qx':Qx}        
 
     def get_phi_Q(self, coefs, x):
         """Return heads and flows."""
@@ -210,7 +210,7 @@ class Nsec1():
             eR = np.exp(-(self.X[i+1] - x[mask]) / self.lam[i])    
             phi[mask] = CA[i] * eL + CB[i] * eR + self.h[i]
             Q[ mask]  = self.kD[i] / self.lam[i] * (CA[i] * eL - CB[i] * eR)
-        return phi, Q
+        return phi, Q, x
 
 
 if __name__ == "__main__":
