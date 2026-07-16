@@ -44,7 +44,8 @@ import warnings
 import matplotlib.pylab as plt
 import numpy as np
 import scipy.sparse as sp
-import scipy.sparse.linalg as la
+from scipy.sparse.linalg import spsolve, cg, splu
+from time import perf_counter
 from scipy.special import k0 as K0
 from scipy.special import k1 as K1
 from tools.fdm.src import mfgrid
@@ -197,6 +198,9 @@ class Fdm3():
             
         @TO 20250322
         """
+        t0 = perf_counter()
+
+        
         # --- Basic properties and shape
         self.gr = gr
         self.c = c
@@ -309,6 +313,8 @@ class Fdm3():
         # --- Diagonal as a 1D vector
         self.adiag = np.array(-self.A.sum(axis=1))[:,0]
         self.Cx, self.Cy, self.Cz = Cx, Cy, Cz
+        
+        print("add diagonal :", perf_counter() - t0)
         
         # --- Get storage from input line for S=None or S is not None
         if S is None:
@@ -553,13 +559,14 @@ class Fdm3():
         else:            
             dt, dtmult = tm[0], tm[1] / tm[0]        
         
-        
         if verbose:
             # Make a plot of the progress of phi
             _, ax = plt.subplots(figsize=(10, 6))
             title=f"Phi during the outer iterations: non linear options ={non_linear_options}"
             ax.set(title=title, xlabel='x', ylabel='Phi', xscale='linear', yscale='linear')        
                 
+        t0 = perf_counter()
+
         for iouter in range(maxiter):
 
             # Keep A's diagonal as a 1D vector.
@@ -667,12 +674,28 @@ class Fdm3():
             if non_linear_options: # We loop using outer iterations
                 if iouter == 0:
                     print(f"Non-linear options: {non_linear_options}, starting outer iterations:")
-                # Add storage to stabilize the solution (make it transient to reach steady state)
+                # --- Add storage to stabilize the solution (make it transient to reach steady state)
                 adiag += self.Sto.ravel() / dt
                 RHS += self.Sto.ravel() / dt * HI
                 
-                Phi[active] = la.spsolve((self.A + sp.diags(adiag, 0))[active][:,active], RHS[active] )
-                # Phi[active], info = la.cg((self.A + sp.diags(adiag, 0))[active][:,active], RHS[active], x0=HI[active], rtol=rtol, atol=atol, maxiter=250)                
+                A = (self.A + sp.diags(adiag, 0))
+                As = A[active][:, active]
+                
+                d = np.sqrt(As.diagonal())
+                D = sp.diags(1.0 / d)
+
+                As_scaled = D @ As @ D
+                b_scaled = D @ RHS[active]
+
+                y, info = cg(
+                    As_scaled,
+                    b_scaled,
+                    x0 = D @ HI[active],
+                    rtol=1e-8,
+                    atol=0)
+                
+                Phi[active] = (1.0 / d) * y
+                
                 err = np.abs(Phi[active] - HI[active]).max()
                 errBalance = (self.Sto.ravel() * (Phi - HI)).sum()
                 
@@ -688,9 +711,30 @@ class Fdm3():
                     HI[:] = Phi
                     dt *= dtmult                     
             else:
-                Phi[active] = la.spsolve((self.A + sp.diags(adiag, 0))[active][:,active], RHS[active] )
+                A = (self.A + sp.diags(adiag, 0))
+                As = A[active][:, active]
+                
+                d = np.sqrt(As.diagonal())
+                D = sp.diags(1.0 / d)
+
+                As_scaled = D @ As @ D
+                b_scaled = D @ RHS[active]
+
+                y, info = cg(
+                    As_scaled,
+                    b_scaled,
+                    x0 = D @ HI[active],
+                    rtol=1e-8,
+                    atol=0)
+                
+                Phi[active] = (1.0 / d) * y
+                
+                        
                 print("No outer iterations needed.")
                 break
+
+        print("cg_solve       :", perf_counter() - t0)
+            
 
         if verbose:
             ax.grid()
@@ -703,6 +747,7 @@ class Fdm3():
         # reshape Phi to shape of grid
         Phi = Phi.reshape(self.gr.shape)
         out.update(Phi=Phi)
+        out.update(cg_info=info) # Convergence of cg solver.
 
         # Net cell inflow
         Q = (np.array((self.A + sp.diags(self.adiag, 0)) @ Phi.ravel())).reshape(self.gr.shape)
