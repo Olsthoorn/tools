@@ -452,7 +452,7 @@ class Fdm3():
         return Fdm3.itimize(cdr)
         
 
-    def simulate(self, *, DRN=None, RIV=None, GHB=None, FDR=None, tm=None, htol=1e-7, maxiter=50, verbose=False):
+    def simulate(self, *, DRN=None, RIV=None, GHB=None, FDR=None, tm=None, htol=1e-5, maxiter=50, verbose=False):
         """Compute a 3D steady state finite diff. model
 
         Parameters
