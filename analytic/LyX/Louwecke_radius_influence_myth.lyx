@@ -1,0 +1,651 @@
+#LyX 2.4 created this file. For more info see https://www.lyx.org/
+\lyxformat 620
+\begin_document
+\begin_header
+\save_transient_properties true
+\origin unavailable
+\textclass article
+\begin_preamble
+%\usepackage{epstopdf} % to include .eps graphics files with pdfLaTeX
+\usepackage{flafter}   % Don't place floats before their definition
+%\usepackage{topcapt}  % Define \topcation for placing captions above tables (not in gwTeX)
+
+\usepackage{xurl}      % better URL setting, uses old url package
+
+\usepackage{xcolor}
+\definecolor{darkblue}{rgb}{0,0,0.4}
+\usepackage[]{hyperref} % Generates all cross references
+\hypersetup{            % Setting options for hyperref package
+	breaklinks=true,    % break line with long hyperlinks
+	colorlinks=true,    % coloured links
+	linkcolor=blue,
+	filecolor=magenta,
+	urlcolor=darkblue,
+	citecolor=blue,
+	backref=page
+} 
+
+\usepackage{memhfixc}  % remove conflict between the memoir class & hyperref
+\usepackage{pdfsync}   % enable tex source and pdf output syncronicity
+
+\usepackage{memhfixc}  % remove conflict between the memoir class & hyperref
+\usepackage{pdfsync}   % enable tex source and pdf output syncronicity
+
+\usepackage{alltt}
+
+% \usepackage{listings}
+% \usepackage{xcolor}
+
+% \lstdefinestyle{mystyle}{
+%   language=Python,
+%   numbers=left
+% }
+
+% Put lstset here, after lstdefinestyle
+% \lstset{style=mystyle}
+\end_preamble
+\use_default_options true
+\maintain_unincluded_children no
+\language dutch
+\language_package default
+\inputencoding utf8
+\fontencoding auto
+\font_roman "default" "default"
+\font_sans "default" "default"
+\font_typewriter "default" "default"
+\font_math "auto" "auto"
+\font_default_family default
+\use_non_tex_fonts false
+\font_sc false
+\font_roman_osf false
+\font_sans_osf false
+\font_typewriter_osf false
+\font_sf_scale 100 100
+\font_tt_scale 100 100
+\use_microtype false
+\use_dash_ligatures true
+\graphics default
+\default_output_format pdf2
+\output_sync 0
+\bibtex_command biber
+\index_command default
+\float_placement h
+\float_alignment center
+\paperfontsize default
+\spacing single
+\use_hyperref false
+\papersize default
+\use_geometry true
+\use_package amsmath 1
+\use_package amssymb 1
+\use_package cancel 1
+\use_package esint 1
+\use_package mathdots 1
+\use_package mathtools 1
+\use_package mhchem 1
+\use_package stackrel 1
+\use_package stmaryrd 1
+\use_package undertilde 1
+\cite_engine biblatex
+\cite_engine_type authoryear
+\biblio_options hyperref=true, backref=true, backrefstyle=three,backreffloats=true,indexing=bib,date=year
+\biblatex_bibstyle authoryear
+\biblatex_citestyle authoryear
+\use_bibtopic false
+\use_indices false
+\paperorientation portrait
+\suppress_date false
+\justification true
+\use_refstyle 1
+\use_formatted_ref 0
+\use_minted 0
+\use_lineno 0
+\index Index
+\shortcut idx
+\color #008000
+\end_index
+\leftmargin 1in
+\topmargin 1in
+\rightmargin 1in
+\bottommargin 1in
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation indent
+\paragraph_indentation default
+\is_math_indent 0
+\math_numbering_side default
+\quotes_style polish
+\dynamic_quotes 0
+\papercolumns 1
+\papersides 1
+\paperpagestyle default
+\tablestyle default
+\listings_params "language=Python,extendedchars=false,frameround=fttt,numbers=left,% line numbers use none,numberstyle={\tiny},stepnumber=2,% line numbers only every so many,numbersep=9pt,% how far line numbers from text?,showspaces=false,showstringspaces=false,showtabs=false,tab={\rightarrowfill},basicstyle={\small},keywordstyle={\color{blue}},commentstyle={\color{green}},stringstyle={\ttfamily \color{magenta}},identifierstyle={\color{black}}"
+\tracking_changes false
+\output_changes false
+\change_bars false
+\postpone_fragile_content false
+\html_math_output 0
+\html_css_as_file 0
+\html_be_strict false
+\docbook_table_output 0
+\docbook_mathml_prefix 1
+\end_header
+
+\begin_body
+
+\begin_layout Title
+The Radius of Influence Myth
+\end_layout
+
+\begin_layout Author
+Andy Louwyck,
+ Alexander Vandenbohede,
+ Dirk Libbrecht,
+ Marc van Camp and Kristine Walraevens
+\end_layout
+
+\begin_layout Address
+\align center
+Water (2022),
+ 14,
+ 149.
+ https://doi.org/10.3390/w14020149,
+ https://www.mdpi.com/journal/water,
+ 27pp
+\end_layout
+
+\begin_layout Standard
+\align center
+
+\series bold
+Comments by:
+ T.N.Olsthoorn
+\end_layout
+
+\begin_layout Standard
+\align center
+
+\series bold
+3 April 2025
+\end_layout
+
+\begin_layout Standard
+Het artikel bespreekt een aantal varianten van wat bekend staat als invloedsstraal.
+ De verschillende vormen zijn opgenomen op blz.
+ 15 van het artikel.
+ Het zijn de bekende waarden,
+ 
+\begin_inset Formula $R\approx3...4\lambda$
+\end_inset
+
+ voor semi-spanningswater en 
+\begin_inset Formula $R\approx\sqrt{\frac{2.25kDt}{S}}$
+\end_inset
+
+ voor de Theis en natuurlijk de gebiedsradius 
+\begin_inset Formula $R$
+\end_inset
+
+ bij Dupuit of Thiem.
+ Voor Hantush worden beide aangehouden,
+ de niet-stationaire voor kleine tijd en de stationaire voor grote tijd.
+ Er is blijkbaar een overgangstijd 
+\begin_inset Formula $0.01\,Sc<t<10\,Sc$
+\end_inset
+
+ waarin er geen duidelijke keus is te maken tussen beide.
+ Ernst gaat uit van een vochtig gebied waarin intensieve drainage het neerslagoverschot afvoert en waarin de afvoerfunctie van het oppervlaktewater kan worden samengevat in een drainageweerstand die gelijk is aan 
+\begin_inset Formula $c_{dr}=c_{top}=\frac{\phi-h_{top}}{N}$
+\end_inset
+
+ met 
+\begin_inset Formula $\phi$
+\end_inset
+
+ de gemiddelde grondwaterstand,
+ 
+\begin_inset Formula $h_{top}$
+\end_inset
+
+ het drainageniveau,
+ namelijk het gemiddelde slootpeil en 
+\begin_inset Formula $N$
+\end_inset
+
+ het neerslagoverschot.
+ Bij onttrekking ontstaat een binnengebied waar de grondwaterstand onder het drainageniveau zakt en de sloten dus niet meer afvoeren.
+ In dit binnengebied komt het volledige neerslagoverschot ten goede aan het grondwater.
+ Tegelijkertijd ontstaat er een buitengebied waarbinnen de sloten nog een deel van het neerslagoverschot afvoeren.
+ De voeding van het grondwater is daar gelijk aan de vermindering van de afvoer als gevolg van de verlaging.
+ In het binnengebied geldt de zogenoemde formule van Verruijt (Dupuit + neerslagoverschot) en in het buitengebied die van De Glee voor semi-spanningswater met 
+\begin_inset Formula $c_{dr}$
+\end_inset
+
+ als weerstand en 
+\begin_inset Formula $h_{top}$
+\end_inset
+
+ als drainagebasis (slootpeil).
+ Voor het buitengebied geldt een invloedsgrens gelijk aan die voor semi-spanningswater.
+ De andere invloedsstraal die in de tabel op blz.
+ 15 voor Ernst wordt opgegeven,
+ begrijp ik niet,
+ omdat de invloedsstraal bij Ernst altijd in het buitengebied valt,
+ waar dus de invloedsstraal voor semi-spanningswater geldt.
+ De invloedsgrens voor de niet-stationaire situatie van Ernst moet worden afgelezen van figuur 5 in het artikel.
+ Dat lijkt me veel te ingewikkeld voor de praktijk.
+\end_layout
+
+\begin_layout Standard
+De genoemde invloedsstralen zijn geen van alle omringd door mythes en waren dat ook nooit.
+ De mythe gold wellicht alleen voor de invloedsstraal volgens Sichardt.
+ Het is goed dat het artikel die bij het oud vuil heeft gezet en het is te hopen dat die nooit meer verschijnt in grondwaterartikelen en dito rapporten.
+\end_layout
+
+\begin_layout Standard
+Voor het doel,
+ het demystificeren van een van de in sommige praktijkdocumenten en websites gebruikte invloedsstraal van Sichardt,
+ is het artikel erg lang en vooral erg complex.
+ Mensen uit de grondwaterpraktijk zullen zich dit hierdoor nauwelijks tot zich gaan nemen.
+ In feite gaat het grootste en zwaarste deel over de afleiding van een niet-stationaire oplossing voor het hiervoor beschreven probleem dat Ernst zich in de zestiger en zeventiger jaren voor ogen stelde,
+ en ook vaak wordt genoemd als het schema van Blom.
+ Daar bestond geen analytische oplossing voor.
+ Tegelijk is de oplossing erg complex en vergt Laplace-transformatie en numerieke terugtransformatie dat weinigen in de praktijk zullen gaan doen.
+ Wellicht nog belangrijker is dat het drainagepeil en de drainageweerstand constant worden gehouden,
+ en juist dat is niet zoals een vrij afwaterend grondwatersysteem reageert op een onttrekking.
+\end_layout
+
+\begin_layout Standard
+Zoals de auteurs al aangeven kan de situatie van Ernst gemakkelijk numeriek worden nagebootst in bijvoorbeeld een eindig-differentie programma als Modflow.
+ Dit kan zowel met de DRN optie als met de RIV optie,
+ zowel stationair als niet-stationair.
+ Voor een goede simulatie van vrije drainage moet het slootpeil echter kunnen meedalen met de grondwaterstand,
+ respectievelijk moet de drainageweerstand toenemen tot oneindig wanneer grondwaterstand en slootpeil dalen tot op of onder de slootbodem.
+ Met Modflow kan ook met een variabele drainageweerstand worden gerekend.
+\end_layout
+
+\begin_layout Part
+Appendix A:
+ Deriving the Transient State Solution of the Ernst Model
+\end_layout
+
+\begin_layout Standard
+Oplossing 18 van het model van Ernst combineert twee oplossingen die aan elkaar geknoopt worden op de afstand 
+\begin_inset Formula $r=r_{d,}$
+\end_inset
+
+waar de verlaging 
+\begin_inset Formula $s=Nc$
+\end_inset
+
+.
+ Voor 
+\begin_inset Formula $r\le r_{d}$
+\end_inset
+
+ geldt de formule van Verruijt (Dupuit/Theim met neerslag 
+\begin_inset Formula $N$
+\end_inset
+
+) en voor 
+\begin_inset Formula $r\ge r_{d}$
+\end_inset
+
+ geldt de formule van De Glee waarbij voor de weerstand van de afdekkende laag,
+ 
+\begin_inset Formula $c_{top}$
+\end_inset
+
+ de drainageweerstand moet worden gelezen.
+ De auteurs nemen ook lek van een onderliggend watervoerend pakket mee,
+ maar die wordt bij de latere uitwerking weer weggelaten want compliceert het vinden van 
+\begin_inset Formula $r_{d}$
+\end_inset
+
+.
+ Ook hydrologisch is weglaten zinvol omdat het uitgangspunt dat de stijghoogte in de aangrenzende laag niet verandert meestal niet of nauwelijks opgaat voor een onderliggende watervoerende laag,
+ zeker als diens doorlaatvermogen niet zo groot is.
+\end_layout
+
+\begin_layout Standard
+De hele afleiding is bijzonder knap wiskundig werk.
+ Maar hydrologisch kan worden opgemerkt dat het slootpeil 
+\begin_inset Formula $h_{top}$
+\end_inset
+
+ en de drainageweerstand 
+\begin_inset Formula $c_{top}$
+\end_inset
+
+ constant worden gehouden.
+ Dit berekent dat de voeding van het pakket wegvalt zodra de stijghoogte beneden het slootpeil 
+\begin_inset Formula $h_{top}$
+\end_inset
+
+ zakt.
+ Dit is stikt genomen hydrologisch alleen waar wanneer het slootpeil gelijk is aan de hoogte van de slootbodem.
+ Want het wegvallen van de lek impliceert dat de stijhoogte losraakt van de sloot en dus onder de slootbodem zakt.
+ Waar dat niet het geval is,
+ dus 
+\begin_inset Formula $h_{top}>h_{sb}$
+\end_inset
+
+ met 
+\begin_inset Formula $h_{sb}$
+\end_inset
+
+ de hoogte van de slootbodem,
+ zakt ofwel het slootpeil mee met de stijghoogte totdat het de slootbodem bereikt of wordt het peil in de sloten kunstmatig vastgehouden.
+ Maar in dat geval slaat de lek gewoon om in infiltratie.
+ Dus hoe je het nu wendt of keert,
+ het model Ernst/Blom dat de lek laag wegvallen zodra de stijghoogte onder het slootpeil zakt,
+ is kunstmatig en komt in de praktijk niet voor.
+ Voor een reëler simulatie van gebieden met vrije drainage is het noodzakelijk om het slootpeil te laten meedalen met de stijghoogte.
+ Dit aspect wordt in het artikel,
+ ondanks al zijn complexe wiskunde,
+ niet meegenomen,
+ wat ook een gevolg kan hebben voor wat voor invloedsstraal in de praktijk moet worden aangehouden.
+ Voor een reële beschouwing van de situatie die Ernst beschouwt wordt een grondwaterstandafvoerrelatie te worden meegenomen die tot uitdrukking brengt dat de drainageweerstand vanaf de slootbodem toeneemt met de slootdiepte.
+\end_layout
+
+\begin_layout Standard
+Het blijft overigens bijzonder elegant om te zien hoe de bekende stationaire en niet-stationaire grondwaterformules van De Glee,
+ Theis en Hantush als bijzondere gevallen uit de afleiding rollen en hoe ze dus onderling zowel wiskundig als hydrologisch samenhangen.
+ Het artikel is wiskundig zo knap,
+ dat er maar weinig hydrologen zullen zijn die de afleidingen helemaal kunnen volgen en verifiëren.
+\end_layout
+
+\begin_layout Part
+Appendix B:
+ Finding the maximum radius of influence
+\end_layout
+
+\begin_layout Standard
+De Glee en Theis worden beide wiskundig als volgt uitgedrukt
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+s=\frac{Q}{T}f\left(\frac{r^{2}}{T}\Pi_{i}P_{i}\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Met 
+\begin_inset Formula $s$
+\end_inset
+
+ [L] de verlaging,
+ 
+\begin_inset Formula $Q$
+\end_inset
+
+ [L
+\begin_inset Formula $^{3}$
+\end_inset
+
+/T] de onttrekking en T [L
+\begin_inset Formula $^{2}$
+\end_inset
+
+/T] het doorlaatvermogen,
+ 
+\begin_inset Formula $r$
+\end_inset
+
+ [L] de afstand van het hart van de bron,
+ en 
+\begin_inset Formula $P_{i}$
+\end_inset
+
+ [???] een onafhankelijke of hydraulische parameter.
+\end_layout
+
+\begin_layout Standard
+De dimensie van het argument van de functie dat dimensieloos moet zijn is onduidelijk.
+ De coefficient heeft dimensie [T] en die van 
+\begin_inset Formula $P_{i}$
+\end_inset
+
+ is niet gegeven.
+ Dus hoe moet je die uitdrukking intepreteren?
+ Geen idee.
+\end_layout
+
+\begin_layout Standard
+In het geval van De Glee is 
+\begin_inset Formula $f\left(...\right)$
+\end_inset
+
+ gedefinieerd als 
+\begin_inset Formula $K_{0}\left(\sqrt{x}\right)$
+\end_inset
+
+???
+\end_layout
+
+\begin_layout Standard
+Voor zover ik weet is die functie dan gedefinieert als 
+\begin_inset Formula $K_{0}\left(x\right)$
+\end_inset
+
+,
+ dus 
+\begin_inset Formula $x=\frac{r}{\lambda}$
+\end_inset
+
+ en niet als 
+\begin_inset Formula $\sqrt{x}=\sqrt{\frac{r}{\lambda}}.$
+\end_inset
+
+ Dus wat moet ik hiermee?
+\end_layout
+
+\begin_layout Standard
+In het geval van Theis is 
+\begin_inset Formula $f$
+\end_inset
+
+ de Theis well functie 
+\begin_inset Formula $W$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+Dat zal allemaal wel,
+ maar dan nog missen we 
+\begin_inset Formula $2\pi$
+\end_inset
+
+ resp.
+ 
+\begin_inset Formula $4\pi$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+Dan komt de tweede alinea die gaat over de dimensieloze verlaging 
+\begin_inset Formula $s^{*}=\frac{sr^{2}}{Q}\Pi_{i}P_{i}$
+\end_inset
+
+ en een dimensieloos doorlaatvermogen 
+\begin_inset Formula $T^{*}=\frac{T}{r^{2}}\Pi_{i}P_{i}^{-1}$
+\end_inset
+
+???
+\end_layout
+
+\begin_layout Standard
+Ik moet zeggen dat ik op dit punt al geheel de draad kwijt ben.
+ Bij mij komt dit over als gegoochel dat eindigt ij een aantal uitdrukkingen voor 
+\begin_inset Formula $r_{max}$
+\end_inset
+
+,
+ 
+\begin_inset Formula $R_{max}$
+\end_inset
+
+ en 
+\begin_inset Formula $T_{max}$
+\end_inset
+
+ zonder dat mij duidelijk is waar dit over gaat.
+ Ik snap al helemaal niet waar een 
+\begin_inset Formula $T_{max}$
+\end_inset
+
+ vandaan zou moeten komen en hoe een constand doorlaatvermogen een maximum kan hebben.
+\end_layout
+
+\begin_layout Standard
+Wat ik ook niet snap dat je een 
+\begin_inset Formula $s_{max}$
+\end_inset
+
+ op tijd 
+\begin_inset Formula $t$
+\end_inset
+
+ kan hebben als deze 
+\begin_inset Formula $s_{max}$
+\end_inset
+
+ bijvoorbeeld de vaste 5 cm verlaging is waarvan we de radius willen hebben.
+\end_layout
+
+\begin_layout Standard
+De zin 
+\begin_inset Quotes pld
+\end_inset
+
+In het geval van de De Glee vergelijking [71,
+ 86](6),
+ 
+\begin_inset Formula $s_{max}^{*}=0.0766$
+\end_inset
+
+ en 
+\begin_inset Formula $T_{max}^{*}=0.4148$
+\end_inset
+
+ komen bij mij over als uit de lucht gegrepen.
+ Ik heb geen idee waar die vandaan komen.
+ Volgens de tekst is de invloedsstraal voor De Glee glijk aan
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+R_{max}=\sqrt{\frac{0.0766Qc}{s_{max}}}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Voor 
+\begin_inset Formula $R_{inv}$
+\end_inset
+
+bij de Glee verwacht iets van
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+s_{max}=\frac{Q}{2\pi kD}K_{0}\left(\frac{R}{\lambda}\right)=\frac{Qc}{2\pi}\frac{1}{\lambda^{2}}K_{0}\left(\frac{R}{\lambda}\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Dat we vervolgens omzeten naar iets dat op de formule in het artikel lijkt
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+\frac{\lambda}{\sqrt{K_{0}\left(\frac{r}{\lambda}\right)}} & =\sqrt{\frac{0.0159}{0.0766}}\sqrt{\frac{0.0766}{0.0159}}\sqrt{\frac{0.0159Qc}{s_{max}}}\\
+\frac{2.19\,\lambda}{\sqrt{K_{0}\left(\frac{r}{\lambda}\right)}} & =\sqrt{\frac{0.0766Qc}{s_{max}}}
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Zou de linker uitdrukking dan de invloedsstraal zijn???
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+R_{max}=\frac{2.19\lambda}{\sqrt{K_{0}\left(\frac{r}{\lambda}\right)}}?????
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Het zal allemaal wel waar zijn,
+ want ik mag ervan uitgaan de de medeauteurs en de peer reviewers er in alle detail doorheen zijn gegaan,
+ maar ik kan me hier heelaas niets bij voorstellen en houd het bij 
+\begin_inset Formula $R\approx3\lambda$
+\end_inset
+
+ of 
+\begin_inset Formula $4\lambda$
+\end_inset
+
+ bij De Glee en 
+\begin_inset Formula $R\approx\sqrt{\frac{2.25kDt}{S}}$
+\end_inset
+
+ bij Theis.
+ De laatste volgt direct uit de vereenvoudigde formule van Theis door daarin de verlaging gelijk aan nul te stellen en dus het argument van de logarithme gelijk aan 1
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+s\approx\frac{Q}{4\pi kD}\ln\left(\frac{2.25kDt}{r^{2}S}\right)\rightarrow s=0\rightarrow\frac{2.25kDt}{R^{2}S}=1\rightarrow R=\sqrt{\frac{2.25kDt}{S}}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+En natuurlijk kan je met Theis en De Glee ook uitrekenen wat de 
+\begin_inset Formula $R$
+\end_inset
+
+ nu precies is waar 
+\begin_inset Formula $s_{max}=0.05$
+\end_inset
+
+ m.
+\end_layout
+
+\end_body
+\end_document
